@@ -5,18 +5,19 @@ function Home() {
   return (
     <div style={{ textAlign: 'center', padding: '50px' }}>
       
-      {/* --- THIS IS THE NEW PART: The Login Button --- */}
+      {/* Top Bar with Login Button */}
       <div style={{ position: 'absolute', top: '20px', right: '20px' }}>
         <Link to="/login" style={loginBtnStyle}>👤 Login</Link>
       </div>
-      {/* ---------------------------------------------- */}
 
       <h1 style={{ fontSize: '3rem', color: '#2E7D32' }}>Welcome to Farm Cap 🚜</h1>
       <p style={{ fontSize: '1.2rem', color: '#555' }}>Empowering Farmers. Connecting Communities.</p>
       
-      {/* The 3 Main Pillars */}
       <div style={{ display: 'flex', justifyContent: 'center', gap: '20px', marginTop: '50px', flexWrap: 'wrap' }}>
-        <Link to="/enquiry" style={btnStyle}>Enquiry 📖</Link>
+        
+        {/* ✅ THIS IS THE FIX: Changed from "/enquiry" to "/agri-insights" */}
+        <Link to="/agri-insights" style={btnStyle}>Agri-Insights 📊</Link>
+        
         <Link to="/service" style={btnStyle}>Service 🛠️</Link>
         <Link to="/business" style={btnStyle}>Business 💰</Link>
       </div>
@@ -24,7 +25,7 @@ function Home() {
   );
 }
 
-// Styling for the big buttons
+// Styling
 const btnStyle = {
   padding: '20px 40px',
   backgroundColor: '#4CAF50',
@@ -37,7 +38,6 @@ const btnStyle = {
   boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
 };
 
-// Styling for the new Login button (Small & Grey)
 const loginBtnStyle = {
   padding: '10px 20px',
   backgroundColor: '#333',

@@ -1,10 +1,10 @@
 import React from 'react';
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, Link } from 'react-router-dom'; // <--- Added 'Link' here
 
 // Import Pages
 import Home from './pages/Home';
 import Service from './pages/Service';
-import Enquiry from './pages/Enquiry';
+import AgriInsights from './pages/AgriInsights';
 import Business from './pages/Business';
 import Login from './pages/Login';
 import Profile from './pages/Profile';
@@ -22,18 +22,19 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/profile" element={<Profile />} />
         <Route path="/service" element={<Service />} />
-        <Route path="/enquiry" element={<Enquiry />} />
+        
+        <Route path="/agri-insights" element={<AgriInsights />} />
+        
         <Route path="/business" element={<Business />} />
         
-        {/* Secret Admin Route */}
         <Route path="/admin" element={<Admin />} />
 
-        {/* --- NEW: THE 404 CATCH-ALL ROUTE --- */}
-        {/* If the URL doesn't match anything above, it shows this: */}
+        {/* --- FIXED 404 PAGE --- */}
         <Route path="*" element={
           <div style={{textAlign: 'center', marginTop: '50px'}}>
             <h1>❌ 404: Page Not Found</h1>
-            <p>Check your URL or go back home.</p>
+            {/* Now this is a clickable Link */}
+            <p>Check your URL or <Link to="/" style={{color: '#2E7D32', fontWeight: 'bold', textDecoration: 'underline'}}>go back home</Link>.</p>
           </div>
         } />
       </Routes>
