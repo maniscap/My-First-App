@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { auth, googleProvider } from '../firebase'; // Import our setup
+import { auth, googleProvider } from '../firebase'; 
 import { 
   signInWithPopup, 
   createUserWithEmailAndPassword, 
@@ -11,12 +11,9 @@ import {
 
 function Login() {
   const navigate = useNavigate();
-  
-  // State for switching modes
-  const [authMethod, setAuthMethod] = useState('email'); // 'email', 'phone'
+  const [authMethod, setAuthMethod] = useState('email'); 
   const [isSignup, setIsSignup] = useState(false);
   
-  // Form Inputs
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [phone, setPhone] = useState('');
@@ -24,17 +21,17 @@ function Login() {
   const [otpSent, setOtpSent] = useState(false);
   const [error, setError] = useState('');
 
-  // 1. HANDLE GOOGLE LOGIN (Easiest)
+  // 1. HANDLE GOOGLE LOGIN
   const handleGoogle = async () => {
     try {
       await signInWithPopup(auth, googleProvider);
-      navigate('/profile');
+      navigate('/dashboard'); // <--- CHANGED TO DASHBOARD
     } catch (err) {
       setError(err.message);
     }
   };
 
-  // 2. HANDLE EMAIL LOGIN/SIGNUP
+  // 2. HANDLE EMAIL LOGIN
   const handleEmail = async (e) => {
     e.preventDefault();
     setError('');
@@ -44,13 +41,13 @@ function Login() {
       } else {
         await signInWithEmailAndPassword(auth, email, password);
       }
-      navigate('/profile');
+      navigate('/dashboard'); // <--- CHANGED TO DASHBOARD
     } catch (err) {
       setError(err.message);
     }
   };
 
-  // 3. HANDLE PHONE LOGIN (Tricky part with OTP)
+  // 3. HANDLE PHONE LOGIN
   const generateRecaptcha = () => {
     if (!window.recaptchaVerifier) {
       window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
@@ -64,8 +61,6 @@ function Login() {
     setError('');
     generateRecaptcha();
     const appVerifier = window.recaptchaVerifier;
-    
-    // Format: "+91" + phone number
     const formattedPhone = phone.includes('+') ? phone : `+91${phone}`;
 
     signInWithPhoneNumber(auth, formattedPhone, appVerifier)
@@ -82,35 +77,31 @@ function Login() {
     e.preventDefault();
     if (window.confirmationResult) {
       window.confirmationResult.confirm(otp).then((result) => {
-        navigate('/profile');
+        navigate('/dashboard'); // <--- CHANGED TO DASHBOARD
       }).catch((err) => setError("Invalid OTP"));
     }
   };
 
   return (
     <div style={containerStyle}>
-      <div style={cardStyle}>
-        <h2 style={{ color: '#2E7D32', marginBottom: '20px' }}>
-          Welcome to Farm Cap 🚜
+      <div className="glass-card" style={cardStyle}>
+        <h2 style={{ color: '#1B5E20', marginBottom: '20px' }}>
+          {isSignup ? 'Join Farm Cap' : 'Welcome Back'} 🚜
         </h2>
 
-        {/* Error Message */}
         {error && <p style={{ color: 'red', fontSize: '12px' }}>⚠️ {error}</p>}
 
-        {/* --- GOOGLE BUTTON (Always visible) --- */}
         <button onClick={handleGoogle} style={googleBtn}>
           <span style={{ marginRight: '10px' }}>G</span> Continue with Google
         </button>
 
-        <p style={{ margin: '15px 0', color: '#888' }}>----- OR -----</p>
+        <p style={{ margin: '15px 0', color: '#555' }}>----- OR -----</p>
 
-        {/* --- TABS TO SWITCH EMAIL / PHONE --- */}
         <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', marginBottom: '15px' }}>
           <button onClick={() => {setAuthMethod('email'); setOtpSent(false)}} style={authMethod === 'email' ? activeTab : inactiveTab}>📧 Email</button>
           <button onClick={() => {setAuthMethod('phone'); setOtpSent(false)}} style={authMethod === 'phone' ? activeTab : inactiveTab}>📱 Phone</button>
         </div>
 
-        {/* --- EMAIL FORM --- */}
         {authMethod === 'email' && (
           <form onSubmit={handleEmail} style={formStyle}>
             <input type="email" placeholder="Email" required style={inputStyle} onChange={(e) => setEmail(e.target.value)} />
@@ -124,7 +115,6 @@ function Login() {
           </form>
         )}
 
-        {/* --- PHONE FORM --- */}
         {authMethod === 'phone' && (
           <form onSubmit={otpSent ? handleVerifyOtp : handleSendOtp} style={formStyle}>
             {!otpSent ? (
@@ -142,21 +132,21 @@ function Login() {
           </form>
         )}
 
-        <Link to="/" style={{ fontSize: '12px', color: '#666', marginTop: '15px', display: 'block' }}>Skip for now →</Link>
+        <Link to="/" style={{ fontSize: '12px', color: '#555', marginTop: '15px', display: 'block', textDecoration: 'none' }}>⬅ Back to Home</Link>
       </div>
     </div>
   );
 }
 
 // STYLES
-const containerStyle = { display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', backgroundColor: '#f0f4c3' };
-const cardStyle = { backgroundColor: 'white', padding: '40px', borderRadius: '15px', boxShadow: '0 4px 10px rgba(0,0,0,0.1)', width: '320px', textAlign: 'center' };
+const containerStyle = { display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh', padding: '20px' };
+const cardStyle = { width: '100%', maxWidth: '350px', textAlign: 'center', backgroundColor: 'rgba(255,255,255,0.95)' };
 const formStyle = { display: 'flex', flexDirection: 'column', gap: '10px' };
-const inputStyle = { padding: '12px', borderRadius: '5px', border: '1px solid #ccc', fontSize: '16px' };
-const googleBtn = { width: '100%', padding: '12px', backgroundColor: '#fff', color: '#333', border: '1px solid #ccc', borderRadius: '5px', cursor: 'pointer', fontSize: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center' };
-const actionBtn = { padding: '12px', backgroundColor: '#2E7D32', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer', fontSize: '16px', fontWeight: 'bold' };
-const toggleText = { fontSize: '12px', color: '#2E7D32', cursor: 'pointer', marginTop: '10px', textDecoration: 'underline' };
-const activeTab = { padding: '5px 15px', backgroundColor: '#2E7D32', color: 'white', border: 'none', borderRadius: '20px', fontSize: '12px' };
-const inactiveTab = { padding: '5px 15px', backgroundColor: '#ddd', color: '#333', border: 'none', borderRadius: '20px', fontSize: '12px' };
+const inputStyle = { padding: '12px', borderRadius: '8px', border: '1px solid #ccc', fontSize: '16px' };
+const googleBtn = { width: '100%', padding: '12px', backgroundColor: '#fff', color: '#333', border: '1px solid #ccc', borderRadius: '8px', cursor: 'pointer', fontSize: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '500' };
+const actionBtn = { padding: '12px', backgroundColor: '#1B5E20', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '16px', fontWeight: 'bold' };
+const toggleText = { fontSize: '13px', color: '#1B5E20', cursor: 'pointer', marginTop: '10px', textDecoration: 'underline', fontWeight: '500' };
+const activeTab = { padding: '8px 20px', backgroundColor: '#1B5E20', color: 'white', border: 'none', borderRadius: '20px', fontSize: '13px', fontWeight: 'bold' };
+const inactiveTab = { padding: '8px 20px', backgroundColor: '#ddd', color: '#333', border: 'none', borderRadius: '20px', fontSize: '13px' };
 
-export default Login;
+export default Login;git add .
