@@ -3,49 +3,95 @@ import { Link } from 'react-router-dom';
 
 function Home() {
   return (
-    <div style={{ textAlign: 'center', padding: '50px' }}>
+    <div style={pageStyle}>
       
-      {/* Top Bar with Login Button */}
-      <div style={{ position: 'absolute', top: '20px', right: '20px' }}>
-        <Link to="/login" style={loginBtnStyle}>👤 Login</Link>
+      {/* Top Bar */}
+      <nav style={navStyle}>
+        {/* NEW LOGO: Cap Symbol */}
+        <div style={logoStyle}>🧢 Farm Cap</div>
+        
+        {/* NEW LOGIN: Farmer Symbol */}
+        <Link to="/login" style={loginBtnStyle}>
+          <span style={{fontSize: '18px'}}>👨‍🌾</span> Login
+        </Link>
+      </nav>
+
+      {/* NEW HERO SECTION: Powerful Quotes */}
+      <div style={heroStyle}>
+        <h1 style={titleStyle}>Cultivating the Future,<br/>Together.</h1>
+        <p style={subtitleStyle}>"The farmer is the only man in our economy who buys everything at retail, sells everything at wholesale, and pays the freight both ways." – We are here to change that.</p>
+        <p style={{marginTop: '10px', fontSize: '1.1rem', color: '#333', fontWeight: 'bold'}}>Knowledge • Machinery • Trade</p>
       </div>
 
-      <h1 style={{ fontSize: '3rem', color: '#2E7D32' }}>Welcome to Farm Cap 🚜</h1>
-      <p style={{ fontSize: '1.2rem', color: '#555' }}>Empowering Farmers. Connecting Communities.</p>
-      
-      <div style={{ display: 'flex', justifyContent: 'center', gap: '20px', marginTop: '50px', flexWrap: 'wrap' }}>
+      {/* The 3 Main Pillars (New Image Cards) */}
+      <div style={gridContainer}>
         
-        {/* ✅ THIS IS THE FIX: Changed from "/enquiry" to "/agri-insights" */}
-        <Link to="/agri-insights" style={btnStyle}>Agri-Insights 📊</Link>
-        
-        <Link to="/service" style={btnStyle}>Service 🛠️</Link>
-        <Link to="/business" style={btnStyle}>Business 💰</Link>
+        {/* Card 1: Agri-Insights */}
+        <Link to="/agri-insights" style={cardLinkStyle}>
+          <div className="feature-card card-agri">
+            <div style={iconStyle}>📈</div>
+            <h3>Agri-Insights</h3>
+            <p>Master the market. Access daily rates, library books, and expert video guides.</p>
+          </div>
+        </Link>
+
+        {/* Card 2: Service Hub */}
+        <Link to="/service" style={cardLinkStyle}>
+          <div className="feature-card card-service">
+            <div style={iconStyle}>🚜</div>
+            <h3>Service Hub</h3>
+            <p>Power up your farm. Rent advanced machinery and hire skilled labor instantly.</p>
+          </div>
+        </Link>
+
+        {/* Card 3: Business Zone */}
+        <Link to="/business" style={cardLinkStyle}>
+          <div className="feature-card card-business">
+            <div style={iconStyle}>💰</div>
+            <h3>Business Zone</h3>
+            <p>Your harvest, your price. Sell crops directly to buyers and maximize profits.</p>
+          </div>
+        </Link>
+
       </div>
     </div>
   );
 }
 
-// Styling
-const btnStyle = {
-  padding: '20px 40px',
-  backgroundColor: '#4CAF50',
-  color: 'white',
-  textDecoration: 'none',
-  fontSize: '20px',
-  borderRadius: '12px',
-  border: 'none',
-  cursor: 'pointer',
-  boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
+// --- STYLES ---
+const pageStyle = { paddingBottom: '50px' };
+
+const navStyle = { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '20px 40px' };
+const logoStyle = { fontSize: '28px', fontWeight: '900', color: '#1B5E20', textShadow: '0 2px 4px rgba(255,255,255,0.8)', letterSpacing: '1px' };
+
+const loginBtnStyle = { 
+  textDecoration: 'none', 
+  backgroundColor: 'white', 
+  color: '#1B5E20', 
+  padding: '8px 20px', 
+  borderRadius: '30px', 
+  fontWeight: 'bold', 
+  boxShadow: '0 4px 6px rgba(0,0,0,0.2)',
+  display: 'flex',
+  alignItems: 'center',
+  gap: '8px',
+  transition: 'transform 0.2s'
 };
 
-const loginBtnStyle = {
-  padding: '10px 20px',
-  backgroundColor: '#333',
-  color: 'white',
-  textDecoration: 'none',
-  borderRadius: '20px',
-  fontSize: '14px',
-  fontWeight: 'bold'
+const heroStyle = { textAlign: 'center', marginTop: '40px', marginBottom: '60px', padding: '0 20px' };
+const titleStyle = { fontSize: '4rem', color: '#1B5E20', margin: 0, lineHeight: '1.1', textShadow: '0 2px 15px rgba(255,255,255,0.6)', fontWeight: '800' };
+const subtitleStyle = { fontSize: '1.3rem', color: '#222', marginTop: '15px', fontWeight: '500', textShadow: '0 1px 2px rgba(255,255,255,0.8)', maxWidth: '800px', marginInline: 'auto', fontStyle: 'italic' };
+
+const gridContainer = { 
+  display: 'grid', 
+  gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', 
+  gap: '30px', 
+  padding: '0 30px', 
+  maxWidth: '1200px', 
+  margin: '0 auto' 
 };
+
+const cardLinkStyle = { textDecoration: 'none', color: 'inherit' };
+const iconStyle = { fontSize: '60px', marginBottom: '15px', textShadow: '0 4px 8px rgba(0,0,0,0.5)' };
 
 export default Home;
