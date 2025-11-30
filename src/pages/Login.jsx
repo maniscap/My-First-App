@@ -149,4 +149,4 @@ const toggleText = { fontSize: '13px', color: '#1B5E20', cursor: 'pointer', marg
 const activeTab = { padding: '8px 20px', backgroundColor: '#1B5E20', color: 'white', border: 'none', borderRadius: '20px', fontSize: '13px', fontWeight: 'bold' };
 const inactiveTab = { padding: '8px 20px', backgroundColor: '#ddd', color: '#333', border: 'none', borderRadius: '20px', fontSize: '13px' };
 
-export default Login;git add .
+export default Login;
