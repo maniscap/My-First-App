@@ -3,7 +3,7 @@ import { Routes, Route, Link } from 'react-router-dom';
 
 // Import Pages
 import Home from './pages/Home';
-import Dashboard from './pages/Dashboard'; // <--- RESTORED THIS IMPORT
+import Dashboard from './pages/Dashboard';
 import Service from './pages/Service';
 import AgriInsights from './pages/AgriInsights';
 import Business from './pages/Business';
@@ -19,14 +19,12 @@ function App() {
     <div>
       <ChatBot />
       <Routes>
-        {/* Public Landing Page */}
+        {/* Public */}
         <Route path="/" element={<Home />} />
-        
-        {/* Authentication */}
         <Route path="/login" element={<Login />} />
         
-        {/* Main App Area */}
-        <Route path="/dashboard" element={<Dashboard />} /> {/* <--- RESTORED THIS ROUTE */}
+        {/* Private */}
+        <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/profile" element={<Profile />} />
         
         {/* Features */}
@@ -37,11 +35,11 @@ function App() {
         {/* Admin */}
         <Route path="/admin" element={<Admin />} />
 
-        {/* 404 Page */}
+        {/* 404 */}
         <Route path="*" element={
-          <div style={{textAlign: 'center', marginTop: '50px'}}>
+          <div style={{textAlign: 'center', marginTop: '50px', color: 'white'}}>
             <h1>❌ 404: Page Not Found</h1>
-            <p>Check your URL or <Link to="/" style={{color: '#2E7D32', fontWeight: 'bold', textDecoration: 'underline'}}>go back home</Link>.</p>
+            <p>Check your URL or <Link to="/" style={{color: '#4CAF50'}}>go back home</Link>.</p>
           </div>
         } />
       </Routes>
