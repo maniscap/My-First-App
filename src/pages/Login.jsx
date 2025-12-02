@@ -1,15 +1,21 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
+import { auth, googleProvider } from '../firebase'; 
+import { 
+  signInWithPopup, 
+  createUserWithEmailAndPassword, 
+  signInWithEmailAndPassword,
+  signInWithPhoneNumber,
+  RecaptchaVerifier 
+} from 'firebase/auth';
 
-function Dashboard() {
+function Login() {
+  const navigate = useNavigate();
+  
   // --- BACKGROUND LOGIC ---
   const [bgImage, setBgImage] = useState('');
-  
-  // Day: Green Field + Sun
   const dayBg = 'https://images.unsplash.com/photo-1625246333195-78d9c38ad449?q=80&w=2940&auto=format&fit=crop';
-  
-  // Night: Full Moon over Dark Field
-  const nightBg = 'https://images.unsplash.com/photo-1509773896068-7fd415d91e2e?q=80&w=2940&auto=format&fit=crop';
+  const nightBg = 'https://images.unsplash.com/photo-1652454159675-11ead6275680?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D';
 
   useEffect(() => {
     const updateTime = () => {
@@ -22,68 +28,114 @@ function Dashboard() {
     return () => clearInterval(timer);
   }, []);
 
+  const [authMethod, setAuthMethod] = useState('email'); 
+  const [isSignup, setIsSignup] = useState(false);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [phone, setPhone] = useState('');
+  const [otp, setOtp] = useState('');
+  const [otpSent, setOtpSent] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleGoogle = async () => {
+    try { await signInWithPopup(auth, googleProvider); navigate('/dashboard'); } 
+    catch (err) { setError(err.message); }
+  };
+
+  const handleEmail = async (e) => {
+    e.preventDefault(); setError('');
+    try {
+      if (isSignup) await createUserWithEmailAndPassword(auth, email, password);
+      else await signInWithEmailAndPassword(auth, email, password);
+      navigate('/dashboard');
+    } catch (err) { setError(err.message); }
+  };
+
+  const generateRecaptcha = () => {
+    if (!window.recaptchaVerifier) window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', { 'size': 'invisible' });
+  };
+
+  const handleSendOtp = (e) => {
+    e.preventDefault(); setError(''); generateRecaptcha();
+    const formattedPhone = phone.includes('+') ? phone : `+91${phone}`;
+    signInWithPhoneNumber(auth, formattedPhone, window.recaptchaVerifier)
+      .then((res) => { window.confirmationResult = res; setOtpSent(true); alert("OTP Sent!"); })
+      .catch((err) => { setError(err.message); });
+  };
+
+  const handleVerifyOtp = (e) => {
+    e.preventDefault();
+    if (window.confirmationResult) window.confirmationResult.confirm(otp).then(() => navigate('/dashboard')).catch(() => setError("Invalid OTP"));
+  };
+
   return (
     <div style={{...pageStyle, backgroundImage: `url('${bgImage}')`}}>
       
-      {/* --- NAVBAR --- */}
-      <nav style={navStyle}>
+      <div style={glassCardStyle}>
         
-        {/* LEFT: My Profile (Black Outline Icon) */}
-        <Link to="/profile" style={profileBtn}>
-           {/* Black Outline Farmer Icon */}
-           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="black" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{marginRight: '8px'}}>
-             <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-             <circle cx="12" cy="10" r="4"></circle>
-             <path d="M16 4c0 0-1-2-4-2S8 4 8 4"></path> {/* Turban/Hat Outline */}
-           </svg>
-           <span style={{color: 'black'}}>My Profile</span>
-        </Link>
+        <div style={{ marginBottom: '15px' }}>
+          <div style={{fontSize: '45px', marginBottom: '5px', filter: 'drop-shadow(0 2px 5px rgba(0,0,0,0.3))'}}>🧢</div>
+          <h2 style={titleStyle}>
+            {isSignup ? 'Join Farm Cap' : 'Login'}
+          </h2>
+          <p style={{color: 'rgba(255,255,255,0.9)', margin: '2px 0 0 0', fontSize: '13px'}}>Secure access for farmers</p>
+        </div>
 
-        {/* RIGHT: Just the Cap Logo */}
-        <div style={logoStyle}>🧢</div>
-        
-      </nav>
+        {error && <div style={errorBox}>⚠️ {error}</div>}
 
-      {/* --- HERO TEXT --- */}
-      <div style={heroStyle}>
-        <p style={subHeaderStyle}>Namaste, Partner 🙏</p>
-        <h1 style={titleStyle}>Your Farm, Your Control.</h1>
-        <p style={descStyle}>Access tools, market data, and services instantly.</p>
-      </div>
+        <button onClick={handleGoogle} style={googleBtn}>
+          <svg width="18" height="18" viewBox="0 0 24 24" style={{marginRight: '10px'}}>
+            <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+            <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+            <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+            <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+          </svg>
+          Google
+        </button>
 
-      {/* --- THE 3 GLASS CARDS --- */}
-      <div style={gridContainer}>
-        
-        <Link to="/agri-insights" style={cardLinkStyle}>
-          <div className="feature-card" style={{...cardBaseStyle, backgroundImage: "url('https://images.unsplash.com/photo-1592982537447-6f2a6a0c7c18?auto=format&fit=crop&w=800&q=80')"}}>
-            <div style={overlayCard}>
-              <div style={iconStyle}>📈</div>
-              <h3>Agri-Insights</h3>
-              <p>Daily Rates & Guides</p>
-            </div>
-          </div>
-        </Link>
+        <div style={{ display: 'flex', alignItems: 'center', margin: '15px 0', color: 'rgba(255,255,255,0.7)', fontSize: '11px', fontWeight: 'bold' }}>
+          <div style={{flex: 1, height: '1px', background: 'rgba(255,255,255,0.3)'}}></div>
+          <span style={{ margin: '0 10px' }}>OR</span>
+          <div style={{flex: 1, height: '1px', background: 'rgba(255,255,255,0.3)'}}></div>
+        </div>
 
-        <Link to="/service" style={cardLinkStyle}>
-          <div className="feature-card" style={{...cardBaseStyle, backgroundImage: "url('https://images.unsplash.com/photo-1530267981375-f0de937f5f13?auto=format&fit=crop&w=800&q=80')"}}>
-            <div style={overlayCard}>
-              <div style={iconStyle}>🚜</div>
-              <h3>Service Hub</h3>
-              <p>Rent Machinery</p>
-            </div>
-          </div>
-        </Link>
+        <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', marginBottom: '15px' }}>
+          <button onClick={() => {setAuthMethod('email'); setOtpSent(false)}} style={authMethod === 'email' ? activeTab : inactiveTab}>
+            <svg width="18" height="14" viewBox="0 0 48 48" style={{marginRight:'6px', verticalAlign:'middle'}}>
+                <path fill="#4caf50" d="M45,16.2l-5,2.75l-5,4.75v13h10V16.2z"></path>
+                <path fill="#1e88e5" d="M3,16.2l5,2.75l5,4.75v13H3V16.2z"></path>
+                <path fill="#e53935" d="M35,23.7v13h10V16.2l-10-5.5v13z"></path>
+                <path fill="#c62828" d="M3,16.2v20.5h10v-13L3,23.7z"></path>
+                <path fill="#fbc02d" d="M35,11.2L24,5.2L13,11.2v12.5L24,17.7l11,6V11.2z"></path>
+            </svg>
+            Email
+          </button>
+          
+          <button onClick={() => {setAuthMethod('phone'); setOtpSent(false)}} style={authMethod === 'phone' ? activeTab : inactiveTab}>
+            📱 Phone
+          </button>
+        </div>
 
-        <Link to="/business" style={cardLinkStyle}>
-          <div className="feature-card" style={{...cardBaseStyle, backgroundImage: "url('https://images.unsplash.com/photo-1625246333195-78d9c38ad449?auto=format&fit=crop&w=800&q=80')"}}>
-            <div style={overlayCard}>
-              <div style={iconStyle}>💰</div>
-              <h3>Business Zone</h3>
-              <p>Sell Harvest</p>
-            </div>
-          </div>
-        </Link>
+        {authMethod === 'email' && (
+          <form onSubmit={handleEmail} style={formStyle}>
+            <input type="email" placeholder="Email" required style={inputStyle} onChange={(e) => setEmail(e.target.value)} />
+            <input type="password" placeholder="Password" required style={inputStyle} onChange={(e) => setPassword(e.target.value)} />
+            <button type="submit" style={mainBtn}>{isSignup ? 'Create Account' : 'Login'}</button>
+            <p style={toggleText} onClick={() => setIsSignup(!isSignup)}>{isSignup ? "Login" : "Create Account"}</p>
+          </form>
+        )}
 
+        {authMethod === 'phone' && (
+          <form onSubmit={otpSent ? handleVerifyOtp : handleSendOtp} style={formStyle}>
+            {!otpSent ? (
+              <><input type="tel" placeholder="Mobile Number" required style={inputStyle} onChange={(e) => setPhone(e.target.value)} /><div id="recaptcha-container"></div><button type="submit" style={mainBtn}>Send OTP</button></>
+            ) : (
+              <><input type="text" placeholder="OTP" required style={{...inputStyle, textAlign: 'center'}} onChange={(e) => setOtp(e.target.value)} /><button type="submit" style={mainBtn}>Verify</button></>
+            )}
+          </form>
+        )}
+
+        <Link to="/" style={backLink}>← Home</Link>
       </div>
     </div>
   );
@@ -91,37 +143,43 @@ function Dashboard() {
 
 // --- STYLES ---
 const pageStyle = { 
-  position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', 
-  backgroundSize: 'cover', backgroundPosition: 'center', 
-  backgroundColor: 'black', overflowY: 'auto' 
+  position: 'fixed', // Forces full screen coverage
+  top: 0, 
+  left: 0, 
+  width: '100vw', 
+  height: '100vh',
+  backgroundSize: 'cover', 
+  backgroundPosition: 'center', 
+  backgroundColor: 'black',
+  display: 'flex', 
+  justifyContent: 'center', 
+  alignItems: 'center',
+  zIndex: 0
 };
 
-const navStyle = { 
-  display: 'flex', justifyContent: 'space-between', alignItems: 'center', 
-  padding: '20px 25px', background: 'transparent', position: 'relative', zIndex: 10 
+const glassCardStyle = { 
+  width: '100%', 
+  maxWidth: '340px', // Compact width
+  textAlign: 'center', 
+  backgroundColor: 'rgba(255, 255, 255, 0.15)', 
+  backdropFilter: 'blur(15px)', 
+  WebkitBackdropFilter: 'blur(15px)',
+  padding: '25px', // Reduced padding
+  borderRadius: '24px',
+  boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.37)',
+  border: '1px solid rgba(255, 255, 255, 0.2)'
 };
 
-const logoStyle = { fontSize: '45px', cursor: 'default', filter: 'drop-shadow(0 4px 6px rgba(0,0,0,0.4))' };
+const titleStyle = { color: 'white', margin: '0', fontWeight: '800', fontSize: '24px', textShadow: '0 2px 4px rgba(0,0,0,0.3)' };
+const errorBox = { color: '#ffcdd2', fontSize: '12px', background: 'rgba(255,0,0,0.2)', padding: '8px', borderRadius: '6px', marginBottom: '10px' };
+const googleBtn = { width: '100%', padding: '10px', backgroundColor: 'white', color: '#333', border: 'none', borderRadius: '50px', cursor: 'pointer', fontSize: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '600', transition: 'transform 0.2s' };
+const formStyle = { display: 'flex', flexDirection: 'column', gap: '10px' };
+const inputStyle = { width: '100%', padding: '10px 15px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.3)', fontSize: '14px', outline: 'none', backgroundColor: 'rgba(255,255,255,0.8)', transition: '0.3s', boxSizing: 'border-box' };
+const mainBtn = { padding: '12px', backgroundColor: '#4CAF50', color: 'white', border: 'none', borderRadius: '12px', cursor: 'pointer', fontSize: '15px', fontWeight: 'bold', boxShadow: '0 4px 15px rgba(76, 175, 80, 0.4)', transition: 'transform 0.2s' };
+const toggleText = { fontSize: '12px', color: 'white', cursor: 'pointer', marginTop: '8px', fontWeight: '500', textShadow: '0 1px 2px rgba(0,0,0,0.5)' };
+const backLink = { fontSize: '12px', color: 'rgba(255,255,255,0.7)', marginTop: '15px', display: 'inline-block', textDecoration: 'none' };
 
-const profileBtn = { 
-  textDecoration: 'none', backgroundColor: 'rgba(255,255,255,0.9)', 
-  padding: '8px 18px', borderRadius: '50px', fontWeight: 'bold', fontSize: '14px', 
-  display: 'flex', alignItems: 'center', boxShadow: '0 4px 15px rgba(0,0,0,0.3)' 
-};
+const activeTab = { padding: '6px 15px', backgroundColor: 'white', color: 'black', border: 'none', borderRadius: '18px', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center' };
+const inactiveTab = { padding: '6px 15px', backgroundColor: 'rgba(255,255,255,0.2)', color: 'white', border: '1px solid rgba(255,255,255,0.3)', borderRadius: '18px', fontSize: '12px', cursor: 'pointer' };
 
-const heroStyle = { textAlign: 'center', marginTop: '20px', marginBottom: '40px', padding: '0 20px' };
-const titleStyle = { fontSize: '2.5rem', color: 'white', margin: '5px 0', fontWeight: '800', textShadow: '0 2px 15px rgba(0,0,0,0.7)' };
-const subHeaderStyle = { fontSize: '1rem', color: '#a5d6a7', textTransform: 'uppercase', letterSpacing: '2px', fontWeight: 'bold', textShadow: '0 1px 4px rgba(0,0,0,0.8)' };
-const descStyle = { fontSize: '1.1rem', color: '#eee', marginTop: '5px', textShadow: '0 1px 4px rgba(0,0,0,0.8)' };
-
-const gridContainer = { 
-  display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', 
-  gap: '20px', padding: '0 20px', maxWidth: '1000px', margin: '0 auto' 
-};
-
-const cardLinkStyle = { textDecoration: 'none', color: 'inherit', display: 'block', height: '100%' };
-const cardBaseStyle = { borderRadius: '20px', overflow: 'hidden', backgroundSize: 'cover', backgroundPosition: 'center', boxShadow: '0 10px 25px rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.2)', height: '200px', transition: 'transform 0.3s ease' };
-const overlayCard = { width: '100%', height: '100%', background: 'linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.7))', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', color: 'white', textAlign: 'center' };
-const iconStyle = { fontSize: '40px', marginBottom: '10px', textShadow: '0 2px 4px rgba(0,0,0,0.5)' };
-
-export default Dashboard;
+export default Login;

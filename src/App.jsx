@@ -1,5 +1,5 @@
 import React from 'react';
-import { Routes, Route, Link } from 'react-router-dom';
+import { Routes, Route, Link, useLocation } from 'react-router-dom';
 
 // Import Pages
 import Home from './pages/Home';
@@ -10,35 +10,32 @@ import Business from './pages/Business';
 import Login from './pages/Login';
 import Profile from './pages/Profile';
 import Admin from './pages/Admin';
-
-// Import Components
 import ChatBot from './components/ChatBot';
 
 function App() {
+  const location = useLocation();
+  console.log("Current Path:", location.pathname); // DEBUG LOG
+
   return (
     <div>
       <ChatBot />
       <Routes>
-        {/* Public */}
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
         
-        {/* Private */}
+        {/* EXPLICIT DASHBOARD ROUTE */}
         <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/profile" element={<Profile />} />
         
-        {/* Features */}
+        <Route path="/profile" element={<Profile />} />
         <Route path="/agri-insights" element={<AgriInsights />} />
         <Route path="/service" element={<Service />} />
         <Route path="/business" element={<Business />} />
-        
-        {/* Admin */}
         <Route path="/admin" element={<Admin />} />
 
-        {/* 404 */}
         <Route path="*" element={
           <div style={{textAlign: 'center', marginTop: '50px', color: 'white'}}>
             <h1>❌ 404: Page Not Found</h1>
+            <p>You tried to go to: <strong>{location.pathname}</strong></p>
             <p>Check your URL or <Link to="/" style={{color: '#4CAF50'}}>go back home</Link>.</p>
           </div>
         } />

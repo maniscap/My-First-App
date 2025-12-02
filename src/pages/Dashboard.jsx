@@ -2,32 +2,25 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 
 function Dashboard() {
-  // --- 1. BACKGROUND LOGIC (Standardized) ---
   const [bgImage, setBgImage] = useState('');
   const dayBg = 'https://images.unsplash.com/photo-1625246333195-78d9c38ad449?q=80&w=2940&auto=format&fit=crop';
-  const nightBg = 'https://images.unsplash.com/photo-1504333638930-c8787321eee0?q=80&w=2070&auto=format&fit=crop';
+  const nightBg = 'https://images.unsplash.com/photo-1652454159675-11ead6275680?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D';
 
   useEffect(() => {
-    const updateTime = () => {
-      const hour = new Date().getHours();
-      if (hour >= 18 || hour < 6) setBgImage(nightBg);
-      else setBgImage(dayBg);
-    };
-    updateTime();
+    const hour = new Date().getHours();
+    if (hour >= 18 || hour < 6) setBgImage(nightBg);
+    else setBgImage(dayBg);
   }, []);
 
-  // --- 2. LOCATION STATE (Fail-Safe) ---
-  // Default to "India" or "Set Location" if nothing found, never blank.
+  // LOCATION LOGIC
   const [userLocation, setUserLocation] = useState(() => {
-    return localStorage.getItem('farmCapCity') || "Set Location";
+    return localStorage.getItem('farmCapCity') || "Select Location";
   });
-  
   const [showLocModal, setShowLocModal] = useState(false);
   const [manualInput, setManualInput] = useState('');
 
-  // GPS Logic (Runs once on mount)
   useEffect(() => {
-    if (userLocation === "Set Location" || userLocation === "Detecting...") {
+    if (userLocation === "Select Location") {
       navigator.geolocation.getCurrentPosition(async (position) => {
         try {
           const lat = position.coords.latitude;
@@ -35,12 +28,9 @@ function Dashboard() {
           const response = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=en`);
           const data = await response.json();
           const city = data.locality || data.city || "India";
-          
           setUserLocation(city);
           localStorage.setItem('farmCapCity', city);
-        } catch (error) { 
-          console.warn("GPS Failed, keeping default");
-        }
+        } catch (error) { console.warn("GPS Error"); }
       }, () => console.warn("GPS Denied"));
     }
   }, []);
@@ -56,54 +46,46 @@ function Dashboard() {
   return (
     <div style={{...pageStyle, backgroundImage: `url('${bgImage}')`}}>
       
-      {/* --- HEADER (Zomato Style) - ALWAYS VISIBLE --- */}
+      {/* ZOMATO HEADER */}
       <nav style={headerContainer}>
-        
-        {/* LEFT: Home & Address Dropdown */}
         <div style={locationSection} onClick={() => setShowLocModal(true)}>
           <div style={locationTitle}>
             <span style={{fontSize:'20px', marginRight:'5px'}}>🛖</span> 
             <span style={{fontWeight:'800', fontSize:'20px', color:'white'}}>Home</span>
             <span style={{marginLeft:'5px', fontSize:'12px', color:'white'}}>▼</span>
           </div>
-          <div style={addressText}>
-            {userLocation}
-          </div>
+          <div style={addressText}>{userLocation}</div>
         </div>
-
-        {/* RIGHT: Profile Circle (Cap Icon) */}
         <Link to="/profile" style={profileCircle}>
            <span style={{fontSize: '26px'}}>🧢</span>
         </Link>
       </nav>
 
-      {/* --- SEARCH BAR - ALWAYS VISIBLE --- */}
+      {/* SEARCH BAR */}
       <div style={searchContainer}>
         <div style={searchBar}>
           <span style={{fontSize:'18px', color:'#e53935', marginRight:'10px'}}>🔍</span>
-          <input type="text" placeholder='Search "tractors" or "rice"...' style={searchInput} />
+          <input type="text" placeholder='Search "tractors" or "seeds"...' style={searchInput} />
           <span style={{fontSize:'18px', color:'#555', borderLeft:'1px solid #ddd', paddingLeft:'10px'}}>🎤</span>
         </div>
       </div>
 
-      {/* --- LOCATION POPUP --- */}
+      {/* MODAL */}
       {showLocModal && (
         <div style={modalOverlay}>
           <div style={modalCard}>
             <h3>📍 Set Location</h3>
-            <input type="text" placeholder="Enter City / Village" style={inputStyle} onChange={(e) => setManualInput(e.target.value)} />
+            <input type="text" placeholder="Enter City" style={inputStyle} onChange={(e) => setManualInput(e.target.value)} />
             <button onClick={saveManualLocation} style={saveBtn}>Update</button>
             <button onClick={() => setShowLocModal(false)} style={closeBtn}>Close</button>
           </div>
         </div>
       )}
 
-      {/* --- HERO TEXT --- */}
       <div style={heroStyle}>
         <h1 style={titleStyle}>Your Farm, Your Control.</h1>
       </div>
 
-      {/* --- GLASS CARDS GRID --- */}
       <div style={gridContainer}>
         <Link to="/agri-insights" style={cardLinkStyle}>
           <div className="feature-card" style={{...cardBaseStyle, backgroundImage: "url('https://images.unsplash.com/photo-1592982537447-6f2a6a0c7c18?auto=format&fit=crop&w=800&q=80')"}}>
@@ -121,12 +103,11 @@ function Dashboard() {
           </div>
         </Link>
       </div>
-
     </div>
   );
 }
 
-// --- STYLES ---
+// STYLES
 const pageStyle = { position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', backgroundSize: 'cover', backgroundPosition: 'center', backgroundColor: 'black', overflowY: 'auto' };
 const headerContainer = { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', padding: '15px 20px', paddingTop: '20px', position: 'relative', zIndex: 20 };
 const locationSection = { display: 'flex', flexDirection: 'column', cursor: 'pointer', textShadow: '0 2px 4px rgba(0,0,0,0.8)' };
