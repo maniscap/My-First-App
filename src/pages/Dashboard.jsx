@@ -16,12 +16,6 @@ function Dashboard() {
   // --- LOCATION STATE ---
   const userLocation = "Pune, India";
   const [showLocModal, setShowLocModal] = useState(false);
-  const [manualInput, setManualInput] = useState('');
-
-  const saveManualLocation = () => {
-     // Placeholder for future logic
-     setShowLocModal(false);
-  };
 
   return (
     <div style={{...pageStyle, backgroundImage: `url('${bgImage}')`}}>
@@ -29,7 +23,7 @@ function Dashboard() {
       {/* --- 1. HEADER SECTION --- */}
       <div style={headerWrapper}>
         <div style={topRow}>
-           {/* Left: Home + Location (NOW CLICKABLE) */}
+           {/* Left: Home + Location (Clickable) */}
            <div style={locationClickableArea} onClick={() => setShowLocModal(true)}>
               <div style={{fontSize:'22px', fontWeight:'800', color:'white', lineHeight:'1'}}>
                 Home
@@ -52,21 +46,19 @@ function Dashboard() {
         </div>
       </div>
 
-      {/* --- 2. HERO TITLE (Faded & Single Line) --- */}
+      {/* --- 2. HERO TITLE (UPDATED TEXT & STYLE) --- */}
       <div style={heroSection}>
-        {/* Removed full stop, added faded style */}
-        <h1 style={fadedHeroTitle}>SMART FARMING</h1>
+        {/* New Text, Single Line, Faded End */}
+        <h1 style={fadedHeroTitle}>Growing Smarter Together</h1>
       </div>
 
-      {/* --- 3. BENTO GRID (Taller Cards, Top Icons) --- */}
+      {/* --- 3. BENTO GRID --- */}
       <div style={bentoGrid}>
         
         {/* Row 1, Left: Agri-Insights */}
         <Link to="/agri-insights" style={cardLink}>
            <div className="glass-card" style={{...cardStyle, backgroundImage: "url('https://images.unsplash.com/photo-1466692476868-aef1dfb1e735?q=80&w=500')"}}>
-              {/* Icon at Top Left */}
               <div style={topIconContainer}><div style={iconCircleStyle}>📊</div></div>
-              {/* Text at Bottom */}
               <div style={cardBottomTextOverlay}>
                  <h3 style={cardTitle}>Agri-Insights</h3>
                  <p style={cardSubtitle}>Rates & Guides</p>
@@ -105,12 +97,14 @@ function Dashboard() {
            </div>
         </div>
 
-        {/* Row 3: WIDE WEATHER CARD (Taller & Top Icon) */}
+        {/* Row 3: WIDE WEATHER CARD (INCREASED HEIGHT) */}
         <div className="glass-card" style={{...wideCardStyle, backgroundImage: "url('https://images.unsplash.com/photo-1500382017468-9049fed747ef?q=80&w=800')"}}>
            <div style={topIconContainer}><div style={iconCircleStyle}>🌦️</div></div>
            <div style={cardBottomTextOverlay}>
                <h3 style={{...cardTitle, margin:0}}>Crop Weather</h3>
+               {/* Placeholder for more details later */}
                <p style={cardSubtitle}>28°C, Rain: 40%, Humidity: 65%</p>
+               <p style={{fontSize:'11px', opacity:0.6, marginTop:'4px'}}>More details coming soon...</p>
            </div>
         </div>
 
@@ -136,70 +130,53 @@ const pageStyle = { position: 'fixed', top: 0, left: 0, width: '100%', height: '
 
 const headerWrapper = { padding: '25px 20px 0 20px' };
 const topRow = { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px' };
-
-// FIX 1: Clickable Location Area
 const locationClickableArea = { display:'flex', flexDirection:'column', justifyContent:'center', cursor: 'pointer' };
-
 const profileCircle = { width: '48px', height: '48px', borderRadius: '50%', background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(10px)', display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none', border: '1px solid rgba(255,255,255,0.25)' };
 const searchBar = { background: 'rgba(0, 0, 0, 0.2)', backdropFilter: 'blur(10px)', borderRadius: '12px', padding: '12px 15px', display: 'flex', alignItems: 'center', border: '1px solid rgba(255,255,255,0.1)' };
 const searchInput = { border: 'none', outline: 'none', background: 'transparent', marginLeft: '10px', fontSize: '16px', width: '100%', color: 'white', '::placeholder': { color: 'rgba(255,255,255,0.5)' } };
 
 const heroSection = { padding: '0 20px', marginTop: '25px', marginBottom: '20px' };
 
-// FIX 2: Faded, Single-Line Title without full stop
-const fadedHeroTitle = { 
-  fontSize: '2.4rem', margin: 0, fontWeight: '800', letterSpacing: '0.5px',
+// UPDATED: Faded Title Style
+const fadedHeroTitle = {
+  fontSize: '1.6rem', // Decreased font size to fit single line
+  margin: 0, fontWeight: '800', letterSpacing: '0.5px',
   whiteSpace: 'nowrap', // Forces single line
-  background: 'linear-gradient(to right, white 30%, rgba(255,255,255,0.4))', // Faded gradient
+  overflow: 'hidden', textOverflow: 'ellipsis', // Safety for very small screens
+  // The faded gradient effect (white to transparent)
+  background: 'linear-gradient(to right, white 60%, rgba(255,255,255,0.2))',
   WebkitBackgroundClip: 'text',
   WebkitTextFillColor: 'transparent',
-  display: 'inline-block'
+  display: 'block'
 };
 
 const bentoGrid = { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', padding: '0 20px 100px 20px' };
 const cardLink = { textDecoration: 'none', color: 'white', display: 'block' };
 
-// FIX 3: Increased Vertical Length (Heights increased)
-const cardStyle = { 
-  borderRadius: '18px', 
-  height: '185px', // INCREASED HEIGHT from 155px
-  position: 'relative', overflow: 'hidden', 
-  backgroundSize: 'cover', backgroundPosition: 'center', 
-  border: '1px solid rgba(255,255,255,0.15)' 
+// Square Card Style (Height kept tall as per previous request)
+const cardStyle = {
+  borderRadius: '18px',
+  height: '185px',
+  position: 'relative', overflow: 'hidden',
+  backgroundSize: 'cover', backgroundPosition: 'center',
+  border: '1px solid rgba(255,255,255,0.15)'
 };
 
-const wideCardStyle = { 
-  gridColumn: 'span 2', 
-  height: '140px', // INCREASED HEIGHT from 110px
+// UPDATED: Wide Card Style (INCREASED VERTICAL HEIGHT)
+const wideCardStyle = {
+  gridColumn: 'span 2',
+  height: '180px', // INCREASED HEIGHT significantly (was 140px)
   borderRadius: '18px', position: 'relative', overflow: 'hidden',
   backgroundSize: 'cover', backgroundPosition: 'center',
   border: '1px solid rgba(255,255,255,0.15)'
 };
 
-// NEW: Container for top-left icon
-const topIconContainer = {
-  position: 'absolute', top: '15px', left: '15px', zIndex: 2
-};
-
-// Icon circle style
-const iconCircleStyle = { 
-  width: '32px', height: '32px', backgroundColor: 'rgba(255,255,255,0.2)', backdropFilter: 'blur(5px)', borderRadius: '50%', 
-  display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px'
-};
-
-// NEW: Bottom text overlay (separate from icon)
-const cardBottomTextOverlay = { 
-  position: 'absolute', bottom: 0, left: 0, width: '100%', padding: '15px', 
-  background: 'linear-gradient(to top, rgba(0,0,0,0.9) 10%, transparent)', 
-  color: 'white', textAlign: 'left', boxSizing: 'border-box',
-  display: 'flex', flexDirection: 'column', justifyContent: 'flex-end',
-  zIndex: 1
-};
-
+const topIconContainer = { position: 'absolute', top: '15px', left: '15px', zIndex: 2 };
+const iconCircleStyle = { width: '32px', height: '32px', backgroundColor: 'rgba(255,255,255,0.2)', backdropFilter: 'blur(5px)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' };
+const cardBottomTextOverlay = { position: 'absolute', bottom: 0, left: 0, width: '100%', padding: '15px', background: 'linear-gradient(to top, rgba(0,0,0,0.9) 10%, transparent)', color: 'white', textAlign: 'left', boxSizing: 'border-box', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', zIndex: 1 };
 const cardTitle = { margin: '0 0 4px 0', fontSize: '16px', fontWeight: '700' };
 const cardSubtitle = { margin: 0, fontSize: '12px', opacity: 0.8 };
 
-// Modal Styles
 const modalOverlay = { position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.8)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000 };
 const modalCard = { background: 'white', padding: '20px', borderRadius: '15px', width: '80%', maxWidth: '300px', textAlign: 'center', color: 'black' };
 const closeBtn = { background: 'none', border: '1px solid black', color: 'black', padding: '5px 10px', marginTop:'10px', cursor: 'pointer', borderRadius:'5px' };
