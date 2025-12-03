@@ -140,7 +140,7 @@ const heroSection = { padding: '0 20px', marginTop: '25px', marginBottom: '20px'
 // UPDATED: Faded Title Style
 const fadedHeroTitle = {
   fontSize: '1.6rem', // Decreased font size to fit single line
-  margin: 0, fontWeight: '800', letterSpacing: '0.5px',
+  margin: 0.5, fontWeight: '800', letterSpacing: '0.5px',
   whiteSpace: 'nowrap', // Forces single line
   overflow: 'hidden', textOverflow: 'ellipsis', // Safety for very small screens
   // The faded gradient effect (white to transparent)
