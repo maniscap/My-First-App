@@ -43,85 +43,68 @@ function Dashboard() {
         <h1 style={fadedHeroTitle}>Growing Smarter Together</h1>
       </div>
 
-      {/* --- BENTO GRID (Pro Layout: Top Text & White Right Icons) --- */}
+      {/* --- BENTO GRID (5 CARDS) --- */}
       <div style={bentoGrid}>
         
-        {/* Row 1, Left: Agri-Insights */}
+        {/* 1. Agri-Insights */}
         <Link to="/agri-insights" style={cardLink}>
            <div className="glass-card" style={{...cardStyle, backgroundImage: "url('https://img.freepik.com/premium-photo/hand-holding-plant-with-sun-it_1174726-1291.jpg')"}}>
               <div style={cardTopOverlay}>
-                 {/* Left Side Text */}
-                 <div>
-                    <h3 style={cardTitle}>Agri-Insights</h3>
-                    <p style={cardSubtitle}>Rates & Guides</p>
-                 </div>
-                 {/* Right Side White Icon (Chart) */}
+                 <div><h3 style={cardTitle}>Agri-Insights</h3><p style={cardSubtitle}>Rates & Guides</p></div>
                  <div style={whiteIconBox}>
-                   <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
                  </div>
               </div>
            </div>
         </Link>
 
-        {/* Row 1, Right: Service Hub */}
+        {/* 2. Service Hub */}
         <Link to="/service" style={cardLink}>
            <div className="glass-card" style={{...cardStyle, backgroundImage: "url('https://th.bing.com/th/id/R.e2c73dbf8a8f512a95ee3a2ec35f5d72?rik=DuUew48QLbwHzw&riu=http%3a%2f%2fvnmanpower.com%2fupload_images%2fimages%2fall%2ffarm-workers-from-vmst.jpg&ehk=s1NXBhEe0wVXkZGBnlrnXcEoGY1R4UtFvQ9kW7HVQ0Y%3d&risl=&pid=ImgRaw&r=0')"}}>
               <div style={cardTopOverlay}>
-                 <div>
-                    <h3 style={cardTitle}>Service Hub</h3>
-                    <p style={cardSubtitle}>Machinery&Workers</p>
-                 </div>
-                 {/* Right Side White Icon (Tractor replacement - Gears) */}
+                 <div><h3 style={cardTitle}>Service Hub</h3><p style={cardSubtitle}>Machinery&Workers</p></div>
                  <div style={whiteIconBox}>
-                   <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20a8 8 0 1 0 0-16 8 8 0 0 0 0 16Z"/><path d="M12 14a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z"/><path d="M12 2v2"/><path d="M12 22v-2"/><path d="m17 7-1.4-1.4"/><path d="M19.4 17 18 15.6"/><path d="M22 12h-2"/><path d="M4 12H2"/><path d="m17 17-1.4 1.4"/><path d="M19.4 7 18 8.4"/><path d="M12 20a8 8 0 1 0 0-16 8 8 0 0 0 0 16Z"/></svg>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12h3l1-3h4l1 3h8"/><circle cx="6" cy="17" r="3"/><circle cx="18" cy="17" r="3"/><path d="M15 5h4l2 7h-6z"/></svg>
                  </div>
               </div>
            </div>
         </Link>
 
-        {/* Row 2, Left: Business Zone */}
+        {/* 3. Business Zone */}
         <Link to="/business" style={cardLink}>
            <div className="glass-card" style={{...cardStyle, backgroundImage: "url('https://www.deere.ca/assets/images/region-4/products/harvesting/cornhead-R4A057928_RRD_1-1920x1080.jpg')"}}>
               <div style={cardTopOverlay}>
-                 <div>
-                    <h3 style={cardTitle}>Business Zone</h3>
-                    <p style={cardSubtitle}>Sell Harvest</p>
-                 </div>
-                 {/* Right Side White Icon (Money Bag) */}
+                 <div><h3 style={cardTitle}>Business Zone</h3><p style={cardSubtitle}>Sell Harvest</p></div>
                  <div style={whiteIconBox}>
-                   <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22v-10"/></svg>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/><path d="M19 5H5"/></svg>
                  </div>
               </div>
            </div>
         </Link>
 
-        {/* Row 2, Right: Farm Fresh */}
-        <div className="glass-card" style={{...cardStyle, backgroundImage: "url('https://images.unsplash.com/photo-1542838132-92c53300491e?q=80&w=500')"}}>
-           <div style={cardTopOverlay}>
-              <div>
-                 <h3 style={cardTitle}>Farm Fresh</h3>
-                 <p style={cardSubtitle}>Agri Products</p>
-              </div>
-              {/* Right Side White Icon (Basket) */}
-              <div style={whiteIconBox}>
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 11-1 9"/><path d="m19 11-4-7"/><path d="M2 11h20"/><path d="m3.5 11 1.6 7.4a2 2 0 0 0 2 1.6h9.8a2 2 0 0 0 2-1.6l1.7-7.4"/><path d="M4.5 15.5h15"/><path d="m5 11 4-7"/><path d="m9 11 1 9"/></svg>
+        {/* 4. Farm Fresh (ADDED BACK) */}
+        <Link to="/farm-fresh" style={cardLink}>
+           <div className="glass-card" style={{...cardStyle, backgroundImage: "url('https://images.unsplash.com/photo-1542838132-92c53300491e?q=80&w=500')"}}>
+              <div style={cardTopOverlay}>
+                 <div><h3 style={cardTitle}>Farm Fresh</h3><p style={cardSubtitle}>Daily Essentials</p></div>
+                 <div style={whiteIconBox}>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 11-1 9"/><path d="m19 11-4-7"/><path d="M2 11h20"/><path d="m3.5 11 1.6 7.4a2 2 0 0 0 2 1.6h9.8a2 2 0 0 0 2-1.6l1.7-7.4"/><path d="M4.5 15.5h15"/><path d="m5 11 4-7"/><path d="m9 11 1 9"/></svg>
+                 </div>
               </div>
            </div>
-        </div>
+        </Link>
 
-        {/* Row 3: WIDE WEATHER CARD */}
-        <div className="glass-card" style={{...wideCardStyle, backgroundImage: "url('https://images.unsplash.com/photo-1500382017468-9049fed747ef?q=80&w=800')"}}>
-           <div style={cardTopOverlay}>
-               <div>
-                  <h3 style={{...cardTitle, margin:0}}>Crop Weather</h3>
-                  <p style={cardSubtitle}>28°C, Rain: 40%, Humidity: 65%</p>
-               </div>
-               {/* Right Side White Icon (Sun/Cloud) */}
-               <div style={whiteIconBox}>
-                 <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="M20 12h2"/><path d="m19.07 4.93-1.41 1.41"/><path d="M15.947 12.65a4 4 0 0 0-5.925-4.128"/><path d="M13 22H7a4 4 0 1 1 0-8h1"/></svg>
-               </div>
+        {/* 5. Crop Weather (ADDED BACK) */}
+        <Link to="/weather" style={{...cardLink, gridColumn: 'span 2'}}>
+           <div className="glass-card" style={{...wideCardStyle, backgroundImage: "url('https://images.unsplash.com/photo-1500382017468-9049fed747ef?q=80&w=800')"}}>
+              <div style={cardTopOverlay}>
+                  <div><h3 style={{...cardTitle, margin:0}}>Crop Weather</h3><p style={cardSubtitle}>28°C, Rain: 40%, Humidity: 65%</p></div>
+                  <div style={whiteIconBox}>
+                     <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="M20 12h2"/><path d="m19.07 4.93-1.41 1.41"/><path d="M15.947 12.65a4 4 0 0 0-5.925-4.128"/><path d="M13 22H7a4 4 0 1 1 0-8h1"/></svg>
+                  </div>
+              </div>
            </div>
-        </div>
+        </Link>
 
       </div>
 
@@ -151,19 +134,17 @@ const searchBar = { background: 'rgba(0, 0, 0, 0.2)', backdropFilter: 'blur(10px
 const searchInput = { border: 'none', outline: 'none', background: 'transparent', marginLeft: '10px', fontSize: '16px', width: '100%', color: 'white', '::placeholder': { color: 'rgba(255,255,255,0.5)' } };
 
 const heroSection = { padding: '0 20px', marginTop: '25px', marginBottom: '20px' };
-const fadedHeroTitle = { fontSize: '1.2rem', margin: 1.0, fontWeight: '800', letterSpacing: '1px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', background: 'linear-gradient(to right, #ffffff 0%, #e0e0e0 50%, rgba(255,255,255,0.2) 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', display: 'inline-block', textTransform: 'uppercase' };
+const fadedHeroTitle = { fontSize: '1.3rem', margin: 0, fontWeight: '800', letterSpacing: '1px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', background: 'linear-gradient(to right, #ffffff 0%, #e0e0e0 50%, rgba(255,255,255,0.2) 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', display: 'inline-block', textTransform: 'uppercase' };
 
-const bentoGrid = { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', padding: '0 20px 100px 20px' };
-const cardLink = { textDecoration: 'none', color: 'white', display: 'block' };
+const bentoGrid = { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', padding: '0 20px 100px 20px', maxWidth: '1000px', margin: '0 auto' };
+const cardLink = { textDecoration: 'none', color: 'white', display: 'block', width: '100%', height: '100%' };
 
 const cardStyle = { borderRadius: '18px', height: '185px', position: 'relative', overflow: 'hidden', backgroundSize: 'cover', backgroundPosition: 'center', border: '1px solid rgba(255,255,255,0.15)' };
 const wideCardStyle = { gridColumn: 'span 2', height: '180px', borderRadius: '18px', position: 'relative', overflow: 'hidden', backgroundSize: 'cover', backgroundPosition: 'center', border: '1px solid rgba(255,255,255,0.15)' };
 
-// UPDATED: Top Overlay to hold Text (Left) and Icon (Right)
 const cardTopOverlay = { position: 'absolute', top: 0, left: 0, width: '100%', padding: '15px', background: 'linear-gradient(to bottom, rgba(0,0,0,0.8) 0%, transparent 100%)', color: 'white', textAlign: 'left', boxSizing: 'border-box', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', zIndex: 1 };
 
-// NEW: White Icon Style
-const whiteIconBox = {  filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))' };
+const whiteIconBox = { filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))' };
 
 const cardTitle = { margin: '0 0 4px 0', fontSize: '17px', fontWeight: '700', textShadow: '0 2px 4px rgba(0,0,0,0.5)' };
 const cardSubtitle = { margin: 0, fontSize: '13px', opacity: 0.9, fontWeight: '500', textShadow: '0 1px 2px rgba(0,0,0,0.5)' };
