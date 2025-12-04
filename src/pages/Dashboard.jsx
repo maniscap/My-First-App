@@ -48,7 +48,7 @@ function Dashboard() {
         
         {/* Row 1, Left: Agri-Insights */}
         <Link to="/agri-insights" style={cardLink}>
-           <div className="glass-card" style={{...cardStyle, backgroundImage: "url('https://images.unsplash.com/photo-1466692476868-aef1dfb1e735?q=80&w=500')"}}>
+           <div className="glass-card" style={{...cardStyle, backgroundImage: "url('https://img.freepik.com/premium-photo/hand-holding-plant-with-sun-it_1174726-1291.jpg')"}}>
               <div style={cardTopOverlay}>
                  {/* Left Side Text */}
                  <div>
@@ -65,11 +65,11 @@ function Dashboard() {
 
         {/* Row 1, Right: Service Hub */}
         <Link to="/service" style={cardLink}>
-           <div className="glass-card" style={{...cardStyle, backgroundImage: "url('https://images.unsplash.com/photo-1500937386664-56d1dfef3854?q=80&w=500')"}}>
+           <div className="glass-card" style={{...cardStyle, backgroundImage: "url('https://th.bing.com/th/id/R.e2c73dbf8a8f512a95ee3a2ec35f5d72?rik=DuUew48QLbwHzw&riu=http%3a%2f%2fvnmanpower.com%2fupload_images%2fimages%2fall%2ffarm-workers-from-vmst.jpg&ehk=s1NXBhEe0wVXkZGBnlrnXcEoGY1R4UtFvQ9kW7HVQ0Y%3d&risl=&pid=ImgRaw&r=0')"}}>
               <div style={cardTopOverlay}>
                  <div>
                     <h3 style={cardTitle}>Service Hub</h3>
-                    <p style={cardSubtitle}>Rent Machinery</p>
+                    <p style={cardSubtitle}>Machinery&Workers</p>
                  </div>
                  {/* Right Side White Icon (Tractor replacement - Gears) */}
                  <div style={whiteIconBox}>
@@ -81,7 +81,7 @@ function Dashboard() {
 
         {/* Row 2, Left: Business Zone */}
         <Link to="/business" style={cardLink}>
-           <div className="glass-card" style={{...cardStyle, backgroundImage: "url('https://images.unsplash.com/photo-1471193945509-9ad0617afabf?q=80&w=500')"}}>
+           <div className="glass-card" style={{...cardStyle, backgroundImage: "url('https://www.deere.ca/assets/images/region-4/products/harvesting/cornhead-R4A057928_RRD_1-1920x1080.jpg')"}}>
               <div style={cardTopOverlay}>
                  <div>
                     <h3 style={cardTitle}>Business Zone</h3>
@@ -100,7 +100,7 @@ function Dashboard() {
            <div style={cardTopOverlay}>
               <div>
                  <h3 style={cardTitle}>Farm Fresh</h3>
-                 <p style={cardSubtitle}>Daily Essentials</p>
+                 <p style={cardSubtitle}>Agri Products</p>
               </div>
               {/* Right Side White Icon (Basket) */}
               <div style={whiteIconBox}>
