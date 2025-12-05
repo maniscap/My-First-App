@@ -1,28 +1,43 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom'; // Added useNavigate
+import { auth } from '../firebase'; // Import Auth
+import { onAuthStateChanged } from 'firebase/auth'; // Import Listener
 
 function Home() {
+  const navigate = useNavigate();
   const [currentTime, setCurrentTime] = useState(new Date());
   const [bgImage, setBgImage] = useState('');
 
   // --- PREMIUM IMAGES ---
   const dayBg = 'https://images.unsplash.com/photo-1625246333195-78d9c38ad449?q=80&w=2940&auto=format&fit=crop';
-  // THE FINAL NIGHT IMAGE: Cinematic Moon & Dark Field
-  const nightBg = 'https://images.unsplash.com/photo-1652454159675-11ead6275680?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D';
+  const nightBg = 'https://images.unsplash.com/photo-1509773896068-7fd415d91e2e?q=80&w=2940&auto=format&fit=crop';
 
   useEffect(() => {
+    // 1. Day/Night Logic
     const updateTime = () => {
       const now = new Date();
       setCurrentTime(now);
       const hour = now.getHours();
-      // Night: 6 PM to 6 AM
       if (hour >= 18 || hour < 6) setBgImage(nightBg);
       else setBgImage(dayBg);
     };
     updateTime(); 
     const timer = setInterval(updateTime, 1000); 
-    return () => clearInterval(timer);
-  }, []);
+
+    // 2. AUTO-LOGIN CHECK (The Gatekeeper)
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        // If user exists, skip Home and go to Dashboard
+        console.log("User found, redirecting to Dashboard...");
+        navigate('/dashboard');
+      }
+    });
+
+    return () => {
+      clearInterval(timer);
+      unsubscribe(); // Cleanup listener
+    };
+  }, [navigate]);
 
   const dateString = currentTime.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
   const timeString = currentTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
