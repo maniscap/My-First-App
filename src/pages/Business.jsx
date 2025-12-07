@@ -41,19 +41,66 @@ function Business() {
   }, []);
 
   const getLocation = () => {
-    if (!navigator.geolocation) { alert("Geolocation not supported"); return; }
+    if (!navigator.geolocation) {
+      alert("Geolocation is not supported by your browser.");
+      return;
+    }
+
     setIsLoadingLoc(true);
-    navigator.geolocation.getCurrentPosition(async (position) => {
-      const lat = position.coords.latitude;
-      const lon = position.coords.longitude;
-      setNewPost(prev => ({ ...prev, lat: lat, lng: lon }));
-      try {
-        const response = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=en`);
-        const data = await response.json();
-        setNewPost(prev => ({ ...prev, location: `${data.locality || data.city}, ${data.principalSubdivision}` }));
-      } catch (error) { setNewPost(prev => ({ ...prev, location: "GPS Locked" })); }
-      setIsLoadingLoc(false);
-    }, () => { alert("Unable to retrieve location."); setIsLoadingLoc(false); });
+
+    // Options to help mobile devices get a fix
+    const options = {
+      enableHighAccuracy: true, // Forces phone to use GPS (more accurate)
+      timeout: 10000,           // Wait 10 seconds before failing
+      maximumAge: 0             // Do not use a cached location
+    };
+
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const lat = position.coords.latitude;
+        const lon = position.coords.longitude;
+        
+        // Update state logic (Keep your existing logic here)
+        // For Business.jsx / Service.jsx:
+        // setNewPost(prev => ({ ...prev, lat: lat, lng: lon })); 
+        // OR setNewService / setNewProduct depending on the file
+        
+        try {
+          const response = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=en`);
+          const data = await response.json();
+          const locString = `${data.locality || data.city || ''}, ${data.principalSubdivision || ''}`;
+          
+          // UPDATE THE STATE (Change 'setNewPost' to match the file you are in!)
+          // In Business.jsx use: setNewPost
+          // In Service.jsx use: setNewService
+          // In FarmFresh.jsx use: setNewProduct
+          setNewPost(prev => ({ ...prev, location: locString, lat: lat, lng: lon })); 
+          
+        } catch (error) {
+          alert("GPS found, but address lookup failed.");
+        }
+        setIsLoadingLoc(false);
+      },
+      (error) => {
+        setIsLoadingLoc(false);
+        // Specific Error Messages
+        switch(error.code) {
+          case error.PERMISSION_DENIED:
+            alert("Location permission denied. Please enable it in browser settings.");
+            break;
+          case error.POSITION_UNAVAILABLE:
+            alert("Location information is unavailable. Try moving outside.");
+            break;
+          case error.TIMEOUT:
+            alert("The request to get user location timed out.");
+            break;
+          default:
+            alert("An unknown error occurred.");
+            break;
+        }
+      },
+      options // <--- Don't forget to pass the options here!
+    );
   };
 
   const handlePost = async (e) => {
