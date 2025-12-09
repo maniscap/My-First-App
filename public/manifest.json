@@ -1,15 +1,21 @@
 {
   "name": "Farm Cap",
   "short_name": "FarmCap",
+  "description": "Smart Farming App",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#ffffff",
+  "background_color": "#000000",
   "theme_color": "#2E7D32",
   "icons": [
     {
       "src": "/vite.svg",
-      "sizes": "512x512",
-      "type": "image/svg+xml"
+      "type": "image/svg+xml",
+      "sizes": "192x192"
+    },
+    {
+      "src": "/vite.svg",
+      "type": "image/svg+xml",
+      "sizes": "512x512"
     }
   ]
 }
