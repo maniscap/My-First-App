@@ -12,6 +12,7 @@ import Profile from './pages/Profile';
 import Admin from './pages/Admin';
 import FarmFresh from './pages/FarmFresh'; // <--- This line caused the crash before
 import Weather from './pages/Weather';     // <--- This line caused the crash before
+import SearchResults from './pages/SearchResults';
 
 // Import Components
 import ChatBot from './components/ChatBot';
@@ -38,6 +39,7 @@ function App() {
         <Route path="/weather" element={<Weather />} />
         
         <Route path="/admin" element={<Admin />} />
+        <Route path="/search" element={<SearchResults />} />
 
         {/* 404 Page */}
         <Route path="*" element={

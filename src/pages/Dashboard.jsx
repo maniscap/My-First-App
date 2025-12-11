@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 function Dashboard() {
+  const navigate = useNavigate(); // Hook for navigation
+
   // --- BACKGROUND ---
   const [bgImage, setBgImage] = useState('');
   const dayBg = 'https://images.unsplash.com/photo-1625246333195-78d9c38ad449?q=80&w=2940&auto=format&fit=crop';
@@ -17,9 +19,14 @@ function Dashboard() {
   // --- 📍 SMART LOCATION LOGIC ---
   const [userLocation, setUserLocation] = useState('Select Location'); 
   const [showLocModal, setShowLocModal] = useState(false);
+  
+  // Local Location Search State
   const [manualInput, setManualInput] = useState('');
   const [suggestions, setSuggestions] = useState([]); 
   const [isGpsLoading, setIsGpsLoading] = useState(false);
+
+  // GLOBAL SEARCH STATE (For the Main Search Bar)
+  const [globalSearch, setGlobalSearch] = useState('');
 
   useEffect(() => {
     const savedLoc = localStorage.getItem('userLocation');
@@ -27,10 +34,20 @@ function Dashboard() {
     else detectLocation(); // Auto-ask GPS on first load
   }, []);
 
-  // 1. UPDATE & REFRESH
+  // --- 1. HANDLE GLOBAL SEARCH (The Fix) ---
+  const handleGlobalSearch = (e) => {
+    // When user presses "Enter"
+    if (e.key === 'Enter' && globalSearch.trim() !== '') {
+      // Go to Search Results page
+      navigate(`/search?q=${encodeURIComponent(globalSearch.trim())}`);
+    }
+  };
+
+  // --- 2. LOCATION FUNCTIONS ---
   const updateLocation = (name, lat, lng) => {
     setUserLocation(name);
     localStorage.setItem('userLocation', name);
+    // Save Coordinates for 50km Logic
     if (lat && lng) {
       localStorage.setItem('userLat', lat);
       localStorage.setItem('userLng', lng);
@@ -43,8 +60,7 @@ function Dashboard() {
     setTimeout(() => { window.location.reload(); }, 300);
   };
 
-  // 2. VILLAGE-LEVEL SEARCH (Open-Meteo)
-  const handleSearch = async (query) => {
+  const handleLocSearch = async (query) => {
     setManualInput(query);
     if (query.length < 3) { setSuggestions([]); return; }
 
@@ -56,7 +72,6 @@ function Dashboard() {
     } catch (error) { console.error("Search Error", error); }
   };
 
-  // 3. GPS DETECT (High Accuracy)
   const detectLocation = () => {
     if (!navigator.geolocation) { alert("GPS not supported"); return; }
     setIsGpsLoading(true);
@@ -97,9 +112,18 @@ function Dashboard() {
            </div>
            <Link to="/profile" style={profileCircle}><span style={{fontSize:'26px'}}>🧢</span></Link>
         </div>
+        
+        {/* --- FIXED SEARCH BAR --- */}
         <div style={searchBar}>
            <span style={{fontSize:'18px', color:'rgba(255,255,255,0.6)'}}>🔍</span>
-           <input type="text" placeholder="Search 'tractors' or 'rice'..." style={searchInput}/>
+           <input 
+             type="text" 
+             placeholder="Search 'cotton', 'workers'..." 
+             style={searchInput}
+             value={globalSearch}
+             onChange={(e) => setGlobalSearch(e.target.value)}
+             onKeyDown={handleGlobalSearch} // Listens for Enter Key
+           />
         </div>
       </div>
 
@@ -206,7 +230,7 @@ function Dashboard() {
                 type="text" 
                 placeholder="Search Village, District..." 
                 value={manualInput}
-                onChange={(e) => handleSearch(e.target.value)}
+                onChange={(e) => handleLocSearch(e.target.value)}
                 style={modalSearchInput} 
               />
             </div>
