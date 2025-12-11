@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 
 function Dashboard() {
+  // --- BACKGROUND ---
   const [bgImage, setBgImage] = useState('');
   const dayBg = 'https://images.unsplash.com/photo-1625246333195-78d9c38ad449?q=80&w=2940&auto=format&fit=crop';
   const nightBg = 'https://images.unsplash.com/photo-1504333638930-c8787321eee0?q=80&w=2070&auto=format&fit=crop';
@@ -12,43 +13,51 @@ function Dashboard() {
     else setBgImage(dayBg);
   }, []);
 
-  // --- LOCATION LOGIC ---
+  // --- 📍 SMART LOCATION LOGIC ---
   const [userLocation, setUserLocation] = useState('Select Location'); 
   const [showLocModal, setShowLocModal] = useState(false);
+  
+  // Search State
   const [manualInput, setManualInput] = useState('');
-  const [suggestions, setSuggestions] = useState([]); 
+  const [suggestions, setSuggestions] = useState([]); // List of search results
   const [isGpsLoading, setIsGpsLoading] = useState(false);
 
+  // 1. Load saved location on startup
   useEffect(() => {
     const savedLoc = localStorage.getItem('userLocation');
     if (savedLoc) setUserLocation(savedLoc);
+    else detectLocation(); // Auto-ask GPS on first load
   }, []);
 
-  // 1. UPDATE LOCATION & SAVE COORDS
+  // 2. Save Location & Refresh App
   const updateLocation = (name, lat, lng) => {
     setUserLocation(name);
-    localStorage.setItem('userLocation', name);
+    localStorage.setItem('userLocation', name); // Save Name
+    
+    // Save Coordinates for 50km Logic
     if (lat && lng) {
       localStorage.setItem('userLat', lat);
       localStorage.setItem('userLng', lng);
     }
     
     setShowLocModal(false);
-    setSuggestions([]);
+    setSuggestions([]); // Clear search
     setManualInput('');
     
-    // Force refresh to update other pages
-    setTimeout(() => { window.location.reload(); }, 300);
+    // FORCE REFRESH to update Service/Business lists
+    setTimeout(() => {
+      window.location.reload(); 
+    }, 300);
   };
 
-  // 2. SEARCH (Switched to Open-Meteo to fix 403 Error)
+  // 3. SEARCH AUTOCOMPLETE (Using Open-Meteo API)
   const handleSearch = async (query) => {
     setManualInput(query);
     if (query.length < 3) { setSuggestions([]); return; }
 
     try {
-      // Open-Meteo Geocoding (Free, No Key, No CORS Block)
-      const response = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${query}&count=5&language=en&format=json`);
+      // Free Geocoding API (No Key Needed, No Blocking)
+      const response = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${query}&count=10&language=en&format=json`);
       const data = await response.json();
       
       if (data.results) {
@@ -56,12 +65,12 @@ function Dashboard() {
       } else {
         setSuggestions([]);
       }
-    } catch (error) { 
-      console.error("Search Error", error); 
+    } catch (error) {
+      console.error("Search Error", error);
     }
   };
 
-  // 3. GPS DETECT (Switched to BigDataCloud for reliability)
+  // 4. GPS Auto-Detect
   const detectLocation = () => {
     if (!navigator.geolocation) { alert("GPS not supported"); return; }
     setIsGpsLoading(true);
@@ -71,29 +80,30 @@ function Dashboard() {
     navigator.geolocation.getCurrentPosition(async (position) => {
       const { latitude, longitude } = position.coords;
       try {
-        // Using BigDataCloud (Same as Business/Service pages)
+        // Reverse Geocoding
         const response = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=en`);
         const data = await response.json();
         
-        // Construct clear address
-        const village = data.locality || data.city || data.town || "";
+        // Construct Address
+        const village = data.locality || data.city || "";
         const district = data.principalSubdivision || "";
         const fullLoc = `${village}, ${district}`;
         
         updateLocation(fullLoc, latitude, longitude);
-        alert(`Location Set: ${fullLoc}`);
-      } catch (error) { 
-        alert("GPS worked, but address lookup failed."); 
-      }
+        alert(`Location Found: ${fullLoc}`);
+      } catch (error) { alert("GPS Error. Try Manual Search."); }
       setIsGpsLoading(false);
-    }, (err) => { 
-      alert("GPS Error: " + err.message); 
+    }, () => { 
+      // Silent fail on auto-detect, alert on manual click
+      if(showLocModal) alert("Permission denied. Enable GPS."); 
       setIsGpsLoading(false); 
     }, options);
   };
 
   return (
     <div style={{...pageStyle, backgroundImage: `url('${bgImage}')`}}>
+      
+      {/* --- HEADER --- */}
       <div style={headerWrapper}>
         <div style={topRow}>
            <div style={locationClickableArea} onClick={() => setShowLocModal(true)}>
@@ -112,6 +122,7 @@ function Dashboard() {
 
       <div style={heroSection}><h1 style={fadedHeroTitle}>Growing Smarter Together</h1></div>
 
+      {/* --- BENTO GRID --- */}
       <div style={bentoGrid}>
         <Link to="/agri-insights" style={cardLink}><div className="glass-card" style={{...cardStyle, backgroundImage: "url('https://img.freepik.com/premium-photo/hand-holding-plant-with-sun-it_1174726-1291.jpg')"}}><div style={cardTopOverlay}><div><h3 style={cardTitle}>Agri-Insights</h3><p style={cardSubtitle}>Rates & Guides</p></div><div style={whiteIconBox}><svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg></div></div></div></Link>
         <Link to="/service" style={cardLink}><div className="glass-card" style={{...cardStyle, backgroundImage: "url('https://th.bing.com/th/id/R.e2c73dbf8a8f512a95ee3a2ec35f5d72?rik=DuUew48QLbwHzw&riu=http%3a%2f%2fvnmanpower.com%2fupload_images%2fimages%2fall%2ffarm-workers-from-vmst.jpg&ehk=s1NXBhEe0wVXkZGBnlrnXcEoGY1R4UtFvQ9kW7HVQ0Y%3d&risl=&pid=ImgRaw&r=0')"}}><div style={cardTopOverlay}><div><h3 style={cardTitle}>Service Hub</h3><p style={cardSubtitle}>Machinery&Workers</p></div><div style={whiteIconBox}><svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12h3l1-3h4l1 3h8"/><circle cx="6" cy="17" r="3"/><circle cx="18" cy="17" r="3"/><path d="M15 5h4l2 7h-6z"/></svg></div></div></div></Link>
@@ -120,47 +131,58 @@ function Dashboard() {
         <Link to="/weather" style={{...cardLink, gridColumn: 'span 2'}}><div className="glass-card" style={{...wideCardStyle, backgroundImage: "url('https://images.unsplash.com/photo-1500382017468-9049fed747ef?q=80&w=800')"}}><div style={cardTopOverlay}><div><h3 style={{...cardTitle, margin:0}}>Crop Weather</h3><p style={cardSubtitle}>28°C, Rain: 40%, Humidity: 65%</p></div><div style={whiteIconBox}><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="M20 12h2"/><path d="m19.07 4.93-1.41 1.41"/><path d="M15.947 12.65a4 4 0 0 0-5.925-4.128"/><path d="M13 22H7a4 4 0 1 1 0-8h1"/></svg></div></div></div></Link>
       </div>
 
-      {/* --- SMART LOCATION MODAL --- */}
+      {/* --- PROFESSIONAL LOCATION DRAWER --- */}
       {showLocModal && (
         <div style={modalOverlay}>
           <div style={modalCard}>
-            <h3>📍 Set Your Location</h3>
-            <p style={{fontSize:'12px', color:'#666', marginBottom:'15px'}}>We will show services near this place.</p>
-            
-            <button onClick={detectLocation} style={gpsBtn}>
-              📡 Use Current Location
-            </button>
-            
-            <div style={{margin:'15px 0', fontSize:'12px', color:'#999'}}>- OR SEARCH -</div>
-            
-            {/* SEARCH INPUT */}
-            <input 
-              type="text" 
-              placeholder="Search Village, District..." 
-              value={manualInput}
-              onChange={(e) => handleSearch(e.target.value)}
-              style={inputStyle} 
-            />
+            {/* Header */}
+            <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'15px'}}>
+              <h3 style={{margin:0, fontSize:'18px', color:'#333'}}>📍 Set Location</h3>
+              <button onClick={() => setShowLocModal(false)} style={closeIcon}>✕</button>
+            </div>
 
-            {/* SUGGESTIONS LIST (Google Style) */}
-            {suggestions.length > 0 && (
-              <div style={suggestionsBox}>
-                {suggestions.map((place) => (
-                  <div 
-                    key={place.id} 
-                    onClick={() => updateLocation(`${place.name}, ${place.admin1 || ''}`, place.latitude, place.longitude)}
-                    style={suggestionItem}
-                  >
-                    <strong>{place.name}</strong>
-                    <div style={{fontSize:'11px', color:'#666'}}>
-                      {place.admin1}, {place.country}
-                    </div>
-                  </div>
-                ))}
+            {/* GPS Button */}
+            <div onClick={detectLocation} style={gpsRow}>
+              <span style={{fontSize:'18px', marginRight:'10px'}}>📡</span>
+              <div>
+                <div style={{color:'#E65100', fontWeight:'bold', fontSize:'14px'}}>{isGpsLoading ? "Detecting..." : "Use Current Location"}</div>
+                <div style={{color:'#888', fontSize:'11px'}}>Using GPS</div>
               </div>
-            )}
-            
-            <button onClick={() => setShowLocModal(false)} style={closeBtn}>Close</button>
+            </div>
+
+            <div style={{borderBottom:'1px solid #eee', margin:'10px 0'}}></div>
+
+            {/* Search Input */}
+            <div style={searchContainer}>
+              <span style={{fontSize:'16px', color:'#888'}}>🔍</span>
+              <input 
+                type="text" 
+                placeholder="Search Village, District..." 
+                value={manualInput}
+                onChange={(e) => handleSearch(e.target.value)}
+                style={modalSearchInput} 
+              />
+            </div>
+
+            {/* Search Results List (Zomato Style) */}
+            <div style={suggestionsBox}>
+              {suggestions.map((place) => (
+                <div 
+                  key={place.id} 
+                  onClick={() => updateLocation(`${place.name}, ${place.admin1 || ''}`, place.latitude, place.longitude)}
+                  style={suggestionItem}
+                >
+                  <div style={{fontWeight:'bold', color:'#333', fontSize:'14px'}}>{place.name}</div>
+                  <div style={{fontSize:'11px', color:'#888'}}>
+                    {place.admin1}, {place.country}
+                  </div>
+                </div>
+              ))}
+              {manualInput.length > 2 && suggestions.length === 0 && (
+                <div style={{padding:'15px', textAlign:'center', color:'#999', fontSize:'13px'}}>No results found.</div>
+              )}
+            </div>
+
           </div>
         </div>
       )}
@@ -188,28 +210,13 @@ const whiteIconBox = { filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))' };
 const cardTitle = { margin: '0 0 4px 0', fontSize: '17px', fontWeight: '700', textShadow: '0 2px 4px rgba(0,0,0,0.5)' };
 const cardSubtitle = { margin: 0, fontSize: '13px', opacity: 0.9, fontWeight: '500', textShadow: '0 1px 2px rgba(0,0,0,0.5)' };
 
-const modalOverlay = { position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.8)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000 };
-const modalCard = { background: 'white', padding: '20px', borderRadius: '15px', width: '85%', maxWidth: '350px', textAlign: 'center', color: 'black' };
-const inputStyle = { padding: '12px', width: '100%', marginBottom: '5px', borderRadius: '8px', border: '1px solid #ccc', boxSizing:'border-box', fontSize:'16px' };
-const gpsBtn = { padding: '12px', background: '#2196F3', color: 'white', border: 'none', borderRadius: '8px', width: '100%', fontWeight:'bold', cursor:'pointer' };
-const closeBtn = { background: 'none', border: '1px solid black', color: 'black', padding: '8px 15px', marginTop:'15px', cursor: 'pointer', borderRadius:'8px' };
-
-// Suggestion Styles
-const suggestionsBox = { 
-  maxHeight: '180px', 
-  overflowY: 'auto', 
-  textAlign: 'left', 
-  background: '#fff', 
-  borderRadius: '8px', 
-  border: '1px solid #ddd', 
-  marginTop: '5px',
-  boxShadow: '0 4px 10px rgba(0,0,0,0.1)'
-};
-const suggestionItem = { 
-  padding: '10px', 
-  borderBottom: '1px solid #eee', 
-  fontSize: '14px', 
-  cursor: 'pointer' 
-};
+const modalOverlay = { position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.6)', display: 'flex', justifyContent: 'center', alignItems: 'flex-end', zIndex: 1000 };
+const modalCard = { background: 'white', width: '100%', maxWidth: '500px', borderRadius: '20px 20px 0 0', padding: '20px', maxHeight: '80vh', display: 'flex', flexDirection: 'column' };
+const closeIcon = { background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer', color: '#666' };
+const gpsRow = { display: 'flex', alignItems: 'center', padding: '10px 0', cursor: 'pointer' };
+const searchContainer = { display: 'flex', alignItems: 'center', background: '#f2f2f2', borderRadius: '10px', padding: '10px 15px', marginBottom: '10px' };
+const modalSearchInput = { border: 'none', background: 'transparent', outline: 'none', marginLeft: '10px', width: '100%', fontSize: '15px' };
+const suggestionsBox = { flex: 1, overflowY: 'auto' };
+const suggestionItem = { padding: '15px 0', borderBottom: '1px solid #f0f0f0', cursor: 'pointer' };
 
 export default Dashboard;
