@@ -19,6 +19,7 @@ function FarmFresh() {
   const [loading, setLoading] = useState(true);
   const [isLoadingLoc, setIsLoadingLoc] = useState(false);
   
+  // User Location State
   const [userLat, setUserLat] = useState(null);
   const [userLng, setUserLng] = useState(null);
   const [userLocName, setUserLocName] = useState('');
@@ -27,19 +28,17 @@ function FarmFresh() {
     item: '', qty: '', price: '', seller: '', location: '', phone: '', image: '', lat: null, lng: null
   });
 
+  // 1. GET USER COORDINATES from Dashboard Memory
   useEffect(() => {
     const lat = localStorage.getItem('userLat');
     const lng = localStorage.getItem('userLng');
     const name = localStorage.getItem('userLocation');
-    if (lat && lng) {
-      setUserLat(parseFloat(lat));
-      setUserLng(parseFloat(lng));
-    }
-    if (name && name !== 'Select Location') {
-      setUserLocName(name);
-    }
+    if (lat) setUserLat(parseFloat(lat));
+    if (lng) setUserLng(parseFloat(lng));
+    if (name) setUserLocName(name);
   }, []);
 
+  // 2. Fetch Data
   useEffect(() => {
     const fetchProducts = async () => {
       try {
@@ -52,36 +51,47 @@ function FarmFresh() {
     fetchProducts();
   }, []);
 
+  // 3. HAVERSINE DISTANCE FORMULA (The Logic)
+  const getDistance = (lat1, lon1, lat2, lon2) => {
+    if (!lat1 || !lon1 || !lat2 || !lon2) return 9999;
+    const R = 6371; 
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+              Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+              Math.sin(dLon/2) * Math.sin(dLon/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    return R * c; 
+  };
+
+  // 4. SMART RADIUS FILTER (50km)
   const filteredProducts = products.filter(item => {
-    if (!userLocName && !userLat) return true;
-    if (userLat && userLng && item.lat && item.lng) {
-      const R = 6371; 
-      const dLat = (item.lat - userLat) * Math.PI / 180;
-      const dLon = (item.lng - userLng) * Math.PI / 180;
-      const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-                Math.cos(userLat * Math.PI / 180) * Math.cos(item.lat * Math.PI / 180) *
-                Math.sin(dLon/2) * Math.sin(dLon/2);
-      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-      if ((R * c) <= 50) return true; 
+    // If user has NO coordinates set, fallback to name matching (safety)
+    if (!userLat || !userLng) {
+       return !userLocName || (item.location && item.location.toLowerCase().includes(userLocName.toLowerCase()));
     }
-    if (userLocName && item.location) {
-      const u = userLocName.toLowerCase();
-      const i = item.location.toLowerCase();
-      if (i.includes(u) || u.includes(i)) return true;
+
+    // If item has NO coordinates, fallback to name matching
+    if (!item.lat || !item.lng) {
+       return !userLocName || (item.location && item.location.toLowerCase().includes(userLocName.toLowerCase()));
     }
-    return false;
+
+    // CALCULATE DISTANCE
+    const dist = getDistance(userLat, userLng, item.lat, item.lng);
+    
+    // Show if within 50km Radius
+    return dist <= 50; 
   });
 
+
+  // ACTION HANDLERS (Same as before)
   const openDirections = (lat, lng) => {
-    if (lat && lng) {
-      window.open(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`, '_blank');
-    } else {
-      alert("Seller GPS not available.");
-    }
+    if (lat && lng) window.open(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`, '_blank');
+    else alert("Seller GPS not available.");
   };
 
   const openWhatsApp = (item) => {
-    const msg = `Hi ${item.seller}, I want to order *${item.qty} of ${item.item}*. My location is *${userLocName || "nearby"}*. Is home delivery available?`;
+    const msg = `Hi ${item.seller}, I want to order *${item.qty} of ${item.item}*. My location is ${userLocName}. Is home delivery available?`;
     window.open(`https://wa.me/91${item.phone}?text=${encodeURIComponent(msg)}`, '_blank');
   };
 
@@ -124,9 +134,10 @@ function FarmFresh() {
         <Link to="/dashboard" style={backLink}>⬅ Dashboard</Link>
         <h1 style={titleStyle}>🥦 Farm Fresh</h1>
         
+        {/* RADIUS BADGE */}
         {userLocName && (
           <div style={filterBadge}>
-            📍 Showing results for: <strong>{userLocName}</strong>
+            📍 Showing items within <strong>50km</strong> of {userLocName}
           </div>
         )}
 
@@ -182,7 +193,7 @@ function FarmFresh() {
               ))
             ) : (
               <div style={{textAlign:'center', color:'white', opacity:0.7, padding:'20px'}}>
-                <p>No fresh items near <strong>{userLocName}</strong>.</p>
+                <p>No fresh items found within 50km of <strong>{userLocName}</strong>.</p>
                 <button onClick={() => setUserLocName('')} style={resetBtn}>🌍 Show All</button>
               </div>
             )
@@ -193,7 +204,7 @@ function FarmFresh() {
   );
 }
 
-// STYLES (Same as Business.jsx)
+// STYLES
 const pageStyle = { position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', backgroundSize: 'cover', backgroundPosition: 'center', backgroundColor: 'black', overflowY: 'auto' };
 const contentContainer = { padding: '20px', maxWidth: '800px', margin: '0 auto', paddingBottom: '100px', paddingTop: '20px' };
 const backLink = { color: 'white', textDecoration: 'none', fontSize: '14px', background: 'rgba(0,0,0,0.5)', padding: '8px 15px', borderRadius: '20px', backdropFilter: 'blur(5px)' };
