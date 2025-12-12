@@ -205,33 +205,42 @@ function Dashboard() {
 
       </div>
 
-      {/* --- LOCATION DRAWER --- */}
+      {/* --- NEW CENTERED MODERN MODAL --- */}
       {showLocModal && (
         <div style={modalOverlay}>
           <div style={modalCard}>
-            <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'15px'}}>
-              <h3 style={{margin:0, fontSize:'18px', color:'#333'}}>📍 Set Location</h3>
+            
+            {/* Header */}
+            <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'20px'}}>
+              <h3 style={{margin:0, fontSize:'20px', color:'#2E7D32', fontWeight:'800'}}>📍 Set Location</h3>
               <button onClick={() => setShowLocModal(false)} style={closeIcon}>✕</button>
             </div>
 
-            <div onClick={detectLocation} style={gpsRow}>
-              <span style={{fontSize:'18px', marginRight:'10px'}}>📡</span>
+            {/* GPS Button */}
+            <div onClick={detectLocation} style={gpsBox}>
+              <div style={{background:'#E8F5E9', padding:'10px', borderRadius:'50%', marginRight:'15px', display:'flex'}}>
+                <span style={{fontSize:'20px'}}>🛰️</span>
+              </div>
               <div>
-                <div style={{color:'#E65100', fontWeight:'bold', fontSize:'14px'}}>{isGpsLoading ? "Detecting..." : "Use Current Location"}</div>
-                <div style={{color:'#888', fontSize:'11px'}}>Using GPS</div>
+                <div style={{color:'#2E7D32', fontWeight:'bold', fontSize:'15px'}}>
+                  {isGpsLoading ? "Detecting..." : "Use Current Location"}
+                </div>
+                <div style={{color:'#888', fontSize:'12px'}}>Using GPS</div>
               </div>
             </div>
 
-            <div style={{borderBottom:'1px solid #eee', margin:'10px 0'}}></div>
+            <div style={{textAlign:'center', margin:'20px 0 10px 0', color:'#ccc', fontSize:'11px', fontWeight:'bold', letterSpacing:'1px'}}>- OR SEARCH MANUALLY -</div>
 
+            {/* Search Input */}
             <div style={searchContainer}>
-              <span style={{fontSize:'16px', color:'#888'}}>🔍</span>
+              <span style={{fontSize:'18px', color:'#888'}}>🔍</span>
               <input 
                 type="text" 
-                placeholder="Search Village, District..." 
+                placeholder="Search Village, Mandal..." 
                 value={manualInput}
                 onChange={(e) => handleLocSearch(e.target.value)}
                 style={modalSearchInput} 
+                autoFocus
               />
             </div>
 
@@ -242,14 +251,18 @@ function Dashboard() {
                   onClick={() => updateLocation(`${place.name}, ${place.admin1 || ''}`, place.latitude, place.longitude)}
                   style={suggestionItem}
                 >
-                  <div style={{fontWeight:'bold', color:'#333', fontSize:'14px'}}>{place.name}</div>
-                  <div style={{fontSize:'11px', color:'#888'}}>{place.admin1}, {place.country}</div>
+                  <span style={{marginRight:'12px', fontSize:'16px'}}>🏙️</span>
+                  <div>
+                    <div style={{fontWeight:'600', color:'#333', fontSize:'15px'}}>{place.name}</div>
+                    <div style={{fontSize:'11px', color:'#888'}}>{place.admin1}, {place.country}</div>
+                  </div>
                 </div>
               ))}
               {manualInput.length > 2 && suggestions.length === 0 && (
-                <div style={{padding:'15px', textAlign:'center', color:'#999', fontSize:'13px'}}>No results found.</div>
+                <div style={{padding:'20px', textAlign:'center', color:'#999', fontSize:'13px'}}>No results found.</div>
               )}
             </div>
+
           </div>
         </div>
       )}
@@ -267,7 +280,7 @@ const profileCircle = { width: '48px', height: '48px', borderRadius: '50%', back
 const searchBar = { background: 'rgba(0, 0, 0, 0.2)', backdropFilter: 'blur(10px)', borderRadius: '12px', padding: '12px 15px', display: 'flex', alignItems: 'center', border: '1px solid rgba(255,255,255,0.1)' };
 const searchInput = { border: 'none', outline: 'none', background: 'transparent', marginLeft: '10px', fontSize: '16px', width: '100%', color: 'white', '::placeholder': { color: 'rgba(255,255,255,0.5)' } };
 const heroSection = { padding: '0 20px', marginTop: '25px', marginBottom: '20px' };
-const fadedHeroTitle = { fontSize: '1.3rem', margin: 0, fontWeight: '800', letterSpacing: '1px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', background: 'linear-gradient(to right, #ffffff 0%, #e0e0e0 50%, rgba(255,255,255,0.2) 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', display: 'inline-block', textTransform: 'uppercase' };
+const fadedHeroTitle = { fontSize: '1.4rem', margin: 0, fontWeight: '800', letterSpacing: '1px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', background: 'linear-gradient(to right, #ffffff 0%, #e0e0e0 50%, rgba(255,255,255,0.2) 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', display: 'inline-block', textTransform: 'uppercase' };
 const bentoGrid = { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', padding: '0 20px 100px 20px', maxWidth: '1000px', margin: '0 auto' };
 const cardLink = { textDecoration: 'none', color: 'white', display: 'block', width: '100%', height: '100%' };
 const cardStyle = { borderRadius: '18px', height: '185px', position: 'relative', overflow: 'hidden', backgroundSize: 'cover', backgroundPosition: 'center', border: '1px solid rgba(255,255,255,0.15)' };
@@ -277,13 +290,13 @@ const whiteIconBox = { filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))' };
 const cardTitle = { margin: '0 0 4px 0', fontSize: '17px', fontWeight: '700', textShadow: '0 2px 4px rgba(0,0,0,0.5)' };
 const cardSubtitle = { margin: 0, fontSize: '13px', opacity: 0.9, fontWeight: '500', textShadow: '0 1px 2px rgba(0,0,0,0.5)' };
 
-const modalOverlay = { position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.6)', display: 'flex', justifyContent: 'center', alignItems: 'flex-end', zIndex: 1000 };
-const modalCard = { background: 'white', width: '100%', maxWidth: '500px', borderRadius: '20px 20px 0 0', padding: '20px', maxHeight: '80vh', display: 'flex', flexDirection: 'column' };
-const closeIcon = { background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer', color: '#666' };
-const gpsRow = { display: 'flex', alignItems: 'center', padding: '10px 0', cursor: 'pointer' };
-const searchContainer = { display: 'flex', alignItems: 'center', background: '#f2f2f2', borderRadius: '10px', padding: '10px 15px', marginBottom: '10px' };
-const modalSearchInput = { border: 'none', background: 'transparent', outline: 'none', marginLeft: '10px', width: '100%', fontSize: '15px' };
-const suggestionsBox = { flex: 1, overflowY: 'auto' };
-const suggestionItem = { padding: '15px 0', borderBottom: '1px solid #f0f0f0', cursor: 'pointer' };
+const modalOverlay = { position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(5px)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 2000 };
+const modalCard = { background: 'white', width: '90%', maxWidth: '400px', borderRadius: '24px', padding: '25px', boxShadow: '0 20px 50px rgba(0,0,0,0.3)', animation: 'popIn 0.3s ease' };
+const closeIcon = { background: '#f5f5f5', border: 'none', width:'32px', height:'32px', borderRadius:'50%', fontSize: '16px', cursor: 'pointer', color: '#333', display:'flex', alignItems:'center', justifyContent:'center' };
+const gpsBox = { display: 'flex', alignItems: 'center', padding: '12px', borderRadius: '16px', border: '1px solid #eee', cursor: 'pointer', transition:'0.2s', background:'#fff', boxShadow:'0 4px 10px rgba(0,0,0,0.05)' };
+const searchContainer = { display: 'flex', alignItems: 'center', background: '#F5F5F5', borderRadius: '14px', padding: '12px 15px', marginBottom: '10px' };
+const modalSearchInput = { border: 'none', background: 'transparent', outline: 'none', marginLeft: '10px', width: '100%', fontSize: '16px', color:'#333' };
+const suggestionsBox = { maxHeight: '220px', overflowY: 'auto', marginTop:'10px' };
+const suggestionItem = { padding: '12px 5px', borderBottom: '1px solid #f0f0f0', cursor: 'pointer', display:'flex', alignItems:'center', transition:'0.2s' };
 
 export default Dashboard;
