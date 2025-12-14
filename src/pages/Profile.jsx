@@ -8,6 +8,7 @@ import { doc, getDoc, setDoc } from 'firebase/firestore';
 import MyListingsPage from './MyListingsPage';
 import OrderHistoryPage from './OrderHistoryPage'; 
 import NotificationsPage from './NotificationsPage'; 
+import SettingsPage from './SettingsPage'; // <--- NEW IMPORT
 
 // --- STYLING HELPERS (Kept for all embedded views) ---
 const pageStyle = { position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: '#f8f8f8', display:'flex', justifyContent:'center', overflowY:'auto' };
@@ -593,37 +594,14 @@ function Profile() {
         );
     }
 
-    // --- VIEW 7: SETTINGS ---
+    // 🚨 FINAL VIEW: SETTINGS (Now Outsourced)
     if (activeView === 'settings') {
         return (
-            <div style={pageStyle}>
-                <NotificationBar />
-                <div style={subPageCard}>
-                    <button onClick={() => setActiveView('menu')} style={backBtn}>⬅ Back to Menu</button>
-                    <h2 style={sectionTitle}>⚙️ Settings</h2>
-                    
-                    <div style={settingsItem}>
-                        <div>Language</div>
-                        <select style={{padding:'8px', borderRadius:'6px', border:'1px solid #ccc'}}>
-                            <option>English</option>
-                            <option>Telugu</option>
-                            <option>Hindi</option>
-                        </select>
-                    </div>
-
-                    <div style={settingsItem}>
-                        <div style={{fontWeight:'bold'}}>Privacy Policy</div>
-                        <span style={arrow}>›</span>
-                    </div>
-
-                    <div style={settingsItem}>
-                        <div style={{fontWeight:'bold'}}>App Version</div>
-                        <span>1.0.0</span>
-                    </div>
-
-                    <button onClick={handleLogout} style={logoutBtn}>Log Out</button>
-                </div>
-            </div>
+            <SettingsPage 
+                setActiveView={setActiveView} 
+                NotificationBar={NotificationBar}
+                handleLogout={handleLogout} // Pass the function down
+            />
         );
     }
 
