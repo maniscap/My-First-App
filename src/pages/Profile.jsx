@@ -4,14 +4,12 @@ import { auth, db } from '../firebase';
 import { signOut, onAuthStateChanged } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore'; 
 
-// 🚨 NEW IMPORT: Bring in the separate Listings component
+// 🚨 IMPORT OF OUTSOURCED COMPONENTS
 import MyListingsPage from './MyListingsPage';
+import OrderHistoryPage from './OrderHistoryPage'; 
+import NotificationsPage from './NotificationsPage'; 
 
-// --- STYLING HELPERS (Simplified - only what is needed here) ---
-const itemTypeBadgeStyle = { /* ... */ }; // Not strictly needed here but kept for consistency
-// ... (Keep only the minimum styles required for views: menu, personal, seller, history, notifs, settings)
-// For simplicity, I'll keep the styles you already had.
-
+// --- STYLING HELPERS (Kept for all embedded views) ---
 const pageStyle = { position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: '#f8f8f8', display:'flex', justifyContent:'center', overflowY:'auto' };
 const menuCard = { width: '100%', maxWidth: '480px', background: '#fff', padding: '20px', minHeight: '100vh', boxSizing:'border-box', boxShadow:'0 0 10px rgba(0,0,0,0.05)' };
 const subPageCard = { width: '100%', maxWidth: '480px', background: '#fff', padding: '20px', minHeight: '100vh', boxSizing:'border-box', boxShadow:'0 0 10px rgba(0,0,0,0.05)' };
@@ -50,6 +48,8 @@ const mainSaveBtn = { width:'100%', background:'#2E7D32', color:'white', border:
 const blackSaveBtn = { width:'100%', background:'#000', color:'white', border:'none', padding:'16px', borderRadius:'12px', fontSize:'16px', fontWeight:'bold', cursor:'pointer', marginTop:'20px' };
 const logoutBtn = { width:'100%', background:'#d32f2f', color:'white', border:'none', padding:'16px', borderRadius:'12px', fontSize:'17px', fontWeight:'bold', cursor:'pointer', marginTop:'30px' };
 
+const settingsItem = { display:'flex', justifyContent:'space-between', alignItems:'center', padding:'15px 0', borderBottom:'1px solid #f0f0f0' };
+
 // We keep the rating rendering helpers as they are used in the Seller Profile view (View 3)
 const renderStars = (rating) => {
     const stars = [];
@@ -63,7 +63,6 @@ const renderStars = (rating) => {
 const renderRatingBreakdown = () => {
     const breakdown = { '5': 25, '4': 15, '3': 20, '2': 10, '1': 30 }; // Mock data
     const keys = ['5', '4', '3', '2', '1'];
-    // ... (rest of function logic)
     return (
         <div style={{width: '100%'}}>
             {keys.map(star => (
@@ -104,8 +103,7 @@ const renderCategoryRating = (title, score, maxScore = 5) => (
         </div>
     </div>
 );
-const notifItem = { padding:'15px', border:'1px solid #e0e0e0', borderRadius:'12px', background:'#fff', marginBottom:'10px', borderLeft:'4px solid #FFC107' };
-const settingsItem = { display:'flex', justifyContent:'space-between', alignItems:'center', padding:'15px 0', borderBottom:'1px solid #f0f0f0' };
+
 
 // --- MAIN PROFILE COMPONENT ---
 function Profile() {
@@ -117,7 +115,7 @@ function Profile() {
     const [notification, setNotification] = useState({ message: '', type: '' });
     const [isSaving, setIsSaving] = useState(false);
     
-    // Data State (Simplified - Listings state is GONE)
+    // Data State
     const [profileData, setProfileData] = useState({
         name: '', sellerName: 'Unnamed Shop', phone: '', alternatePhone: '', address: '', lat: null, lng: null, photo: '', rating: 4.8, bio: 'Dedicated local farmer/machinery provider.', ordersCompleted: 0,
         serviceOrders: 15, productOrders: 25, serviceRating: 4.6, productRating: 4.4, ratingBreakdown: { '5': 25, '4': 15, '3': 20, '2': 10, '1': 30 },
@@ -131,8 +129,8 @@ function Profile() {
         setTimeout(() => setNotification({ message: '', type: '' }), 4000);
     };
 
-    // --- Data Loading, Saving, Geolocation, Photo Upload (REMAINS THE SAME) ---
-    useEffect(() => { /* ... loading logic remains ... */ 
+    // --- Data Loading and Saving Logic (Unchanged) ---
+    useEffect(() => { 
         const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
             if (currentUser) {
                 setUser(currentUser);
@@ -159,7 +157,7 @@ function Profile() {
         return () => unsubscribe(); 
     }, [navigate]);
 
-    const saveData = async (newData = {}) => { /* ... save logic remains ... */
+    const saveData = async (newData = {}) => { 
         if (!user) { showNotification("Authentication required to save.", 'error'); return; }
 
         setIsSaving(true);
@@ -195,7 +193,7 @@ function Profile() {
         }
     };
 
-    const setBaseLocation = () => { /* ... geolocation logic remains ... */
+    const setBaseLocation = () => { 
         if (!navigator.geolocation) { showNotification("GPS not supported by your browser.", 'error'); return; }
         
         showNotification("Fetching GPS coordinates...", 'loading');
@@ -305,7 +303,6 @@ function Profile() {
                             <span style={arrow}>›</span>
                         </button>
                         
-                        {/* 🚨 UPDATED ACTION: Calls the new external component when activeView is 'listings' */}
                         <button onClick={() => setActiveView('listings')} style={menuItem}>
                             <span style={iconStyle}>📋</span>
                             <div>
@@ -347,7 +344,7 @@ function Profile() {
         );
     }
 
-    // --- VIEW 2: MY PERSONAL PROFILE ---
+    // --- VIEW 2: MY PERSONAL PROFILE (Embedded/Fixed) ---
     if (activeView === 'personal') {
         return (
             <div style={pageStyle}>
@@ -420,7 +417,7 @@ function Profile() {
         );
     }
 
-    // --- VIEW 3: SELLER PROFILE ---
+    // --- VIEW 3: SELLER PROFILE (Embedded/Fixed) ---
     if (activeView === 'seller') {
         return (
             <div style={pageStyle}>
@@ -566,7 +563,7 @@ function Profile() {
         );
     }
     
-    // 🚨 UPDATED RENDER: Render the dedicated MyListingsPage component
+    // --- Outsourced View Renders ---
     if (activeView === 'listings') {
         return (
             <MyListingsPage 
@@ -578,47 +575,21 @@ function Profile() {
         );
     }
     
-    // --- VIEW 5: ORDER HISTORY --- 
     if (activeView === 'history') {
         return (
-            <div style={pageStyle}>
-                <NotificationBar />
-                <div style={subPageCard}>
-                    <button onClick={() => setActiveView('menu')} style={backBtn}>⬅ Back to Menu</button>
-                    <h2 style={sectionTitle}>📦 Order History</h2>
-                    <p style={{textAlign:'center', color:'#666'}}>Your past transactions.</p>
-                    
-                    <div style={notifItem}>
-                        <div style={{fontWeight:'bold'}}>✅ Purchased: 5L Milk</div>
-                        <div style={{fontSize:'12px', color:'#555'}}>From: Lakshmi Dairy | ₹300</div>
-                        <div style={{fontSize:'10px', color:'#999', marginTop:'2px'}}>Dec 10, 2025</div>
-                    </div>
-                </div>
-            </div>
+            <OrderHistoryPage 
+                setActiveView={setActiveView} 
+                NotificationBar={NotificationBar}
+            />
         );
     }
 
-    // --- VIEW 6: NOTIFICATIONS --- 
     if (activeView === 'notifs') {
         return (
-            <div style={pageStyle}>
-                <NotificationBar />
-                <div style={subPageCard}>
-                    <button onClick={() => setActiveView('menu')} style={backBtn}>⬅ Back to Menu</button>
-                    <h2 style={sectionTitle}>🔔 Notifications</h2>
-                    
-                    <div style={notifItem}>
-                        <div style={{fontWeight:'bold'}}>🟢 HIRE REQUEST ACCEPTED</div>
-                        <div style={{fontSize:'12px', color:'#555'}}>Raju Tractors confirmed your booking for tomorrow at 8 AM.</div>
-                    </div>
-                    <div style={notifItem}>
-                        <div style={{fontWeight:'bold'}}>⭐ NEW RATING</div>
-                        <div style={{fontSize:'12px', color:'#555'}}>You received a 5-star rating for your Farm Fresh delivery.</div>
-                    </div>
-                    <div style={{textAlign:'center', color:'#999', marginTop:'40px'}}>No new notifications.</div>
-                    
-                </div>
-            </div>
+            <NotificationsPage 
+                setActiveView={setActiveView} 
+                NotificationBar={NotificationBar}
+            />
         );
     }
 
