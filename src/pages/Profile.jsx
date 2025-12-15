@@ -8,48 +8,93 @@ import { doc, getDoc, setDoc } from 'firebase/firestore';
 import MyListingsPage from './MyListingsPage';
 import OrderHistoryPage from './OrderHistoryPage'; 
 import NotificationsPage from './NotificationsPage'; 
-import SettingsPage from './SettingsPage'; // <--- NEW IMPORT
+import SettingsPage from './SettingsPage'; 
 
-// --- STYLING HELPERS (Kept for all embedded views) ---
+// --- STYLING HELPERS (Modernized for Smoothness and Stunning GPS) ---
 const pageStyle = { position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: '#f8f8f8', display:'flex', justifyContent:'center', overflowY:'auto' };
-const menuCard = { width: '100%', maxWidth: '480px', background: '#fff', padding: '20px', minHeight: '100vh', boxSizing:'border-box', boxShadow:'0 0 10px rgba(0,0,0,0.05)' };
-const subPageCard = { width: '100%', maxWidth: '480px', background: '#fff', padding: '20px', minHeight: '100vh', boxSizing:'border-box', boxShadow:'0 0 10px rgba(0,0,0,0.05)' };
+// Menu card background set to match page background for smooth transition
+const menuCard = { width: '100%', maxWidth: '480px', background: '#f8f8f8', padding: '20px', minHeight: '100vh', boxSizing:'border-box' };
+// Sub page card retains white background and clean padding
+const subPageCard = { width: '100%', maxWidth: '480px', background: '#fff', padding: '25px', minHeight: '100vh', boxSizing:'border-box', boxShadow:'0 0 15px rgba(0,0,0,0.05)' };
+
 const headerRow = { display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'30px' };
 const closeBtn = { background:'none', border:'none', fontSize:'24px', color:'#333', cursor:'pointer' };
-const backBtn = { background:'none', border:'none', fontSize:'14px', color:'#555', cursor:'pointer', marginBottom:'20px', padding:0, fontWeight:'600' };
-const sectionTitle = { margin:'0 0 25px 0', color:'#333', fontSize:'22px' };
-const subSectionTitle = { margin:'0 0 15px 0', color:'#444', fontSize:'17px', borderLeft:'3px solid #FFC107', paddingLeft:'10px', fontWeight:'700' };
+const backBtn = { background:'none', border:'none', fontSize:'16px', color:'#2E7D32', cursor:'pointer', marginBottom:'25px', padding:0, fontWeight:'700' };
+const sectionTitle = { margin:'0 0 25px 0', color:'#333', fontSize:'24px', fontWeight:'800' };
+const subSectionTitle = { margin:'20px 0 15px 0', color:'#444', fontSize:'17px', borderLeft:'4px solid #FFC107', paddingLeft:'12px', fontWeight:'700' }; 
 
-const idCard = { display:'flex', alignItems:'center', background:'linear-gradient(135deg, #2E7D32, #4CAF50)', color:'white', padding:'25px', borderRadius:'18px', marginBottom:'30px', boxShadow:'0 6px 20px rgba(46, 125, 50, 0.4)', position:'relative' };
+const idCard = { display:'flex', alignItems:'center', background:'linear-gradient(135deg, #2E7D32, #4CAF50)', color:'white', padding:'30px', borderRadius:'15px', marginBottom:'35px', boxShadow:'0 8px 25px rgba(46, 125, 50, 0.5)', position:'relative' };
 const profileHeader = { textAlign:'center', marginBottom:'30px', paddingBottom:'20px', borderBottom:'1px solid #eee' };
 
-const avatarContainer = { width:'65px', height:'65px', borderRadius:'50%', background:'white', marginRight:'15px', display:'flex', alignItems:'center', justifyContent:'center', overflow:'hidden', flexShrink:0, position:'relative' };
+const avatarContainer = { width:'70px', height:'70px', borderRadius:'50%', background:'white', marginRight:'18px', display:'flex', alignItems:'center', justifyContent:'center', overflow:'hidden', flexShrink:0, position:'relative' };
 const avatarImg = { width:'100%', height:'100%', objectFit:'cover' };
-const avatarLargeContainer = { width:'100px', height:'100px', borderRadius:'50%', background:'white', margin:'0 auto 10px', display:'flex', alignItems:'center', justifyContent:'center', overflow:'hidden', border:'3px solid #FF9800' };
+const avatarLargeContainer = { width:'110px', height:'110px', borderRadius:'50%', background:'white', margin:'0 auto 15px', display:'flex', alignItems:'center', justifyContent:'center', overflow:'hidden', border:'4px solid #FF9800', boxShadow: '0 4px 10px rgba(0,0,0,0.1)' };
 
-const miniUploadBtn = { position:'absolute', bottom:0, right:0, background:'#fff', color:'#333', borderRadius:'50%', width:'20px', height:'20px', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'12px', cursor:'pointer', border:'1px solid #ddd' };
+const miniUploadBtn = { position:'absolute', bottom:0, right:0, background:'#FFC107', color:'#333', borderRadius:'50%', width:'24px', height:'24px', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'14px', cursor:'pointer', border:'2px solid #fff' };
 const uploadBtn = { color:'#2196F3', fontSize:'14px', fontWeight:'bold', cursor:'pointer', marginTop:'10px', display:'inline-block' };
 
-const menuGrid = { display:'flex', flexDirection:'column', gap:'12px' };
-const menuItem = { display:'flex', alignItems:'center', background:'#fff', border:'1px solid #f0f0f0', padding:'18px', borderRadius:'15px', cursor:'pointer', textAlign:'left', boxShadow:'0 4px 10px rgba(0,0,0,0.05)' };
-const iconStyle = { fontSize:'28px', marginRight:'15px', width:'30px', flexShrink:0 };
-const menuTitle = { fontWeight:'700', fontSize:'16px', color:'#333' };
-const menuDesc = { fontSize:'13px', color:'#666', marginTop:'4px' }; 
-const arrow = { marginLeft:'auto', fontSize:'20px', color:'#ccc' };
+const menuGrid = { display:'flex', flexDirection:'column', gap:'10px' }; // Reduced gap for a smoother flow
+const menuItem = { 
+    display:'flex', 
+    alignItems:'center', 
+    background:'#fff', 
+    border:'none', // Removed border for cleaner look
+    padding:'20px', 
+    borderRadius:'12px', // Slightly smaller radius
+    cursor:'pointer', 
+    textAlign:'left', 
+    boxShadow:'0 2px 10px rgba(0,0,0,0.05)', // Softer shadow
+    transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+};
+const iconStyle = { fontSize:'30px', marginRight:'15px', width:'35px', flexShrink:0 };
+const menuTitle = { fontWeight:'700', fontSize:'17px', color:'#333' };
+const menuDesc = { fontSize:'13px', color:'#666', marginTop:'2px' }; // Reduced margin for tighter text
+const arrow = { marginLeft:'auto', fontSize:'24px', color:'#ccc' };
 
-const formGroup = { marginBottom:'20px' };
+const formGroup = { marginBottom:'25px' }; // Increased margin to prevent visual overlap
 const formRow = { display:'flex', gap:'15px' };
 const label = { display:'block', fontSize:'12px', fontWeight:'600', color:'#888', marginBottom:'5px', textTransform:'uppercase' }; 
 const ajioInput = { width:'100%', padding: '12px 0', borderRadius: '0', border: 'none', borderBottom: '1px solid #ddd', fontSize: '15px', boxSizing: 'border-box', background: 'transparent', color: '#333', outline:'none' }; 
 
-const gpsBox = { background:'#E3F2FD', padding:'15px', borderRadius:'12px', marginBottom:'20px', border:'1px solid #90CAF9', display:'flex', justifyContent:'space-between', alignItems:'center', flexWrap: 'wrap' };
-const actionBtn = { background:'#1976D2', color:'white', border:'none', padding:'8px 12px', borderRadius:'6px', cursor:'pointer', fontWeight:'bold', fontSize:'12px', flexShrink: 0 };
+// 🚨 STUNNING GPS SECTION OVERHAUL
+const gpsBox = { 
+    background:'linear-gradient(135deg, #1976D2, #2196F3)', 
+    padding: '20px', 
+    borderRadius: '12px', 
+    marginBottom: '30px', 
+    boxShadow: '0 4px 15px rgba(33, 150, 243, 0.4)',
+    display:'flex', 
+    flexDirection: 'column',
+    color: 'white'
+};
+const gpsToolHeader = { fontSize: '18px', fontWeight: '800', marginBottom: '10px', display: 'flex', alignItems: 'center' };
+const gpsStatus = (status) => ({
+    fontSize: '14px', 
+    color: status === 'Missing' ? '#FFC107' : '#E0E0E0', 
+    marginTop: '5px', 
+    fontWeight: '600'
+});
 
-const mainSaveBtn = { width:'100%', background:'#2E7D32', color:'white', border:'none', padding:'16px', borderRadius:'12px', fontSize:'17px', fontWeight:'bold', cursor:'pointer', marginTop:'10px' };
+const actionBtn = { 
+    background:'#FFC107', 
+    color:'#333', 
+    border:'none', 
+    padding:'12px 18px', 
+    borderRadius:'8px', 
+    cursor:'pointer', 
+    fontWeight:'bold', 
+    fontSize:'14px', 
+    flexShrink: 0,
+    marginTop: '15px',
+    transition: 'background 0.2s ease'
+};
+
+const mainSaveBtn = { width:'100%', background:'#2E7D32', color:'white', border:'none', padding:'16px', borderRadius:'12px', fontSize:'17px', fontWeight:'bold', cursor:'pointer', marginTop:'20px' };
 const blackSaveBtn = { width:'100%', background:'#000', color:'white', border:'none', padding:'16px', borderRadius:'12px', fontSize:'16px', fontWeight:'bold', cursor:'pointer', marginTop:'20px' };
 const logoutBtn = { width:'100%', background:'#d32f2f', color:'white', border:'none', padding:'16px', borderRadius:'12px', fontSize:'17px', fontWeight:'bold', cursor:'pointer', marginTop:'30px' };
 
 const settingsItem = { display:'flex', justifyContent:'space-between', alignItems:'center', padding:'15px 0', borderBottom:'1px solid #f0f0f0' };
+
 
 // We keep the rating rendering helpers as they are used in the Seller Profile view (View 3)
 const renderStars = (rating) => {
@@ -116,13 +161,15 @@ function Profile() {
     const [notification, setNotification] = useState({ message: '', type: '' });
     const [isSaving, setIsSaving] = useState(false);
     
-    // Data State
+    // Data State (Unchanged - The fix is in the logic below)
     const [profileData, setProfileData] = useState({
-        name: '', sellerName: 'Unnamed Shop', phone: '', alternatePhone: '', address: '', lat: null, lng: null, photo: '', rating: 4.8, bio: 'Dedicated local farmer/machinery provider.', ordersCompleted: 0,
+        name: '', sellerName: 'Unnamed Shop', phone: '', alternatePhone: '', photo: '', rating: 4.8, bio: 'Dedicated local farmer/machinery provider.', ordersCompleted: 0,
         serviceOrders: 15, productOrders: 25, serviceRating: 4.6, productRating: 4.4, ratingBreakdown: { '5': 25, '4': 15, '3': 20, '2': 10, '1': 30 },
         serviceMetrics: [ { title: "Work Skills", score: 4.8 }, { title: "Punctuality", score: 4.3 }, { title: "Communication", score: 4.6 } ],
         productMetrics: [ { title: "Product Quality", score: 4.7 }, { title: "Freshness", score: 4.4 }, { title: "Packaging", score: 4.0 } ],
-        pincode: '', city: '', state: '', locality: '', building: '', landmark: '' 
+        
+        homeAddress: { pincode: '', city: '', state: '', locality: '', building: '', landmark: '', lat: null, lng: null },
+        businessAddress: { pincode: '', city: '', state: '', locality: '', building: '', landmark: '', lat: null, lng: null }
     });
 
     const showNotification = (message, type) => {
@@ -140,14 +187,26 @@ function Profile() {
                 
                 if (docSnap.exists()) {
                     const data = docSnap.data();
+                    
+                    const extractAddress = (source) => ({
+                         pincode: source.pincode || '', city: source.city || '', state: source.state || '', 
+                         locality: source.locality || '', building: source.building || '', landmark: source.landmark || '',
+                         lat: source.lat || null, lng: source.lng || null
+                    });
+
                     setProfileData(prev => ({ 
-                        ...prev, ...data,
-                        pincode: data.pincode || '', city: data.city || '', state: data.state || '', locality: data.locality || '', 
-                        building: data.building || '', landmark: data.landmark || '', phone: data.phone || '', alternatePhone: data.alternatePhone || '', 
-                        sellerName: data.sellerName || 'Unnamed Shop', bio: data.bio || 'Dedicated local farmer/machinery provider.', ordersCompleted: data.ordersCompleted || 0, 
-                        rating: data.rating || 4.8, ratingBreakdown: data.ratingBreakdown || prev.ratingBreakdown, 
-                        serviceOrders: data.serviceOrders || 15, productOrders: data.productOrders || 25, serviceRating: data.serviceRating || 4.6, 
-                        productRating: data.productRating || 4.4, serviceMetrics: data.serviceMetrics || prev.serviceMetrics, productMetrics: data.productMetrics || prev.productMetrics,
+                        ...prev, 
+                        ...data,
+                        homeAddress: data.homeAddress ? extractAddress(data.homeAddress) : prev.homeAddress,
+                        businessAddress: data.businessAddress ? extractAddress(data.businessAddress) : prev.businessAddress,
+                        
+                        phone: data.phone || '', alternatePhone: data.alternatePhone || '', 
+                        sellerName: data.sellerName || 'Unnamed Shop', bio: data.bio || prev.bio,
+                        ordersCompleted: data.ordersCompleted || 0, rating: data.rating || 4.8,
+                        ratingBreakdown: data.ratingBreakdown || prev.ratingBreakdown, 
+                        serviceOrders: data.serviceOrders || 15, productOrders: data.productOrders || 25, 
+                        serviceRating: data.serviceRating || 4.6, productRating: data.productRating || 4.4, 
+                        serviceMetrics: data.serviceMetrics || prev.serviceMetrics, productMetrics: data.productMetrics || prev.productMetrics,
                     }));
                 } else {
                     setProfileData(prev => ({...prev, name: currentUser.displayName || 'New User', photo: currentUser.photoURL || prev.photo}));
@@ -172,21 +231,23 @@ function Profile() {
                  setIsSaving(false);
                  return;
             }
-
+            
             const dataToSave = {
                 ...updated,
-                pincode: updated.pincode, city: updated.city, state: updated.state, locality: updated.locality, 
-                building: updated.building, landmark: updated.landmark, lat: updated.lat, lng: updated.lng,
-                name: updated.name, sellerName: updated.sellerName, phone: updated.phone, alternatePhone: updated.alternatePhone, bio: updated.bio,
+                phone: updated.phone, alternatePhone: updated.alternatePhone, 
+                name: updated.name, sellerName: updated.sellerName, bio: updated.bio,
+                
+                homeAddress: updated.homeAddress,
+                businessAddress: updated.businessAddress,
+
+                ordersCompleted: updated.ordersCompleted, 
+                rating: updated.rating, 
             };
             
-            dataToSave.address = `${updated.building}, ${updated.locality}, ${updated.city}, ${updated.state} - ${updated.pincode}`;
-            
-            setProfileData(dataToSave);
+            setProfileData(updated); 
             await setDoc(doc(db, "users", user.uid), dataToSave, { merge: true });
             
             showNotification("Profile saved successfully!", 'success');
-            if (activeView !== 'menu') setActiveView('menu'); 
         } catch (e) { 
             showNotification("Error saving profile: " + e.message, 'error'); 
         } finally {
@@ -194,10 +255,10 @@ function Profile() {
         }
     };
 
-    const setBaseLocation = () => { 
+    const setBaseLocation = (addressType) => { 
         if (!navigator.geolocation) { showNotification("GPS not supported by your browser.", 'error'); return; }
         
-        showNotification("Fetching GPS coordinates...", 'loading');
+        showNotification(`Fetching GPS coordinates for ${addressType === 'homeAddress' ? 'Home' : 'Business'}...`, 'loading');
         
         navigator.geolocation.getCurrentPosition(async (position) => {
             const { latitude, longitude } = position.coords;
@@ -205,18 +266,26 @@ function Profile() {
                 const response = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=en`);
                 const data = await response.json();
                 
-                const newState = {
+                const newAddress = {
                     lat: latitude, lng: longitude,
-                    pincode: data.postcode || data.localityInfo?.administrative[7]?.name || profileData.pincode || '',
-                    city: data.city || data.locality || profileData.city || '', state: data.principalSubdivision || profileData.state || '',
-                    locality: data.localityName || data.street || data.locality || profileData.locality || '',
-                    building: profileData.building || data.street || '', landmark: profileData.landmark || '' 
+                    pincode: data.postcode || data.localityInfo?.administrative[7]?.name || '', 
+                    city: data.city || data.locality || '', 
+                    state: data.principalSubdivision || '',
+                    locality: data.localityName || data.street || data.locality || '',
+                    building: profileData[addressType].building || data.street || '', 
+                    landmark: profileData[addressType].landmark || '' 
                 };
-                
-                setProfileData(prev => ({ ...prev, ...newState }));
-                showNotification(`✅ GPS Coordinates saved. Pincode: ${newState.pincode}. Address fields pre-filled. Please verify and Save.`, 'success');
 
-            } catch (error) { showNotification("GPS captured, but address lookup failed. Please fill details manually.", 'error'); }
+                setProfileData(prev => ({
+                    ...prev,
+                    [addressType]: newAddress 
+                }));
+                
+                showNotification(`✅ GPS Coordinates saved. Pincode: ${newAddress.pincode}. Address fields pre-filled for ${addressType === 'homeAddress' ? 'Home' : 'Business'}. Please verify and Save.`, 'success');
+
+            } catch (error) { 
+                showNotification("GPS captured, but address lookup failed. Please fill details manually.", 'error'); 
+            }
         }, () => showNotification("GPS Permission denied or timeout.", 'error'), {enableHighAccuracy:true, timeout: 10000});
     };
     
@@ -284,7 +353,7 @@ function Profile() {
                         </div>
                     </div>
 
-                    {/* MENU OPTIONS GRID */}
+                    {/* MENU OPTIONS GRID - Clean and modern look retained */}
                     <div style={menuGrid}>
                         <button onClick={() => setActiveView('personal')} style={menuItem}>
                             <span style={iconStyle}>👤</span>
@@ -299,7 +368,7 @@ function Profile() {
                             <span style={iconStyle}>🏪</span>
                             <div>
                                 <div style={menuTitle}>Seller Profile</div>
-                                <div style={menuDesc}>Shop setup, Location & Contact ({profileData.rating})</div>
+                                <div style={menuDesc}>Shop setup, Location & Contact ({profileData.rating.toFixed(1)})</div>
                             </div>
                             <span style={arrow}>›</span>
                         </button>
@@ -345,8 +414,17 @@ function Profile() {
         );
     }
 
-    // --- VIEW 2: MY PERSONAL PROFILE (Embedded/Fixed) ---
+    // --- VIEW 2: MY PERSONAL PROFILE (Embedded/FIXED) ---
     if (activeView === 'personal') {
+        const { homeAddress } = profileData; 
+
+        const handleHomeAddressChange = (key, value) => {
+            setProfileData(prev => ({
+                ...prev,
+                homeAddress: { ...prev.homeAddress, [key]: value }
+            }));
+        };
+
         return (
             <div style={pageStyle}>
                 <NotificationBar />
@@ -354,6 +432,7 @@ function Profile() {
                     <button onClick={() => setActiveView('menu')} style={backBtn}>⬅ Back to Menu</button>
                     <h2 style={sectionTitle}>👤 Personal Details</h2>
                     
+                    {/* ORIGINAL INPUT LAYOUT RESTORED */}
                     <div style={formGroup}>
                         <label style={label}>Account Name</label>
                         <input type="text" value={profileData.name} onChange={e=>setProfileData({...profileData, name:e.target.value})} style={ajioInput} />
@@ -367,47 +446,47 @@ function Profile() {
                     <hr style={{margin:'25px 0', borderColor:'#eee'}}/>
                     <h3 style={subSectionTitle}>🏠 Primary Home Address</h3>
 
-                    {/* **GPS TOOL FOR COORDINATES** */}
+                    {/* **STUNNING GPS TOOL OVERHAUL** */}
                     <div style={gpsBox}>
-                        <div style={{flexGrow: 1}}>
-                            <label style={{...label, color:'#1976D2', marginBottom:'10px'}}>🛰️ GPS Tool</label>
-                            <p style={{fontSize:'12px', color:'#333', marginTop:'5px', fontWeight:'600'}}>
-                                GPS: {profileData.lat && profileData.lng ? `Active: ${profileData.lat.toFixed(4)}, ${profileData.lng.toFixed(4)}` : 'Missing'}
-                            </p>
-                        </div>
-                        <button onClick={setBaseLocation} style={actionBtn}>Get Current GPS & Pre-fill</button>
+                         <div style={gpsToolHeader}>
+                             <span style={{marginRight: '8px'}}>🛰️</span> GPS Tool
+                         </div>
+                        <p style={gpsStatus(homeAddress.lat ? 'Active' : 'Missing')}>
+                             Status: {homeAddress.lat ? `Active: ${homeAddress.lat.toFixed(4)}, ${homeAddress.lng.toFixed(4)}` : 'Missing'}
+                         </p>
+                        <button onClick={() => setBaseLocation('homeAddress')} style={actionBtn}>Get Current GPS & Pre-fill</button>
                     </div>
 
-                    {/* ADDRESS FIELDS (Ajio Style Inputs) */}
+                    {/* ADDRESS FIELDS (Ajio Style Inputs) - NOW CORRECTLY LINKED to homeAddress */}
                     <div style={formRow}>
                         <div style={{...formGroup, flex:1}}>
                             <label style={label}>Pincode</label>
-                            <input type="text" value={profileData.pincode} onChange={e=>setProfileData({...profileData, pincode:e.target.value})} style={ajioInput} />
+                            <input type="text" value={homeAddress.pincode} onChange={e=>handleHomeAddressChange('pincode', e.target.value)} style={ajioInput} />
                         </div>
                         <div style={{...formGroup, flex:1}}>
                             <label style={label}>City</label>
-                            <input type="text" value={profileData.city} onChange={e=>setProfileData({...profileData, city:e.target.value})} style={ajioInput} />
+                            <input type="text" value={homeAddress.city} onChange={e=>handleHomeAddressChange('city', e.target.value)} style={ajioInput} />
                         </div>
                     </div>
 
                     <div style={formGroup}>
                         <label style={label}>State</label>
-                        <input type="text" value={profileData.state} onChange={e=>setProfileData({...profileData, state:e.target.value})} style={ajioInput} />
+                        <input type="text" value={homeAddress.state} onChange={e=>handleHomeAddressChange('state', e.target.value)} style={ajioInput} />
                     </div>
 
                     <div style={formGroup}>
                         <label style={label}>Locality / Area / Street</label>
-                        <input type="text" value={profileData.locality} onChange={e=>setProfileData({...profileData, locality:e.target.value})} style={ajioInput} />
+                        <input type="text" value={homeAddress.locality} onChange={e=>handleHomeAddressChange('locality', e.target.value)} style={ajioInput} />
                     </div>
 
                     <div style={formGroup}>
                         <label style={label}>Flat no / Building Name</label>
-                        <input type="text" value={profileData.building} onChange={e=>setProfileData({...profileData, building:e.target.value})} style={ajioInput} />
+                        <input type="text" value={homeAddress.building} onChange={e=>handleHomeAddressChange('building', e.target.value)} style={ajioInput} />
                     </div>
 
                     <div style={formGroup}>
                         <label style={label}>Landmark (optional)</label>
-                        <input type="text" value={profileData.landmark} onChange={e=>setProfileData({...profileData, landmark:e.target.value})} style={ajioInput} />
+                        <input type="text" value={homeAddress.landmark} onChange={e=>handleHomeAddressChange('landmark', e.target.value)} style={ajioInput} />
                     </div>
 
                     <button onClick={() => saveData()} style={mainSaveBtn} disabled={isSaving}>
@@ -418,8 +497,17 @@ function Profile() {
         );
     }
 
-    // --- VIEW 3: SELLER PROFILE (Embedded/Fixed) ---
+    // --- VIEW 3: SELLER PROFILE (Embedded/FIXED) ---
     if (activeView === 'seller') {
+        const { businessAddress } = profileData; 
+
+        const handleBusinessAddressChange = (key, value) => {
+            setProfileData(prev => ({
+                ...prev,
+                businessAddress: { ...prev.businessAddress, [key]: value }
+            }));
+        };
+
         return (
             <div style={pageStyle}>
                 <NotificationBar />
@@ -465,61 +553,62 @@ function Profile() {
                         <input type="tel" placeholder="Optional Backup Number" value={profileData.alternatePhone} onChange={e=>setProfileData({...profileData, alternatePhone:e.target.value})} style={ajioInput} />
                     </div>
 
-                    {/* **AJIO STYLE ADDRESS INPUT - SYNCED FROM VIEW 2** */}
+                    {/* **BUSINESS ADDRESS INPUT - NOW LINKED TO businessAddress** */}
                     <h3 style={subSectionTitle}>Home Base Address (For Directions/Filtering)</h3>
                     
-                    {/* GPS TOOL FOR COORDINATES */}
+                    {/* **STUNNING GPS TOOL OVERHAUL** */}
                     <div style={gpsBox}>
-                        <div style={{flexGrow: 1}}>
-                            <label style={{...label, color:'#1976D2', marginBottom:'10px'}}>🛰️ GPS Tool</label>
-                            <p style={{fontSize:'12px', color:'#333', marginTop:'5px', fontWeight:'600'}}>
-                                GPS: {profileData.lat && profileData.lng ? `Active: ${profileData.lat.toFixed(4)}, ${profileData.lng.toFixed(4)}` : 'Missing'}
-                            </p>
-                        </div>
-                        <button onClick={setBaseLocation} style={actionBtn}>Get Current GPS & Pre-fill</button>
+                         <div style={gpsToolHeader}>
+                             <span style={{marginRight: '8px'}}>🛰️</span> GPS Tool
+                         </div>
+                        <p style={gpsStatus(businessAddress.lat ? 'Active' : 'Missing')}>
+                             Status: {businessAddress.lat ? `Active: ${businessAddress.lat.toFixed(4)}, ${businessAddress.lng.toFixed(4)}` : 'Missing'}
+                         </p>
+                        <button onClick={() => setBaseLocation('businessAddress')} style={actionBtn}>Get Current GPS & Pre-fill</button>
                     </div>
 
-                    {/* ADDRESS FIELDS (Ajio Style Inputs) */}
+                    {/* ADDRESS FIELDS (Ajio Style Inputs) - NOW CORRECTLY LINKED to businessAddress */}
                     <div style={formRow}>
                         <div style={{...formGroup, flex:1}}>
                             <label style={label}>Pincode</label>
-                            <input type="text" value={profileData.pincode} onChange={e=>setProfileData({...profileData, pincode:e.target.value})} style={ajioInput} />
+                            <input type="text" value={businessAddress.pincode} onChange={e=>handleBusinessAddressChange('pincode', e.target.value)} style={ajioInput} />
                         </div>
                         <div style={{...formGroup, flex:1}}>
                             <label style={label}>City</label>
-                            <input type="text" value={profileData.city} onChange={e=>setProfileData({...profileData, city:e.target.value})} style={ajioInput} />
+                            <input type="text" value={businessAddress.city} onChange={e=>handleBusinessAddressChange('city', e.target.value)} style={ajioInput} />
                         </div>
                     </div>
 
                     <div style={formGroup}>
                         <label style={label}>State</label>
-                        <input type="text" value={profileData.state} onChange={e=>setProfileData({...profileData, state:e.target.value})} style={ajioInput} />
+                        <input type="text" value={businessAddress.state} onChange={e=>handleBusinessAddressChange('state', e.target.value)} style={ajioInput} />
                     </div>
 
                     <div style={formGroup}>
                         <label style={label}>Locality / Area / Street</label>
-                        <input type="text" value={profileData.locality} onChange={e=>setProfileData({...profileData, locality:e.target.value})} style={ajioInput} />
+                        <input type="text" value={businessAddress.locality} onChange={e=>handleBusinessAddressChange('locality', e.target.value)} style={ajioInput} />
                     </div>
 
                     <div style={formGroup}>
                         <label style={label}>Flat no / Building Name</label>
-                        <input type="text" value={profileData.building} onChange={e=>setProfileData({...profileData, building:e.target.value})} style={ajioInput} />
+                        <input type="text" value={businessAddress.building} onChange={e=>handleBusinessAddressChange('building', e.target.value)} style={ajioInput} />
                     </div>
 
                     <div style={formGroup}>
                         <label style={label}>Landmark (optional)</label>
-                        <input type="text" value={profileData.landmark} onChange={e=>setProfileData({...profileData, landmark:e.target.value})} style={ajioInput} />
+                        <input type="text" value={businessAddress.landmark} onChange={e=>handleBusinessAddressChange('landmark', e.target.value)} style={ajioInput} />
                     </div>
 
+                    
                     <hr style={{margin:'25px 0', borderColor:'#eee'}}/>
                     
-                    {/* TRACK RECORD & BIO - ADVANCED RATING UI (Kept from original) */}
+                    {/* TRACK RECORD & BIO - ADVANCED RATING UI */}
                     <h3 style={subSectionTitle}>Track Record & Bio</h3>
 
-                    <div style={{ border: '1px solid #eee', borderRadius:'10px', marginBottom:'20px', background:'#fff', padding:'15px' }}>
+                    <div style={{ border: '1px solid #eee', borderRadius:'10px', marginBottom:'20px', background:'#f9f9f9', padding:'15px' }}>
                         
                         {/* OVERALL RATING HEADER */}
-                        <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', borderBottom:'1px solid #eee', paddingBottom:'10px', marginBottom:'15px'}}>
+                        <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', borderBottom:'1px solid #ddd', paddingBottom:'10px', marginBottom:'15px'}}>
                             <div style={{textAlign:'left'}}>
                                 <div style={{fontSize:'45px', color:'#FFC107', fontWeight:'900', lineHeight:1}}>{profileData.rating.toFixed(1)}</div>
                                 <div style={{fontSize:'12px', color:'#666'}}>Overall Rating</div>
@@ -564,7 +653,7 @@ function Profile() {
         );
     }
     
-    // --- Outsourced View Renders ---
+    // --- Outsourced View Renders (Unchanged) ---
     if (activeView === 'listings') {
         return (
             <MyListingsPage 
@@ -594,13 +683,12 @@ function Profile() {
         );
     }
 
-    // 🚨 FINAL VIEW: SETTINGS (Now Outsourced)
     if (activeView === 'settings') {
         return (
             <SettingsPage 
                 setActiveView={setActiveView} 
                 NotificationBar={NotificationBar}
-                handleLogout={handleLogout} // Pass the function down
+                handleLogout={handleLogout} 
             />
         );
     }
