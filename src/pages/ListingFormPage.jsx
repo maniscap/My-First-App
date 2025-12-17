@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { doc, collection, setDoc } from 'firebase/firestore'; 
 import { db } from '../firebase'; 
 
@@ -45,45 +45,38 @@ export function ListingFormPage({ user, profileData, showNotification, goToMyLis
     
     const [isSaving, setIsSaving] = useState(false);
     
-    // Determine initial type (either from a passed item or null if starting fresh)
-    const initialType = editingItem?.type || null; 
-
-    // 🚨 Service type state is local to this component now
-    const [serviceType, setServiceType] = useState(editingItem?.serviceType || null); 
-
     const initialFormData = {
-        type: initialType, 
+        type: editingItem?.type || null, 
         title: editingItem?.title || '', 
         price: editingItem?.price || '', 
-        unit: editingItem?.unit || 'per_unit', 
+        unit: editingItem?.unit || (editingItem?.type === 'Service' ? 'per_hour' : 'per_unit'), 
         description: editingItem?.description || '', 
         
-        // Seller details (from profileData)
         sellerName: profileData.sellerName, 
         sellerContact: profileData.phone, 
         lat: profileData.businessAddress.lat, 
         lng: profileData.businessAddress.lng,
         
-        // Specific fields
         category: editingItem?.category || null, 
         freshness: editingItem?.freshness || null, 
         quantity: editingItem?.quantity || null, 
         cropName: editingItem?.cropName || '', 
         grade: editingItem?.grade || '',
         
-        // Service specific new fields
+        // Service specific fields (Now mandatory for Service type)
         serviceType: editingItem?.serviceType || null, 
-        equipmentType: editingItem?.equipmentType || null,
-        laborCount: editingItem?.laborCount || null,
-        
-        // Ensure ID is carried for editing
+        equipmentType: editingItem?.equipmentType || 'tractor',
+        laborCount: editingItem?.laborCount || 1,
+
         id: editingItem?.id || null, 
         collectionName: editingItem?.collectionName || null,
     };
     
     const [formData, setFormData] = useState(initialFormData);
-    const [activeListingType, setActiveListingType] = useState(initialType);
+    const [activeListingType, setActiveListingType] = useState(initialFormData.type);
 
+    // 🚨 STATE TO CONTROL DYNAMIC SERVICE SUB-TYPE
+    const [serviceType, setServiceType] = useState(initialFormData.serviceType); 
 
     // --- Handlers ---
     const handleFormChange = (e) => {
@@ -107,29 +100,38 @@ export function ListingFormPage({ user, profileData, showNotification, goToMyLis
     
     const handleServiceTypeSelection = (type) => {
         setServiceType(type);
-        setFormData(prev => ({ ...prev, serviceType: type }));
+        // Reset unit type to a sensible default based on sub-type
+        const defaultUnit = type === 'machinery' ? 'per_hour' : 'per_day'; 
+        setFormData(prev => ({ ...prev, serviceType: type, unit: defaultUnit }));
     };
 
 
     const handleSaveListing = async (e) => {
         e.preventDefault();
-        if (!user || !activeListingType) return;
+        
+        if (!activeListingType) return;
         if (!formData.title || !formData.price || !formData.description) { showNotification("Please fill all required fields.", 'error'); return; }
+
+        // Service-specific validation
+        if (activeListingType === 'Service') {
+            if (!serviceType) { showNotification("Please select Machinery or Labor.", 'error'); return; }
+            if (serviceType === 'labor' && (!formData.laborCount || formData.laborCount < 1)) {
+                 showNotification("Labor listing requires Number of Persons.", 'error'); return;
+            }
+        }
 
         setIsSaving(true);
         try {
             const collectionName = editingItem?.collectionName || COLLECTION_MAP[activeListingType];
             const isNew = !editingItem;
             
-            // Collect all data, ensuring serviceType is included if applicable
             const dataToSave = { 
                 ...formData, 
                 userId: user.uid, 
                 lastUpdated: new Date(),
-                // location field is important for 50km radius search
                 location: profileData.businessAddress,
             };
-            delete dataToSave.unit; // Remove transient state
+            delete dataToSave.unit; 
 
             if (!isNew) { 
                  await setDoc(doc(db, collectionName, formData.id), dataToSave, { merge: true });
@@ -140,7 +142,6 @@ export function ListingFormPage({ user, profileData, showNotification, goToMyLis
                  showNotification("New Listing created successfully!", 'success');
             }
             
-            // Go back to the list view and trigger a refresh
             goToMyListings(true); 
 
         } catch (error) {
@@ -216,6 +217,7 @@ export function ListingFormPage({ user, profileData, showNotification, goToMyLis
     
     // Renders the main form fields based on type
     const renderFormFields = () => {
+        
         // --- Common Fields ---
         const commonFields = (
             <>
@@ -223,7 +225,7 @@ export function ListingFormPage({ user, profileData, showNotification, goToMyLis
 
                 <div style={formGroup}>
                     <label style={label}>Title / Name of Item</label>
-                    <input type="text" name="title" value={formData.title || ''} onChange={handleFormChange} style={ajioInput} placeholder="e.g. Tomato (100kg), Tractor Rental" />
+                    <input type="text" name="title" value={formData.title || ''} onChange={handleFormChange} style={ajioInput} placeholder="e.g. Tomato (100kg), Harvester Rental" />
                 </div>
 
                 <div style={formRow}>
@@ -239,13 +241,21 @@ export function ListingFormPage({ user, profileData, showNotification, goToMyLis
                             onChange={handleFormChange} 
                             style={ajioInput}
                         >
-                            {activeListingType === 'Service' && ( <>
-                                <option value="per_hour">₹ / Hour</option><option value="per_day">₹ / Day</option>
-                                <option value="fixed">Fixed Price</option><option value="per_acre">₹ / Acre</option> 
-                            </>)}
-                            {(activeListingType === 'Product' || activeListingType === 'Business') && ( <>
-                                <option value="per_unit">₹ / Unit</option><option value="per_kg">₹ / Kg</option><option value="per_ton">₹ / Ton</option>
-                            </>)}
+                            {activeListingType === 'Service' && ( 
+                                 <>
+                                    <option value="per_hour">₹ / Hour</option>
+                                    <option value="per_day">₹ / Day</option>
+                                    <option value="per_acre">₹ / Acre</option>
+                                    <option value="fixed">Fixed Price</option>
+                                </>
+                            )}
+                            {(activeListingType === 'Product' || activeListingType === 'Business') && (
+                                <>
+                                    <option value="per_unit">₹ / Unit</option>
+                                    <option value="per_kg">₹ / Kg</option>
+                                    <option value="per_ton">₹ / Ton</option>
+                                </>
+                            )}
                         </select>
                     </div>
                 </div>
@@ -256,45 +266,67 @@ export function ListingFormPage({ user, profileData, showNotification, goToMyLis
         let specificFields = null;
 
         if (activeListingType === 'Service') {
-            if (!serviceType) return null; // Should be handled by top-level logic
-
+            
+            // This is the core Service form now
             specificFields = (
                 <>
-                   {serviceType === 'machinery' && (
-                       <div style={formGroup}>
-                           <label style={label}>Equipment Type</label>
-                           <select name="equipmentType" value={formData.equipmentType || 'tractor'} onChange={handleFormChange} style={ajioInput}>
-                               <option value="tractor">Tractor</option><option value="harvester">Harvester / Combine</option>
-                               <option value="tiller">Tiller / Cultivator</option><option value="other">Other Equipment</option>
-                           </select>
-                       </div>
-                   )}
-                   
-                   {serviceType === 'labor' && (
-                       <div style={formGroup}>
-                           <label style={label}>Number of Persons Available</label>
-                           <input type="number" name="laborCount" value={formData.laborCount || 1} onChange={handleFormChange} style={ajioInput} placeholder="e.g. 5" min="1" />
-                       </div>
-                   )}
-                   <div style={formGroup}><label style={label}>Service Category (General)</label><select name="category" value={formData.category || 'machinery'} onChange={handleFormChange} style={ajioInput}>
-                       <option value="machinery">Machinery Rental</option><option value="labor">Labor Hire</option><option value="consulting">Consulting/Expertise</option></select></div>
+                    {commonFields} 
+                    
+                    <h5 style={{margin: '0 0 15px 0', fontSize: '14px', color: '#1B5E20'}}>
+                        {serviceType === 'machinery' ? '🚜 Equipment Details' : '👨‍🌾 Labor Details'}
+                    </h5>
+
+                    {serviceType === 'machinery' && (
+                        <div style={formGroup}>
+                            <label style={label}>Equipment Type</label>
+                            <select name="equipmentType" value={formData.equipmentType || 'tractor'} onChange={handleFormChange} style={ajioInput}>
+                                <option value="tractor">Tractor</option>
+                                <option value="harvester">Harvester / Combine</option>
+                                <option value="tiller">Tiller / Cultivator</option>
+                                <option value="sprayer">Sprayer Equipment</option>
+                                <option value="other">Other Equipment</option>
+                            </select>
+                        </div>
+                    )}
+                    
+                    {serviceType === 'labor' && (
+                        <div style={formGroup}>
+                            <label style={label}>Number of Persons Available (Min 1)</label>
+                            <input type="number" name="laborCount" value={formData.laborCount || 1} onChange={handleFormChange} style={ajioInput} placeholder="e.g. 5" min="1" />
+                        </div>
+                    )}
+
+                    <div style={formGroup}>
+                        <label style={label}>Service Category (General)</label>
+                        <select name="category" value={formData.category || serviceType} onChange={handleFormChange} style={ajioInput}>
+                            <option value="machinery">Machinery Rental</option> 
+                            <option value="labor">Labor Hire</option> 
+                            <option value="consulting">Consulting/Expertise</option> 
+                        </select>
+                    </div>
                 </>
             );
 
         } else if (activeListingType === 'Product') {
             specificFields = (
-                <div style={formRow}>
-                    <div style={{...formGroup, flex:1}}><label style={label}>Product Status</label><select name="freshness" value={formData.freshness || 'fresh'} onChange={handleFormChange} style={ajioInput}>
-                            <option value="fresh">Fresh (Daily Harvest)</option><option value="stored">Stored (Cold/Dry Storage)</option></select></div>
-                    <div style={{...formGroup, flex:1}}><label style={label}>Available Quantity</label><input type="number" name="quantity" value={formData.quantity || 0} onChange={handleFormChange} style={ajioInput} placeholder="e.g. 50" /></div>
-                </div>
+                <>
+                    {commonFields}
+                    <div style={formRow}>
+                        <div style={{...formGroup, flex:1}}><label style={label}>Product Status</label><select name="freshness" value={formData.freshness || 'fresh'} onChange={handleFormChange} style={ajioInput}>
+                                <option value="fresh">Fresh (Daily Harvest)</option><option value="stored">Stored (Cold/Dry Storage)</option></select></div>
+                        <div style={{...formGroup, flex:1}}><label style={label}>Available Quantity</label><input type="number" name="quantity" value={formData.quantity || 0} onChange={handleFormChange} style={ajioInput} placeholder="e.g. 50" /></div>
+                    </div>
+                </>
             );
         } else if (activeListingType === 'Business') {
             specificFields = (
-                <div style={formRow}>
-                    <div style={{...formGroup, flex:1}}><label style={label}>Crop Type / Harvest</label><input type="text" name="cropName" value={formData.cropName || ''} onChange={handleFormChange} style={ajioInput} placeholder="e.g. Wheat, Basmati Rice" /></div>
-                    <div style={{...formGroup, flex:1}}><label style={label}>Grade</label><input type="text" name="grade" value={formData.grade || ''} onChange={handleFormChange} style={ajioInput} placeholder="e.g. Grade A, Certified" /></div>
-                </div>
+                <>
+                    {commonFields}
+                    <div style={formRow}>
+                        <div style={{...formGroup, flex:1}}><label style={label}>Crop Type / Harvest</label><input type="text" name="cropName" value={formData.cropName || ''} onChange={handleFormChange} style={ajioInput} placeholder="e.g. Wheat, Basmati Rice" /></div>
+                        <div style={{...formGroup, flex:1}}><label style={label}>Grade</label><input type="text" name="grade" value={formData.grade || ''} onChange={handleFormChange} style={ajioInput} placeholder="e.g. Grade A, Certified" /></div>
+                    </div>
+                </>
             );
         }
 
@@ -302,8 +334,9 @@ export function ListingFormPage({ user, profileData, showNotification, goToMyLis
         // --- Final Form Assembly ---
         return (
             <form onSubmit={handleSaveListing} style={{padding: '0 10px'}}>
-                {commonFields}
-                {specificFields}
+                {activeListingType !== 'Service' && specificFields} 
+                {activeListingType === 'Service' && specificFields} 
+
                 <div style={formGroup}>
                     <label style={label}>Detailed Description</label>
                     <textarea name="description" value={formData.description || ''} onChange={handleFormChange} style={{...ajioInput, minHeight:'100px', border:'1px solid #ddd', padding:'10px'}} placeholder="Describe quality, availability, terms, etc."></textarea>
@@ -322,7 +355,8 @@ export function ListingFormPage({ user, profileData, showNotification, goToMyLis
     if (!activeListingType) {
         content = renderTypeSelector();
     
-    // Step 2 (Service Only): Select Sub-Type
+    // Step 2 (Service Only): Select Sub-Type (Only if not editing or serviceType not set)
+    // 🚨 IMPORTANT FIX: This ensures edit mode skips the selector if serviceType is already saved.
     } else if (activeListingType === 'Service' && !serviceType) {
         content = renderServiceTypeSelector();
     
@@ -349,7 +383,7 @@ export function ListingFormPage({ user, profileData, showNotification, goToMyLis
                 {content}
 
                 {/* Only show Cancel button if actively creating/editing */}
-                {(activeListingType && serviceType) && (
+                {activeListingType && (
                    <button type="button" onClick={() => goToMyListings(false)} style={{...deleteBtn, background: '#888', marginTop: '20px', width: '95%', margin: '20px auto 0 auto'}}>
                        Cancel & Discard Changes
                    </button>

@@ -1,20 +1,21 @@
 {
-  "name": "Farm Cap",
-  "short_name": "FarmCap",
-  "description": "Smart Farming App",
+  "name": "FARMCAP - Smart Farming Assistant",
+  "short_name": "FARMCAP",
+  "description": "All-in-one digital platform for modern farmers.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#000000",
-  "theme_color": "#2E7D32",
+  "background_color": "#ffffff",
+  "theme_color": "#1976D2",
   "icons": [
     {
-      "src": "/vite.svg",
-      "type": "image/svg+xml",
-      "sizes": "192x192"
+      "src": "/logo192.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "any maskable"
     },
     {
-      "src": "/vite.svg",
-      "type": "image/svg+xml",
+      "src": "/logo192.png",
+      "type": "image/png",
       "sizes": "512x512"
     }
   ]

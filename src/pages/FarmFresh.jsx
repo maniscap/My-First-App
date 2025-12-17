@@ -19,7 +19,7 @@ function FarmFresh() {
   const [loading, setLoading] = useState(true);
   const [isLoadingLoc, setIsLoadingLoc] = useState(false);
   
-  // User Location State
+  // User Location State (CRITICAL)
   const [userLat, setUserLat] = useState(null);
   const [userLng, setUserLng] = useState(null);
   const [userLocName, setUserLocName] = useState('');
@@ -66,21 +66,24 @@ function FarmFresh() {
 
   // 4. SMART RADIUS FILTER (50km)
   const filteredProducts = products.filter(item => {
-    // If user has NO coordinates set, fallback to name matching (safety)
-    if (!userLat || !userLng) {
-       return !userLocName || (item.location && item.location.toLowerCase().includes(userLocName.toLowerCase()));
-    }
+    const uName = userLocName ? userLocName.toLowerCase() : '';
+    const iLoc = item.location ? item.location.toLowerCase() : '';
 
-    // If item has NO coordinates, fallback to name matching
-    if (!item.lat || !item.lng) {
-       return !userLocName || (item.location && item.location.toLowerCase().includes(userLocName.toLowerCase()));
+    // PRIORITY 1: GPS Distance Check (The most reliable check)
+    if (userLat && userLng && item.lat && item.lng) {
+        const dist = getDistance(userLat, userLng, item.lat, item.lng);
+        return dist <= 50; 
     }
-
-    // CALCULATE DISTANCE
-    const dist = getDistance(userLat, userLng, item.lat, item.lng);
     
-    // Show if within 50km Radius
-    return dist <= 50; 
+    // PRIORITY 2: Name Match Fallback (Only if coordinates are missing)
+    if (uName) {
+        // If location is set (e.g. Chennai), check if the item location includes the set location name.
+        // This is the intended behavior when coordinates fail.
+        return iLoc.includes(uName);
+    }
+
+    // PRIORITY 3: Show All (If no user location is set at all)
+    return true; 
   });
 
 
