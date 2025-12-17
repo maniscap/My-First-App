@@ -3,9 +3,9 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 
 function ChatBot() {
   // --- 🚨 ACTION REQUIRED: PASTE YOUR NEW, SECURE API KEY HERE 🚨 ---
-  const API_KEY = "AIzaSyDBwateOypcFZh63ZJEe428ecaDxekFp2Y"; // Replace this with a new key
+  const API_KEY = import.meta.env.VITE_GEMINI_KEY; // Replace this with a new key
   
-  const MODEL_NAME = "gemini-2.5-flash"; 
+  const MODEL_NAME = "gemini-1.5-flash"; 
 
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState([
