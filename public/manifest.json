@@ -1,23 +1,20 @@
 {
-  "name": "FARMCAP - Smart Farming Assistant",
-  "short_name": "FARMCAP",
-  "description": "All-in-one digital platform for modern farmers.",
-  "start_url": "/",
-  "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#1976D2",
+  "short_name": "FarmConnect",
+  "name": "FarmConnect - Smart Farming",
   "icons": [
     {
-      "src": "/logo192.png",
+      "src": "/icon-192x192.png",
       "type": "image/png",
-      "sizes": "192x192",
-      "purpose": "any"
+      "sizes": "192x192"
     },
     {
-      "src": "/logo192.png",
+      "src": "/icon-512x512.png",
       "type": "image/png",
-      "sizes": "512x512",
-      "purpose": "any"
+      "sizes": "512x512"
     }
-  ]
+  ],
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#2E7D32",
+  "background_color": "#ffffff"
 }
