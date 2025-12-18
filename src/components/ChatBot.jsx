@@ -466,36 +466,35 @@ function ChatBot() {
             <div ref={messagesEndRef} />
           </div>
 
-          {/* FOOTER - ALIGNMENT FIXED HERE */}
+          {/* FOOTER - FIXED LAYOUT */}
           <div style={styles.footer}>
-            {/* Added a Row Wrapper for correct alignment */}
             <div style={styles.inputRow}>
               
-              {/* Typing Area (Grows to fill space) */}
-              <div style={styles.inputArea}>
+              {/* THE GREY CAPSULE (Input + Cam + Mic) */}
+              <div style={styles.inputWrapper}>
                 <input type="file" accept="image/*" onChange={handleFileChange} style={{ display: 'none' }} id="cam-input" />
-                <label htmlFor="cam-input" style={styles.toolBtn}>📸</label>
+                <label htmlFor="cam-input" style={styles.camIcon}>📸</label>
                 
                 <input 
                   type="text" 
                   placeholder="Ask Farm Buddy..." 
-                  style={styles.input} 
+                  style={styles.inputField} 
                   value={input} 
                   onChange={(e) => setInput(e.target.value)} 
                   onKeyPress={(e) => e.key === 'Enter' && handleSend()} 
                 />
 
-                {/* 🎤 PROFESSIONAL GOOGLE MIC SVG */}
-                <button onClick={startListening} style={styles.micBtn}>
-                  <svg viewBox="0 0 24 24" width="22" height="22" fill={isListening ? "#EA4335" : "#FFFFFF"}>
+                <button onClick={startListening} style={styles.micIcon}>
+                   <svg viewBox="0 0 24 24" width="20" height="20" fill={isListening ? "#EA4335" : "#AAAAAA"}>
                     <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/>
                     <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/>
                   </svg>
                 </button>
               </div>
 
-              {/* Send Button (Moved Outside) */}
+              {/* THE SEND BUTTON (Strictly Outside) */}
               <button onClick={handleSend} style={styles.sendBtn}>➤</button>
+
             </div>
             
             {/* IMAGE PREVIEW BADGE */}
@@ -580,22 +579,66 @@ const styles = {
     msgImg: { maxWidth: '240px', borderRadius: '12px', marginBottom: '10px', border: '1px solid #444' },
     
     // Footer
-    footer: { backgroundColor: '#1E1E1E', padding: '15px 20px 30px 20px', borderTop: '1px solid #333' },
+    footer: { backgroundColor: '#1E1E1E', padding: '10px 10px 20px 10px', borderTop: '1px solid #333' },
     
-    // ADDED inputRow to keep alignment clean on mobile
-    inputRow: { display: 'flex', alignItems: 'center', gap: '12px' },
-
-    inputArea: { 
-      flex: 1, // Changed to grow
-      display: 'flex', alignItems: 'center', gap: '12px', backgroundColor: '#2C2C2C', 
-      padding: '10px 18px', borderRadius: '35px', border: '1px solid #444' 
+    // THE INPUT ROW CONTAINER
+    inputRow: { 
+      display: 'flex', 
+      alignItems: 'center', 
+      gap: '8px',         // Gap between the Grey Pill and the Green Button
+      maxWidth: '100%',
     },
-    input: { flex: 1, background: 'none', border: 'none', color: 'white', outline: 'none', fontSize: '16px' },
-    toolBtn: { cursor: 'pointer', fontSize: '22px' },
-    micBtn: { background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: '4px' },
+
+    // THE GREY PILL (Grows to fill space)
+    inputWrapper: { 
+      flex: 1,            // THIS FORCES IT TO TAKE ALL REMAINING SPACE
+      display: 'flex', 
+      alignItems: 'center', 
+      backgroundColor: '#2C2C2C', 
+      borderRadius: '30px', 
+      padding: '8px 12px', 
+      border: '1px solid #444',
+      overflow: 'hidden'  // Prevents internal overflow
+    },
+
+    camIcon: { fontSize: '20px', cursor: 'pointer', marginRight: '10px' },
     
-    // Send button moved outside, kept same style
-    sendBtn: { background: '#2E7D32', color: 'white', border: 'none', borderRadius: '50%', width: '42px', height: '42px', cursor: 'pointer', fontSize: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center' },
+    inputField: { 
+      flex: 1,            // Input text takes space inside the grey pill
+      background: 'none', 
+      border: 'none', 
+      color: 'white', 
+      outline: 'none', 
+      fontSize: '16px',
+      minWidth: '50px'    // Prevents collapse
+    },
+
+    micIcon: { 
+      background: 'none', 
+      border: 'none', 
+      cursor: 'pointer', 
+      display: 'flex', 
+      alignItems: 'center', 
+      padding: '5px',
+      marginLeft: '5px'
+    },
+    
+    // SEND BUTTON (Fixed outside)
+    sendBtn: { 
+      width: '45px', 
+      height: '45px', 
+      borderRadius: '50%', 
+      backgroundColor: '#2E7D32', 
+      color: 'white', 
+      border: 'none', 
+      display: 'flex', 
+      alignItems: 'center', 
+      justifyContent: 'center', 
+      fontSize: '18px', 
+      cursor: 'pointer',
+      flexShrink: 0,      // PREVENTS IT FROM BEING SQUISHED
+      boxShadow: '0 4px 10px rgba(0,0,0,0.3)'
+    },
     
     // Modal
     modalOverlay: { 
