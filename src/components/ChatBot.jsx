@@ -9,7 +9,7 @@ function ChatBot() {
   const API_KEY = import.meta.env.VITE_GEMINI_KEY; 
   
   // 🛠️ MODELS (KEEPING YOUR EXISTING SELECTION)
-  const MODEL_PRIMARY = "gemini-2.5-pro";        
+  const MODEL_PRIMARY = "gemini-2.5-flash";        
   const MODEL_BACKUP_1 = "gemini-2.5-flash-lite";     
   const MODEL_BACKUP_2 = "gemini-1.5-flash";  
   const MODEL_BACKUP_3 = "gemini-3-pro";
