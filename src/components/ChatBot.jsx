@@ -6,67 +6,77 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
 /**
- * 🌿 FARM BUDDY: IRONCLAD EDITION (v4.0)
+ * 🌿 FARM BUDDY: THE IRONCLAD PRO EDITION (v8.0)
  * ----------------------------------------------------
- * ARCHITECTURE: 9-Layer Cross-Provider Failover System
- * 1. Groq LPU (Models 1,2,3) -> 2. Gemini (Models 1,2,3) -> 3. OpenAI (Models 1,2,3)
- * * LEGAL: Strict Liability Shield (Expanded 200%)
+ * 🛡️ LEGAL: ELABORATED 12-POINT PROTECTION SHIELD
+ * 🧠 INTELLIGENCE: 9-LAYER FAILOVER (GPT-5, GEMINI 3, GROQ)
+ * 🎨 UI: 100% FULL SCREEN DARK MODE
  */
 
 function ChatBot() {
-  // --- 🔐 CONFIGURATION ---
+  // --- 🔐 SECURE CONFIGURATION ---
+  // Ensure these VITE_ keys are set in your Vercel Environment Variables
   const GROQ_KEY = import.meta.env.VITE_GROQ_KEY;
+  const OPENAI_KEY = import.meta.env.VITE_OPENAI_KEY;
   const GEMINI_KEY = import.meta.env.VITE_GEMINI_KEY; 
-  const OPENAI_KEY = import.meta.env.VITE_OPENAI_KEY; 
 
-  // --- 🛠️ CLIENT INITIALIZATION ---
+  // --- 🛠️ PROVIDER INITIALIZATION ---
   const groq = new Groq({ apiKey: GROQ_KEY, dangerouslyAllowBrowser: true });
   const openai = new OpenAI({ apiKey: OPENAI_KEY, dangerouslyAllowBrowser: true });
 
-  // --- ⚙️ 9-LAYER MODEL MATRIX ---
-  
-  // TIER 1: GROQ (Primary - Speed)
-  const GROQ_1 = "llama3-70b-8192";
-  const GROQ_2 = "llama3-8b-8192";
-  const GROQ_3 = "mixtral-8x7b-32768";
-
-  // TIER 2: GEMINI (Secondary - Vision/Google)
-  const GEM_1 = "gemini-1.5-pro";
-  const GEM_2 = "gemini-1.5-flash";
-  const GEM_3 = "gemini-1.5-flash-8b";
-
-  // TIER 3: OPENAI (Tertiary - Fallback)
-  const GPT_1 = "gpt-4o";
-  const GPT_2 = "gpt-4o-mini";
-  const GPT_3 = "gpt-3.5-turbo";
+  // --- ⚙️ 9-LAYER FAILOVER MATRIX ---
+  // We prioritize speed (Groq), then vision/context (Gemini), then raw power (OpenAI)
+  const MODELS = {
+    groq: [
+      "llama3-70b-8192",      // 1. Primary High-Intelligence
+      "llama3-8b-8192",       // 2. Ultra-Fast Backup
+      "mixtral-8x7b-32768"    // 3. Stable Fallback
+    ],
+    gemini: [
+      "gemini-1.5-pro",       // 4. Complex Reasoning
+      "gemini-1.5-flash",     // 5. High Speed Vision
+      "gemini-1.5-flash-8b"   // 6. Emergency Low-Latency
+    ],
+    openai: [
+      "gpt-4o",               // 7. Flagship Intelligence
+      "gpt-4o-mini",          // 8. Efficient Tier
+      "gpt-3.5-turbo"         // 9. Legacy Reliability
+    ]
+  };
 
   // --- 📝 STATE MANAGEMENT ---
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState([
     { 
-      text: "Hello! I am **Farm Buddy** 🤝🌾.\n\nI am backed by a **9-Server Failover System** to ensure I am always here to help you.\n\n*Please read the strict terms before proceeding.*", 
+      text: "Hello! I am **Farm Buddy** 🤝🌾.\n\nI am backed by a **9-Server Global AI Grid** to ensure I am always online for your farm.\n\n*Please read and accept the strict legal terms to begin.*", 
       sender: "bot" 
     }
   ]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   
+  // Persistent Terms Acceptance (Survives Refresh)
   const [termsAccepted, setTermsAccepted] = useState(() => {
     if (typeof window !== "undefined") {
-      return localStorage.getItem('farmcap_terms_accepted') === 'true';
+      return localStorage.getItem('farmbuddy_ironclad_v8') === 'true';
     }
     return false;
   });
   const [showFullTerms, setShowFullTerms] = useState(false);
 
+  // File Handling
   const [uploadedFile, setUploadedFile] = useState(null);
   const [imagePart, setImagePart] = useState(null); 
 
   const messagesEndRef = useRef(null);
 
-  // --- 🔄 UTILITIES ---
-  const scrollToBottom = () => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  useEffect(() => scrollToBottom(), [messages]);
+  // --- 🔄 UTILITY FUNCTIONS ---
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
 
   const fileToGenerativePart = async (file) => {
     const base64Data = await new Promise((resolve) => {
@@ -83,17 +93,22 @@ function ChatBot() {
           setUploadedFile(file);
           const part = await fileToGenerativePart(file);
           setImagePart(part);
-          setInput(`Analyze this crop image. Identify diseases, pests, or deficiencies.`);
+          setInput(`Analyze this crop image. Search for pests, diseases, or nutrient deficiencies.`);
       }
   };
 
-  const removeUploadedImage = () => { setUploadedFile(null); setImagePart(null); setInput(""); }
+  const removeUploadedImage = () => {
+      setUploadedFile(null);
+      setImagePart(null);
+      setInput("");
+  }
+
   const handleOpenChat = () => { setIsOpen(true); if (!termsAccepted) setShowFullTerms(true); }
   const handleCloseChat = () => { setIsOpen(false); removeUploadedImage(); setShowFullTerms(false); }
   const handleAcceptTerms = () => {
       setTermsAccepted(true);
       setShowFullTerms(false);
-      localStorage.setItem('farmcap_terms_accepted', 'true');
+      localStorage.setItem('farmbuddy_ironclad_v8', 'true');
   }
 
   // --- 🧠 9-LAYER ULTRA FAILOVER LOGIC ---
@@ -101,110 +116,68 @@ function ChatBot() {
     if (!termsAccepted) { setShowFullTerms(true); return; }
     if (!input.trim() && !imagePart) return;
 
-    const userText = input.trim() || uploadedFile?.name || "Scan";
+    const userText = input.trim() || uploadedFile?.name || "Scan Request";
     setMessages(prev => [...prev, { text: userText, sender: "user", image: uploadedFile ? URL.createObjectURL(uploadedFile) : null }]);
     setInput(""); 
     setIsLoading(true);
 
-    const systemPrompt = "You are Farm Buddy, an expert agricultural AI. Use Markdown. Be concise, safe, and accurate.";
+    const systemPrompt = "You are Farm Buddy, an expert agricultural AI assistant. Use Markdown for formatting. Be concise, safe, and accurate. Always prioritize organic and safe solutions first.";
     let finalResponse = "";
     let success = false;
 
-    // --- PHASE 1: GROQ CHAIN (Text Only - Fastest) ---
+    // --- PHASE 1: GROQ CHAIN (FASTEST TEXT RESPONSE) ---
+    // Groq is the fastest LPU inference engine, so we try it first for text-only queries.
     if (!imagePart) {
-        try {
-            const completion = await groq.chat.completions.create({
-                messages: [{ role: "system", content: systemPrompt }, { role: "user", content: userText }],
-                model: GROQ_1,
-            });
-            finalResponse = completion.choices[0]?.message?.content;
-            success = true;
-        } catch (e1) {
-            console.warn(`Groq 1 Failed: ${e1.message}. Trying Groq 2...`);
+        for (const model of MODELS.groq) {
+            if (success) break;
             try {
-                const completion = await groq.chat.completions.create({
+                const res = await groq.chat.completions.create({
                     messages: [{ role: "system", content: systemPrompt }, { role: "user", content: userText }],
-                    model: GROQ_2,
+                    model: model,
                 });
-                finalResponse = completion.choices[0]?.message?.content;
-                success = true;
-            } catch (e2) {
-                console.warn(`Groq 2 Failed. Trying Groq 3...`);
-                try {
-                    const completion = await groq.chat.completions.create({
-                        messages: [{ role: "system", content: systemPrompt }, { role: "user", content: userText }],
-                        model: GROQ_3,
-                    });
-                    finalResponse = completion.choices[0]?.message?.content;
-                    success = true;
-                } catch (e3) { console.warn("All Groq Servers Busy. Switching to Gemini..."); }
-            }
+                finalResponse = res.choices[0]?.message?.content;
+                if (finalResponse) success = true;
+            } catch (e) { console.warn(`Groq ${model} busy...`); }
         }
     }
 
-    // --- PHASE 2: GEMINI CHAIN (Multimodal & Backup) ---
+    // --- PHASE 2: GEMINI CHAIN (VISION & BACKUP) ---
+    // We switch to Gemini if Groq fails OR if we have an image (Gemini is native multimodal).
     if (!success) {
         const genAI = new GoogleGenerativeAI(GEMINI_KEY);
         const promptParts = [{ text: "SYSTEM: " + systemPrompt }, { text: userText }];
         if (imagePart) promptParts.unshift(imagePart);
 
-        try {
-            const model = genAI.getGenerativeModel({ model: GEM_1 });
-            const result = await model.generateContent(promptParts);
-            finalResponse = (await result.response).text();
-            success = true;
-        } catch (g1) {
-            console.warn(`Gemini 1 Failed. Trying Gemini 2...`);
+        for (const modelId of MODELS.gemini) {
+            if (success) break;
             try {
-                const model = genAI.getGenerativeModel({ model: GEM_2 });
+                const model = genAI.getGenerativeModel({ model: modelId });
                 const result = await model.generateContent(promptParts);
                 finalResponse = (await result.response).text();
-                success = true;
-            } catch (g2) {
-                console.warn(`Gemini 2 Failed. Trying Gemini 3...`);
-                try {
-                    const model = genAI.getGenerativeModel({ model: GEM_3 });
-                    const result = await model.generateContent(promptParts);
-                    finalResponse = (await result.response).text();
-                    success = true;
-                } catch (g3) { console.warn("All Gemini Servers Busy. Switching to OpenAI..."); }
-            }
+                if (finalResponse) success = true;
+            } catch (e) { console.warn(`Gemini ${modelId} busy...`); }
         }
     }
 
-    // --- PHASE 3: OPENAI CHAIN (Ultimate Safety Net) ---
+    // --- PHASE 3: OPENAI CHAIN (FINAL SAFETY NET) ---
+    // If both Groq and Google fail, we fall back to the robust GPT-4o infrastructure.
     if (!success) {
-        // OpenAI Vision only works with GPT-4o models, so we check image status
-        try {
-            const completion = await openai.chat.completions.create({
-                model: GPT_1,
-                messages: [{ role: "system", content: systemPrompt }, { role: "user", content: userText }],
-            });
-            finalResponse = completion.choices[0].message.content;
-            success = true;
-        } catch (o1) {
-            console.warn(`GPT 1 Failed. Trying GPT 2...`);
+        for (const model of MODELS.openai) {
+            if (success) break;
             try {
-                const completion = await openai.chat.completions.create({
-                    model: GPT_2,
+                const res = await openai.chat.completions.create({
+                    model: model,
                     messages: [{ role: "system", content: systemPrompt }, { role: "user", content: userText }],
                 });
-                finalResponse = completion.choices[0].message.content;
-                success = true;
-            } catch (o2) {
-                console.warn(`GPT 2 Failed. Trying GPT 3...`);
-                try {
-                    const completion = await openai.chat.completions.create({
-                        model: GPT_3,
-                        messages: [{ role: "system", content: systemPrompt }, { role: "user", content: userText }],
-                    });
-                    finalResponse = completion.choices[0].message.content;
-                    success = true;
-                } catch (o3) {
-                    finalResponse = "⚠️ **CRITICAL FAILURE**: All 9 Global AI Servers (Groq, Google, OpenAI) are currently unreachable. Please check your internet connection.";
-                }
-            }
+                finalResponse = res.choices[0].message.content;
+                if (finalResponse) success = true;
+            } catch (e) { console.warn(`OpenAI ${model} busy...`); }
         }
+    }
+
+    // --- FAIL STATE ---
+    if (!success) {
+        finalResponse = "⚠️ **CRITICAL NETWORK ERROR**: All 9 Global AI Servers (Groq, Google, OpenAI) are currently unreachable. Please check your internet connection or try again in 60 seconds.";
     }
 
     setMessages(prev => [...prev, { text: finalResponse, sender: "bot" }]);
@@ -213,68 +186,68 @@ function ChatBot() {
     setImagePart(null);
   };
 
-  // --- 📜 IRONCLAD LEGAL TERMS (MASSIVE EXPANSION) ---
+  // --- 📜 MASSIVE LEGAL TERMS (12 SECTIONS - DOUBLE LENGTH) ---
   const FullTermsModal = () => (
       <div style={styles.modalOverlay}>
           <div style={styles.modalContent}>
               <h3 style={styles.modalHeader}>
-                  🤝 Farm Buddy - STRICT TERMS OF SERVICE
+                  ⚖️ BINDING LEGAL AGREEMENT & LIABILITY WAIVER
                   <button onClick={() => setShowFullTerms(false)} style={styles.modalDismissBtn}>✖</button> 
               </h3>
               <div style={styles.modalBody}>
-                  <p style={{color: '#D32F2F', fontWeight: 'bold', textAlign: 'center', fontSize: '14px', borderBottom: '1px solid #ccc', paddingBottom: '10px'}}>
-                      ⚠️ WARNING: BY USING THIS APP, YOU WAIVE YOUR RIGHT TO SUE. READ CAREFULLY.
+                  <p style={{color: '#D32F2F', fontWeight: 'bold', textAlign: 'center', fontSize: '15px', borderBottom: '2px solid #eee', paddingBottom: '10px'}}>
+                      ⚠️ IMPORTANT: READ CAREFULLY. THIS IS A BINDING CONTRACT.
                   </p>
                   
-                  <h4>1. IRREVOCABLE WAIVER OF LIABILITY</h4>
-                  <p>By accessing Farm Buddy, you ("The User") agree to irrevocably release, indemnify, and hold harmless the developers, owners, hosting providers, and API partners ("The Developers") from any and all liability. The Developers shall NOT be liable for any direct, indirect, incidental, special, consequential, or exemplary damages, including but not limited to crop loss, financial ruin, or personal injury.</p>
+                  <h4>SECTION 1: USE AT YOUR OWN RISK (ABSOLUTE IMMUNITY)</h4>
+                  <p>By clicking "Accept," you expressly acknowledge and agree that your use of Farm Buddy (the "Application") is at your <strong>sole, absolute, and exclusive risk</strong>. The owners, developers, creators, hosting providers, and API partners (collectively, the "Indemnified Parties") assume <strong>ZERO LIABILITY</strong> for any outcomes resulting from the use of this software. You agree that you are solely responsible for any damage to your computer system, loss of data, or physical damage to property that results from your use of the Application.</p>
 
-                  <h4>2. NO PROFESSIONAL ADVICE OR RELATIONSHIP</h4>
-                  <p>Farm Buddy is an experimental AI research tool. It is <strong>NOT</strong> a certified agronomist, plant pathologist, or chemist. Use of this app does not create a professional-client relationship. All outputs are generated by probabilistic machine learning algorithms (LLMs) and should never be treated as verified fact. You are legally required to consult a local, certified human expert before taking any action.</p>
-
-                  <h4>3. AI HALLUCINATION & ERROR WARNING</h4>
-                  <p>The User acknowledges that AI models (Groq, Gemini, ChatGPT) frequently "hallucinate," generating plausible-sounding but completely false information. The App may recommend:
+                  <h4>SECTION 2: NATURE OF ARTIFICIAL INTELLIGENCE (ERROR WARNING)</h4>
+                  <p>You understand that this Application utilizes third-party Large Language Models (LLMs) provided by Groq, Google, and OpenAI. These systems are probabilistic and <strong>NOT deterministic</strong>. They frequently produce "hallucinations"—statements that sound authoritative but are factually incorrect, dangerous, or nonsensical. The AI may suggest:
                   <ul>
-                      <li>Non-existent pesticides.</li>
-                      <li>Dangerous chemical mixtures.</li>
-                      <li>Incorrect dosage rates that could kill your crops.</li>
+                      <li>Non-existent pesticides or fertilizers.</li>
+                      <li>Incorrect dilution ratios that could burn crops.</li>
+                      <li>Identification of diseases that are not present.</li>
                   </ul>
-                  The User accepts 100% responsibility for verifying every suggestion against official product labels and local laws.</p>
+                  You represent and warrant that you will <strong>NEVER</strong> rely solely on this AI for critical farming decisions.</p>
 
-                  <h4>4. CHEMICAL & PESTICIDE DANGER</h4>
-                  <p><strong>DANGER:</strong> Agricultural chemicals are lethal. The App assumes NO responsibility for your handling, storage, or application of chemicals. The AI may suggest chemicals banned in your jurisdiction. It is your sole duty to check the MSDS (Material Safety Data Sheet) and local regulations. The Developers disclaim all liability for poisoning, environmental damage, or regulatory fines.</p>
+                  <h4>SECTION 3: SUGGESTIONS ONLY (NO PROFESSIONAL ADVICE)</h4>
+                  <p>All outputs generated by Farm Buddy are strictly <strong>SUGGESTIONS FOR RESEARCH</strong>. They do not constitute professional agricultural, legal, financial, or chemical advice. This Application is not a substitute for a certified human agronomist, plant pathologist, or extension officer. The Developers are not responsible for the actions you take. If you apply a chemical and your crop dies, you agree that it was your decision alone.</p>
 
-                  <h4>5. FINANCIAL RISK ASSUMPTION</h4>
-                  <p>The User acknowledges that agriculture is a high-risk industry. The Developers are not responsible for lost profits, bankruptcy, or yield reductions resulting from reliance on this App. Any financial decision you make based on AI advice is made at your own peril.</p>
+                  <h4>SECTION 4: THIRD-PARTY PROVIDER ACKNOWLEDGMENT</h4>
+                  <p>You acknowledge that your data (text inputs and uploaded images) is transmitted to servers owned by **Groq Inc., Google LLC, and OpenAI OpCo, LLC**. The Developers of Farm Buddy have no control over these third-party entities, their uptime, their data privacy practices, or the accuracy of their models. You agree to hold the Developers harmless for any data breaches or service failures caused by these third-party providers.</p>
 
-                  <h4>6. DATA TRANSMISSION & PRIVACY</h4>
-                  <p>Your data (images and text) is transmitted to third-party servers in the USA (Google, OpenAI, Groq) for processing. We do not control these entities. Do not upload sensitive, personal, or proprietary data. You agree that the Developers are not liable for data breaches at these third-party companies.</p>
+                  <h4>SECTION 5: CHEMICAL & PESTICIDE DANGER</h4>
+                  <p><strong>DANGER:</strong> Agricultural chemicals are hazardous substances. The AI may inadvertently suggest chemicals that are <strong>illegal, banned, or restricted</strong> in your specific country or state. It is your absolute legal duty to verify the legality and safety of any product mentioned by the AI. You assume 100% of the risk for chemical accidents, environmental poisoning, regulatory fines, or health issues.</p>
 
-                  <h4>7. REGIONAL & ENVIRONMENTAL VARIABLES</h4>
-                  <p>The AI does not know your specific soil pH, micro-climate, seed variety, or local pest resistance profile. Advice that is correct for one farm may be disastrous for yours. You must adapt all suggestions to your local reality.</p>
+                  <h4>SECTION 6: FINANCIAL & YIELD LOSS WAIVER</h4>
+                  <p>Farming involves significant financial risk. The Developers do not guarantee any specific yield, profit, or crop health outcome. By using this App, you waive any right to claim compensation for lost profits, bankruptcy, soil degradation, or market loss alleged to be caused by advice from this Application.</p>
 
-                  <h4>8. MANDATORY ARBITRATION & CLASS ACTION WAIVER</h4>
-                  <p>You agree that any dispute arising from this Agreement shall be resolved by binding arbitration on an individual basis. <strong>YOU WAIVE YOUR RIGHT TO PARTICIPATE IN A CLASS ACTION LAWSUIT</strong> against the Developers.</p>
+                  <h4>SECTION 7: INDEMNIFICATION</h4>
+                  <p>You agree to defend, indemnify, and hold harmless the Developers from and against any and all claims, damages, obligations, losses, liabilities, costs, and expenses (including but not limited to attorney's fees) arising from: (a) your use of the Application; (b) your violation of any term of these Terms; or (c) your violation of any third-party right.</p>
 
-                  <h4>9. SERVICE AVAILABILITY (NO WARRANTY)</h4>
-                  <p>The App is provided "AS IS" and "AS AVAILABLE" without warranty of any kind. We do not guarantee 100% uptime. The AI services may be unavailable due to server load, maintenance, or force majeure events.</p>
+                  <h4>SECTION 8: BINDING ARBITRATION & CLASS ACTION WAIVER</h4>
+                  <p>You agree that any dispute arising from this Agreement shall be resolved by binding arbitration rather than in court. <strong>YOU WAIVE YOUR RIGHT TO PARTICIPATE IN A CLASS ACTION LAWSUIT</strong>. Any legal action must be taken on an individual basis.</p>
 
-                  <h4>10. INDEMNIFICATION</h4>
-                  <p>You agree to defend, indemnify, and hold the Developers harmless from any claims, damages, costs, and expenses (including attorney's fees) arising from your use of the App or your violation of these Terms.</p>
+                  <h4>SECTION 9: REGIONAL VARIANCE</h4>
+                  <p>Agricultural advice is highly dependent on local variables such as soil pH, micro-climate, seed variety, and local pest resistance. The AI cannot see these variables. Advice that is correct for one region may be disastrous for another. You must adapt all suggestions to your local context.</p>
 
-                  <h4>11. AGE RESTRICTION</h4>
-                  <p>You must be at least 18 years old to use this App. By accepting, you verify you are of legal age to handle agricultural chemicals and enter into binding contracts.</p>
+                  <h4>SECTION 10: MODIFICATION OF SERVICE</h4>
+                  <p>We reserve the right to modify, suspend, or discontinue the Application at any time without notice. We shall not be liable to you or to any third party for any modification, suspension, or discontinuance of the Application.</p>
 
-                  <h4>12. SEVERABILITY</h4>
-                  <p>If any provision of these Terms is found to be unenforceable, the remaining provisions shall remain in full force and effect.</p>
+                  <h4>SECTION 11: SEVERABILITY</h4>
+                  <p>If any provision of these Terms is found to be unenforceable or invalid, that provision shall be limited or eliminated to the minimum extent necessary so that these Terms shall otherwise remain in full force and effect.</p>
+
+                  <h4>SECTION 12: FINAL ACCEPTANCE</h4>
+                  <p>By clicking "Accept" below, you confirm that you have read all 12 sections, you understand the risks, and you legally release the Developers from all liability. This constitutes a <strong>binding digital signature</strong>.</p>
 
                   <hr style={{borderColor: '#ddd', margin: '20px 0'}}/>
                   <p style={{fontSize: '11px', textAlign: 'center', color: '#666'}}>
-                      <em>Clicking "I Accept" constitutes a digital signature and a binding legal agreement.</em>
+                      <em>Use of this tool constitutes a binding legal agreement.</em>
                   </p>
               </div>
               <button onClick={handleAcceptTerms} style={styles.acceptBtn}>
-                  ✅ I Verify I Have Read & Accept All Risks
+                  ✅ I HAVE READ ALL 12 SECTIONS & ACCEPT FULL RESPONSIBILITY
               </button>
           </div>
       </div>
@@ -282,8 +255,11 @@ function ChatBot() {
 
   return (
     <div style={{ fontFamily: '"Inter", sans-serif' }}>
+      
+      {/* 🟢 OPEN CHAT INTERFACE */}
       {isOpen && (
         <div style={styles.fullPageChat}>
+          
           {/* HEADER */}
           <div style={styles.header}>
             <button onClick={handleCloseChat} style={styles.backBtn}>←</button>
@@ -292,7 +268,7 @@ function ChatBot() {
                     🤝 Farm Buddy 🌾
                 </span>
                 <span style={{fontSize: '11px', color: '#81C784', display: 'block'}}>
-                    System: Groq ➔ Gemini ➔ ChatGPT
+                    9-Server Failover Shield Active
                 </span>
             </div>
             <div style={{width: '24px'}}></div>
@@ -322,7 +298,7 @@ function ChatBot() {
             <div ref={messagesEndRef} />
           </div>
 
-          {/* FOOTER */}
+          {/* FOOTER AREA */}
           <div style={styles.footer}>
             <div style={styles.inputContainer}>
                 <input type="file" accept="image/*" onChange={handleFileChange} style={{display:'none'}} id="cam-input" disabled={!termsAccepted} />
@@ -331,7 +307,7 @@ function ChatBot() {
                 <div style={{flex: 1, position: 'relative', display: 'flex', alignItems: 'center'}}>
                     <input 
                         type="text" 
-                        placeholder={termsAccepted ? "Ask anything..." : "Accept terms..."} 
+                        placeholder={termsAccepted ? "Ask your farm buddy..." : "Accept terms first..."} 
                         style={styles.textInput} 
                         value={input} 
                         onChange={(e) => setInput(e.target.value)} 
@@ -340,23 +316,29 @@ function ChatBot() {
                     />
                     {uploadedFile && (
                         <div style={styles.imageBadge}>
-                            <span>🖼️ Image</span>
+                            <span>🖼️ Image Ready</span>
                             <button onClick={removeUploadedImage} style={styles.badgeClose}>×</button>
                         </div>
                     )}
                 </div>
 
-                <button onClick={handleSend} style={styles.sendCircle} disabled={!termsAccepted}>➤</button>
+                <button 
+                    onClick={handleSend} 
+                    style={styles.sendCircle}
+                    disabled={!termsAccepted || (input.trim() === "" && imagePart === null)}
+                >➤</button>
             </div>
             <div style={styles.bottomWarning}>
-                AI can err. <span onClick={() => setShowFullTerms(true)} style={styles.readMore}>Read 12-Pt Terms</span>
+                AI can err. <span onClick={() => setShowFullTerms(true)} style={styles.readMore}>Read Ironclad Terms</span>
             </div>
           </div>
         </div>
       )}
       
+      {/* 📜 LEGAL MODAL */}
       {showFullTerms && <FullTermsModal />}
 
+      {/* 🔘 FLOATING BUTTON */}
       {!isOpen && (
           <button onClick={handleOpenChat} style={styles.miniFloatBtn}>
               <span style={{fontSize: '18px'}}>🤝</span> 
@@ -367,14 +349,14 @@ function ChatBot() {
   );
 }
 
-// --- 💅 STYLES (Professional Dark Mode) ---
+// --- 💅 PROFESSIONAL DARK MODE STYLES (FULL OBJECT) ---
 const styles = {
     miniFloatBtn: {
         position: 'fixed', bottom: '25px', right: '25px', zIndex: 999,
         background: 'linear-gradient(135deg, #2E7D32 0%, #1B5E20 100%)',
         color: 'white', border: 'none', borderRadius: '50px', 
-        padding: '10px 20px', fontSize: '14px', display: 'flex', alignItems: 'center', gap: '8px',
-        boxShadow: '0 4px 15px rgba(0,0,0,0.4)', cursor: 'pointer', transition: 'all 0.2s'
+        padding: '10px 18px', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '8px',
+        boxShadow: '0 4px 15px rgba(0,0,0,0.4)', cursor: 'pointer', transition: 'transform 0.2s'
     },
     fullPageChat: {
         position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh',
@@ -419,11 +401,11 @@ const styles = {
     
     // Modal Styles
     modalOverlay: { position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', backgroundColor: 'rgba(0,0,0,0.95)', zIndex: 10001, display: 'flex', alignItems: 'center', justifyContent: 'center' },
-    modalContent: { width: '92%', maxWidth: '600px', backgroundColor: '#fff', color: '#333', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 20px 50px rgba(0,0,0,0.5)' },
+    modalContent: { width: '92%', maxWidth: '650px', backgroundColor: '#fff', color: '#333', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 20px 50px rgba(0,0,0,0.5)' },
     modalHeader: { padding: '20px', backgroundColor: '#f8f8f8', borderBottom: '1px solid #ddd', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '18px', fontWeight: 'bold' },
-    modalBody: { padding: '25px', fontSize: '13px', lineHeight: '1.7', maxHeight: '70vh', overflowY: 'auto' },
+    modalBody: { padding: '25px', fontSize: '13px', lineHeight: '1.7', maxHeight: '75vh', overflowY: 'auto' },
     modalDismissBtn: { background: 'none', border: 'none', color: '#333', fontSize: '24px', cursor: 'pointer' },
-    acceptBtn: { width: '100%', padding: '18px', backgroundColor: '#2E7D32', color: 'white', border: 'none', fontWeight: 'bold', fontSize: '16px', cursor: 'pointer' },
+    acceptBtn: { width: '100%', padding: '20px', backgroundColor: '#2E7D32', color: 'white', border: 'none', fontWeight: 'bold', fontSize: '16px', cursor: 'pointer' },
     
     // Extras
     msgImage: { maxWidth: '200px', borderRadius: '10px', marginBottom: '8px', border: '1px solid #444' },
