@@ -31,7 +31,7 @@ function ChatBot() {
   // 2. THE 20-MODEL "BRUTE FORCE" GRID
   // ==================================================================================
   const MODEL_QUEUE = [
-    // --- TIER 1: HUGGING FACE VISION (Specialized Crop Models) ---
+    // --- TIER 1: GOOGLE GEMINI VISION (High Intelligence) ---
     { provider: 'gemini', id: 'gemini-1.5-pro', vision: true }, 
     { provider: 'gemini', id: 'gemini-2.0-flash-exp', vision: true }, // Experimental
     { provider: 'gemini', id: 'gemini-1.5-flash', vision: true },
@@ -39,17 +39,16 @@ function ChatBot() {
     { provider: 'gemini', id: 'gemini-3-pro', vision: true }, // Future Placeholder
     { provider: 'gemini', id: 'gemini-2.5-pro', vision: true }, // Future Placeholder
 
-    // --- TIER 2: GOOGLE GEMINI VISION (High Intelligence) ---
+    // --- TIER 2: GROQ VISION (Llama 3.2 Speed) ---
+    { provider: 'groq', id: 'llama-3.2-90b-vision-preview', vision: true },
+    { provider: 'groq', id: 'llama-3.2-11b-vision-preview', vision: true },
+
+   // --- TIER 3: HUGGING FACE VISION (Specialized Crop Models) ---
     { provider: 'hf', id: 'linkan/plant-disease-classification-v2', vision: true },
     { provider: 'hf', id: 'google/vit-base-patch16-224', vision: true },
     { provider: 'hf', id: 'microsoft/resnet-50', vision: true },
     { provider: 'hf', id: 'facebook/detr-resnet-50', vision: true },
     { provider: 'hf', id: 'google/vit-large-patch16-224', vision: true },
-
-
-    // --- TIER 3: GROQ VISION (Llama 3.2 Speed) ---
-    { provider: 'groq', id: 'llama-3.2-90b-vision-preview', vision: true },
-    { provider: 'groq', id: 'llama-3.2-11b-vision-preview', vision: true },
 
     // --- TIER 4: TEXT FALLBACKS (If Image Fails) ---
     { provider: 'groq', id: 'llama-3.3-70b-versatile', vision: false },
@@ -467,29 +466,35 @@ function ChatBot() {
             <div ref={messagesEndRef} />
           </div>
 
-          {/* FOOTER */}
+          {/* FOOTER - ALIGNMENT FIXED HERE */}
           <div style={styles.footer}>
-            <div style={styles.inputArea}>
-              <input type="file" accept="image/*" onChange={handleFileChange} style={{ display: 'none' }} id="cam-input" />
-              <label htmlFor="cam-input" style={styles.toolBtn}>📸</label>
+            {/* Added a Row Wrapper for correct alignment */}
+            <div style={styles.inputRow}>
               
-              <input 
-                type="text" 
-                placeholder="Ask Farm Buddy..." 
-                style={styles.input} 
-                value={input} 
-                onChange={(e) => setInput(e.target.value)} 
-                onKeyPress={(e) => e.key === 'Enter' && handleSend()} 
-              />
+              {/* Typing Area (Grows to fill space) */}
+              <div style={styles.inputArea}>
+                <input type="file" accept="image/*" onChange={handleFileChange} style={{ display: 'none' }} id="cam-input" />
+                <label htmlFor="cam-input" style={styles.toolBtn}>📸</label>
+                
+                <input 
+                  type="text" 
+                  placeholder="Ask Farm Buddy..." 
+                  style={styles.input} 
+                  value={input} 
+                  onChange={(e) => setInput(e.target.value)} 
+                  onKeyPress={(e) => e.key === 'Enter' && handleSend()} 
+                />
 
-              {/* 🎤 PROFESSIONAL GOOGLE MIC SVG */}
-              <button onClick={startListening} style={styles.micBtn}>
-                <svg viewBox="0 0 24 24" width="22" height="22" fill={isListening ? "#EA4335" : "#FFFFFF"}>
-                  <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/>
-                  <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/>
-                </svg>
-              </button>
+                {/* 🎤 PROFESSIONAL GOOGLE MIC SVG */}
+                <button onClick={startListening} style={styles.micBtn}>
+                  <svg viewBox="0 0 24 24" width="22" height="22" fill={isListening ? "#EA4335" : "#FFFFFF"}>
+                    <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/>
+                    <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/>
+                  </svg>
+                </button>
+              </div>
 
+              {/* Send Button (Moved Outside) */}
               <button onClick={handleSend} style={styles.sendBtn}>➤</button>
             </div>
             
@@ -576,14 +581,21 @@ const styles = {
     
     // Footer
     footer: { backgroundColor: '#1E1E1E', padding: '15px 20px 30px 20px', borderTop: '1px solid #333' },
+    
+    // ADDED inputRow to keep alignment clean on mobile
+    inputRow: { display: 'flex', alignItems: 'center', gap: '12px' },
+
     inputArea: { 
+      flex: 1, // Changed to grow
       display: 'flex', alignItems: 'center', gap: '12px', backgroundColor: '#2C2C2C', 
       padding: '10px 18px', borderRadius: '35px', border: '1px solid #444' 
     },
     input: { flex: 1, background: 'none', border: 'none', color: 'white', outline: 'none', fontSize: '16px' },
     toolBtn: { cursor: 'pointer', fontSize: '22px' },
     micBtn: { background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: '4px' },
-    sendBtn: { background: '#2E7D32', color: 'white', border: 'none', borderRadius: '50%', width: '42px', height: '42px', cursor: 'pointer', fontSize: '18px' },
+    
+    // Send button moved outside, kept same style
+    sendBtn: { background: '#2E7D32', color: 'white', border: 'none', borderRadius: '50%', width: '42px', height: '42px', cursor: 'pointer', fontSize: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center' },
     
     // Modal
     modalOverlay: { 
