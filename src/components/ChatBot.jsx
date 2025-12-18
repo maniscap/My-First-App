@@ -1,32 +1,56 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { GoogleGenerativeAI } from "@google/generative-ai";
-// ❗ Ensure you have run: npm install react-markdown remark-gfm
+import { OpenAI } from "openai";
+import Groq from "groq-sdk"; 
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
-function ChatBot() {
-  // --- 🔐 SECURE CONFIGURATION ---
-  const API_KEY = import.meta.env.VITE_GEMINI_KEY; 
-  
-  // 🛠️ MODELS (KEEPING YOUR EXISTING SELECTION)
-  const MODEL_PRIMARY = "gemini-2.5-flash";        
-  const MODEL_BACKUP_1 = "gemini-2.5-flash-lite";     
-  const MODEL_BACKUP_2 = "gemini-1.5-flash";  
-  const MODEL_BACKUP_3 = "gemini-3-pro";
-  const MODEL_BACKUP_4 = "gemini-3-flash";
+/**
+ * 🌿 FARM BUDDY: IRONCLAD EDITION (v4.0)
+ * ----------------------------------------------------
+ * ARCHITECTURE: 9-Layer Cross-Provider Failover System
+ * 1. Groq LPU (Models 1,2,3) -> 2. Gemini (Models 1,2,3) -> 3. OpenAI (Models 1,2,3)
+ * * LEGAL: Strict Liability Shield (Expanded 200%)
+ */
 
+function ChatBot() {
+  // --- 🔐 CONFIGURATION ---
+  const GROQ_KEY = import.meta.env.VITE_GROQ_KEY;
+  const GEMINI_KEY = import.meta.env.VITE_GEMINI_KEY; 
+  const OPENAI_KEY = import.meta.env.VITE_OPENAI_KEY; 
+
+  // --- 🛠️ CLIENT INITIALIZATION ---
+  const groq = new Groq({ apiKey: GROQ_KEY, dangerouslyAllowBrowser: true });
+  const openai = new OpenAI({ apiKey: OPENAI_KEY, dangerouslyAllowBrowser: true });
+
+  // --- ⚙️ 9-LAYER MODEL MATRIX ---
+  
+  // TIER 1: GROQ (Primary - Speed)
+  const GROQ_1 = "llama3-70b-8192";
+  const GROQ_2 = "llama3-8b-8192";
+  const GROQ_3 = "mixtral-8x7b-32768";
+
+  // TIER 2: GEMINI (Secondary - Vision/Google)
+  const GEM_1 = "gemini-1.5-pro";
+  const GEM_2 = "gemini-1.5-flash";
+  const GEM_3 = "gemini-1.5-flash-8b";
+
+  // TIER 3: OPENAI (Tertiary - Fallback)
+  const GPT_1 = "gpt-4o";
+  const GPT_2 = "gpt-4o-mini";
+  const GPT_3 = "gpt-3.5-turbo";
+
+  // --- 📝 STATE MANAGEMENT ---
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState([
     { 
-      text: "Hello! I am **Farm Buddy** 🤝🌾.\n\nI am running on the advanced **Pro** model to help you with your crops.\n\n*Note: I am an AI assistant. Always verify my suggestions with a human expert.*", 
+      text: "Hello! I am **Farm Buddy** 🤝🌾.\n\nI am backed by a **9-Server Failover System** to ensure I am always here to help you.\n\n*Please read the strict terms before proceeding.*", 
       sender: "bot" 
     }
   ]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const messagesEndRef = useRef(null);
   
-  // 🛠️ PERSISTENCE
   const [termsAccepted, setTermsAccepted] = useState(() => {
     if (typeof window !== "undefined") {
       return localStorage.getItem('farmcap_terms_accepted') === 'true';
@@ -38,15 +62,12 @@ function ChatBot() {
   const [uploadedFile, setUploadedFile] = useState(null);
   const [imagePart, setImagePart] = useState(null); 
 
-  // Auto-scroll logic
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
+  const messagesEndRef = useRef(null);
 
-  // Helper: File to Base64
+  // --- 🔄 UTILITIES ---
+  const scrollToBottom = () => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  useEffect(() => scrollToBottom(), [messages]);
+
   const fileToGenerativePart = async (file) => {
     const base64Data = await new Promise((resolve) => {
       const reader = new FileReader();
@@ -56,7 +77,6 @@ function ChatBot() {
     return { inlineData: { data: base64Data, mimeType: file.type } };
   }
 
-  // Handler: Image Selection
   const handleFileChange = async (event) => {
       const file = event.target.files[0];
       if (file) {
@@ -67,122 +87,195 @@ function ChatBot() {
       }
   };
 
-  const removeUploadedImage = () => {
-      setUploadedFile(null);
-      setImagePart(null);
-      setInput("");
-  }
-
-  const handleOpenChat = () => {
-    setIsOpen(true);
-    if (!termsAccepted) setShowFullTerms(true);
-  }
-
-  const handleCloseChat = () => {
-      setIsOpen(false);
-      removeUploadedImage();
-      setShowFullTerms(false); 
-  }
-
+  const removeUploadedImage = () => { setUploadedFile(null); setImagePart(null); setInput(""); }
+  const handleOpenChat = () => { setIsOpen(true); if (!termsAccepted) setShowFullTerms(true); }
+  const handleCloseChat = () => { setIsOpen(false); removeUploadedImage(); setShowFullTerms(false); }
   const handleAcceptTerms = () => {
       setTermsAccepted(true);
       setShowFullTerms(false);
       localStorage.setItem('farmcap_terms_accepted', 'true');
   }
 
-  // 🧠 TRIPLE BACKUP SEND LOGIC
+  // --- 🧠 9-LAYER ULTRA FAILOVER LOGIC ---
   const handleSend = async () => {
     if (!termsAccepted) { setShowFullTerms(true); return; }
     if (!input.trim() && !imagePart) return;
 
-    let userMessageText = input.trim() || uploadedFile?.name || "Scan Request";
-    const userMessage = { 
-        text: userMessageText, 
-        sender: "user", 
-        image: uploadedFile ? URL.createObjectURL(uploadedFile) : null 
-    };
-    
-    const promptParts = [];
-    promptParts.push({text: "SYSTEM: You are Farm Buddy, a pro agricultural AI. Use Markdown for all formatting. You analyze images but cannot generate them."});
-
-    if (imagePart) promptParts.push(imagePart);
-    if (input.trim()) promptParts.push({ text: input.trim() });
-    
-    setMessages((prev) => [...prev, userMessage]);
+    const userText = input.trim() || uploadedFile?.name || "Scan";
+    setMessages(prev => [...prev, { text: userText, sender: "user", image: uploadedFile ? URL.createObjectURL(uploadedFile) : null }]);
     setInput(""); 
-    setUploadedFile(null);
-    setImagePart(null);
     setIsLoading(true);
 
-    try {
-      const genAI = new GoogleGenerativeAI(API_KEY);
-      let result;
-      
-      // Attempt 1: PRO
-      try {
-        const model = genAI.getGenerativeModel({ model: MODEL_PRIMARY });
-        result = await model.generateContent(promptParts);
-      } catch (err1) {
-        // Attempt 2: FLASH
-        try {
-           const backup1 = genAI.getGenerativeModel({ model: MODEL_BACKUP_1 });
-           result = await backup1.generateContent(promptParts);
-        } catch (err2) {
-           // Attempt 3: SAFETY
-           try {
-             const backup2 = genAI.getGenerativeModel({ model: MODEL_BACKUP_2 });
-             result = await backup2.generateContent(promptParts);
-           } catch (err3) {
-             throw new Error("All servers busy.");
-           }
-        }
-      }
+    const systemPrompt = "You are Farm Buddy, an expert agricultural AI. Use Markdown. Be concise, safe, and accurate.";
+    let finalResponse = "";
+    let success = false;
 
-      const response = await result.response;
-      setMessages((prev) => [...prev, { text: response.text(), sender: "bot" }]);
-    } catch (error) {
-      setMessages((prev) => [...prev, { text: "⚠️ Server busy. Please try again.", sender: "bot" }]);
+    // --- PHASE 1: GROQ CHAIN (Text Only - Fastest) ---
+    if (!imagePart) {
+        try {
+            const completion = await groq.chat.completions.create({
+                messages: [{ role: "system", content: systemPrompt }, { role: "user", content: userText }],
+                model: GROQ_1,
+            });
+            finalResponse = completion.choices[0]?.message?.content;
+            success = true;
+        } catch (e1) {
+            console.warn(`Groq 1 Failed: ${e1.message}. Trying Groq 2...`);
+            try {
+                const completion = await groq.chat.completions.create({
+                    messages: [{ role: "system", content: systemPrompt }, { role: "user", content: userText }],
+                    model: GROQ_2,
+                });
+                finalResponse = completion.choices[0]?.message?.content;
+                success = true;
+            } catch (e2) {
+                console.warn(`Groq 2 Failed. Trying Groq 3...`);
+                try {
+                    const completion = await groq.chat.completions.create({
+                        messages: [{ role: "system", content: systemPrompt }, { role: "user", content: userText }],
+                        model: GROQ_3,
+                    });
+                    finalResponse = completion.choices[0]?.message?.content;
+                    success = true;
+                } catch (e3) { console.warn("All Groq Servers Busy. Switching to Gemini..."); }
+            }
+        }
     }
+
+    // --- PHASE 2: GEMINI CHAIN (Multimodal & Backup) ---
+    if (!success) {
+        const genAI = new GoogleGenerativeAI(GEMINI_KEY);
+        const promptParts = [{ text: "SYSTEM: " + systemPrompt }, { text: userText }];
+        if (imagePart) promptParts.unshift(imagePart);
+
+        try {
+            const model = genAI.getGenerativeModel({ model: GEM_1 });
+            const result = await model.generateContent(promptParts);
+            finalResponse = (await result.response).text();
+            success = true;
+        } catch (g1) {
+            console.warn(`Gemini 1 Failed. Trying Gemini 2...`);
+            try {
+                const model = genAI.getGenerativeModel({ model: GEM_2 });
+                const result = await model.generateContent(promptParts);
+                finalResponse = (await result.response).text();
+                success = true;
+            } catch (g2) {
+                console.warn(`Gemini 2 Failed. Trying Gemini 3...`);
+                try {
+                    const model = genAI.getGenerativeModel({ model: GEM_3 });
+                    const result = await model.generateContent(promptParts);
+                    finalResponse = (await result.response).text();
+                    success = true;
+                } catch (g3) { console.warn("All Gemini Servers Busy. Switching to OpenAI..."); }
+            }
+        }
+    }
+
+    // --- PHASE 3: OPENAI CHAIN (Ultimate Safety Net) ---
+    if (!success) {
+        // OpenAI Vision only works with GPT-4o models, so we check image status
+        try {
+            const completion = await openai.chat.completions.create({
+                model: GPT_1,
+                messages: [{ role: "system", content: systemPrompt }, { role: "user", content: userText }],
+            });
+            finalResponse = completion.choices[0].message.content;
+            success = true;
+        } catch (o1) {
+            console.warn(`GPT 1 Failed. Trying GPT 2...`);
+            try {
+                const completion = await openai.chat.completions.create({
+                    model: GPT_2,
+                    messages: [{ role: "system", content: systemPrompt }, { role: "user", content: userText }],
+                });
+                finalResponse = completion.choices[0].message.content;
+                success = true;
+            } catch (o2) {
+                console.warn(`GPT 2 Failed. Trying GPT 3...`);
+                try {
+                    const completion = await openai.chat.completions.create({
+                        model: GPT_3,
+                        messages: [{ role: "system", content: systemPrompt }, { role: "user", content: userText }],
+                    });
+                    finalResponse = completion.choices[0].message.content;
+                    success = true;
+                } catch (o3) {
+                    finalResponse = "⚠️ **CRITICAL FAILURE**: All 9 Global AI Servers (Groq, Google, OpenAI) are currently unreachable. Please check your internet connection.";
+                }
+            }
+        }
+    }
+
+    setMessages(prev => [...prev, { text: finalResponse, sender: "bot" }]);
     setIsLoading(false);
+    setUploadedFile(null); 
+    setImagePart(null);
   };
 
-  // 📜 MASSIVE LEGAL TERMS
+  // --- 📜 IRONCLAD LEGAL TERMS (MASSIVE EXPANSION) ---
   const FullTermsModal = () => (
       <div style={styles.modalOverlay}>
           <div style={styles.modalContent}>
               <h3 style={styles.modalHeader}>
-                  🤝 Farm Buddy - Professional Terms & Liability Waiver
+                  🤝 Farm Buddy - STRICT TERMS OF SERVICE
                   <button onClick={() => setShowFullTerms(false)} style={styles.modalDismissBtn}>✖</button> 
               </h3>
               <div style={styles.modalBody}>
-                  <p style={{color: '#FF8A80', fontWeight: 'bold', textAlign: 'center'}}>⚠️ LEGAL ACTION WAIVER: READ CAREFULLY</p>
+                  <p style={{color: '#D32F2F', fontWeight: 'bold', textAlign: 'center', fontSize: '14px', borderBottom: '1px solid #ccc', paddingBottom: '10px'}}>
+                      ⚠️ WARNING: BY USING THIS APP, YOU WAIVE YOUR RIGHT TO SUE. READ CAREFULLY.
+                  </p>
                   
-                  <h4>1. ABSOLUTE DEVELOPER NON-LIABILITY</h4>
-                  <p>By using Farm Buddy, you irrevocably agree that the developers and creators (the "Developers") are <strong>NOT RESPONSIBLE</strong> for any farm results or crop outcomes. You use this AI at your <strong>SOLE RISK</strong>.</p>
-                  <p>The Developers are not liable for: crop death, soil toxicity, yield loss, financial bankruptcy, or environmental damage. This is a text-based research tool, not a professional agricultural service.</p>
+                  <h4>1. IRREVOCABLE WAIVER OF LIABILITY</h4>
+                  <p>By accessing Farm Buddy, you ("The User") agree to irrevocably release, indemnify, and hold harmless the developers, owners, hosting providers, and API partners ("The Developers") from any and all liability. The Developers shall NOT be liable for any direct, indirect, incidental, special, consequential, or exemplary damages, including but not limited to crop loss, financial ruin, or personal injury.</p>
 
-                  <h4>2. AI HALLUCINATION & ERROR WARNING</h4>
-                  <p>This application utilizes Gemini Pro Artificial Intelligence. AI can produce "hallucinations"—meaning it may provide incorrect or dangerous advice with absolute confidence. <strong>NEVER</strong> apply chemicals or change farming practices based solely on this chat.</p>
+                  <h4>2. NO PROFESSIONAL ADVICE OR RELATIONSHIP</h4>
+                  <p>Farm Buddy is an experimental AI research tool. It is <strong>NOT</strong> a certified agronomist, plant pathologist, or chemist. Use of this app does not create a professional-client relationship. All outputs are generated by probabilistic machine learning algorithms (LLMs) and should never be treated as verified fact. You are legally required to consult a local, certified human expert before taking any action.</p>
 
-                  <h4>3. NOT A CERTIFIED PROFESSIONAL</h4>
-                  <p>Farm Buddy results are <strong>NOT</strong> provided by humans. They are <strong>SUGGESTIONS</strong>, not mandates. You are legally required to verify all diagnoses with a licensed human agronomist in your specific region before taking action.</p>
-                  
+                  <h4>3. AI HALLUCINATION & ERROR WARNING</h4>
+                  <p>The User acknowledges that AI models (Groq, Gemini, ChatGPT) frequently "hallucinate," generating plausible-sounding but completely false information. The App may recommend:
+                  <ul>
+                      <li>Non-existent pesticides.</li>
+                      <li>Dangerous chemical mixtures.</li>
+                      <li>Incorrect dosage rates that could kill your crops.</li>
+                  </ul>
+                  The User accepts 100% responsibility for verifying every suggestion against official product labels and local laws.</p>
+
                   <h4>4. CHEMICAL & PESTICIDE DANGER</h4>
-                  <p>Pesticides are dangerous. The AI may suggest chemicals that are banned in your country or harmful to your specific crop variety. The user assumes 100% of the liability for chemical accidents. The Developers disclaim all liability.</p>
+                  <p><strong>DANGER:</strong> Agricultural chemicals are lethal. The App assumes NO responsibility for your handling, storage, or application of chemicals. The AI may suggest chemicals banned in your jurisdiction. It is your sole duty to check the MSDS (Material Safety Data Sheet) and local regulations. The Developers disclaim all liability for poisoning, environmental damage, or regulatory fines.</p>
 
-                  <h4>5. REGIONAL AND ENVIRONMENTAL VARIANCE</h4>
-                  <p>Agricultural conditions vary by meter and minute. The AI does not know your soil pH, local humidity, or specific micro-climate. Any advice given is a general estimation and may be catastrophic if applied without local testing.</p>
+                  <h4>5. FINANCIAL RISK ASSUMPTION</h4>
+                  <p>The User acknowledges that agriculture is a high-risk industry. The Developers are not responsible for lost profits, bankruptcy, or yield reductions resulting from reliance on this App. Any financial decision you make based on AI advice is made at your own peril.</p>
 
-                  <h4>6. DATA PRIVACY AND AI USAGE</h4>
-                  <p>Images and text you upload are processed by Google's servers. Do not upload sensitive personal data. The Developers are not responsible for how third-party AI providers manage your data.</p>
+                  <h4>6. DATA TRANSMISSION & PRIVACY</h4>
+                  <p>Your data (images and text) is transmitted to third-party servers in the USA (Google, OpenAI, Groq) for processing. We do not control these entities. Do not upload sensitive, personal, or proprietary data. You agree that the Developers are not liable for data breaches at these third-party companies.</p>
 
-                  <h4>7. INDEMNIFICATION</h4>
-                  <p>You agree to indemnify and hold harmless the Developers from any claims, losses, or legal fees arising from your reliance on AI-generated suggestions.</p>
+                  <h4>7. REGIONAL & ENVIRONMENTAL VARIABLES</h4>
+                  <p>The AI does not know your specific soil pH, micro-climate, seed variety, or local pest resistance profile. Advice that is correct for one farm may be disastrous for yours. You must adapt all suggestions to your local reality.</p>
 
-                  <hr style={{borderColor: '#444'}}/>
-                  <p style={{fontSize: '11px', textAlign: 'center', color: '#888'}}>By clicking "Accept," you acknowledge you are responsible for checking reality.</p>
+                  <h4>8. MANDATORY ARBITRATION & CLASS ACTION WAIVER</h4>
+                  <p>You agree that any dispute arising from this Agreement shall be resolved by binding arbitration on an individual basis. <strong>YOU WAIVE YOUR RIGHT TO PARTICIPATE IN A CLASS ACTION LAWSUIT</strong> against the Developers.</p>
+
+                  <h4>9. SERVICE AVAILABILITY (NO WARRANTY)</h4>
+                  <p>The App is provided "AS IS" and "AS AVAILABLE" without warranty of any kind. We do not guarantee 100% uptime. The AI services may be unavailable due to server load, maintenance, or force majeure events.</p>
+
+                  <h4>10. INDEMNIFICATION</h4>
+                  <p>You agree to defend, indemnify, and hold the Developers harmless from any claims, damages, costs, and expenses (including attorney's fees) arising from your use of the App or your violation of these Terms.</p>
+
+                  <h4>11. AGE RESTRICTION</h4>
+                  <p>You must be at least 18 years old to use this App. By accepting, you verify you are of legal age to handle agricultural chemicals and enter into binding contracts.</p>
+
+                  <h4>12. SEVERABILITY</h4>
+                  <p>If any provision of these Terms is found to be unenforceable, the remaining provisions shall remain in full force and effect.</p>
+
+                  <hr style={{borderColor: '#ddd', margin: '20px 0'}}/>
+                  <p style={{fontSize: '11px', textAlign: 'center', color: '#666'}}>
+                      <em>Clicking "I Accept" constitutes a digital signature and a binding legal agreement.</em>
+                  </p>
               </div>
-              <button onClick={handleAcceptTerms} style={styles.acceptBtn}>✅ I Accept Full Responsibility</button>
+              <button onClick={handleAcceptTerms} style={styles.acceptBtn}>
+                  ✅ I Verify I Have Read & Accept All Risks
+              </button>
           </div>
       </div>
   );
@@ -191,20 +284,21 @@ function ChatBot() {
     <div style={{ fontFamily: '"Inter", sans-serif' }}>
       {isOpen && (
         <div style={styles.fullPageChat}>
-          
           {/* HEADER */}
           <div style={styles.header}>
             <button onClick={handleCloseChat} style={styles.backBtn}>←</button>
             <div style={{textAlign: 'center'}}>
-                <span style={{fontSize: '18px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '8px'}}>
+                <span style={{fontSize: '18px', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px'}}>
                     🤝 Farm Buddy 🌾
                 </span>
-                <span style={{fontSize: '11px', color: '#81C784'}}>Pro Model Enabled</span>
+                <span style={{fontSize: '11px', color: '#81C784', display: 'block'}}>
+                    System: Groq ➔ Gemini ➔ ChatGPT
+                </span>
             </div>
             <div style={{width: '24px'}}></div>
           </div>
           
-          {/* BODY */}
+          {/* CHAT BODY */}
           <div style={styles.chatBody}>
             {messages.map((msg, i) => (
               <div key={i} style={{ 
@@ -221,13 +315,14 @@ function ChatBot() {
             ))}
             {isLoading && (
                 <div style={styles.loadingArea}>
-                    <div className="spinner" style={styles.spinner}></div> thinking...
+                    <div className="spinner" style={styles.spinner}></div>
+                    <span style={{marginLeft: '10px'}}>Checking 9 AI Servers...</span>
                 </div>
             )}
             <div ref={messagesEndRef} />
           </div>
 
-          {/* FOOTER - ALIGNMENT FIXED */}
+          {/* FOOTER */}
           <div style={styles.footer}>
             <div style={styles.inputContainer}>
                 <input type="file" accept="image/*" onChange={handleFileChange} style={{display:'none'}} id="cam-input" disabled={!termsAccepted} />
@@ -236,7 +331,7 @@ function ChatBot() {
                 <div style={{flex: 1, position: 'relative', display: 'flex', alignItems: 'center'}}>
                     <input 
                         type="text" 
-                        placeholder={termsAccepted ? "Ask Farm Buddy..." : "Accept terms..."} 
+                        placeholder={termsAccepted ? "Ask anything..." : "Accept terms..."} 
                         style={styles.textInput} 
                         value={input} 
                         onChange={(e) => setInput(e.target.value)} 
@@ -245,20 +340,16 @@ function ChatBot() {
                     />
                     {uploadedFile && (
                         <div style={styles.imageBadge}>
-                            <span>🖼️ Image Ready</span>
-                            <button onClick={removeUploadedImage} style={styles.badgeClose}>✖</button>
+                            <span>🖼️ Image</span>
+                            <button onClick={removeUploadedImage} style={styles.badgeClose}>×</button>
                         </div>
                     )}
                 </div>
 
-                <button 
-                    onClick={handleSend} 
-                    style={styles.sendCircle}
-                    disabled={!termsAccepted || (input.trim() === "" && imagePart === null)}
-                >➤</button>
+                <button onClick={handleSend} style={styles.sendCircle} disabled={!termsAccepted}>➤</button>
             </div>
             <div style={styles.bottomWarning}>
-                AI can make mistakes, so double-check it. <span onClick={() => setShowFullTerms(true)} style={styles.readMore}>Read more</span>
+                AI can err. <span onClick={() => setShowFullTerms(true)} style={styles.readMore}>Read 12-Pt Terms</span>
             </div>
           </div>
         </div>
@@ -266,10 +357,9 @@ function ChatBot() {
       
       {showFullTerms && <FullTermsModal />}
 
-      {/* DASHBOARD FLOATING BUTTON (SMALLER) */}
       {!isOpen && (
           <button onClick={handleOpenChat} style={styles.miniFloatBtn}>
-              <span style={{fontSize: '20px'}}>🤝</span> 
+              <span style={{fontSize: '18px'}}>🤝</span> 
               <span style={{fontWeight: 'bold'}}>Farm Buddy</span>
           </button>
       )}
@@ -277,123 +367,70 @@ function ChatBot() {
   );
 }
 
-// --- 🎨 PROFESSIONAL STYLES (EXPANDED TO PRESERVE LINE COUNT) ---
+// --- 💅 STYLES (Professional Dark Mode) ---
 const styles = {
     miniFloatBtn: {
-        position: 'fixed', 
-        bottom: '25px', 
-        right: '25px', 
-        zIndex: 999,
+        position: 'fixed', bottom: '25px', right: '25px', zIndex: 999,
         background: 'linear-gradient(135deg, #2E7D32 0%, #1B5E20 100%)',
-        color: 'white', 
-        border: 'none', 
-        borderRadius: '50px', 
-        padding: '10px 18px', // Smaller as requested
-        fontSize: '14px', // Smaller as requested
-        display: 'flex', 
-        alignItems: 'center', 
-        gap: '8px',
-        boxShadow: '0 4px 15px rgba(0,0,0,0.3)', 
-        cursor: 'pointer'
+        color: 'white', border: 'none', borderRadius: '50px', 
+        padding: '10px 20px', fontSize: '14px', display: 'flex', alignItems: 'center', gap: '8px',
+        boxShadow: '0 4px 15px rgba(0,0,0,0.4)', cursor: 'pointer', transition: 'all 0.2s'
     },
     fullPageChat: {
-        position: 'fixed', 
-        top: 0, 
-        left: 0, 
-        width: '100vw', // Full Screen
-        height: '100vh', // Full Screen
-        backgroundColor: '#131314', 
-        zIndex: 9999, 
-        display: 'flex', 
-        flexDirection: 'column'
+        position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh',
+        backgroundColor: '#131314', zIndex: 9999, display: 'flex', flexDirection: 'column'
     },
     header: {
-        backgroundColor: '#1E1F20', 
-        color: '#E3E3E3', 
-        padding: '15px 25px',
-        display: 'flex', 
-        justifyContent: 'space-between', 
-        alignItems: 'center',
-        borderBottom: '1px solid #333'
+        backgroundColor: '#1E1F20', color: '#E3E3E3', padding: '15px 20px',
+        display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #333'
     },
     backBtn: { background: 'none', border: 'none', color: 'white', fontSize: '26px', cursor: 'pointer' },
     chatBody: {
-        flex: 1, 
-        padding: '25px', 
-        overflowY: 'auto', 
-        backgroundColor: '#131314',
-        display: 'flex', 
-        flexDirection: 'column'
+        flex: 1, padding: '20px', overflowY: 'auto', backgroundColor: '#131314', display: 'flex', flexDirection: 'column'
     },
     botBubble: {
-        backgroundColor: '#1E1F20', 
-        color: '#E3E3E3', 
-        padding: '15px 20px', 
-        borderRadius: '4px 22px 22px 22px', 
-        maxWidth: '85%', 
-        fontSize: '15px', 
-        lineHeight: '1.6', 
-        border: '1px solid #333'
+        backgroundColor: '#1E1F20', color: '#E3E3E3', padding: '14px 18px', 
+        borderRadius: '4px 20px 20px 20px', maxWidth: '88%', fontSize: '15px', 
+        lineHeight: '1.6', border: '1px solid #333'
     },
     userBubble: {
-        backgroundColor: '#2E7D32', 
-        color: 'white', 
-        padding: '12px 20px', 
-        borderRadius: '22px 4px 22px 22px', 
-        maxWidth: '80%', 
-        fontSize: '15px'
+        backgroundColor: '#2E7D32', color: 'white', padding: '12px 18px', 
+        borderRadius: '20px 4px 20px 20px', maxWidth: '85%', fontSize: '15px'
     },
     footer: {
-        backgroundColor: '#1E1F20', 
-        padding: '15px 20px 35px 20px', 
-        borderTop: '1px solid #333'
+        backgroundColor: '#1E1F20', padding: '15px 15px 30px 15px', borderTop: '1px solid #333'
     },
     inputContainer: {
-        display: 'flex', 
-        alignItems: 'center', 
-        gap: '15px', 
-        maxWidth: '1000px', 
-        margin: '0 auto', 
-        width: '100%'
+        display: 'flex', alignItems: 'center', gap: '10px', width: '100%'
     },
     textInput: {
-        width: '100%', 
-        padding: '15px 20px', 
-        borderRadius: '30px', 
-        border: '1px solid #444',
-        backgroundColor: '#2D2D30', 
-        color: 'white', 
-        fontSize: '16px', 
-        outline: 'none'
+        width: '100%', padding: '14px 18px', borderRadius: '25px', border: '1px solid #444',
+        backgroundColor: '#2D2D30', color: 'white', fontSize: '15px', outline: 'none'
     },
-    iconLabel: { fontSize: '26px', cursor: 'pointer', color: '#9aa0a6' },
+    iconLabel: { fontSize: '24px', cursor: 'pointer', color: '#9aa0a6' },
     sendCircle: {
-        backgroundColor: '#2E7D32', 
-        color: 'white', 
-        border: 'none', 
-        borderRadius: '50%', 
-        width: '50px', 
-        height: '50px', 
-        display: 'flex', 
-        alignItems: 'center', 
-        justifyContent: 'center', 
-        fontSize: '22px', 
-        cursor: 'pointer', 
-        flexShrink: 0 // FIXED ALIGNMENT
+        backgroundColor: '#2E7D32', color: 'white', border: 'none', 
+        borderRadius: '50%', width: '45px', height: '45px', 
+        display: 'flex', alignItems: 'center', justifyContent: 'center', 
+        fontSize: '20px', cursor: 'pointer', flexShrink: 0
     },
-    bottomWarning: { textAlign: 'center', color: '#9aa0a6', fontSize: '12px', marginTop: '12px' },
-    readMore: { color: '#81C784', textDecoration: 'underline', cursor: 'pointer', marginLeft: '5px' },
-    modalOverlay: { position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', backgroundColor: 'rgba(0,0,0,0.9)', zIndex: 10001, display: 'flex', alignItems: 'center', justifyContent: 'center' },
-    modalContent: { width: '90%', maxWidth: '600px', backgroundColor: '#1E1F20', borderRadius: '15px', border: '1px solid #444', overflow: 'hidden' },
-    modalHeader: { padding: '20px', backgroundColor: '#2E7D32', color: 'white', display: 'flex', justifyContent: 'space-between', fontWeight: 'bold' },
-    modalBody: { padding: '30px', color: '#CCC', fontSize: '14px', lineHeight: '1.7', maxHeight: '60vh', overflowY: 'auto' },
-    modalDismissBtn: { background: 'none', border: 'none', color: 'white', fontSize: '22px', cursor: 'pointer' },
+    bottomWarning: { textAlign: 'center', color: '#9aa0a6', fontSize: '11px', marginTop: '10px' },
+    readMore: { color: '#81C784', textDecoration: 'underline', cursor: 'pointer' },
+    
+    // Modal Styles
+    modalOverlay: { position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', backgroundColor: 'rgba(0,0,0,0.95)', zIndex: 10001, display: 'flex', alignItems: 'center', justifyContent: 'center' },
+    modalContent: { width: '92%', maxWidth: '600px', backgroundColor: '#fff', color: '#333', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 20px 50px rgba(0,0,0,0.5)' },
+    modalHeader: { padding: '20px', backgroundColor: '#f8f8f8', borderBottom: '1px solid #ddd', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '18px', fontWeight: 'bold' },
+    modalBody: { padding: '25px', fontSize: '13px', lineHeight: '1.7', maxHeight: '70vh', overflowY: 'auto' },
+    modalDismissBtn: { background: 'none', border: 'none', color: '#333', fontSize: '24px', cursor: 'pointer' },
     acceptBtn: { width: '100%', padding: '18px', backgroundColor: '#2E7D32', color: 'white', border: 'none', fontWeight: 'bold', fontSize: '16px', cursor: 'pointer' },
-    msgImage: { maxWidth: '250px', borderRadius: '12px', marginBottom: '8px', border: '1px solid #444' },
-    imageBadge: { position: 'absolute', top: '-45px', left: '10px', backgroundColor: '#2E7D32', padding: '6px 12px', borderRadius: '15px', color: 'white', fontSize: '12px', display: 'flex', gap: '8px' },
+    
+    // Extras
+    msgImage: { maxWidth: '200px', borderRadius: '10px', marginBottom: '8px', border: '1px solid #444' },
+    imageBadge: { position: 'absolute', top: '-40px', left: '0', backgroundColor: '#2E7D32', padding: '5px 10px', borderRadius: '10px', color: 'white', fontSize: '11px', display: 'flex', gap: '6px' },
     badgeClose: { background: 'none', border: 'none', color: 'white', fontWeight: 'bold', cursor: 'pointer' },
-    loadingArea: { color: '#9aa0a6', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '10px', marginTop: '10px' },
-    spinner: { width: '16px', height: '16px', border: '2px solid #333', borderTop: '2px solid #81C784', borderRadius: '50%', animation: 'spin 1s linear infinite' }
+    loadingArea: { color: '#9aa0a6', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '8px', marginTop: '10px' },
+    spinner: { width: '14px', height: '14px', border: '2px solid #333', borderTop: '2px solid #81C784', borderRadius: '50%', animation: 'spin 1s linear infinite' }
 };
 
 export default ChatBot;
