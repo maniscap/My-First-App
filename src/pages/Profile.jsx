@@ -10,12 +10,34 @@ import OrderHistoryPage from './OrderHistoryPage';
 import NotificationsPage from './NotificationsPage'; 
 import SettingsPage from './SettingsPage'; 
 
-// --- STYLING HELPERS (Modernized for Smoothness and Stunning GPS) ---
-const pageStyle = { position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: '#f8f8f8', display:'flex', justifyContent:'center', overflowY:'auto' };
+// --- STYLING HELPERS (Fixed for Mobile Overlap & Button Position) ---
+const pageStyle = { 
+    position: 'fixed', 
+    top: 0, 
+    left: 0, 
+    width: '100%', 
+    height: '100dvh', // CHANGED: 'dvh' ensures it fits mobile screens perfectly without being covered by address bars
+    background: '#f8f8f8', 
+    display:'flex', 
+    justifyContent:'center', 
+    overflowY:'auto', // Ensures scrolling works
+    WebkitOverflowScrolling: 'touch' // Smooth scrolling on iOS
+};
+
 // Menu card background set to match page background for smooth transition
-const menuCard = { width: '100%', maxWidth: '480px', background: '#f8f8f8', padding: '20px', minHeight: '100vh', boxSizing:'border-box' };
+const menuCard = { width: '100%', maxWidth: '480px', background: '#f8f8f8', padding: '20px', minHeight: '100%', boxSizing:'border-box' };
+
 // Sub page card retains white background and clean padding
-const subPageCard = { width: '100%', maxWidth: '480px', background: '#fff', padding: '25px', minHeight: '100vh', boxSizing:'border-box', boxShadow:'0 0 15px rgba(0,0,0,0.05)' };
+const subPageCard = { 
+    width: '100%', 
+    maxWidth: '480px', 
+    background: '#fff', 
+    padding: '25px', 
+    paddingBottom: '150px', // CHANGED: Added huge bottom padding so you can scroll past the button
+    minHeight: '100%', 
+    boxSizing:'border-box', 
+    boxShadow:'0 0 15px rgba(0,0,0,0.05)' 
+};
 
 const headerRow = { display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'30px' };
 const closeBtn = { background:'none', border:'none', fontSize:'24px', color:'#333', cursor:'pointer' };
@@ -33,25 +55,25 @@ const avatarLargeContainer = { width:'110px', height:'110px', borderRadius:'50%'
 const miniUploadBtn = { position:'absolute', bottom:0, right:0, background:'#FFC107', color:'#333', borderRadius:'50%', width:'24px', height:'24px', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'14px', cursor:'pointer', border:'2px solid #fff' };
 const uploadBtn = { color:'#2196F3', fontSize:'14px', fontWeight:'bold', cursor:'pointer', marginTop:'10px', display:'inline-block' };
 
-const menuGrid = { display:'flex', flexDirection:'column', gap:'10px' }; // Reduced gap for a smoother flow
+const menuGrid = { display:'flex', flexDirection:'column', gap:'10px' }; 
 const menuItem = { 
     display:'flex', 
     alignItems:'center', 
     background:'#fff', 
-    border:'none', // Removed border for cleaner look
+    border:'none', 
     padding:'20px', 
-    borderRadius:'12px', // Slightly smaller radius
+    borderRadius:'12px', 
     cursor:'pointer', 
     textAlign:'left', 
-    boxShadow:'0 2px 10px rgba(0,0,0,0.05)', // Softer shadow
+    boxShadow:'0 2px 10px rgba(0,0,0,0.05)', 
     transition: 'transform 0.2s ease, box-shadow 0.2s ease',
 };
 const iconStyle = { fontSize:'30px', marginRight:'15px', width:'35px', flexShrink:0 };
 const menuTitle = { fontWeight:'700', fontSize:'17px', color:'#333' };
-const menuDesc = { fontSize:'13px', color:'#666', marginTop:'2px' }; // Reduced margin for tighter text
+const menuDesc = { fontSize:'13px', color:'#666', marginTop:'2px' }; 
 const arrow = { marginLeft:'auto', fontSize:'24px', color:'#ccc' };
 
-const formGroup = { marginBottom:'25px' }; // Increased margin to prevent visual overlap
+const formGroup = { marginBottom:'25px' }; 
 const formRow = { display:'flex', gap:'15px' };
 const label = { display:'block', fontSize:'12px', fontWeight:'600', color:'#888', marginBottom:'5px', textTransform:'uppercase' }; 
 const ajioInput = { width:'100%', padding: '12px 0', borderRadius: '0', border: 'none', borderBottom: '1px solid #ddd', fontSize: '15px', boxSizing: 'border-box', background: 'transparent', color: '#333', outline:'none' }; 
@@ -89,8 +111,38 @@ const actionBtn = {
     transition: 'background 0.2s ease'
 };
 
-const mainSaveBtn = { width:'100%', background:'#2E7D32', color:'white', border:'none', padding:'16px', borderRadius:'12px', fontSize:'17px', fontWeight:'bold', cursor:'pointer', marginTop:'20px' };
-const blackSaveBtn = { width:'100%', background:'#000', color:'white', border:'none', padding:'16px', borderRadius:'12px', fontSize:'16px', fontWeight:'bold', cursor:'pointer', marginTop:'20px' };
+// CHANGED: Added marginBottom to fix the button position 2cm above edge
+const mainSaveBtn = { 
+    width:'100%', 
+    background:'#2E7D32', 
+    color:'white', 
+    border:'none', 
+    padding:'16px', 
+    borderRadius:'12px', 
+    fontSize:'17px', 
+    fontWeight:'bold', 
+    cursor:'pointer', 
+    marginTop:'20px',
+    marginBottom: '80px', // 2cm clearance from bottom
+    boxShadow: '0 4px 15px rgba(46, 125, 50, 0.3)'
+};
+
+// CHANGED: Added marginBottom here too for Seller profile
+const blackSaveBtn = { 
+    width:'100%', 
+    background:'#000', 
+    color:'white', 
+    border:'none', 
+    padding:'16px', 
+    borderRadius:'12px', 
+    fontSize:'16px', 
+    fontWeight:'bold', 
+    cursor:'pointer', 
+    marginTop:'20px',
+    marginBottom: '80px', // 2cm clearance from bottom
+    boxShadow: '0 4px 15px rgba(0,0,0,0.2)'
+};
+
 const logoutBtn = { width:'100%', background:'#d32f2f', color:'white', border:'none', padding:'16px', borderRadius:'12px', fontSize:'17px', fontWeight:'bold', cursor:'pointer', marginTop:'30px' };
 
 const settingsItem = { display:'flex', justifyContent:'space-between', alignItems:'center', padding:'15px 0', borderBottom:'1px solid #f0f0f0' };
@@ -161,7 +213,7 @@ function Profile() {
     const [notification, setNotification] = useState({ message: '', type: '' });
     const [isSaving, setIsSaving] = useState(false);
     
-    // Data State (Unchanged - The fix is in the logic below)
+    // Data State
     const [profileData, setProfileData] = useState({
         name: '', sellerName: 'Unnamed Shop', phone: '', alternatePhone: '', photo: '', rating: 4.8, bio: 'Dedicated local farmer/machinery provider.', ordersCompleted: 0,
         serviceOrders: 15, productOrders: 25, serviceRating: 4.6, productRating: 4.4, ratingBreakdown: { '5': 25, '4': 15, '3': 20, '2': 10, '1': 30 },
@@ -177,7 +229,7 @@ function Profile() {
         setTimeout(() => setNotification({ message: '', type: '' }), 4000);
     };
 
-    // --- Data Loading and Saving Logic (Unchanged) ---
+    // --- Data Loading and Saving Logic ---
     useEffect(() => { 
         const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
             if (currentUser) {
@@ -189,9 +241,9 @@ function Profile() {
                     const data = docSnap.data();
                     
                     const extractAddress = (source) => ({
-                         pincode: source.pincode || '', city: source.city || '', state: source.state || '', 
-                         locality: source.locality || '', building: source.building || '', landmark: source.landmark || '',
-                         lat: source.lat || null, lng: source.lng || null
+                          pincode: source.pincode || '', city: source.city || '', state: source.state || '', 
+                          locality: source.locality || '', building: source.building || '', landmark: source.landmark || '',
+                          lat: source.lat || null, lng: source.lng || null
                     });
 
                     setProfileData(prev => ({ 
@@ -353,7 +405,7 @@ function Profile() {
                         </div>
                     </div>
 
-                    {/* MENU OPTIONS GRID - Clean and modern look retained */}
+                    {/* MENU OPTIONS GRID */}
                     <div style={menuGrid}>
                         <button onClick={() => setActiveView('personal')} style={menuItem}>
                             <span style={iconStyle}>👤</span>
@@ -687,7 +739,7 @@ function Profile() {
         return (
             <SettingsPage 
                 setActiveView={setActiveView} 
-                NotificationBar={NotificationBar}
+                NotificationBar={NotificationBar} 
                 handleLogout={handleLogout} 
             />
         );
