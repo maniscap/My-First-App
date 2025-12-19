@@ -10,18 +10,21 @@ import OrderHistoryPage from './OrderHistoryPage';
 import NotificationsPage from './NotificationsPage'; 
 import SettingsPage from './SettingsPage'; 
 
-// --- STYLING HELPERS (Fixed for Mobile Overlap & Button Position) ---
+// --- STYLING HELPERS (Fixed for Mobile Overlap & One Card Flow) ---
 const pageStyle = { 
     position: 'fixed', 
     top: 0, 
     left: 0, 
     width: '100%', 
-    height: '100dvh', // CHANGED: 'dvh' ensures it fits mobile screens perfectly without being covered by address bars
+    height: '100%', 
     background: '#f8f8f8', 
-    display:'flex', 
-    justifyContent:'center', 
-    overflowY:'auto', // Ensures scrolling works
-    WebkitOverflowScrolling: 'touch' // Smooth scrolling on iOS
+    overflowY: 'auto', // The scrollable viewport
+    WebkitOverflowScrolling: 'touch',
+    zIndex: 2000,
+    // FIX: 'flex-start' ensures the card grows downwards and background doesn't cut off
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'flex-start' 
 };
 
 // Menu card background set to match page background for smooth transition
@@ -33,15 +36,17 @@ const subPageCard = {
     maxWidth: '480px', 
     background: '#fff', 
     padding: '25px', 
-    paddingBottom: '150px', // CHANGED: Added huge bottom padding so you can scroll past the button
+    paddingBottom: '150px', 
     minHeight: '100%', 
     boxSizing:'border-box', 
-    boxShadow:'0 0 15px rgba(0,0,0,0.05)' 
+    boxShadow:'0 0 15px rgba(0,0,0,0.05)',
+    position: 'relative', 
+    zIndex: 2001
 };
 
-const headerRow = { display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'30px' };
+const headerRow = { display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'30px', marginTop: '10px' };
 const closeBtn = { background:'none', border:'none', fontSize:'24px', color:'#333', cursor:'pointer' };
-const backBtn = { background:'none', border:'none', fontSize:'16px', color:'#2E7D32', cursor:'pointer', marginBottom:'25px', padding:0, fontWeight:'700' };
+const backBtn = { background:'none', border:'none', fontSize:'16px', color:'#2E7D32', cursor:'pointer', marginBottom:'25px', padding:0, fontWeight:'700', marginTop: '10px' };
 const sectionTitle = { margin:'0 0 25px 0', color:'#333', fontSize:'24px', fontWeight:'800' };
 const subSectionTitle = { margin:'20px 0 15px 0', color:'#444', fontSize:'17px', borderLeft:'4px solid #FFC107', paddingLeft:'12px', fontWeight:'700' }; 
 
@@ -73,10 +78,13 @@ const menuTitle = { fontWeight:'700', fontSize:'17px', color:'#333' };
 const menuDesc = { fontSize:'13px', color:'#666', marginTop:'2px' }; 
 const arrow = { marginLeft:'auto', fontSize:'24px', color:'#ccc' };
 
-const formGroup = { marginBottom:'25px' }; 
+// FIX: Added positioning to formGroup to prevent vertical overlap
+const formGroup = { marginBottom:'25px', position: 'relative' }; 
 const formRow = { display:'flex', gap:'15px' };
 const label = { display:'block', fontSize:'12px', fontWeight:'600', color:'#888', marginBottom:'5px', textTransform:'uppercase' }; 
-const ajioInput = { width:'100%', padding: '12px 0', borderRadius: '0', border: 'none', borderBottom: '1px solid #ddd', fontSize: '15px', boxSizing: 'border-box', background: 'transparent', color: '#333', outline:'none' }; 
+
+// FIX: Changed background to white to prevent transparency bleed-through
+const ajioInput = { width:'100%', padding: '12px 0', borderRadius: '0', border: 'none', borderBottom: '1px solid #ddd', fontSize: '15px', boxSizing: 'border-box', background: '#fff', color: '#333', outline:'none' }; 
 
 // 🚨 STUNNING GPS SECTION OVERHAUL
 const gpsBox = { 
@@ -111,7 +119,6 @@ const actionBtn = {
     transition: 'background 0.2s ease'
 };
 
-// CHANGED: Added marginBottom to fix the button position 2cm above edge
 const mainSaveBtn = { 
     width:'100%', 
     background:'#2E7D32', 
@@ -123,11 +130,10 @@ const mainSaveBtn = {
     fontWeight:'bold', 
     cursor:'pointer', 
     marginTop:'20px',
-    marginBottom: '80px', // 2cm clearance from bottom
+    marginBottom: '80px', 
     boxShadow: '0 4px 15px rgba(46, 125, 50, 0.3)'
 };
 
-// CHANGED: Added marginBottom here too for Seller profile
 const blackSaveBtn = { 
     width:'100%', 
     background:'#000', 
@@ -139,7 +145,7 @@ const blackSaveBtn = {
     fontWeight:'bold', 
     cursor:'pointer', 
     marginTop:'20px',
-    marginBottom: '80px', // 2cm clearance from bottom
+    marginBottom: '80px', 
     boxShadow: '0 4px 15px rgba(0,0,0,0.2)'
 };
 
@@ -363,7 +369,7 @@ function Profile() {
         if (!notification.message) return null;
         
         const style = {
-            position: 'fixed', bottom: '20px', left: '50%', transform: 'translateX(-50%)', padding: '12px 20px', borderRadius: '10px', color: 'white', fontWeight: 'bold', zIndex: 1000, maxWidth: '90%', textAlign: 'center', boxShadow: '0 4px 15px rgba(0,0,0,0.2)', transition: 'opacity 0.3s ease',
+            position: 'fixed', bottom: '20px', left: '50%', transform: 'translateX(-50%)', padding: '12px 20px', borderRadius: '10px', color: 'white', fontWeight: 'bold', zIndex: 3000, maxWidth: '90%', textAlign: 'center', boxShadow: '0 4px 15px rgba(0,0,0,0.2)', transition: 'opacity 0.3s ease',
         };
 
         let bgColor = '#333';
