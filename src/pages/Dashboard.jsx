@@ -2,31 +2,35 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios'; 
 
-// --- ASSET IMPORTS ---
+// --- ASSET IMPORTS (FIXED TO MATCH YOUR FILES) ---
 import clearDayVideo from '../assets/weather-videos/clear-day.mp4';
 import clearNightVideo from '../assets/weather-videos/clear-night.mp4';
 import cloudyDayVideo from '../assets/weather-videos/cloudy-day.mp4';
-import partlyCloudyVideo from '../assets/weather-videos/partly-cloudy.mp4';
-import drizzleDayVideo from '../assets/weather-videos/drizzle-day.mp4';
-import mistVideo from '../assets/weather-videos/mist.mp4';
-// import mistNightVideo from '../assets/weather-videos/mist-night.mp4'; 
+import cloudyNightVideo from '../assets/weather-videos/cloudy-night.mp4'; // New
+import partlyCloudyDayVideo from '../assets/weather-videos/partly-cloudy-day.mp4'; // Fixed Name
+import partlyCloudyNightVideo from '../assets/weather-videos/partly-cloudy-night.mp4'; // New
+import drizzleDayVideo from '../assets/weather-videos/drizzle-day.mp4'; // Fixed Name
+import mistDayVideo from '../assets/weather-videos/mist-day.mp4'; // Fixed Name
+import mistNightVideo from '../assets/weather-videos/mist-night.mp4'; // New
 import rainDayVideo from '../assets/weather-videos/rain-day.mp4';
-import rainNightVideo from '../assets/weather-videos/rain-night.mp4';
 import rainEveningVideo from '../assets/weather-videos/rain-evening.mp4';
-import stormVideo from '../assets/weather-videos/thunderstorm.mp4'; 
+import rainNightVideo from '../assets/weather-videos/rain-night.mp4';
+import stormVideo from '../assets/weather-videos/thunder.mp4'; // Fixed Name
 import sunriseVideo from '../assets/weather-videos/sunrise.mp4';
 import sunsetVideo from '../assets/weather-videos/sunset.mp4';
 
 function Dashboard() {
   const navigate = useNavigate(); 
 
+  // --- BACKGROUND ---
   const [bgImage, setBgImage] = useState('');
   const dayBg = 'https://images.unsplash.com/photo-1625246333195-78d9c38ad449?q=80&w=2940&auto=format&fit=crop';
   const nightBg = 'https://images.unsplash.com/photo-1652454159675-11ead6275680?q=80&w=1170&auto=format&fit=crop';
 
+  // --- WEATHER STATE ---
   const [weatherData, setWeatherData] = useState(null);
   const [weatherVideo, setWeatherVideo] = useState(clearDayVideo); 
-  const [customLocationName, setCustomLocationName] = useState(""); // STORE VILLAGE NAME
+  const [customLocationName, setCustomLocationName] = useState(""); 
 
   useEffect(() => {
     const hour = new Date().getHours();
@@ -34,6 +38,7 @@ function Dashboard() {
     else setBgImage(dayBg);
   }, []);
 
+  // --- 📍 SMART LOCATION & SYNC LOGIC ---
   const [userLocation, setUserLocation] = useState('Select Location'); 
   const [showLocModal, setShowLocModal] = useState(false);
   const [manualInput, setManualInput] = useState('');
@@ -42,13 +47,13 @@ function Dashboard() {
   const [globalSearch, setGlobalSearch] = useState('');
 
   useEffect(() => {
-    // 1. SYNC: Always prioritize what the user last viewed in the Weather Page
+    // 1. SYNC: Check if user just swiped to a new city in Weather Page
     const lastViewed = localStorage.getItem('farmBuddy_lastCity');
     const savedLoc = localStorage.getItem('userLocation');
 
     if (lastViewed) {
         const { lat, lon, name } = JSON.parse(lastViewed);
-        setCustomLocationName(name); // FORCE THIS NAME (e.g. "Parumanchala")
+        setCustomLocationName(name); // Use saved name
         fetchLiveWeather(`${lat},${lon}`);
     } 
     else if (savedLoc) {
@@ -69,12 +74,14 @@ function Dashboard() {
 
   }, []);
 
+  // --- API: FETCH WEATHER ---
   const fetchLiveWeather = async (query) => {
       try {
           const apiKey = import.meta.env.VITE_WEATHER_KEY;
           const url = `https://api.weatherapi.com/v1/forecast.json?key=${apiKey}&q=${query}&days=1&aqi=no&alerts=no`;
           const response = await axios.get(url);
           setWeatherData(response.data);
+          
           const video = getAssetLogic(response.data);
           setWeatherVideo(video);
       } catch (err) {
@@ -82,23 +89,47 @@ function Dashboard() {
       }
   };
 
+  // --- ASSET LOGIC (UPDATED) ---
   const getAssetLogic = (data) => {
     const code = data.current.condition.code;
-    const isDay = data.current.is_day;
+    const isDay = data.current.is_day === 1;
     const hour = new Date().getHours();
 
-    if ([1273, 1276, 1279, 1282, 1087].includes(code)) return stormVideo;
-    if ([1183, 1186, 1189, 1192, 1195, 1240, 1243].includes(code)) {
+    // 1. Thunder
+    if ([1087, 1273, 1276, 1279, 1282].includes(code)) {
+        return stormVideo;
+    }
+
+    // 2. Drizzle
+    if ([1063, 1150, 1153, 1180, 1183, 1186, 1189, 1240].includes(code)) {
+        return isDay ? drizzleDayVideo : rainNightVideo;
+    }
+
+    // 3. Rain
+    if ([1192, 1195, 1198, 1201, 1243, 1246].includes(code)) {
         if (hour >= 16 && hour <= 19) return rainEveningVideo;
         return isDay ? rainDayVideo : rainNightVideo;
     }
-    if ([1030, 1135, 1147].includes(code)) return mistVideo;
 
+    // 4. Mist / Fog
+    if ([1030, 1135, 1147].includes(code)) {
+        return isDay ? mistDayVideo : mistNightVideo;
+    }
+
+    // 5. Cloudy
+    if ([1006, 1009].includes(code)) {
+        return isDay ? cloudyDayVideo : cloudyNightVideo;
+    }
+
+    // 6. Partly Cloudy
+    if (code === 1003) {
+        return isDay ? partlyCloudyDayVideo : partlyCloudyNightVideo;
+    }
+
+    // 7. Clear / Sunny
     if (isDay) {
         if (hour === 6) return sunriseVideo;
         if (hour >= 17 && hour <= 18) return sunsetVideo;
-        if (code === 1003) return partlyCloudyVideo;
-        if ([1006, 1009].includes(code)) return cloudyDayVideo;
         return clearDayVideo;
     } 
     return clearNightVideo;

@@ -5,26 +5,30 @@ import {
   WiHumidity, WiThermometer, WiRain, WiBarometer, WiTime3 
 } from 'react-icons/wi';
 import { 
-  IoMdAdd, IoMdSearch, IoMdVolumeHigh, IoMdVolumeOff, IoMdClose, IoMdNavigate, IoMdArrowBack, IoMdLocate 
+  IoMdAdd, IoMdSearch, IoMdVolumeHigh, IoMdVolumeOff, IoMdClose, IoMdNavigate, IoMdArrowBack 
 } from 'react-icons/io';
-import { MdAir, MdLocationOn, MdDelete, MdGpsFixed } from 'react-icons/md';
+import { MdLocationOn, MdDelete, MdGpsFixed } from 'react-icons/md';
 import { FaMaskFace } from 'react-icons/fa6'; 
 import { FaWind } from 'react-icons/fa';
 
-// --- ASSETS ---
+// --- ASSETS (MATCHING YOUR EXACT FILENAMES) ---
 import clearDayVideo from '../assets/weather-videos/clear-day.mp4';
 import clearNightVideo from '../assets/weather-videos/clear-night.mp4';
 import cloudyDayVideo from '../assets/weather-videos/cloudy-day.mp4';
-import partlyCloudyVideo from '../assets/weather-videos/partly-cloudy.mp4';
-import drizzleDayVideo from '../assets/weather-videos/drizzle-day.mp4';
-import mistVideo from '../assets/weather-videos/mist.mp4';
+import cloudyNightVideo from '../assets/weather-videos/cloudy-night.mp4'; 
+import partlyCloudyDayVideo from '../assets/weather-videos/partly-cloudy-day.mp4'; // FIXED NAME
+import partlyCloudyNightVideo from '../assets/weather-videos/partly-cloudy-night.mp4'; // ADDED NIGHT VERSION
+import drizzleDayVideo from '../assets/weather-videos/drizzle-day.mp4'; 
+import mistDayVideo from '../assets/weather-videos/mist-day.mp4'; 
+import mistNightVideo from '../assets/weather-videos/mist-night.mp4'; 
 import rainDayVideo from '../assets/weather-videos/rain-day.mp4';
 import rainEveningVideo from '../assets/weather-videos/rain-evening.mp4';
 import rainNightVideo from '../assets/weather-videos/rain-night.mp4';
-import stormVideo from '../assets/weather-videos/thunderstorm.mp4'; 
+import stormVideo from '../assets/weather-videos/thunder.mp4'; 
 import sunriseVideo from '../assets/weather-videos/sunrise.mp4';
 import sunsetVideo from '../assets/weather-videos/sunset.mp4';
 
+// --- SOUNDS ---
 import clearDaySound from '../assets/weather-sounds/clear-day.mp3';
 import clearNightSound from '../assets/weather-sounds/clear-night.mp3';
 import rainDaySound from '../assets/weather-sounds/rainy-day.mp3';
@@ -59,13 +63,12 @@ const Weather = () => {
 
   useEffect(() => { loadAllCities(); }, []);
 
-  // --- SYNC LOGIC ---
+  // --- SYNC & AUDIO LOGIC ---
   useEffect(() => {
     if (savedWeatherList.length > 0) {
       const currentCity = savedWeatherList[currentIndex];
       const { sound } = getAssetLogic(currentCity);
       
-      // Audio
       if (audioRef.current.src !== sound) {
         audioRef.current.src = sound;
         audioRef.current.loop = true;
@@ -73,7 +76,6 @@ const Weather = () => {
       if (isSoundOn) audioRef.current.play().catch(() => {});
       else audioRef.current.pause();
 
-      // CRITICAL FIX: Save the name WE have in our list
       localStorage.setItem('farmBuddy_lastCity', JSON.stringify({ 
           name: currentCity.location.name, 
           lat: currentCity.location.lat, 
@@ -82,7 +84,7 @@ const Weather = () => {
     }
   }, [currentIndex, savedWeatherList, isSoundOn]);
 
-  // --- FETCHING ---
+  // --- DATA LOADING ---
   const loadAllCities = async () => {
     setLoading(true);
     const saved = localStorage.getItem('farmBuddy_cities');
@@ -106,13 +108,11 @@ const Weather = () => {
         const promises = citiesToFetch.map(async (city) => {
             const data = await fetchSingleCity(`${city.lat},${city.lon}`);
             if (data) {
-                // FORCE OVERWRITE NAME: Use the name we saved (e.g. "Parumanchala") 
                 data.location.name = city.name; 
                 return data;
             }
             return null;
         });
-        
         const results = await Promise.all(promises);
         setSavedWeatherList(results.filter(item => item !== null));
         setLoading(false);
@@ -126,6 +126,58 @@ const Weather = () => {
       const response = await axios.get(url);
       return response.data;
     } catch (err) { return null; }
+  };
+
+  // --- ASSET SELECTION LOGIC (UPDATED WITH CORRECT NAMES) ---
+  const getAssetLogic = (currentCityData) => {
+    if (!currentCityData) return { video: clearDayVideo, sound: clearDaySound };
+    const code = currentCityData.current.condition.code;
+    const isDay = currentCityData.current.is_day;
+    const hour = new Date().getHours();
+
+    // 1. Thunder
+    if ([1087, 1273, 1276, 1279, 1282].includes(code)) {
+        return { video: stormVideo, sound: stormSound };
+    }
+
+    // 2. Drizzle (Light Rain)
+    if ([1063, 1150, 1153, 1180, 1183, 1186, 1189, 1240].includes(code)) {
+        return isDay ? { video: drizzleDayVideo, sound: rainDaySound } 
+                     : { video: rainNightVideo, sound: rainNightSound };
+    }
+
+    // 3. Rain (Moderate/Heavy)
+    if ([1192, 1195, 1198, 1201, 1243, 1246].includes(code)) {
+        if (hour >= 16 && hour <= 19) return { video: rainEveningVideo, sound: rainDaySound };
+        return isDay ? { video: rainDayVideo, sound: rainDaySound } 
+                     : { video: rainNightVideo, sound: rainNightSound };
+    }
+
+    // 4. Mist / Fog
+    if ([1030, 1135, 1147].includes(code)) {
+        return isDay ? { video: mistDayVideo, sound: mistSound } 
+                     : { video: mistNightVideo, sound: mistSound };
+    }
+
+    // 5. Cloudy / Overcast
+    if ([1006, 1009].includes(code)) {
+        return isDay ? { video: cloudyDayVideo, sound: clearDaySound } 
+                     : { video: cloudyNightVideo, sound: clearNightSound };
+    }
+
+    // 6. Partly Cloudy
+    if (code === 1003) {
+        return isDay ? { video: partlyCloudyDayVideo, sound: clearDaySound } 
+                     : { video: partlyCloudyNightVideo, sound: clearNightSound };
+    }
+
+    // 7. Clear / Sunny
+    if (isDay) {
+        if (hour === 6) return { video: sunriseVideo, sound: sunriseSound };
+        if (hour >= 17 && hour <= 18) return { video: sunsetVideo, sound: sunsetSound };
+        return { video: clearDayVideo, sound: clearDaySound };
+    } 
+    return { video: clearNightVideo, sound: clearNightSound };
   };
 
   const handleSearchChange = async (e) => {
@@ -170,7 +222,6 @@ const Weather = () => {
     
     if (!newWeatherData) return;
 
-    // FORCE NAME OVERWRITE
     newWeatherData.location.name = selectedName;
     
     const exists = savedWeatherList.findIndex(w => w.location.name === selectedName);
@@ -193,7 +244,6 @@ const Weather = () => {
   const saveCityToLocal = (weatherData, forceName) => {
       const saved = localStorage.getItem('farmBuddy_cities');
       const currentList = saved ? JSON.parse(saved) : [];
-      
       const nameToSave = forceName || weatherData.location.name;
 
       if (!currentList.some(c => c.name === nameToSave)) {
@@ -219,34 +269,6 @@ const Weather = () => {
       localStorage.setItem('farmBuddy_cities', JSON.stringify(simpleList));
       
       if (currentIndex >= newList.length) setCurrentIndex(Math.max(0, newList.length - 1));
-  };
-
-  const getFullDirection = (dir) => {
-      const map = { N:'North', S:'South', E:'East', W:'West', NE:'North East', NW:'North West', SE:'South East', SW:'South West' };
-      return map[dir] || dir; 
-  };
-
-  const getAssetLogic = (currentCityData) => {
-    if (!currentCityData) return { video: clearDayVideo, sound: clearDaySound };
-    const code = currentCityData.current.condition.code;
-    const isDay = currentCityData.current.is_day;
-    const hour = new Date().getHours();
-
-    if ([1273, 1276, 1279, 1282, 1087].includes(code)) return { video: stormVideo, sound: stormSound };
-    if ([1183, 1186, 1189, 1192, 1195, 1240, 1243].includes(code)) {
-        if (hour >= 16 && hour <= 19) return { video: rainEveningVideo, sound: rainDaySound };
-        return isDay ? { video: rainDayVideo, sound: rainDaySound } : { video: rainNightVideo, sound: rainNightSound };
-    }
-    if ([1030, 1135, 1147].includes(code)) return { video: mistVideo, sound: mistSound };
-
-    if (isDay) {
-        if (hour === 6) return { video: sunriseVideo, sound: sunriseSound };
-        if (hour >= 17 && hour <= 18) return { video: sunsetVideo, sound: sunsetSound };
-        if (code === 1003) return { video: partlyCloudyVideo, sound: clearDaySound };
-        if ([1006, 1009].includes(code)) return { video: cloudyDayVideo, sound: clearDaySound };
-        return { video: clearDayVideo, sound: clearDaySound };
-    } 
-    return { video: clearNightVideo, sound: clearNightSound };
   };
 
   if (loading) return <div style={styles.loading}>Loading Weather...</div>;
@@ -310,9 +332,7 @@ const Weather = () => {
                                 value={searchQuery} onChange={handleSearchChange} style={styles.searchInputBig}
                               />
                           </div>
-                          
                           <div style={styles.suggestionsList}>
-                              {/* 1. GPS BUTTON */}
                               {searchQuery.length === 0 && !gpsResult && (
                                   <>
                                      <div style={styles.gpsRow} onClick={handleGPSClick}>
@@ -329,8 +349,6 @@ const Weather = () => {
                                      </div>
                                   </>
                               )}
-
-                              {/* 2. GPS FOUND RESULT */}
                               {gpsResult && (
                                 <div style={styles.gpsResultCard} onClick={() => handleSelectSuggestion(gpsResult)}>
                                     <div style={{display:'flex', gap:'10px', alignItems:'center'}}>
@@ -343,8 +361,6 @@ const Weather = () => {
                                     <IoMdAdd size={24} color="#4CAF50"/>
                                 </div>
                               )}
-
-                              {/* 3. SEARCH RESULTS */}
                               {suggestions.map((place, idx) => (
                                   <div key={idx} style={styles.suggestionItem} onClick={() => handleSelectSuggestion(place)}>
                                       <span>{place.name}, {place.region}</span>
@@ -435,7 +451,6 @@ const Weather = () => {
               </div>
           </div>
 
-          {/* MODERN GRID LAYOUT */}
           <div style={styles.gridContainer}>
               <div style={styles.leftColumn}>
                   <div style={styles.modernCard}>
@@ -445,10 +460,8 @@ const Weather = () => {
                               <div style={{transform: `rotate(${current.wind_degree}deg)`, transition: '1s'}}>
                                  <IoMdNavigate size={24} color="#fff" />
                               </div>
-                              <span style={styles.directionText}>{current.wind_dir}</span>
                           </div>
                           <div style={styles.windSpeed}>{current.wind_kph} <span style={{fontSize:'12px'}}>km/h</span></div>
-                          <div style={{fontSize:'11px', opacity:0.7, marginTop:'2px'}}>{getFullDirection(current.wind_dir)}</div>
                       </div>
                   </div>
                   <div style={styles.modernCard}>
@@ -471,7 +484,6 @@ const Weather = () => {
                       <div style={styles.detailItem}>
                           <div style={styles.cardLabel}><WiHumidity size={22}/> Humidity</div>
                           <div style={styles.cardValue}>{current.humidity}%</div>
-                          <div style={styles.cardSub}>Dew Point: {current.dewpoint_c}°</div>
                       </div>
                       <div style={styles.detailItem}>
                            <div style={styles.cardLabel}><WiThermometer size={22}/> Real Feel</div>
@@ -480,17 +492,14 @@ const Weather = () => {
                       <div style={styles.detailItem}>
                            <div style={styles.cardLabel}>UV Index</div>
                            <div style={styles.cardValue}>{current.uv}</div>
-                           <div style={styles.cardSub}>{current.uv > 5 ? 'High' : 'Moderate'}</div>
                       </div>
                       <div style={styles.detailItem}>
                            <div style={styles.cardLabel}><WiBarometer size={22}/> Pressure</div>
                            <div style={styles.cardValue}>{current.pressure_mb}</div>
-                           <div style={styles.cardSub}>mBar</div>
                       </div>
                   </div>
               </div>
 
-              {/* BOTTOM: Smart Rain Card */}
               <div style={styles.fullWidthCard}>
                    <div style={{display:'flex', alignItems:'center', gap:'10px'}}>
                         <div style={styles.cardLabel}><WiRain size={24}/> Chance of Rain</div>
@@ -513,14 +522,12 @@ const Weather = () => {
   );
 };
 
-// --- MODERN PREMIUM STYLES ---
 const styles = {
   container: { position:'fixed', top:0, left:0, width:'100%', height:'100%', color:'white', fontFamily:'"SF Pro Display", sans-serif', background:'#111' },
   videoBg: { position:'absolute', top:0, left:0, width:'100%', height:'100%', objectFit:'cover', zIndex:-2 },
   overlay: { position:'absolute', top:0, left:0, width:'100%', height:'100%', background:'rgba(0,0,0,0.4)', zIndex:-1 },
   loading: { height:'100vh', display:'flex', alignItems:'center', justifyContent:'center', color:'#fff', background:'#000' },
   
-  // Header
   topBar: { display:'flex', justifyContent:'space-between', padding:'15px 20px', alignItems:'flex-start' },
   topLeft: { display:'flex', gap:'10px', alignItems:'center' },
   locationText: { display:'flex', flexDirection:'column' },
