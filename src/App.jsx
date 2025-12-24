@@ -13,6 +13,7 @@ import Admin from './pages/Admin';
 import FarmFresh from './pages/FarmFresh';
 import Weather from './pages/Weather';
 import SearchResults from './pages/SearchResults';
+import Expenditure from './pages/Expenditure'; // <--- NEW IMPORT ADDED
 
 // Import Components
 import ChatBot from './components/ChatBot';
@@ -28,6 +29,7 @@ function App() {
         <Route path="/login" element={<Login />} />
         
         <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/expenditure" element={<Expenditure />} /> {/* <--- NEW ROUTE ADDED */}
         
         <Route path="/profile" element={<Profile />} />
         <Route path="/agri-insights" element={<AgriInsights />} />
