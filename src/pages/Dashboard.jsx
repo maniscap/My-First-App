@@ -1,14 +1,32 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import axios from 'axios'; 
+
+// --- ASSET IMPORTS ---
+import clearDayVideo from '../assets/weather-videos/clear-day.mp4';
+import clearNightVideo from '../assets/weather-videos/clear-night.mp4';
+import cloudyDayVideo from '../assets/weather-videos/cloudy-day.mp4';
+import partlyCloudyVideo from '../assets/weather-videos/partly-cloudy.mp4';
+import drizzleDayVideo from '../assets/weather-videos/drizzle-day.mp4';
+import mistVideo from '../assets/weather-videos/mist.mp4';
+// import mistNightVideo from '../assets/weather-videos/mist-night.mp4'; 
+import rainDayVideo from '../assets/weather-videos/rain-day.mp4';
+import rainNightVideo from '../assets/weather-videos/rain-night.mp4';
+import rainEveningVideo from '../assets/weather-videos/rain-evening.mp4';
+import stormVideo from '../assets/weather-videos/thunderstorm.mp4'; 
+import sunriseVideo from '../assets/weather-videos/sunrise.mp4';
+import sunsetVideo from '../assets/weather-videos/sunset.mp4';
 
 function Dashboard() {
-  const navigate = useNavigate(); // Hook for navigation
+  const navigate = useNavigate(); 
 
-  // --- BACKGROUND ---
   const [bgImage, setBgImage] = useState('');
   const dayBg = 'https://images.unsplash.com/photo-1625246333195-78d9c38ad449?q=80&w=2940&auto=format&fit=crop';
-  // Updated Night Background
-  const nightBg = 'https://images.unsplash.com/photo-1652454159675-11ead6275680?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D';
+  const nightBg = 'https://images.unsplash.com/photo-1652454159675-11ead6275680?q=80&w=1170&auto=format&fit=crop';
+
+  const [weatherData, setWeatherData] = useState(null);
+  const [weatherVideo, setWeatherVideo] = useState(clearDayVideo); 
+  const [customLocationName, setCustomLocationName] = useState(""); // STORE VILLAGE NAME
 
   useEffect(() => {
     const hour = new Date().getHours();
@@ -16,54 +34,98 @@ function Dashboard() {
     else setBgImage(dayBg);
   }, []);
 
-  // --- 📍 SMART LOCATION LOGIC ---
   const [userLocation, setUserLocation] = useState('Select Location'); 
   const [showLocModal, setShowLocModal] = useState(false);
-  
-  // Local Location Search State
   const [manualInput, setManualInput] = useState('');
   const [suggestions, setSuggestions] = useState([]); 
   const [isGpsLoading, setIsGpsLoading] = useState(false);
-
-  // GLOBAL SEARCH STATE (For the Main Search Bar)
   const [globalSearch, setGlobalSearch] = useState('');
 
   useEffect(() => {
+    // 1. SYNC: Always prioritize what the user last viewed in the Weather Page
+    const lastViewed = localStorage.getItem('farmBuddy_lastCity');
     const savedLoc = localStorage.getItem('userLocation');
+
+    if (lastViewed) {
+        const { lat, lon, name } = JSON.parse(lastViewed);
+        setCustomLocationName(name); // FORCE THIS NAME (e.g. "Parumanchala")
+        fetchLiveWeather(`${lat},${lon}`);
+    } 
+    else if (savedLoc) {
+        setUserLocation(savedLoc);
+        const savedLat = localStorage.getItem('userLat');
+        const savedLng = localStorage.getItem('userLng');
+        if (savedLat && savedLng) {
+            fetchLiveWeather(`${savedLat},${savedLng}`);
+        } else {
+            fetchLiveWeather(savedLoc);
+        }
+    } 
+    else {
+        detectLocation(); 
+    }
+    
     if (savedLoc) setUserLocation(savedLoc);
-    else detectLocation(); // Auto-ask GPS on first load
+
   }, []);
 
-  // --- 1. HANDLE GLOBAL SEARCH (The Fix) ---
+  const fetchLiveWeather = async (query) => {
+      try {
+          const apiKey = import.meta.env.VITE_WEATHER_KEY;
+          const url = `https://api.weatherapi.com/v1/forecast.json?key=${apiKey}&q=${query}&days=1&aqi=no&alerts=no`;
+          const response = await axios.get(url);
+          setWeatherData(response.data);
+          const video = getAssetLogic(response.data);
+          setWeatherVideo(video);
+      } catch (err) {
+          console.error("Weather Fetch Error:", err);
+      }
+  };
+
+  const getAssetLogic = (data) => {
+    const code = data.current.condition.code;
+    const isDay = data.current.is_day;
+    const hour = new Date().getHours();
+
+    if ([1273, 1276, 1279, 1282, 1087].includes(code)) return stormVideo;
+    if ([1183, 1186, 1189, 1192, 1195, 1240, 1243].includes(code)) {
+        if (hour >= 16 && hour <= 19) return rainEveningVideo;
+        return isDay ? rainDayVideo : rainNightVideo;
+    }
+    if ([1030, 1135, 1147].includes(code)) return mistVideo;
+
+    if (isDay) {
+        if (hour === 6) return sunriseVideo;
+        if (hour >= 17 && hour <= 18) return sunsetVideo;
+        if (code === 1003) return partlyCloudyVideo;
+        if ([1006, 1009].includes(code)) return cloudyDayVideo;
+        return clearDayVideo;
+    } 
+    return clearNightVideo;
+  };
+
   const handleGlobalSearch = (e) => {
-    // When user presses "Enter"
     if (e.key === 'Enter' && globalSearch.trim() !== '') {
-      // Go to Search Results page
       navigate(`/search?q=${encodeURIComponent(globalSearch.trim())}`);
     }
   };
 
-  // --- 2. LOCATION FUNCTIONS ---
   const updateLocation = (name, lat, lng) => {
     setUserLocation(name);
     localStorage.setItem('userLocation', name);
-    // Save Coordinates for 50km Logic
     if (lat && lng) {
       localStorage.setItem('userLat', lat);
       localStorage.setItem('userLng', lng);
+      fetchLiveWeather(`${lat},${lng}`);
     }
     setShowLocModal(false);
     setSuggestions([]);
     setManualInput('');
-    
-    // Smooth reload to apply filters
-    setTimeout(() => { window.location.reload(); }, 300);
   };
 
   const handleLocSearch = async (query) => {
     setManualInput(query);
     if (query.length < 3) { setSuggestions([]); return; }
-
     try {
       const response = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${query}&count=10&language=en&format=json`);
       const data = await response.json();
@@ -75,33 +137,27 @@ function Dashboard() {
   const detectLocation = () => {
     if (!navigator.geolocation) { alert("GPS not supported"); return; }
     setIsGpsLoading(true);
-    
-    const options = { enableHighAccuracy: true, timeout: 10000 };
-
     navigator.geolocation.getCurrentPosition(async (position) => {
       const { latitude, longitude } = position.coords;
       try {
         const response = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=en`);
         const data = await response.json();
-        
         const village = data.locality || data.city || "";
         const district = data.principalSubdivision || "";
         const fullLoc = `${village}, ${district}`;
-        
         updateLocation(fullLoc, latitude, longitude);
-        alert(`Location Found: ${fullLoc}`);
       } catch (error) { alert("GPS worked, but address lookup failed."); }
       setIsGpsLoading(false);
     }, () => { 
         if(showLocModal) alert("Permission denied. Enable GPS."); 
         setIsGpsLoading(false); 
-    }, options);
+    });
   };
 
   return (
     <div style={{...pageStyle, backgroundImage: `url('${bgImage}')`}}>
       
-      {/* --- HEADER --- */}
+      {/* HEADER */}
       <div style={headerWrapper}>
         <div style={topRow}>
            <div style={locationClickableArea} onClick={() => setShowLocModal(true)}>
@@ -113,7 +169,6 @@ function Dashboard() {
            <Link to="/profile" style={profileCircle}><span style={{fontSize:'26px'}}>🧢</span></Link>
         </div>
         
-        {/* --- FIXED SEARCH BAR --- */}
         <div style={searchBar}>
            <span style={{fontSize:'18px', color:'rgba(255,255,255,0.6)'}}>🔍</span>
            <input 
@@ -122,17 +177,16 @@ function Dashboard() {
              style={searchInput}
              value={globalSearch}
              onChange={(e) => setGlobalSearch(e.target.value)}
-             onKeyDown={handleGlobalSearch} // Listens for Enter Key
+             onKeyDown={handleGlobalSearch} 
            />
         </div>
       </div>
 
       <div style={heroSection}><h1 style={fadedHeroTitle}>Growing Smarter Together</h1></div>
 
-      {/* --- BENTO GRID --- */}
+      {/* BENTO GRID */}
       <div style={bentoGrid}>
         
-        {/* 1. Agri-Insights */}
         <Link to="/agri-insights" style={cardLink}>
            <div className="glass-card" style={{...cardStyle, backgroundImage: "url('https://img.freepik.com/premium-photo/hand-holding-plant-with-sun-it_1174726-1291.jpg')"}}>
               <div style={cardTopOverlay}>
@@ -142,7 +196,6 @@ function Dashboard() {
            </div>
         </Link>
 
-        {/* 2. Service Hub */}
         <Link to="/service" style={cardLink}>
            <div className="glass-card" style={{...cardStyle, backgroundImage: "url('https://th.bing.com/th/id/R.e2c73dbf8a8f512a95ee3a2ec35f5d72?rik=DuUew48QLbwHzw&riu=http%3a%2f%2fvnmanpower.com%2fupload_images%2fimages%2fall%2ffarm-workers-from-vmst.jpg&ehk=s1NXBhEe0wVXkZGBnlrnXcEoGY1R4UtFvQ9kW7HVQ0Y%3d&risl=&pid=ImgRaw&r=0')"}}>
               <div style={cardTopOverlay}>
@@ -152,7 +205,6 @@ function Dashboard() {
            </div>
         </Link>
 
-        {/* 3. Business Zone */}
         <Link to="/business" style={cardLink}>
            <div className="glass-card" style={{...cardStyle, backgroundImage: "url('https://www.deere.ca/assets/images/region-4/products/harvesting/cornhead-R4A057928_RRD_1-1920x1080.jpg')"}}>
               <div style={cardTopOverlay}>
@@ -162,7 +214,6 @@ function Dashboard() {
            </div>
         </Link>
 
-        {/* 4. Farm Fresh */}
         <Link to="/farm-fresh" style={cardLink}>
            <div className="glass-card" style={{...cardStyle, backgroundImage: "url('https://images.unsplash.com/photo-1542838132-92c53300491e?q=80&w=500')"}}>
               <div style={cardTopOverlay}>
@@ -172,51 +223,63 @@ function Dashboard() {
            </div>
         </Link>
 
-        {/* 5. [NEW] Crop Expenditure */}
         <Link to="/expenditure" style={{...cardLink, gridColumn: 'span 2'}}>
            <div className="glass-card" style={{...wideCardStyle, backgroundImage: "url('https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?q=80&w=1000&auto=format&fit=crop')"}}>
               <div style={cardTopOverlay}>
-                  <div>
-                    <h3 style={{...cardTitle, margin:0}}>Crop Expenditure</h3>
-                    <p style={cardSubtitle}>Track Expenses & Bills</p>
-                  </div>
-                  <div style={whiteIconBox}>
-                    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                      <polyline points="14 2 14 8 20 8"></polyline>
-                      <line x1="16" y1="13" x2="8" y2="13"></line>
-                      <line x1="16" y1="17" x2="8" y2="17"></line>
-                      <polyline points="10 9 9 9 8 9"></polyline>
-                    </svg>
-                  </div>
+                  <div><h3 style={{...cardTitle, margin:0}}>Crop Expenditure</h3><p style={cardSubtitle}>Track Expenses & Bills</p></div>
+                  <div style={whiteIconBox}><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg></div>
               </div>
            </div>
         </Link>
 
-        {/* 6. Crop Weather */}
+        {/* 6. --- LIVE WEATHER CARD (Vertical & Modern) --- */}
         <Link to="/weather" style={{...cardLink, gridColumn: 'span 2'}}>
-           <div className="glass-card" style={{...wideCardStyle, backgroundImage: "url('https://images.unsplash.com/photo-1500382017468-9049fed747ef?q=80&w=800')"}}>
+           <div className="glass-card" style={{...wideCardStyle, position: 'relative', overflow: 'hidden'}}>
+              
+              <video key={weatherVideo} autoPlay loop muted playsInline style={videoBgStyle}>
+                  <source src={weatherVideo} type="video/mp4" />
+              </video>
+              <div style={darkOverlay}></div>
+
               <div style={cardTopOverlay}>
-                  <div><h3 style={{...cardTitle, margin:0}}>Crop Weather</h3><p style={cardSubtitle}>28°C, Rain: 40%, Humidity: 65%</p></div>
-                  <div style={whiteIconBox}><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="M20 12h2"/><path d="m19.07 4.93-1.41 1.41"/><path d="M15.947 12.65a4 4 0 0 0-5.925-4.128"/><path d="M13 22H7a4 4 0 1 1 0-8h1"/></svg></div>
+                  <div style={{display:'flex', flexDirection:'column', justifyContent:'space-between', height:'100%', width:'100%'}}>
+                    {/* Header */}
+                    <div style={{display:'flex', justifyContent:'space-between', width:'100%'}}>
+                        <h3 style={{...cardTitle, margin:0, fontSize:'13px', opacity:0.8, textTransform:'uppercase'}}>Weather View</h3>
+                        <div style={whiteIconBox}><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="M20 12h2"/><path d="m19.07 4.93-1.41 1.41"/><path d="M15.947 12.65a4 4 0 0 0-5.925-4.128"/><path d="M13 22H7a4 4 0 1 1 0-8h1"/></svg></div>
+                    </div>
+
+                    {/* Vertical Content */}
+                    {weatherData ? (
+                        <div style={{display:'flex', flexDirection:'column', marginTop:'10px'}}>
+                            {/* Force the name "Parumanchala" if saved in localStorage */}
+                            <div style={{fontSize:'22px', fontWeight:'700', lineHeight:'1.2'}}>
+                                {customLocationName || weatherData.location.name}
+                            </div>
+                            <div style={{fontSize:'42px', fontWeight:'300', margin:'2px 0'}}>{Math.round(weatherData.current.temp_c)}°</div>
+                            <div style={{display:'flex', gap:'15px', fontSize:'13px', opacity:0.9, marginTop:'5px'}}>
+                                <span>🌧 Rain: {weatherData.forecast.forecastday[0].day.daily_chance_of_rain}%</span>
+                                <span>💧 Hum: {weatherData.current.humidity}%</span>
+                            </div>
+                        </div>
+                    ) : (
+                        <p style={{marginTop:'20px'}}>Loading Weather...</p>
+                    )}
+                  </div>
               </div>
            </div>
         </Link>
 
       </div>
 
-      {/* --- NEW CENTERED MODERN MODAL --- */}
+      {/* --- MODAL (UNCHANGED) --- */}
       {showLocModal && (
         <div style={modalOverlay}>
           <div style={modalCard}>
-            
-            {/* Header */}
             <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'20px'}}>
               <h3 style={{margin:0, fontSize:'20px', color:'#2E7D32', fontWeight:'800'}}>📍 Set Location</h3>
               <button onClick={() => setShowLocModal(false)} style={closeIcon}>✕</button>
             </div>
-
-            {/* GPS Button */}
             <div onClick={detectLocation} style={gpsBox}>
               <div style={{background:'#E8F5E9', padding:'10px', borderRadius:'50%', marginRight:'15px', display:'flex'}}>
                 <span style={{fontSize:'20px'}}>🛰️</span>
@@ -228,10 +291,7 @@ function Dashboard() {
                 <div style={{color:'#888', fontSize:'12px'}}>Using GPS</div>
               </div>
             </div>
-
             <div style={{textAlign:'center', margin:'20px 0 10px 0', color:'#ccc', fontSize:'11px', fontWeight:'bold', letterSpacing:'1px'}}>- OR SEARCH MANUALLY -</div>
-
-            {/* Search Input */}
             <div style={searchContainer}>
               <span style={{fontSize:'18px', color:'#888'}}>🔍</span>
               <input 
@@ -243,7 +303,6 @@ function Dashboard() {
                 autoFocus
               />
             </div>
-
             <div style={suggestionsBox}>
               {suggestions.map((place) => (
                 <div 
@@ -262,7 +321,6 @@ function Dashboard() {
                 <div style={{padding:'20px', textAlign:'center', color:'#999', fontSize:'13px'}}>No results found.</div>
               )}
             </div>
-
           </div>
         </div>
       )}
@@ -285,10 +343,13 @@ const bentoGrid = { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px'
 const cardLink = { textDecoration: 'none', color: 'white', display: 'block', width: '100%', height: '100%' };
 const cardStyle = { borderRadius: '18px', height: '185px', position: 'relative', overflow: 'hidden', backgroundSize: 'cover', backgroundPosition: 'center', border: '1px solid rgba(255,255,255,0.15)' };
 const wideCardStyle = { gridColumn: 'span 2', height: '180px', borderRadius: '18px', position: 'relative', overflow: 'hidden', backgroundSize: 'cover', backgroundPosition: 'center', border: '1px solid rgba(255,255,255,0.15)' };
-const cardTopOverlay = { position: 'absolute', top: 0, left: 0, width: '100%', padding: '15px', background: 'linear-gradient(to bottom, rgba(0,0,0,0.8) 0%, transparent 100%)', color: 'white', textAlign: 'left', boxSizing: 'border-box', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', zIndex: 1 };
+const cardTopOverlay = { position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', padding: '15px', background: 'linear-gradient(to bottom, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.2) 100%)', color: 'white', textAlign: 'left', boxSizing: 'border-box', zIndex: 1 };
 const whiteIconBox = { filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))' };
 const cardTitle = { margin: '0 0 4px 0', fontSize: '17px', fontWeight: '700', textShadow: '0 2px 4px rgba(0,0,0,0.5)' };
 const cardSubtitle = { margin: 0, fontSize: '13px', opacity: 0.9, fontWeight: '500', textShadow: '0 1px 2px rgba(0,0,0,0.5)' };
+
+const videoBgStyle = { position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover', zIndex: -2 };
+const darkOverlay = { position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.3)', zIndex: -1 };
 
 const modalOverlay = { position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(5px)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 2000 };
 const modalCard = { background: 'white', width: '90%', maxWidth: '400px', borderRadius: '24px', padding: '25px', boxShadow: '0 20px 50px rgba(0,0,0,0.3)', animation: 'popIn 0.3s ease' };
