@@ -16,8 +16,8 @@ import clearDayVideo from '../assets/weather-videos/clear-day.mp4';
 import clearNightVideo from '../assets/weather-videos/clear-night.mp4';
 import cloudyDayVideo from '../assets/weather-videos/cloudy-day.mp4';
 import cloudyNightVideo from '../assets/weather-videos/cloudy-night.mp4'; 
-import partlyCloudyDayVideo from '../assets/weather-videos/partly-cloudy-day.mp4'; // FIXED NAME
-import partlyCloudyNightVideo from '../assets/weather-videos/partly-cloudy-night.mp4'; // ADDED NIGHT VERSION
+import partlyCloudyDayVideo from '../assets/weather-videos/partly-cloudy-day.mp4'; 
+import partlyCloudyNightVideo from '../assets/weather-videos/partly-cloudy-night.mp4'; 
 import drizzleDayVideo from '../assets/weather-videos/drizzle-day.mp4'; 
 import mistDayVideo from '../assets/weather-videos/mist-day.mp4'; 
 import mistNightVideo from '../assets/weather-videos/mist-night.mp4'; 
@@ -63,18 +63,29 @@ const Weather = () => {
 
   useEffect(() => { loadAllCities(); }, []);
 
-  // --- SYNC & AUDIO LOGIC ---
+  // --- SYNC & AUDIO LOGIC (FIXED) ---
   useEffect(() => {
     if (savedWeatherList.length > 0) {
       const currentCity = savedWeatherList[currentIndex];
       const { sound } = getAssetLogic(currentCity);
       
-      if (audioRef.current.src !== sound) {
+      // Update source only if changed
+      if (audioRef.current.src !== sound && sound) {
         audioRef.current.src = sound;
         audioRef.current.loop = true;
       }
-      if (isSoundOn) audioRef.current.play().catch(() => {});
-      else audioRef.current.pause();
+
+      // Play logic based on user preference
+      if (isSoundOn) {
+          const playPromise = audioRef.current.play();
+          if (playPromise !== undefined) {
+              playPromise.catch(() => {
+                  // Auto-play might be blocked, harmless error
+              });
+          }
+      } else {
+          audioRef.current.pause();
+      }
 
       localStorage.setItem('farmBuddy_lastCity', JSON.stringify({ 
           name: currentCity.location.name, 
@@ -82,6 +93,14 @@ const Weather = () => {
           lon: currentCity.location.lon 
       }));
     }
+
+    // 👇 THIS IS THE CRITICAL FIX: CLEANUP FUNCTION
+    return () => {
+        if (audioRef.current) {
+            audioRef.current.pause();
+            audioRef.current.currentTime = 0; // Reset audio
+        }
+    };
   }, [currentIndex, savedWeatherList, isSoundOn]);
 
   // --- DATA LOADING ---
@@ -128,7 +147,7 @@ const Weather = () => {
     } catch (err) { return null; }
   };
 
-  // --- ASSET SELECTION LOGIC (UPDATED WITH CORRECT NAMES) ---
+  // --- ASSET SELECTION LOGIC ---
   const getAssetLogic = (currentCityData) => {
     if (!currentCityData) return { video: clearDayVideo, sound: clearDaySound };
     const code = currentCityData.current.condition.code;
@@ -342,9 +361,9 @@ const Weather = () => {
                                      <p style={styles.popularLabel}>POPULAR CITIES</p>
                                      <div style={styles.popularGrid}>
                                          {popularCities.map(city => (
-                                             <div key={city} style={styles.popularChip} onClick={() => handleSelectSuggestion(city)}>
-                                                 {city}
-                                             </div>
+                                              <div key={city} style={styles.popularChip} onClick={() => handleSelectSuggestion(city)}>
+                                                  {city}
+                                              </div>
                                          ))}
                                      </div>
                                   </>
@@ -502,10 +521,10 @@ const Weather = () => {
 
               <div style={styles.fullWidthCard}>
                    <div style={{display:'flex', alignItems:'center', gap:'10px'}}>
-                        <div style={styles.cardLabel}><WiRain size={24}/> Chance of Rain</div>
-                        <div style={{fontSize:'24px', fontWeight:'bold', marginLeft:'auto'}}>
-                            {forecast.forecastday[0].day.daily_chance_of_rain}%
-                        </div>
+                       <div style={styles.cardLabel}><WiRain size={24}/> Chance of Rain</div>
+                       <div style={{fontSize:'24px', fontWeight:'bold', marginLeft:'auto'}}>
+                           {forecast.forecastday[0].day.daily_chance_of_rain}%
+                       </div>
                    </div>
                    <div style={{fontSize:'11px', opacity:0.6, marginTop:'5px'}}>
                        {forecast.forecastday[0].day.daily_chance_of_rain < 10 ? "No rain expected today." :
