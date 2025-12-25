@@ -13,23 +13,32 @@ import Admin from './pages/Admin';
 import FarmFresh from './pages/FarmFresh';
 import Weather from './pages/Weather';
 import SearchResults from './pages/SearchResults';
-import Expenditure from './pages/Expenditure'; // <--- NEW IMPORT ADDED
+import Expenditure from './pages/Expenditure';
+import CropExpenses from './pages/CropExpenses'; // <--- NEW PAGE IMPORT
 
 // Import Components
 import ChatBot from './components/ChatBot';
+import FloatingCalculator from './components/FloatingCalculator'; // <--- CALCULATOR IMPORT
 
 function App() {
   const location = useLocation();
 
   return (
     <div>
+      {/* --- GLOBAL COMPONENTS --- */}
+      {/* Calculator checks its own visibility logic internally */}
+      <FloatingCalculator /> 
+
       {/* --- Main Page Content --- */}
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
         
         <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/expenditure" element={<Expenditure />} /> {/* <--- NEW ROUTE ADDED */}
+        
+        {/* EXPENDITURE ROUTES */}
+        <Route path="/expenditure" element={<Expenditure />} />
+        <Route path="/expenditure/:folderId" element={<CropExpenses />} /> {/* <--- DYNAMIC ROUTE FOR FOLDERS */}
         
         <Route path="/profile" element={<Profile />} />
         <Route path="/agri-insights" element={<AgriInsights />} />
@@ -54,7 +63,6 @@ function App() {
       </Routes>
 
       {/* --- ChatBot Fixed in Corner --- */}
-      {/* We wrap this in 'fixed' so it floats above content and doesn't create a blank screen */}
       <div style={{ position: 'fixed', bottom: '20px', right: '20px', zIndex: 1000 }}>
         <ChatBot />
       </div>
