@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { IoMdClose, IoMdCalendar, IoMdCalculator } from 'react-icons/io';
-import { FaBackspace, FaExpandAlt, FaChevronLeft, FaChevronRight } from 'react-icons/fa';
+import { FaBackspace, FaExpandAlt, FaCompressAlt, FaChevronLeft, FaChevronRight } from 'react-icons/fa';
+import { MdAspectRatio } from 'react-icons/md'; 
 
 const FloatingCalculator = () => {
   const location = useLocation();
@@ -15,37 +16,108 @@ const FloatingCalculator = () => {
   const [position, setPosition] = useState({ x: window.innerWidth - 85, y: window.innerHeight - 200 });
   const [isOpen, setIsOpen] = useState(false);
   const [mode, setMode] = useState('calc'); 
-  const [scale, setScale] = useState(1); 
+  
+  // --- SIZING STATE ---
+  const [presetIndex, setPresetIndex] = useState(1); 
+  const presets = [0.85, 1];
+  const [customScale, setCustomScale] = useState(null); 
+  const scale = customScale || presets[presetIndex];
 
   // Drag Refs
   const isDragging = useRef(false);
   const dragOffset = useRef({ x: 0, y: 0 });
+  
+  // Resize Refs
+  const isResizing = useRef(false);
+  const resizeStart = useRef({ x: 0, y: 0, initialScale: 1 });
 
-  // --- DRAG LOGIC ---
-  const handlePointerDown = (e) => {
-    if (['BUTTON', 'svg', 'path'].includes(e.target.tagName) || e.target.closest('button')) return;
+  // --- 1. ROBUST WINDOW DRAG LOGIC (Global Listeners) ---
+  
+  const handleDragStart = (e) => {
+    // Prevent drag if clicking buttons, inputs, or resize handle
+    if (['BUTTON', 'svg', 'path', 'INPUT', 'TEXTAREA'].includes(e.target.tagName) || e.target.closest('button') || e.target.closest('.resize-handle')) {
+        return;
+    }
+
+    e.preventDefault(); // Stop text selection
     isDragging.current = true;
-    e.target.setPointerCapture(e.pointerId);
     dragOffset.current = { x: e.clientX - position.x, y: e.clientY - position.y };
+
+    // Attach global listeners to window (Fixes "stuck" issue)
+    window.addEventListener('pointermove', handleDragMove);
+    window.addEventListener('pointerup', handleDragEnd);
   };
 
-  const handlePointerMove = (e) => {
+  const handleDragMove = (e) => {
     if (!isDragging.current) return;
-    e.preventDefault();
+    
     let newX = e.clientX - dragOffset.current.x;
     let newY = e.clientY - dragOffset.current.y;
     
-    const maxX = window.innerWidth - 60;
-    const maxY = window.innerHeight - 60;
-    if (newX < 0) newX = 0; if (newX > maxX) newX = maxX;
-    if (newY < 0) newY = 0; if (newY > maxY) newY = maxY;
+    // Safety Bounds (Keep roughly on screen)
+    const maxX = window.innerWidth - 50;
+    const maxY = window.innerHeight - 50;
+    
+    // Relaxed bounds so it feels less "sticky" at edges
+    if (newX < -100) newX = -100; 
+    if (newX > maxX) newX = maxX;
+    if (newY < -100) newY = -100; 
+    if (newY > maxY) newY = maxY;
 
     setPosition({ x: newX, y: newY });
   };
 
-  const handlePointerUp = (e) => {
+  const handleDragEnd = () => {
     isDragging.current = false;
-    e.target.releasePointerCapture(e.pointerId);
+    window.removeEventListener('pointermove', handleDragMove);
+    window.removeEventListener('pointerup', handleDragEnd);
+  };
+
+  // --- 2. CUSTOM RESIZE LOGIC (Global Listeners) ---
+  
+  const handleResizeStart = (e) => {
+      e.stopPropagation(); 
+      e.preventDefault();
+      isResizing.current = true;
+      resizeStart.current = { x: e.clientX, initialScale: scale };
+      
+      window.addEventListener('pointermove', handleResizeMove);
+      window.addEventListener('pointerup', handleResizeEnd);
+  };
+
+  const handleResizeMove = (e) => {
+      if (!isResizing.current) return;
+      
+      const deltaX = e.clientX - resizeStart.current.x;
+      const scaleChange = deltaX / 300; 
+      let newScale = resizeStart.current.initialScale + scaleChange;
+      
+      if (newScale < 0.6) newScale = 0.6;
+      if (newScale > 2.0) newScale = 2.0;
+
+      setCustomScale(newScale);
+  };
+
+  const handleResizeEnd = () => {
+      isResizing.current = false;
+      window.removeEventListener('pointermove', handleResizeMove);
+      window.removeEventListener('pointerup', handleResizeEnd);
+  };
+
+  // Cleanup listeners on unmount
+  useEffect(() => {
+      return () => {
+          window.removeEventListener('pointermove', handleDragMove);
+          window.removeEventListener('pointerup', handleDragEnd);
+          window.removeEventListener('pointermove', handleResizeMove);
+          window.removeEventListener('pointerup', handleResizeEnd);
+      };
+  }, []);
+
+  // --- 3. PRESET CYCLE ---
+  const cyclePreset = () => {
+      setCustomScale(null); 
+      setPresetIndex((prev) => (prev + 1) % presets.length);
   };
 
   // --- RENDER ---
@@ -53,79 +125,74 @@ const FloatingCalculator = () => {
     <div
       style={{
           position: 'fixed', left: position.x, top: position.y, zIndex: 9999,
-          touchAction: 'none', 
+          touchAction: 'none', // Critical for mobile dragging
           transform: `scale(${isOpen ? scale : 1})`,
           transformOrigin: 'top right', 
-          transition: isDragging.current ? 'none' : 'transform 0.3s cubic-bezier(0.19, 1, 0.22, 1)',
+          // Disable transition during drag for instant response
+          transition: (isDragging.current || isResizing.current) ? 'none' : 'transform 0.3s cubic-bezier(0.19, 1, 0.22, 1)',
       }}
-      onPointerDown={handlePointerDown}
-      onPointerMove={handlePointerMove}
-      onPointerUp={handlePointerUp}
+      // Attach only the start listener here
+      onPointerDown={handleDragStart}
     >
       
-      {/* 🟠 1. CLOSED: REFINED "AIRY" ICON */}
+      {/* 🟠 1. CLOSED ICON */}
       {!isOpen && (
           <div 
               onClick={() => !isDragging.current && setIsOpen(true)}
               style={{
-                  width: '60px', height: '60px', // Standard App Icon Size
-                  borderRadius: '14px',
-                  background: '#000', 
-                  boxShadow: '0 8px 20px rgba(0,0,0,0.4)',
+                  width: '60px', height: '60px', borderRadius: '14px',
+                  background: '#000', boxShadow: '0 8px 20px rgba(0,0,0,0.4)',
                   cursor: 'pointer', position:'relative', overflow:'hidden',
                   border: '1px solid rgba(255,255,255,0.15)',
                   display: 'flex', flexDirection:'column', alignItems:'center', justifyContent:'center'
               }}
           >
-              {/* Thinner, Sharper Grid */}
-              <div style={{
-                  display: 'grid', gridTemplateColumns:'repeat(4, 1fr)', gap:'4px', 
-                  width:'fit-content', // Auto-shrink to fit dots
-                  marginTop:'10px'
-              }}>
-                 {/* Row 1 */}
+              <div style={{display: 'grid', gridTemplateColumns:'repeat(4, 1fr)', gap:'4px', width:'fit-content', marginTop:'10px'}}>
                  <Dot color="#A5A5A5" /><Dot color="#A5A5A5" /><Dot color="#A5A5A5" /><Dot color="#FF9F0A" />
-                 {/* Row 2 */}
                  <Dot color="#333" /><Dot color="#333" /><Dot color="#333" /><Dot color="#FF9F0A" />
-                 {/* Row 3 */}
                  <Dot color="#333" /><Dot color="#333" /><Dot color="#333" /><Dot color="#FF9F0A" />
-                 {/* Row 4 */}
-                 <div style={{background:'#333', borderRadius:'3px', gridColumn:'span 2', height:'5px'}}></div>
-                 <Dot color="#333" /><Dot color="#FF9F0A" />
+                 <div style={{background:'#333', borderRadius:'3px', gridColumn:'span 2', height:'5px'}}></div><Dot color="#333" /><Dot color="#FF9F0A" />
               </div>
           </div>
       )}
 
-      {/* 📱 2. OPEN: SUPER WIDGET */}
+      {/* 📱 2. OPEN WIDGET */}
       {isOpen && (
           <div style={{
-              width: '300px',
-              minHeight: '460px',
-              background: '#000000',
-              borderRadius: '35px',
-              padding: '20px',
+              width: '300px', minHeight: '460px',
+              background: '#000000', borderRadius: '35px', 
+              padding: '20px 20px 35px 20px', // Extra bottom padding for resize handle
               boxShadow: '0 50px 100px rgba(0,0,0,0.9), 0 0 0 1px #333',
-              display: 'flex', flexDirection: 'column', gap: '15px',
-              overflow: 'hidden'
+              display: 'flex', flexDirection: 'column', gap: '15px', overflow: 'hidden',
+              position: 'relative' 
           }}>
               {/* Header */}
               <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', padding:'0 5px'}}>
-                   <div style={{
-                       display:'flex', background:'#1C1C1E', borderRadius:'10px', padding:'2px', border: '1px solid #333'
-                   }}>
+                   {/* Mode Switch */}
+                   <div style={{display:'flex', background:'#1C1C1E', borderRadius:'10px', padding:'2px', border: '1px solid #333'}}>
                        <div onClick={() => setMode('calc')} style={{
                              padding:'6px 12px', borderRadius:'8px', cursor:'pointer', fontSize:'14px',
-                             background: mode === 'calc' ? '#636366' : 'transparent',
-                             color: mode === 'calc' ? 'white' : '#888', transition:'0.2s'
+                             background: mode === 'calc' ? '#636366' : 'transparent', color: mode === 'calc' ? 'white' : '#888', transition:'0.2s'
                          }}><IoMdCalculator size={16}/></div>
                        <div onClick={() => setMode('calendar')} style={{
                              padding:'6px 12px', borderRadius:'8px', cursor:'pointer', fontSize:'14px',
-                             background: mode === 'calendar' ? '#636366' : 'transparent',
-                             color: mode === 'calendar' ? 'white' : '#888', transition:'0.2s'
+                             background: mode === 'calendar' ? '#636366' : 'transparent', color: mode === 'calendar' ? 'white' : '#888', transition:'0.2s'
                          }}><IoMdCalendar size={16}/></div>
                    </div>
-                   <div style={{display:'flex', gap:'10px'}}>
-                       <div onClick={() => setScale(s => s === 1 ? 1.15 : 1)} style={{cursor:'pointer', color:'#666'}}><FaExpandAlt size={12}/></div>
+                   
+                   {/* Window Controls */}
+                   <div style={{display:'flex', gap:'10px', alignItems:'center'}}>
+                       {/* Size Toggle (S / M) */}
+                       <div onClick={cyclePreset} style={{
+                           cursor:'pointer', color:'#666', display:'flex', alignItems:'center', gap:'2px',
+                           background:'rgba(255,255,255,0.1)', padding:'4px 8px', borderRadius:'8px'
+                       }}>
+                           {presetIndex === 0 ? <FaCompressAlt size={10}/> : <FaExpandAlt size={10}/>}
+                           <span style={{fontSize:'10px', fontWeight:'bold', marginLeft:'2px'}}>
+                               {customScale ? 'CUST' : (presetIndex === 0 ? 'S' : 'M')}
+                           </span>
+                       </div>
+                       
                        <div onClick={() => setIsOpen(false)} style={{cursor:'pointer', color:'#666'}}><IoMdClose size={18}/></div>
                    </div>
               </div>
@@ -134,13 +201,28 @@ const FloatingCalculator = () => {
               <div style={{flex:1, display:'flex', flexDirection:'column'}}>
                   {mode === 'calc' ? <CalculatorView /> : <CalendarView />}
               </div>
+
+              {/* ↘️ CUSTOM RESIZE HANDLE */}
+              <div 
+                className="resize-handle"
+                onPointerDown={handleResizeStart}
+                style={{
+                    position: 'absolute', bottom: 0, right: 0,
+                    width: '45px', height: '45px', // Larger hit area
+                    cursor: 'nwse-resize',
+                    display: 'flex', alignItems: 'flex-end', justifyContent: 'flex-end',
+                    padding: '8px', zIndex: 10,
+                    touchAction: 'none'
+                }}
+              >
+                  <MdAspectRatio size={24} color="#333" style={{transform:'rotate(90deg)', opacity:0.5}} />
+              </div>
           </div>
       )}
     </div>
   );
 };
 
-// Refined Dot for Icon (Smaller size: 5px)
 const Dot = ({ color }) => (
     <div style={{background: color, borderRadius:'50%', width:'5px', height:'5px'}}></div>
 );
@@ -216,7 +298,7 @@ const CalculatorView = () => {
 };
 
 // ==========================================
-// 📅 CALENDAR VIEW (RED EVENTS)
+// 📅 CALENDAR VIEW
 // ==========================================
 const CalendarView = () => {
     const [viewDate, setViewDate] = useState(new Date()); 
@@ -225,7 +307,6 @@ const CalendarView = () => {
     const days = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
     const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
-    // Holidays (MM-DD)
     const holidays = {
         "12-25": "🎄 Christmas Day",
         "12-31": "🎉 New Year's Eve",
@@ -259,7 +340,6 @@ const CalendarView = () => {
 
         return (
             <div style={{display:'grid', gridTemplateColumns:'repeat(7, 1fr)', gap:'8px', marginTop:'10px'}}>
-                {/* HEADERS - Weekends RED */}
                 {days.map((d, i) => (
                     <div key={i} style={{
                         textAlign:'center', 
@@ -270,7 +350,6 @@ const CalendarView = () => {
                     </div>
                 ))}
                 
-                {/* DATES */}
                 {allSlots.map((d, i) => {
                     if (!d) return <div key={i}></div>;
 
@@ -279,19 +358,13 @@ const CalendarView = () => {
                     const isSelected = d === selectedDate.getDate() && month === selectedDate.getMonth() && year === selectedDate.getFullYear();
                     const dayOfWeek = dateObj.getDay();
                     const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
-
-                    // Check for Holiday
                     const dateKey = `${month + 1}-${d}`;
                     const isHoliday = holidays[dateKey] !== undefined;
 
-                    // COLOR PRIORITY:
-                    // 1. Selected (Black on White)
-                    // 2. Today (Orange)
-                    // 3. Event OR Weekend (Red)
                     let textColor = 'white';
                     if (isSelected) textColor = 'black';
                     else if (isToday) textColor = '#FF9F0A';
-                    else if (isHoliday || isWeekend) textColor = '#FF453A'; // RED for Events & Weekends
+                    else if (isHoliday || isWeekend) textColor = '#FF453A';
 
                     return (
                         <div 
@@ -343,7 +416,6 @@ const CalendarView = () => {
     );
 };
 
-// UI Button
 const Btn = ({ label, onClick, color = 'white', span, icon, bg = '#333333', align }) => {
     return (
         <button
