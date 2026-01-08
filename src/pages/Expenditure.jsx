@@ -1,143 +1,203 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { IoMdArrowBack, IoMdSearch, IoMdAdd, IoMdClose } from 'react-icons/io';
-import { FaLeaf } from 'react-icons/fa';
+import { IoMdAdd, IoMdArrowBack, IoMdMore, IoMdTrash, IoMdCreate, IoMdTime, IoMdWater } from 'react-icons/io';
+import { FaLeaf, FaChartLine } from 'react-icons/fa';
 
 function Expenditure() {
   const navigate = useNavigate();
-
-  // --- STATE ---
   const [folders, setFolders] = useState([]);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [newFolderName, setNewFolderName] = useState('');
+  const [showModal, setShowModal] = useState(false);
+  
+  // New Folder Form State
+  const [newFolder, setNewFolder] = useState({ 
+      name: '', emoji: '🍅', acres: '', 
+      landType: 'own', // own | lease
+      leaseAmount: '', // per acre
+      season: 'kharif', // kharif | rabi | zaid
+      waterSource: 'irrigated' // irrigated | rainfed
+  });
 
-  // --- LOCAL STORAGE ---
+  const [activeMenuId, setActiveMenuId] = useState(null); // For "Three Dots" outside
+
   useEffect(() => {
-    const saved = localStorage.getItem('farmBuddy_expenditure_folders');
-    if (saved) setFolders(JSON.parse(saved));
+    const saved = JSON.parse(localStorage.getItem('farmBuddy_expenditure_folders') || '[]');
+    setFolders(saved);
   }, []);
 
-  const saveFolders = (updatedFolders) => {
-    setFolders(updatedFolders);
-    localStorage.setItem('farmBuddy_expenditure_folders', JSON.stringify(updatedFolders));
-  };
+  const handleSave = () => {
+    if (!newFolder.name) return;
+    
+    // Calculate Total Lease Cost immediately
+    const totalLease = newFolder.landType === 'lease' 
+        ? (parseFloat(newFolder.leaseAmount || 0) * parseFloat(newFolder.acres || 0)) 
+        : 0;
 
-  // --- EMOJI LOGIC ---
-  const getCropEmoji = (name) => {
-    const lower = name.toLowerCase();
-    if (lower.includes('tomato')) return '🍅';
-    if (lower.includes('potato')) return '🥔';
-    if (lower.includes('onion')) return '🧅';
-    if (lower.includes('rice') || lower.includes('paddy')) return '🌾';
-    if (lower.includes('wheat')) return '🌾';
-    if (lower.includes('corn') || lower.includes('maize')) return '🌽';
-    if (lower.includes('cotton')) return '🌿';
-    if (lower.includes('chilli')) return '🌶️';
-    if (lower.includes('mango')) return '🥭';
-    if (lower.includes('banana')) return '🍌';
-    if (lower.includes('grape')) return '🍇';
-    if (lower.includes('sugar')) return '🎋';
-    return '📁'; 
-  };
-
-  const handleCreateFolder = () => {
-    if (!newFolderName.trim()) return;
-    const newFolder = {
-      id: Date.now(), 
-      name: newFolderName,
-      emoji: getCropEmoji(newFolderName), 
-      createdAt: new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }),
-      totalAmount: 0, itemCount: 0
+    const folder = { 
+        id: Date.now(), 
+        ...newFolder, 
+        totalAmount: 0, // Expenditure starts at 0 (or totalLease if you want to count it immediately)
+        itemCount: 0,
+        status: 'running', // running | completed
+        leaseCostTotal: totalLease 
     };
-    const updated = [newFolder, ...folders];
-    saveFolders(updated);
-    setNewFolderName('');
-    setShowAddModal(false);
+    
+    const updated = [folder, ...folders];
+    setFolders(updated);
+    localStorage.setItem('farmBuddy_expenditure_folders', JSON.stringify(updated));
+    setShowModal(false);
+    setNewFolder({ name: '', emoji: '🍅', acres: '', landType: 'own', leaseAmount: '', season: 'kharif', waterSource: 'irrigated' });
   };
 
-  const filteredFolders = folders.filter(f => f.name.toLowerCase().includes(searchQuery.toLowerCase()));
+  const deleteFolder = (e, id) => {
+      e.stopPropagation();
+      if(window.confirm("Delete this crop folder?")) {
+          const updated = folders.filter(f => f.id !== id);
+          setFolders(updated);
+          localStorage.setItem('farmBuddy_expenditure_folders', JSON.stringify(updated));
+      }
+      setActiveMenuId(null);
+  };
+
+  const toggleMenu = (e, id) => {
+      e.stopPropagation();
+      setActiveMenuId(activeMenuId === id ? null : id);
+  };
+
+  // Helper to render card style based on status
+  const getCardStyle = (folder) => {
+      if (folder.status !== 'completed') return styles.card; // Default Dark
+      
+      // Calculate Profit/Loss for visual
+      const revenue = folder.harvestDetails?.totalRevenue || 0;
+      const expenses = (folder.totalAmount || 0) + (folder.leaseCostTotal || 0);
+      const profit = revenue - expenses;
+
+      if (profit >= 0) return styles.cardProfit; // Green
+      return styles.cardLoss; // Red
+  };
 
   return (
     <div style={styles.page}>
-      
-      {/* --- HEADER --- */}
+      {/* Header */}
       <div style={styles.header}>
-        <button onClick={() => navigate('/dashboard')} style={styles.backBtn}>
-          <IoMdArrowBack size={24} color="#fff" />
-        </button>
-        <h2 style={styles.pageTitle}>Crop Expenditure</h2>
+        <button onClick={() => navigate('/dashboard')} style={styles.backBtn}><IoMdArrowBack size={24} /></button>
+        <h2 style={styles.title}>Crop Expenditure</h2>
       </div>
 
-      {/* --- SEARCH --- */}
-      <div style={styles.searchContainer}>
-        <IoMdSearch size={22} color="rgba(255,255,255,0.6)" style={{marginLeft:'15px'}}/>
-        <input 
-          type="text" 
-          placeholder="Search crop folders..." 
-          style={styles.searchInput}
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-        />
-      </div>
-
-      {/* --- GRID --- */}
+      {/* Grid */}
       <div style={styles.grid}>
-        {filteredFolders.length === 0 ? (
-          <div style={styles.emptyState}>
-            <div style={styles.emptyIcon}><FaLeaf size={40} color="rgba(255,255,255,0.5)"/></div>
-            <p style={{marginTop:'15px', color:'rgba(255,255,255,0.6)'}}>No folders found.</p>
-          </div>
-        ) : (
-          filteredFolders.map((folder) => (
-            <div 
-                key={folder.id} 
-                style={styles.folderCard}
-                onClick={() => navigate(`/expenditure/${folder.id}`)} // 👈 LINK TO NEW PAGE
-            >
-              {/* Top Row: Icon & Date */}
-              <div style={styles.folderIconRow}>
-                <div style={styles.emojiBox}>{folder.emoji || getCropEmoji(folder.name)}</div>
-                <span style={styles.folderDate}>{folder.createdAt}</span>
+        {folders.length === 0 ? <p style={{textAlign:'center', color:'#666', gridColumn:'1/-1', marginTop:'50px'}}>No crops added yet.</p> : folders.map(f => {
+            
+            // Calculate Profit for Display
+            const rev = f.harvestDetails?.totalRevenue || 0;
+            const exp = (f.totalAmount || 0) + (f.leaseCostTotal || 0);
+            const net = rev - exp;
+
+            return (
+              <div key={f.id} onClick={() => navigate(`/expenditure/${f.id}`)} style={getCardStyle(f)}>
+                
+                {/* 1. THREE DOTS OUTSIDE */}
+                <div style={styles.cardHeader}>
+                    <span style={{fontSize:'28px'}}>{f.emoji}</span>
+                    <button onClick={(e) => toggleMenu(e, f.id)} style={styles.menuBtn}>
+                        <IoMdMore size={24} color="white"/>
+                    </button>
+                    {activeMenuId === f.id && (
+                        <div style={styles.dropdown}>
+                            <div onClick={(e) => deleteFolder(e, f.id)} style={styles.menuItem}>🗑️ Delete</div>
+                        </div>
+                    )}
+                </div>
+
+                <h3 style={styles.cardTitle}>{f.name}</h3>
+                
+                {/* Details Badges */}
+                <div style={{display:'flex', gap:'5px', flexWrap:'wrap', marginBottom:'10px'}}>
+                    {f.acres && <span style={styles.badge}>{f.acres} Acr</span>}
+                    <span style={styles.badge}>{f.season}</span>
+                    <span style={styles.badge}>{f.landType === 'lease' ? 'Leased' : 'Own'}</span>
+                </div>
+
+                {/* 3. HARVEST STATUS DISPLAY */}
+                {f.status === 'completed' ? (
+                     <div style={{borderTop:'1px solid rgba(255,255,255,0.2)', paddingTop:'10px', marginTop:'10px'}}>
+                        <div style={{fontSize:'12px', opacity:0.8}}>Net {net >= 0 ? 'Profit' : 'Loss'}</div>
+                        <div style={{fontSize:'22px', fontWeight:'bold', color: 'white'}}>
+                            {net >= 0 ? '+' : ''}₹{Math.abs(net).toLocaleString()}
+                        </div>
+                     </div>
+                ) : (
+                    <div style={{display:'flex', justifyContent:'space-between', alignItems:'flex-end', marginTop:'10px'}}>
+                        <div>
+                            <div style={{fontSize:'12px', color:'rgba(255,255,255,0.6)'}}>Spent</div>
+                            <div style={{fontSize:'18px', fontWeight:'bold'}}>₹{(f.totalAmount || 0).toLocaleString()}</div>
+                        </div>
+                        <div style={{fontSize:'12px', color:'rgba(255,255,255,0.4)'}}>{f.itemCount} bills</div>
+                    </div>
+                )}
               </div>
-              
-              {/* Middle: Name */}
-              <div style={styles.folderName}>{folder.name}</div>
-              
-              {/* Bottom: Stats */}
-              <div style={styles.folderStats}>
-                <span>{folder.itemCount} Bills</span>
-                <span style={styles.amountBadge}>₹{folder.totalAmount.toLocaleString()}</span>
-              </div>
-            </div>
-          ))
-        )}
+            );
+        })}
       </div>
 
-      {/* --- FAB (Create Folder) --- */}
-      <div style={styles.fab} onClick={() => setShowAddModal(true)}>
-        <IoMdAdd size={32} color="#fff" />
-      </div>
+      {/* FAB */}
+      <button onClick={() => setShowModal(true)} style={styles.fab}><IoMdAdd size={28} /></button>
 
-      {/* --- MODAL (Glassmorphism) --- */}
-      {showAddModal && (
+      {/* 2. ADVANCED CREATE MODAL */}
+      {showModal && (
         <div style={styles.modalOverlay}>
           <div style={styles.modalContent}>
-            <div style={styles.modalHeader}>
-              <h3 style={{margin:0, color:'white', fontSize:'20px'}}>New Crop Folder</h3>
-              <button onClick={() => setShowAddModal(false)} style={styles.closeBtn}><IoMdClose size={22}/></button>
+            <h3 style={{color:'white', margin:'0 0 20px 0'}}>Start New Crop</h3>
+            
+            <label style={styles.label}>Crop Name</label>
+            <input placeholder="Ex: Tomato 2024" style={styles.input} value={newFolder.name} onChange={e => setNewFolder({...newFolder, name: e.target.value})} autoFocus/>
+
+            <div style={{display:'flex', gap:'10px'}}>
+                <div style={{flex:1}}>
+                    <label style={styles.label}>Acres</label>
+                    <input type="number" placeholder="0.0" style={styles.input} value={newFolder.acres} onChange={e => setNewFolder({...newFolder, acres: e.target.value})}/>
+                </div>
+                <div style={{flex:1}}>
+                    <label style={styles.label}>Season</label>
+                    <select style={styles.select} value={newFolder.season} onChange={e => setNewFolder({...newFolder, season: e.target.value})}>
+                        <option value="kharif">Kharif (Monsoon)</option>
+                        <option value="rabi">Rabi (Winter)</option>
+                        <option value="zaid">Zaid (Summer)</option>
+                    </select>
+                </div>
             </div>
-            <input 
-              type="text" 
-              placeholder="Ex: Cotton 2025" 
-              autoFocus
-              style={styles.modalInput}
-              value={newFolderName}
-              onChange={(e) => setNewFolderName(e.target.value)}
-            />
-            <button onClick={handleCreateFolder} style={styles.createBtn}>
-              Create Folder
-            </button>
+
+            <div style={{margin:'15px 0', background:'rgba(255,255,255,0.05)', padding:'15px', borderRadius:'10px'}}>
+                <label style={styles.label}>Land Type</label>
+                <div style={{display:'flex', gap:'10px', marginBottom: newFolder.landType === 'lease' ? '10px' : '0'}}>
+                    <button onClick={()=>setNewFolder({...newFolder, landType:'own'})} style={newFolder.landType==='own' ? styles.toggleActive : styles.toggle}>Own Land</button>
+                    <button onClick={()=>setNewFolder({...newFolder, landType:'lease'})} style={newFolder.landType==='lease' ? styles.toggleActive : styles.toggle}>Lease / Tenancy</button>
+                </div>
+
+                {newFolder.landType === 'lease' && (
+                    <div style={{animation:'fadeIn 0.3s'}}>
+                        <label style={styles.label}>Lease Amount (Per Acre)</label>
+                        <div style={{display:'flex', alignItems:'center', background:'rgba(255,255,255,0.1)', borderRadius:'8px', padding:'0 10px'}}>
+                            <span>₹</span>
+                            <input type="number" placeholder="Ex: 20000" style={{...styles.input, border:'none', background:'transparent'}} value={newFolder.leaseAmount} onChange={e => setNewFolder({...newFolder, leaseAmount: e.target.value})}/>
+                        </div>
+                        <div style={{fontSize:'12px', color:'#aaa', marginTop:'5px'}}>
+                            Total Lease: ₹{((parseFloat(newFolder.acres)||0) * (parseFloat(newFolder.leaseAmount)||0)).toLocaleString()}
+                        </div>
+                    </div>
+                )}
+            </div>
+
+            <label style={styles.label}>Water Supply</label>
+            <select style={styles.select} value={newFolder.waterSource} onChange={e => setNewFolder({...newFolder, waterSource: e.target.value})}>
+                <option value="irrigated">💧 Irrigated (Bore/Canal)</option>
+                <option value="rainfed">☁️ Rain-fed (Dependency)</option>
+            </select>
+
+            <div style={{display:'flex', gap:'10px', marginTop:'25px'}}>
+                <button onClick={() => setShowModal(false)} style={styles.cancelBtn}>Cancel</button>
+                <button onClick={handleSave} style={styles.saveBtn}>Create Folder</button>
+            </div>
           </div>
         </div>
       )}
@@ -145,97 +205,39 @@ function Expenditure() {
   );
 }
 
-// --- MODERN GLASSMORPHISM STYLES ---
 const styles = {
-  page: { 
-    position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', 
-    background: 'linear-gradient(to bottom, #0f1215, #151920)', // Deep Premium Dark
-    color: 'white', fontFamily: '"SF Pro Display", sans-serif',
-    overflowY: 'auto', paddingBottom: '100px'
-  },
-  header: { 
-    display: 'flex', alignItems: 'center', padding: '20px', 
-    background: 'rgba(15, 18, 21, 0.8)', backdropFilter: 'blur(10px)',
-    position: 'sticky', top: 0, zIndex: 10, borderBottom: '1px solid rgba(255,255,255,0.05)'
-  },
-  backBtn: { background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.1)', borderRadius:'50%', width:'40px', height:'40px', display:'flex', alignItems:'center', justifyContent:'center', cursor: 'pointer', marginRight: '15px' },
-  pageTitle: { margin: 0, fontSize: '24px', fontWeight: '700', letterSpacing:'0.5px' },
+  page: { minHeight: '100vh', background: '#0f1215', color: 'white', fontFamily: 'sans-serif', padding: '20px' },
+  header: { display: 'flex', alignItems: 'center', marginBottom: '20px' },
+  backBtn: { background: 'none', border: 'none', color: 'white', cursor: 'pointer', marginRight: '15px' },
+  title: { margin: 0, fontSize: '22px' },
+  grid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '15px' },
   
-  searchContainer: { 
-    margin: '15px 20px 25px 20px', 
-    background: 'rgba(255, 255, 255, 0.05)', backdropFilter: 'blur(15px)',
-    borderRadius: '18px', display: 'flex', alignItems: 'center', height: '55px', 
-    border: '1px solid rgba(255, 255, 255, 0.1)', boxShadow: '0 4px 15px rgba(0,0,0,0.2)'
-  },
-  searchInput: { 
-    background: 'transparent', border: 'none', color: 'white', 
-    fontSize: '16px', marginLeft: '10px', width: '100%', outline: 'none',
-    fontWeight: '400'
-  },
+  // Card Styles
+  card: { background: 'rgba(255,255,255,0.05)', borderRadius: '20px', padding: '15px', position: 'relative', border: '1px solid rgba(255,255,255,0.1)', cursor:'pointer' },
+  cardProfit: { background: 'linear-gradient(135deg, #1b5e20 0%, #0f1215 100%)', borderRadius: '20px', padding: '15px', position: 'relative', border: '1px solid #2e7d32', cursor:'pointer' },
+  cardLoss: { background: 'linear-gradient(135deg, #b71c1c 0%, #0f1215 100%)', borderRadius: '20px', padding: '15px', position: 'relative', border: '1px solid #c62828', cursor:'pointer' },
 
-  grid: { 
-    display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', padding: '0 20px' 
-  },
-  folderCard: {
-    background: 'rgba(255, 255, 255, 0.06)', backdropFilter: 'blur(20px)',
-    borderRadius: '24px', padding: '18px', display: 'flex', flexDirection: 'column', gap: '15px',
-    border: '1px solid rgba(255, 255, 255, 0.08)', 
-    boxShadow: '0 8px 30px rgba(0,0,0,0.15)',
-    cursor: 'pointer', transition: 'transform 0.2s', position: 'relative', overflow: 'hidden'
-  },
-  folderIconRow: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' },
-  emojiBox: { fontSize: '36px', filter: 'drop-shadow(0 4px 6px rgba(0,0,0,0.2))' },
-  folderDate: { fontSize: '11px', color: 'rgba(255,255,255,0.5)', background:'rgba(255,255,255,0.05)', padding:'4px 8px', borderRadius:'8px', height:'fit-content' },
-  folderName: { fontSize: '18px', fontWeight: '600', lineHeight: '1.3', letterSpacing:'0.3px' },
-  folderStats: { 
-    display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12px', color: 'rgba(255,255,255,0.5)',
-    marginTop: 'auto', paddingTop: '12px', borderTop: '1px solid rgba(255,255,255,0.05)'
-  },
-  amountBadge: { 
-    fontWeight:'700', color:'#4CAF50', background:'rgba(76, 175, 80, 0.15)', 
-    padding:'4px 8px', borderRadius:'6px', letterSpacing:'0.5px' 
-  },
-
-  emptyState: { 
-    gridColumn: '1 / -1', display: 'flex', flexDirection: 'column', alignItems: 'center', 
-    marginTop: '60px', textAlign: 'center' 
-  },
-  emptyIcon: { 
-    width: '90px', height: '90px', borderRadius: '50%', background: 'rgba(255,255,255,0.03)', 
-    display: 'flex', alignItems: 'center', justifyContent: 'center', border:'1px dashed rgba(255,255,255,0.15)'
-  },
+  cardHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' },
+  cardTitle: { margin: '0 0 5px 0', fontSize: '16px' },
+  badge: { fontSize:'10px', background:'rgba(255,255,255,0.1)', padding:'2px 6px', borderRadius:'4px' },
   
-  fab: {
-    position: 'fixed', bottom: '30px', left: '25px', 
-    width: '65px', height: '65px', borderRadius: '50%',
-    background: 'linear-gradient(135deg, #4CAF50 0%, #2E7D32 100%)',
-    display: 'flex', alignItems: 'center', justifyContent: 'center',
-    boxShadow: '0 15px 35px rgba(76, 175, 80, 0.3)', cursor: 'pointer', zIndex: 100,
-    border: '1px solid rgba(255,255,255,0.2)'
-  },
+  menuBtn: { background:'transparent', border:'none', color:'white', cursor:'pointer' },
+  dropdown: { position:'absolute', top:'40px', right:'10px', background:'#222', padding:'10px', borderRadius:'8px', boxShadow:'0 5px 15px rgba(0,0,0,0.5)', zIndex:10 },
+  menuItem: { color:'#ff5252', fontSize:'14px', cursor:'pointer' },
 
-  modalOverlay: {
-    position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
-    background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(12px)',
-    display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 200
-  },
-  modalContent: {
-    background: 'rgba(30, 30, 30, 0.85)', backdropFilter: 'blur(30px)',
-    width: '85%', maxWidth: '350px', borderRadius: '32px', padding: '30px', 
-    border: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 40px 80px rgba(0,0,0,0.6)'
-  },
-  modalHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '25px' },
-  closeBtn: { background: 'rgba(255,255,255,0.08)', border: 'none', color: 'white', cursor: 'pointer', width:'32px', height:'32px', borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center' },
-  modalInput: {
-    width: '100%', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)',
-    padding: '16px', borderRadius: '16px', color: 'white', fontSize: '18px',
-    marginBottom: '20px', outline: 'none', boxSizing: 'border-box'
-  },
-  createBtn: {
-    width: '100%', background: '#4CAF50', border: 'none', padding: '16px',
-    borderRadius: '16px', color: 'white', fontSize: '16px', fontWeight: 'bold', cursor: 'pointer',
-    boxShadow: '0 5px 15px rgba(76, 175, 80, 0.3)'
-  }
+  fab: { position: 'fixed', bottom: '20px', right: '20px', width: '56px', height: '56px', borderRadius: '50%', background: '#4CAF50', color: 'white', border: 'none', boxShadow: '0 4px 10px rgba(0,0,0,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' },
+  
+  modalOverlay: { position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 },
+  modalContent: { background: '#1A1A1C', padding: '25px', borderRadius: '20px', width: '90%', maxWidth: '350px' },
+  label: { display:'block', fontSize:'12px', color:'#aaa', marginBottom:'5px', marginLeft:'2px' },
+  input: { width: '100%', padding: '12px', borderRadius: '10px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', marginBottom: '15px', boxSizing:'border-box' },
+  select: { width: '100%', padding: '12px', borderRadius: '10px', background: '#222', border: '1px solid #444', color: 'white', marginBottom: '15px' },
+  
+  toggle: { flex:1, padding:'10px', borderRadius:'8px', background:'transparent', border:'1px solid #444', color:'#888', cursor:'pointer' },
+  toggleActive: { flex:1, padding:'10px', borderRadius:'8px', background:'#4CAF50', border:'1px solid #4CAF50', color:'white', fontWeight:'bold', cursor:'pointer' },
+
+  saveBtn: { flex:1, padding: '12px', borderRadius: '10px', background: '#4CAF50', color: 'white', border: 'none', fontWeight:'bold', cursor:'pointer' },
+  cancelBtn: { flex:1, padding: '12px', borderRadius: '10px', background: 'rgba(255,255,255,0.1)', color: 'white', border: 'none', cursor:'pointer' }
 };
 
 export default Expenditure;

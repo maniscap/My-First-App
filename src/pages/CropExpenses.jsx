@@ -1,9 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { IoMdArrowBack, IoMdAdd, IoMdClose, IoMdCamera, IoMdTime, IoMdListBox, IoMdArrowDropdown, IoMdArrowDropup } from 'react-icons/io';
-import { FaSeedling, FaTractor, FaFlask, FaUsers, FaTruck, FaQuestion, FaRegStickyNote, FaRupeeSign } from 'react-icons/fa';
+import { 
+  IoMdArrowBack, IoMdAdd, IoMdClose, IoMdCamera, IoMdListBox, 
+  IoMdArrowDropdown, IoMdArrowDropup, IoMdMore, IoMdTrash, IoMdCreate, IoMdDownload
+} from 'react-icons/io';
+import { 
+  FaSeedling, FaTractor, FaFlask, FaUsers, FaTruck, FaQuestion, FaRupeeSign, FaFilePdf 
+} from 'react-icons/fa';
 
-// --- CATEGORY CONFIGURATION ---
+// --- CONFIGURATION ---
 const CATEGORIES = [
     { id: 'seeds', name: 'Seeds', icon: <FaSeedling/>, color: '#4CAF50', qtyLabel: 'No. of Bags/Kg' },
     { id: 'machinery', name: 'Machinery', icon: <FaTractor/>, color: '#FF9800', qtyLabel: 'Hours/Acres' },
@@ -17,31 +22,37 @@ function CropExpenses() {
   const navigate = useNavigate();
   const { folderId } = useParams();
   const fileInputRef = useRef(null);
+  const reportRef = useRef(null); // Reference for the hidden invoice
 
   // --- STATE ---
   const [currentFolder, setCurrentFolder] = useState(null);
   const [bills, setBills] = useState([]);
   const [filteredBills, setFilteredBills] = useState([]);
   const [activeFilter, setActiveFilter] = useState('all');
-  const [showAddModal, setShowAddModal] = useState(false);
   const [totals, setTotals] = useState({ overall: 0, cats: {} });
 
-  // UI State for Form
+  // UI States
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
+  const [showHarvestModal, setShowHarvestModal] = useState(false);
   const [isCatDropdownOpen, setIsCatDropdownOpen] = useState(false);
 
-  // Form State
-  const [newBill, setNewBill] = useState({
-      amount: '', category: 'seeds', quantity: '', note: '', image: null
-  });
+  // Form States
+  const [newBill, setNewBill] = useState({ amount: '', category: 'seeds', quantity: '', note: '', image: null });
+  const [editingBillId, setEditingBillId] = useState(null);
+  const [harvestData, setHarvestData] = useState({ bags: '', quintals: '', pricePerQuintal: '' });
 
-  // --- 1. LOAD DATA ---
-  useEffect(() => {
+  // --- LOAD DATA ---
+  useEffect(() => { loadFolderData(); loadBills(); }, [folderId]);
+
+  const loadFolderData = () => {
     const allFolders = JSON.parse(localStorage.getItem('farmBuddy_expenditure_folders') || '[]');
     const folder = allFolders.find(f => f.id.toString() === folderId);
-    if (folder) setCurrentFolder(folder);
-    else navigate('/expenditure');
-    loadBills();
-  }, [folderId]);
+    if (folder) {
+        setCurrentFolder(folder);
+        if(folder.harvestDetails) setHarvestData(folder.harvestDetails);
+    } else { navigate('/expenditure'); }
+  };
 
   const loadBills = () => {
       const allBills = JSON.parse(localStorage.getItem('farmBuddy_bills') || '[]');
@@ -50,7 +61,7 @@ function CropExpenses() {
       setBills(folderBills);
   };
 
-  // --- 2. CALCULATE & FILTER ---
+  // --- CALCULATIONS ---
   useEffect(() => {
     let overall = 0;
     const catTotals = {};
@@ -62,413 +73,336 @@ function CropExpenses() {
         if (catTotals[bill.category] !== undefined) catTotals[bill.category] += amt;
     });
     setTotals({ overall, cats: catTotals });
-
+    
     if (activeFilter === 'all') setFilteredBills(bills);
     else setFilteredBills(bills.filter(b => b.category === activeFilter));
   }, [bills, activeFilter]);
 
+  // --- ACTIONS ---
+  const handleSaveBill = () => {
+      if (!newBill.amount) { alert("Enter amount"); return; }
+      const allBills = JSON.parse(localStorage.getItem('farmBuddy_bills') || '[]');
+      let updatedBills;
 
-  // --- 3. ACTIONS ---
-  const handleImageUpload = (e) => {
-      const file = e.target.files[0];
-      if (file) {
-        const reader = new FileReader();
-        reader.onload = (event) => {
-            const img = new Image();
-            img.onload = () => {
-                const canvas = document.createElement('canvas');
-                let width = img.width; let height = img.height;
-                if (width > height) { if (width > 800) { height *= 800 / width; width = 800; } } 
-                else { if (height > 800) { width *= 800 / height; height = 800; } }
-                canvas.width = width; canvas.height = height;
-                const ctx = canvas.getContext('2d');
-                ctx.drawImage(img, 0, 0, width, height);
-                setNewBill({ ...newBill, image: canvas.toDataURL('image/jpeg', 0.7) });
-            };
-            img.src = event.target.result;
-        };
-        reader.readAsDataURL(file);
+      if (editingBillId) {
+          updatedBills = allBills.map(b => b.id === editingBillId ? { ...b, ...newBill, amount: parseFloat(newBill.amount) } : b);
+      } else {
+          const now = new Date();
+          const billToSave = { id: Date.now(), folderId: folderId, ...newBill, amount: parseFloat(newBill.amount), dateStr: now.toLocaleDateString('en-IN', {day:'numeric', month:'short'}), isoDate: now.toISOString() };
+          updatedBills = [...allBills, billToSave];
+      }
+      localStorage.setItem('farmBuddy_bills', JSON.stringify(updatedBills));
+      
+      // Update folder total (excluding lease for now in the stored total, we add it visually)
+      const folderBills = updatedBills.filter(b => b.folderId.toString() === folderId);
+      const total = folderBills.reduce((sum, b) => sum + (parseFloat(b.amount)||0), 0);
+      
+      const allFolders = JSON.parse(localStorage.getItem('farmBuddy_expenditure_folders') || '[]');
+      const updatedFolders = allFolders.map(f => f.id.toString() === folderId ? { ...f, totalAmount: total, itemCount: folderBills.length } : f);
+      localStorage.setItem('farmBuddy_expenditure_folders', JSON.stringify(updatedFolders));
+
+      loadBills(); closeModal(); loadFolderData();
+  };
+
+  const handleDeleteBill = (billId) => {
+      if(window.confirm("Delete bill?")) {
+          const allBills = JSON.parse(localStorage.getItem('farmBuddy_bills') || '[]');
+          const updatedBills = allBills.filter(b => b.id !== billId);
+          localStorage.setItem('farmBuddy_bills', JSON.stringify(updatedBills));
+          loadBills();
       }
   };
 
-  const handleSaveBill = () => {
-      if (!newBill.amount) { alert("Please enter an amount"); return; }
+  const handleHarvestSubmit = () => {
+      const bags = parseFloat(harvestData.bags) || 0;
+      const quintals = parseFloat(harvestData.quintals) || 0;
+      const price = parseFloat(harvestData.pricePerQuintal) || 0;
+      const totalRevenue = quintals * price;
+
+      const updatedHarvestDetails = { bags, quintals, pricePerQuintal: price, totalRevenue, isHarvested: true };
+      const allFolders = JSON.parse(localStorage.getItem('farmBuddy_expenditure_folders') || '[]');
+      const updatedFolders = allFolders.map(f => f.id.toString() === folderId ? { ...f, status: 'completed', harvestDetails: updatedHarvestDetails } : f);
+      localStorage.setItem('farmBuddy_expenditure_folders', JSON.stringify(updatedFolders));
       
-      const now = new Date();
-      const billToSave = {
-          id: Date.now(), folderId: folderId, ...newBill, amount: parseFloat(newBill.amount),
-          dateStr: now.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' }),
-          timeStr: now.toLocaleTimeString('en-IN', { hour: '2-digit', minute:'2-digit' }),
-          isoDate: now.toISOString()
-      };
-
-      const allBills = JSON.parse(localStorage.getItem('farmBuddy_bills') || '[]');
-      localStorage.setItem('farmBuddy_bills', JSON.stringify([...allBills, billToSave]));
-      updateFolderStats(billToSave.amount);
-
-      loadBills();
-      setShowAddModal(false);
-      setNewBill({ amount: '', category: 'seeds', quantity: '', note: '', image: null });
-      setIsCatDropdownOpen(false); // Reset dropdown
+      loadFolderData(); setShowHarvestModal(false);
   };
 
-  const updateFolderStats = (latestAmount) => {
-      const allFolders = JSON.parse(localStorage.getItem('farmBuddy_expenditure_folders') || '[]');
-      const updatedFolders = allFolders.map(f => {
-          if(f.id.toString() === folderId) {
-              return { ...f, totalAmount: (f.totalAmount || 0) + latestAmount, itemCount: (f.itemCount || 0) + 1 };
-          }
-          return f;
-      });
-      localStorage.setItem('farmBuddy_expenditure_folders', JSON.stringify(updatedFolders));
-  }
+  const handleReopenCrop = () => {
+      if(window.confirm("Undo Harvest? Crop will be set to 'Running'.")){
+        const allFolders = JSON.parse(localStorage.getItem('farmBuddy_expenditure_folders') || '[]');
+        const updatedFolders = allFolders.map(f => f.id.toString() === folderId ? { ...f, status: 'running' } : f);
+        localStorage.setItem('farmBuddy_expenditure_folders', JSON.stringify(updatedFolders));
+        loadFolderData();
+      }
+  };
 
-  const currentCatConfig = CATEGORIES.find(c => c.id === newBill.category);
+  // --- 4. PROFESSIONAL REPORT GENERATION ---
+  const handleDownloadReport = () => {
+      const content = reportRef.current;
+      const originalDisplay = content.style.display;
+      content.style.display = 'block'; // Make visible for printing
+      window.print(); // Triggers browser print (Save as PDF)
+      content.style.display = 'none'; // Hide again
+  };
 
-  // --- RENDER ---
+  // Helpers
+  const openEditBill = (b) => { setNewBill({amount:b.amount, category:b.category, quantity:b.quantity, note:b.note, image:b.image}); setEditingBillId(b.id); setShowAddModal(true); };
+  const closeModal = () => { setShowAddModal(false); setNewBill({amount:'', category:'seeds', quantity:'', note:'', image:null}); setEditingBillId(null); };
+  const currentCatConfig = CATEGORIES.find(c => c.id === newBill.category) || CATEGORIES[0];
+  
+  // Data for View
+  const isHarvested = currentFolder?.status === 'completed';
+  const leaseCost = currentFolder?.leaseCostTotal || 0;
+  const expenseTotal = totals.overall + leaseCost;
+  const revenue = currentFolder?.harvestDetails?.totalRevenue || 0;
+  const profit = revenue - expenseTotal;
+
   return (
     <div style={styles.page}>
       
-      {/* HEADER */}
+      {/* --- HIDDEN INVOICE FOR PRINTING --- */}
+      <div id="print-area" ref={reportRef} style={{display:'none', background:'white', padding:'40px', color:'black', fontFamily:'Arial, sans-serif'}}>
+          <div style={{textAlign:'center', borderBottom:'2px solid #4CAF50', paddingBottom:'20px', marginBottom:'20px'}}>
+              <h1 style={{margin:0, color:'#2E7D32'}}>FARM CONNECT REPORT</h1>
+              <p style={{margin:'5px 0', color:'#666'}}>Crop Yield & Expenditure Statement</p>
+          </div>
+
+          {/* Section 1: Crop Info */}
+          <div style={{display:'flex', justifyContent:'space-between', marginBottom:'30px'}}>
+              <div>
+                  <h3 style={{margin:0}}>{currentFolder?.name}</h3>
+                  <p style={{margin:0}}>Season: {currentFolder?.season?.toUpperCase()}</p>
+              </div>
+              <div style={{textAlign:'right'}}>
+                  <p style={{margin:0}}>Acres: {currentFolder?.acres}</p>
+                  <p style={{margin:0}}>Land: {currentFolder?.landType?.toUpperCase()}</p>
+              </div>
+          </div>
+
+          {/* Section 2: Harvest Details */}
+          <table style={{width:'100%', borderCollapse:'collapse', marginBottom:'30px'}}>
+              <thead>
+                  <tr style={{background:'#f0f0f0'}}><th style={styles.th}>Total Bags</th><th style={styles.th}>Total Quintals</th><th style={styles.th}>Sold Price (Per Qt)</th><th style={styles.th}>Total Revenue</th></tr>
+              </thead>
+              <tbody>
+                  <tr>
+                      <td style={styles.td}>{currentFolder?.harvestDetails?.bags} Bags</td>
+                      <td style={styles.td}>{currentFolder?.harvestDetails?.quintals} Qt</td>
+                      <td style={styles.td}>₹{currentFolder?.harvestDetails?.pricePerQuintal}</td>
+                      <td style={{...styles.td, fontWeight:'bold'}}>₹{revenue.toLocaleString()}</td>
+                  </tr>
+              </tbody>
+          </table>
+
+          {/* Section 3: Expense Details */}
+          <h4 style={{borderBottom:'1px solid #ccc', paddingBottom:'5px'}}>Expenditure Breakdown</h4>
+          <table style={{width:'100%', borderCollapse:'collapse', marginBottom:'20px'}}>
+              <tbody>
+                  {CATEGORIES.map(cat => (
+                      totals.cats[cat.id] > 0 && (
+                        <tr key={cat.id}>
+                            <td style={{padding:'8px', borderBottom:'1px solid #eee'}}>{cat.name}</td>
+                            <td style={{padding:'8px', borderBottom:'1px solid #eee', textAlign:'right'}}>₹{totals.cats[cat.id].toLocaleString()}</td>
+                        </tr>
+                      )
+                  ))}
+                  {leaseCost > 0 && (
+                      <tr>
+                          <td style={{padding:'8px', borderBottom:'1px solid #eee'}}>Land Lease Cost</td>
+                          <td style={{padding:'8px', borderBottom:'1px solid #eee', textAlign:'right'}}>₹{leaseCost.toLocaleString()}</td>
+                      </tr>
+                  )}
+                  <tr style={{background:'#eee'}}>
+                      <td style={{padding:'8px', fontWeight:'bold'}}>TOTAL EXPENSES</td>
+                      <td style={{padding:'8px', fontWeight:'bold', textAlign:'right'}}>₹{expenseTotal.toLocaleString()}</td>
+                  </tr>
+              </tbody>
+          </table>
+
+          {/* Section 4: Final */}
+          <div style={{textAlign:'right', marginTop:'40px'}}>
+              <h3>NET PROFIT: ₹{profit.toLocaleString()}</h3>
+          </div>
+          <div style={{textAlign:'center', marginTop:'50px', fontSize:'12px', color:'#999'}}>Generated by FarmConnect App</div>
+      </div>
+
+      {/* --- APP UI --- */}
       <div style={styles.header}>
-        <button onClick={() => navigate('/expenditure')} style={styles.backBtn}>
-          <IoMdArrowBack size={24} color="#fff" />
-        </button>
-        <div style={{display:'flex', flexDirection:'column'}}>
-            <h2 style={styles.pageTitle}>{currentFolder?.name || 'Loading...'}</h2>
+        <button onClick={() => navigate('/expenditure')} style={styles.backBtn}><IoMdArrowBack size={24} color="#fff" /></button>
+        <div style={{flex:1}}>
+            <h2 style={styles.pageTitle}>{currentFolder?.name}</h2>
             <span style={{fontSize:'12px', color:'rgba(255,255,255,0.6)'}}>
-                 {currentFolder?.emoji} Expense Tracker
+                 {currentFolder?.season} • {currentFolder?.acres} Ac • {currentFolder?.landType}
             </span>
+        </div>
+        <div style={{position:'relative'}}>
+            <button onClick={() => setShowMenu(!showMenu)} style={styles.menuBtn}><IoMdMore size={24} color="white"/></button>
+            {showMenu && (
+                <div style={styles.menuDropdown}>
+                    <div onClick={() => { setShowHarvestModal(true); setShowMenu(false); }} style={styles.menuItem}>🌾 Harvest & Sell</div>
+                </div>
+            )}
         </div>
       </div>
 
-      {/* HERO CARD */}
+      {/* HERO SECTION */}
       <div style={styles.heroContainer}>
-        <div style={styles.heroCard}>
-            <div style={{display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:'20px'}}>
-                <div>
-                    <div style={{fontSize:'14px', color:'rgba(255,255,255,0.7)', marginBottom:'5px'}}>Total Spent</div>
-                    <div style={{fontSize:'36px', fontWeight:'700', color:'white', display:'flex', alignItems:'center'}}>
-                        <span style={{fontSize:'24px', marginRight:'2px'}}>₹</span> 
-                        {totals.overall.toLocaleString()}
+        {isHarvested ? (
+            <div style={{...styles.heroCard, background: profit >= 0 ? 'linear-gradient(135deg, #1b5e20 0%, #000 100%)' : 'linear-gradient(135deg, #b71c1c 0%, #000 100%)'}}>
+                <div style={{textAlign:'center', marginBottom:'15px'}}>
+                    <div style={{fontSize:'14px', opacity:0.8}}>{profit >= 0 ? '🎉 PROFIT' : '⚠️ LOSS'}</div>
+                    <div style={{fontSize:'42px', fontWeight:'800', color:'white'}}>
+                        {profit >= 0 ? '+' : ''}₹{Math.abs(profit).toLocaleString()}
                     </div>
                 </div>
-                <button onClick={() => setShowAddModal(true)} style={styles.heroAddBtn}>
-                    <IoMdAdd size={24} color="white"/>
-                </button>
-            </div>
+                
+                <div style={styles.harvestStatsGrid}>
+                    <div style={styles.harvestStat}><span>Sold For</span><strong>₹{revenue.toLocaleString()}</strong></div>
+                    <div style={styles.harvestStat}><span>Total Cost</span><strong>₹{expenseTotal.toLocaleString()}</strong></div>
+                </div>
 
-            {/* Scroller */}
-            <div style={styles.scroller}>
-                 <div onClick={() => setActiveFilter('all')} style={{...styles.catPill, 
-                        background: activeFilter === 'all' ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.05)',
-                        borderColor: activeFilter === 'all' ? 'white' : 'rgba(255,255,255,0.1)'}}>
-                    <IoMdListBox size={16} color="white" style={{marginRight:'8px'}} />
-                    <div style={{display:'flex', flexDirection:'column'}}>
-                        <span style={{fontSize:'12px', fontWeight:'600'}}>All</span>
-                        <span style={{fontSize:'11px', opacity:0.7}}>₹{totals.overall > 1000 ? (totals.overall/1000).toFixed(1)+'k' : totals.overall}</span>
-                    </div>
-                </div>
-                {CATEGORIES.map(cat => (
-                    <div key={cat.id} onClick={() => setActiveFilter(cat.id)} style={{...styles.catPill, 
-                            background: activeFilter === cat.id ? `${cat.color}40` : 'rgba(255,255,255,0.05)',
-                            borderColor: activeFilter === cat.id ? cat.color : 'rgba(255,255,255,0.1)'}}>
-                        <div style={{color: cat.color, marginRight:'8px', fontSize:'18px'}}>{cat.icon}</div>
-                         <div style={{display:'flex', flexDirection:'column'}}>
-                            <span style={{fontSize:'12px', fontWeight:'600'}}>{cat.name}</span>
-                            <span style={{fontSize:'11px', opacity:0.7}}>₹{totals.cats[cat.id] > 1000 ? (totals.cats[cat.id]/1000).toFixed(1)+'k' : totals.cats[cat.id] }</span>
-                        </div>
-                    </div>
-                ))}
+                {/* DOWNLOAD REPORT BUTTON */}
+                <button onClick={handleDownloadReport} style={styles.reportBtn}>
+                    <IoMdDownload size={18}/> Download Professional Report
+                </button>
+                
+                <button onClick={handleReopenCrop} style={styles.reopenBtn}>Re-open Crop (Undo)</button>
             </div>
-        </div>
+        ) : (
+            <div style={styles.heroCard}>
+                <div style={{display:'flex', justifyContent:'space-between'}}>
+                    <div>
+                        <div style={{fontSize:'14px', opacity:0.7}}>Running Expenses</div>
+                        <div style={{fontSize:'32px', fontWeight:'700'}}>₹{totals.overall.toLocaleString()}</div>
+                        {leaseCost > 0 && <div style={{fontSize:'12px', opacity:0.5}}>+ ₹{leaseCost.toLocaleString()} Lease</div>}
+                    </div>
+                    <button onClick={() => setShowAddModal(true)} style={styles.heroAddBtn}><IoMdAdd size={24} color="white"/></button>
+                </div>
+                {/* Filters */}
+                <div style={styles.scroller}>
+                    <div onClick={() => setActiveFilter('all')} style={{...styles.catPill, border: activeFilter === 'all' ? '1px solid white' : '1px solid transparent'}}>All</div>
+                    {CATEGORIES.map(cat => (
+                        <div key={cat.id} onClick={() => setActiveFilter(cat.id)} style={{...styles.catPill, color: cat.color, border: activeFilter === cat.id ? `1px solid ${cat.color}` : '1px solid transparent'}}>{cat.name}</div>
+                    ))}
+                </div>
+            </div>
+        )}
       </div>
 
       {/* BILL LIST */}
       <div style={styles.listContainer}>
-          <div style={{fontSize:'14px', fontWeight:'600', color:'rgba(255,255,255,0.6)', marginBottom:'15px', paddingLeft:'5px'}}>
-              {activeFilter === 'all' ? 'Recent Transactions' : `${CATEGORIES.find(c=>c.id===activeFilter).name} Bills`} ({filteredBills.length})
-          </div>
-          {filteredBills.length === 0 ? (
-              <div style={{textAlign:'center', padding:'40px', color:'rgba(255,255,255,0.4)'}}>No bills found.</div>
-          ) : (
-              filteredBills.map(bill => {
-                  const catCfg = CATEGORIES.find(c => c.id === bill.category);
-                  return (
-                    <div key={bill.id} style={styles.billCard}>
-                        <div style={{...styles.billIconBox, background: `${catCfg.color}20`, color: catCfg.color}}>
-                            {catCfg.icon}
-                        </div>
-                        <div style={{flex:1, paddingLeft:'15px'}}>
-                            <div style={{fontSize:'16px', fontWeight:'600', marginBottom:'4px'}}>{catCfg.name}</div>
-                            <div style={{fontSize:'12px', color:'rgba(255,255,255,0.5)', display:'flex', alignItems:'center', gap:'10px'}}>
-                                <span>{bill.dateStr}</span>
-                                {bill.quantity && <span>• {bill.quantity}</span>}
-                            </div>
-                            {bill.note && <div style={{fontSize:'11px', color:'rgba(255,255,255,0.4)', marginTop:'4px', fontStyle:'italic'}}>{bill.note}</div>}
-                        </div>
-                        <div style={{textAlign:'right'}}>
-                            <div style={{fontSize:'18px', fontWeight:'700', color: catCfg.color}}>₹{bill.amount.toLocaleString()}</div>
-                            {bill.image && <div style={{fontSize:'10px', color:'rgba(255,255,255,0.5)', marginTop:'5px'}}>📎 Attached</div>}
-                        </div>
-                    </div>
-                  );
-              })
-          )}
+          {filteredBills.map(bill => {
+             const catCfg = CATEGORIES.find(c => c.id === bill.category) || CATEGORIES[5];
+             return (
+               <div key={bill.id} style={styles.billCard}>
+                   <div style={{...styles.billIconBox, color: catCfg.color, background: `${catCfg.color}20`}}>{catCfg.icon}</div>
+                   <div style={{flex:1, paddingLeft:'15px'}}>
+                       <div style={{fontWeight:'600'}}>{catCfg.name}</div>
+                       <div style={{fontSize:'12px', opacity:0.5}}>{bill.dateStr} • {bill.quantity}</div>
+                       {bill.note && <div style={{fontSize:'11px', opacity:0.7, fontStyle:'italic'}}>{bill.note}</div>}
+                   </div>
+                   <div style={{textAlign:'right'}}>
+                       <div style={{fontWeight:'bold', color:catCfg.color}}>₹{bill.amount}</div>
+                       <div style={{display:'flex', gap:'10px', marginTop:'5px', justifyContent:'flex-end'}}>
+                           <IoMdCreate onClick={()=>openEditBill(bill)} color="#ccc"/>
+                           <IoMdTrash onClick={()=>handleDeleteBill(bill.id)} color="#FF5252"/>
+                       </div>
+                   </div>
+               </div>
+             )
+          })}
       </div>
 
-      {/* --- MODERN ADD EXPENSE MODAL --- */}
+      {/* ADD MODAL */}
       {showAddModal && (
         <div style={styles.modalOverlay}>
           <div style={styles.modalContent}>
-            <div style={styles.modalHeader}>
-              <h3 style={{margin:0, color:'white', fontSize:'22px'}}>Add Expense</h3>
-              <button onClick={() => setShowAddModal(false)} style={styles.closeBtn}><IoMdClose size={24}/></button>
+            <h3 style={{color:'white'}}>Add Expense</h3>
+            <div style={{marginBottom:'15px'}}>
+                <div style={styles.label}>Category</div>
+                <div style={{display:'flex', gap:'10px', overflowX:'auto', paddingBottom:'10px'}}>
+                    {CATEGORIES.map(cat => (
+                        <div key={cat.id} onClick={()=>setNewBill({...newBill, category:cat.id})} style={{padding:'10px', borderRadius:'10px', background: newBill.category===cat.id ? cat.color : '#333', minWidth:'60px', textAlign:'center'}}>
+                            <div style={{fontSize:'20px'}}>{cat.icon}</div>
+                            <div style={{fontSize:'10px'}}>{cat.name}</div>
+                        </div>
+                    ))}
+                </div>
             </div>
+            <div style={styles.amountBox}><FaRupeeSign/><input type="number" autoFocus style={styles.amountInput} value={newBill.amount} onChange={e=>setNewBill({...newBill, amount:e.target.value})} placeholder="Amount"/></div>
+            <input style={styles.simpleInput} value={newBill.quantity} onChange={e=>setNewBill({...newBill, quantity:e.target.value})} placeholder="Quantity (Optional)"/>
+            <input style={{...styles.simpleInput, marginTop:'10px'}} value={newBill.note} onChange={e=>setNewBill({...newBill, note:e.target.value})} placeholder="Note (Optional)"/>
             
-            <div style={styles.formScroll}>
-                
-                {/* 1. CATEGORY SELECTOR (Custom Dropdown) */}
-                <div style={{marginBottom:'20px'}}>
-                    <div style={{fontSize:'13px', color:'rgba(255,255,255,0.6)', marginBottom:'8px', marginLeft:'4px'}}>Category</div>
-                    
-                    {/* The Trigger Button */}
-                    <div 
-                        onClick={() => setIsCatDropdownOpen(!isCatDropdownOpen)}
-                        style={{
-                            ...styles.dropdownTrigger, 
-                            borderColor: isCatDropdownOpen ? currentCatConfig.color : 'rgba(255,255,255,0.1)'
-                        }}
-                    >
-                        <div style={{display:'flex', alignItems:'center', gap:'10px', color: currentCatConfig.color}}>
-                            {currentCatConfig.icon}
-                            <span style={{color:'white', fontWeight:'600', fontSize:'16px'}}>{currentCatConfig.name}</span>
-                        </div>
-                        {isCatDropdownOpen ? <IoMdArrowDropup color="#888"/> : <IoMdArrowDropdown color="#888"/>}
-                    </div>
-
-                    {/* The Dropdown List (Hidden by default) */}
-                    {isCatDropdownOpen && (
-                        <div style={styles.catGrid}>
-                            {CATEGORIES.map(cat => (
-                                <div 
-                                    key={cat.id} 
-                                    onClick={() => { setNewBill({...newBill, category: cat.id}); setIsCatDropdownOpen(false); }}
-                                    style={{
-                                        ...styles.catGridItem,
-                                        background: newBill.category === cat.id ? `${cat.color}30` : 'rgba(255,255,255,0.05)',
-                                        border: newBill.category === cat.id ? `1px solid ${cat.color}` : '1px solid transparent'
-                                    }}
-                                >
-                                    <div style={{color: cat.color, fontSize:'20px', marginBottom:'5px'}}>{cat.icon}</div>
-                                    <div style={{fontSize:'12px', color:'white'}}>{cat.name}</div>
-                                </div>
-                            ))}
-                        </div>
-                    )}
-                </div>
-
-                {/* 2. AMOUNT INPUT (Big & Bold) */}
-                <div style={styles.inputGroup}>
-                    <div style={{fontSize:'13px', color:'rgba(255,255,255,0.6)', marginBottom:'8px'}}>Amount</div>
-                    <div style={styles.amountBox}>
-                        <FaRupeeSign color={currentCatConfig.color} size={20} />
-                        <input 
-                            type="number" 
-                            placeholder="0" 
-                            autoFocus
-                            style={styles.amountInput} 
-                            value={newBill.amount} 
-                            onChange={(e) => setNewBill({...newBill, amount: e.target.value})}
-                        />
-                    </div>
-                </div>
-
-                {/* 3. DYNAMIC QUANTITY */}
-                <div style={styles.inputGroup}>
-                    <div style={{fontSize:'13px', color:'rgba(255,255,255,0.6)', marginBottom:'8px'}}>{currentCatConfig.qtyLabel} <span style={{opacity:0.5}}>(Optional)</span></div>
-                    <div style={styles.simpleInputBox}>
-                        <input 
-                            type="text" 
-                            placeholder="Ex: 5 Bags, 2 Workers..." 
-                            style={styles.simpleInput} 
-                            value={newBill.quantity} 
-                            onChange={(e) => setNewBill({...newBill, quantity: e.target.value})}
-                        />
-                    </div>
-                </div>
-
-                {/* 4. NOTE (Large Textarea) */}
-                <div style={styles.inputGroup}>
-                    <div style={{fontSize:'13px', color:'rgba(255,255,255,0.6)', marginBottom:'8px'}}>Note <span style={{opacity:0.5}}>(Optional)</span></div>
-                    <div style={styles.simpleInputBox}>
-                        <textarea 
-                            rows="3"
-                            placeholder="Add details about the shop or bill..." 
-                            style={styles.textArea} 
-                            value={newBill.note} 
-                            onChange={(e) => setNewBill({...newBill, note: e.target.value})}
-                        />
-                    </div>
-                </div>
-
-                {/* 5. IMAGE UPLOAD */}
-                <div style={{marginTop:'10px'}}>
-                    <div onClick={() => fileInputRef.current.click()} style={styles.imageUploadBox}>
-                        {newBill.image ? (
-                            <img src={newBill.image} alt="Bill Preview" style={{width:'100%', height:'100%', objectFit:'cover', borderRadius:'12px'}} />
-                        ) : (
-                            <>
-                                <IoMdCamera size={28} color="rgba(255,255,255,0.4)" />
-                                <span style={{fontSize:'13px', color:'rgba(255,255,255,0.4)', marginTop:'8px'}}>Attach Bill Photo</span>
-                            </>
-                        )}
-                        <input type="file" accept="image/*" ref={fileInputRef} onChange={handleImageUpload} style={{display:'none'}} />
-                    </div>
-                     {newBill.image && <button onClick={(e) => {e.stopPropagation(); setNewBill({...newBill, image:null})}} style={{background:'transparent', border:'none', color:'#FF5252', fontSize:'13px', width:'100%', marginBottom:'10px', cursor:'pointer'}}>Remove Photo ✕</button>}
-                </div>
+            <div style={{marginTop:'15px', display:'flex', gap:'10px'}}>
+                <button onClick={closeModal} style={styles.cancelBtn}>Cancel</button>
+                <button onClick={handleSaveBill} style={styles.saveBtn}>Save</button>
             </div>
-
-            <button onClick={handleSaveBill} style={styles.saveBtn}>
-              Save Expense
-            </button>
           </div>
         </div>
       )}
 
+      {/* HARVEST MODAL */}
+      {showHarvestModal && (
+          <div style={styles.modalOverlay}>
+              <div style={styles.modalContent}>
+                  <h3 style={{color:'white'}}>Harvest & Sell</h3>
+                  <div style={styles.label}>Total Bags</div>
+                  <input type="number" style={styles.simpleInput} value={harvestData.bags} onChange={e=>setHarvestData({...harvestData, bags:e.target.value})}/>
+                  <div style={{...styles.label, marginTop:'10px'}}>Total Quintals</div>
+                  <input type="number" style={styles.simpleInput} value={harvestData.quintals} onChange={e=>setHarvestData({...harvestData, quintals:e.target.value})}/>
+                  <div style={{...styles.label, marginTop:'10px'}}>Price Per Quintal</div>
+                  <input type="number" style={styles.simpleInput} value={harvestData.pricePerQuintal} onChange={e=>setHarvestData({...harvestData, pricePerQuintal:e.target.value})}/>
+                  
+                  <div style={{marginTop:'20px', padding:'10px', background:'rgba(76,175,80,0.2)', borderRadius:'10px', textAlign:'center', color:'#4CAF50', fontWeight:'bold'}}>
+                      Revenue: ₹{((parseFloat(harvestData.quintals)||0) * (parseFloat(harvestData.pricePerQuintal)||0)).toLocaleString()}
+                  </div>
+                  <button onClick={handleHarvestSubmit} style={{...styles.saveBtn, marginTop:'15px'}}>Complete Harvest</button>
+                  <button onClick={()=>setShowHarvestModal(false)} style={{...styles.cancelBtn, marginTop:'10px'}}>Cancel</button>
+              </div>
+          </div>
+      )}
     </div>
   );
 }
 
-// --- STYLES ---
+// STYLES (Print styles are handled by browser default, hidden div is styled inline)
 const styles = {
-  page: { 
-    position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', 
-    background: 'linear-gradient(to bottom, #0f1215, #151920)', 
-    color: 'white', fontFamily: '"SF Pro Display", sans-serif',
-    overflowY: 'auto', paddingBottom:'80px'
-  },
-  header: { 
-    display: 'flex', alignItems: 'center', padding: '20px', 
-    background: 'transparent', position: 'sticky', top: 0, zIndex: 10
-  },
-  backBtn: { background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.1)', borderRadius:'50%', width:'40px', height:'40px', display:'flex', alignItems:'center', justifyContent:'center', cursor: 'pointer', marginRight: '15px' },
-  pageTitle: { margin: 0, fontSize: '22px', fontWeight: '700', letterSpacing:'0.5px', lineHeight:'1.1' },
+  page: { position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: '#0f1215', color: 'white', overflowY: 'auto', paddingBottom:'80px' },
+  header: { display: 'flex', alignItems: 'center', padding: '20px', background: 'rgba(20,20,20,0.9)', position: 'sticky', top: 0, zIndex: 10 },
+  backBtn: { background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius:'50%', width:'40px', height:'40px', display:'flex', alignItems:'center', justifyContent:'center', marginRight: '15px' },
+  pageTitle: { margin: 0, fontSize: '20px', fontWeight: '700' },
+  menuBtn: { background:'transparent', border:'none', cursor:'pointer' },
+  menuDropdown: { position:'absolute', top:'40px', right:'0', background:'#333', padding:'10px', borderRadius:'8px', zIndex:20 },
+  menuItem: { padding:'10px', minWidth:'120px', cursor:'pointer' },
 
-  // Hero
-  heroContainer: { padding: '0 20px 25px 20px' },
-  heroCard: {
-    background: 'rgba(255, 255, 255, 0.07)', backdropFilter: 'blur(15px)',
-    borderRadius: '24px', padding: '25px',
-    border: '1px solid rgba(255, 255, 255, 0.08)',
-    boxShadow: '0 10px 30px rgba(0,0,0,0.2)', position:'relative'
-  },
-  heroAddBtn: {
-    width:'50px', height:'50px', borderRadius:'50%',
-    background: 'linear-gradient(135deg, #4CAF50 0%, #2E7D32 100%)',
-    border: 'none', display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer',
-    boxShadow: '0 5px 15px rgba(76, 175, 80, 0.4)',
-    position: 'absolute', top:'20px', right:'20px'
-  },
-  scroller: {
-    display: 'flex', gap: '10px', overflowX: 'auto', paddingBottom: '5px', scrollbarWidth: 'none', msOverflowStyle: 'none',
-    maskImage: 'linear-gradient(to right, black 85%, transparent 100%)'
-  },
-  catPill: {
-      minWidth: '110px', padding: '10px 15px', borderRadius: '16px',
-      display: 'flex', alignItems: 'center', cursor: 'pointer', transition: '0.2s',
-      border: '1px solid transparent'
-  },
-
-  // List
-  listContainer: { padding: '0 20px' },
-  billCard: {
-      background: 'rgba(255, 255, 255, 0.04)', backdropFilter: 'blur(10px)',
-      borderRadius: '18px', padding: '15px', marginBottom:'12px',
-      border: '1px solid rgba(255, 255, 255, 0.05)',
-      display: 'flex', alignItems: 'center'
-  },
-  billIconBox: {
-      width:'45px', height:'45px', borderRadius:'14px', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'20px'
-  },
-
-  // NEW MODAL STYLES
-  modalOverlay: {
-    position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
-    background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(8px)',
-    display: 'flex', alignItems: 'flex-end', justifyContent: 'center', zIndex: 2000
-  },
-  modalContent: {
-    background: '#1A1A1C', width: '100%', borderTopLeftRadius: '30px', borderTopRightRadius: '30px',
-    padding: '25px 25px 40px 25px', 
-    boxShadow: '0 -10px 40px rgba(0,0,0,0.6)', animation: 'slideUp 0.3s ease',
-    maxHeight: '90vh', display:'flex', flexDirection:'column'
-  },
-  modalHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '25px' },
-  closeBtn: { background: 'rgba(255,255,255,0.08)', border: 'none', color: '#ccc', cursor: 'pointer', width:'32px', height:'32px', borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center' },
+  heroContainer: { padding: '20px' },
+  heroCard: { background: 'rgba(255,255,255,0.1)', padding: '25px', borderRadius: '20px', position:'relative' },
+  heroAddBtn: { width:'50px', height:'50px', borderRadius:'50%', background:'#4CAF50', border:'none', display:'flex', alignItems:'center', justifyContent:'center' },
   
-  formScroll: { overflowY: 'auto', paddingBottom:'20px', flex: 1 },
+  scroller: { display:'flex', gap:'10px', overflowX:'auto', marginTop:'20px' },
+  catPill: { padding:'8px 15px', borderRadius:'15px', background:'rgba(255,255,255,0.05)', whiteSpace:'nowrap', fontSize:'12px', cursor:'pointer' },
+
+  listContainer: { padding:'0 20px' },
+  billCard: { display:'flex', alignItems:'center', background:'rgba(255,255,255,0.05)', padding:'15px', borderRadius:'15px', marginBottom:'10px' },
+  billIconBox: { width:'40px', height:'40px', borderRadius:'10px', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'18px' },
   
-  inputGroup: { marginBottom:'20px' },
-
-  // Dropdown
-  dropdownTrigger: {
-      background: 'rgba(255,255,255,0.05)', borderRadius:'16px', padding:'15px',
-      display:'flex', justifyContent:'space-between', alignItems:'center',
-      border: '1px solid rgba(255,255,255,0.1)', cursor:'pointer'
-  },
-  catGrid: {
-      display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:'10px', marginTop:'10px',
-      background: '#111', padding:'15px', borderRadius:'16px', border:'1px solid #333'
-  },
-  catGridItem: {
-      borderRadius:'12px', padding:'15px 5px', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center',
-      cursor:'pointer', transition:'0.2s'
-  },
-
-  // Amount Box
-  amountBox: {
-      display:'flex', alignItems:'center', background: 'rgba(255,255,255,0.05)', 
-      borderRadius:'16px', padding:'10px 20px', border:'1px solid rgba(255,255,255,0.1)'
-  },
-  amountInput: {
-      width: '100%', background: 'transparent', border: 'none',
-      padding: '10px', color: 'white', fontSize: '32px', outline: 'none', fontWeight:'700'
-  },
-
-  // Simple Inputs
-  simpleInputBox: {
-      background: 'rgba(255,255,255,0.05)', borderRadius:'16px', border:'1px solid rgba(255,255,255,0.1)'
-  },
-  simpleInput: {
-      width: '100%', background: 'transparent', border: 'none',
-      padding: '16px', color: 'white', fontSize: '16px', outline: 'none'
-  },
-  textArea: {
-      width: '100%', background: 'transparent', border: 'none',
-      padding: '16px', color: 'white', fontSize: '16px', outline: 'none', fontFamily:'inherit', resize:'none'
-  },
-
-  imageUploadBox: {
-      height:'100px', background: 'rgba(255,255,255,0.03)', border:'2px dashed rgba(255,255,255,0.15)',
-      borderRadius:'16px', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center',
-      marginBottom:'10px', cursor:'pointer'
-  },
-
-  saveBtn: {
-    width: '100%', background: '#4CAF50', border: 'none', padding: '18px',
-    borderRadius: '16px', color: 'white', fontSize: '18px', fontWeight: 'bold', cursor: 'pointer',
-    marginTop:'10px', boxShadow: '0 5px 20px rgba(76, 175, 80, 0.2)'
-  }
+  modalOverlay: { position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center', zIndex: 100 },
+  modalContent: { background: '#1A1A1C', width: '100%', borderTopLeftRadius: '25px', borderTopRightRadius: '25px', padding: '25px' },
+  
+  amountBox: { display:'flex', alignItems:'center', background:'rgba(255,255,255,0.05)', padding:'15px', borderRadius:'15px', marginBottom:'15px' },
+  amountInput: { background:'transparent', border:'none', color:'white', fontSize:'24px', marginLeft:'10px', width:'100%', outline:'none' },
+  simpleInput: { width:'100%', padding:'15px', borderRadius:'15px', background:'rgba(255,255,255,0.05)', border:'none', color:'white', marginBottom:'10px', boxSizing:'border-box' },
+  saveBtn: { width:'100%', padding:'15px', borderRadius:'15px', background:'#4CAF50', border:'none', color:'white', fontWeight:'bold', fontSize:'16px' },
+  cancelBtn: { width:'100%', padding:'15px', borderRadius:'15px', background:'rgba(255,255,255,0.1)', border:'none', color:'white' },
+  
+  harvestStatsGrid: { display:'grid', gridTemplateColumns:'1fr 1fr', gap:'10px', margin:'20px 0' },
+  harvestStat: { background:'rgba(0,0,0,0.3)', padding:'10px', borderRadius:'10px', textAlign:'center', fontSize:'14px' },
+  reportBtn: { width:'100%', padding:'12px', background:'white', color:'black', border:'none', borderRadius:'10px', fontWeight:'bold', marginBottom:'10px', display:'flex', alignItems:'center', justifyContent:'center', gap:'10px', cursor:'pointer' },
+  reopenBtn: { width:'100%', padding:'10px', background:'rgba(255,255,255,0.2)', color:'white', border:'none', borderRadius:'10px', fontSize:'12px', cursor:'pointer' },
+  
+  // Print Table Styles (used inline in the hidden div, but kept here for reference)
+  th: { padding:'10px', borderBottom:'2px solid #ddd', textAlign:'left', fontSize:'12px', color:'#666' },
+  td: { padding:'10px', borderBottom:'1px solid #eee', fontSize:'14px' }
 };
-
-// Add keyframes for modal slide up
-const styleSheet = document.styleSheets[0];
-styleSheet.insertRule(`
-@keyframes slideUp {
-    from { transform: translateY(100%); }
-    to { transform: translateY(0); }
-}
-`, styleSheet.cssRules.length);
 
 export default CropExpenses;
