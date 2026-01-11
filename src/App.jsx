@@ -62,10 +62,12 @@ function App() {
         } />
       </Routes>
 
-      {/* --- ChatBot Fixed in Corner --- */}
-      <div style={{ position: 'fixed', bottom: '20px', right: '20px', zIndex: 1000 }}>
-        <ChatBot />
-      </div>
+      {/* --- ChatBot (Only Visible on Dashboard) --- */}
+      {location.pathname === '/dashboard' && (
+        <div style={{ position: 'fixed', bottom: '20px', right: '20px', zIndex: 1000 }}>
+          <ChatBot />
+        </div>
+      )}
       
     </div>
   );
