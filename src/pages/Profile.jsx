@@ -21,7 +21,6 @@ const pageStyle = {
     overflowY: 'auto', // The scrollable viewport
     WebkitOverflowScrolling: 'touch',
     zIndex: 2000,
-    // FIX: 'flex-start' ensures the card grows downwards and background doesn't cut off
     display: 'flex',
     justifyContent: 'center',
     alignItems: 'flex-start' 
@@ -78,12 +77,9 @@ const menuTitle = { fontWeight:'700', fontSize:'17px', color:'#333' };
 const menuDesc = { fontSize:'13px', color:'#666', marginTop:'2px' }; 
 const arrow = { marginLeft:'auto', fontSize:'24px', color:'#ccc' };
 
-// FIX: Added positioning to formGroup to prevent vertical overlap
 const formGroup = { marginBottom:'25px', position: 'relative' }; 
 const formRow = { display:'flex', gap:'15px' };
 const label = { display:'block', fontSize:'12px', fontWeight:'600', color:'#888', marginBottom:'5px', textTransform:'uppercase' }; 
-
-// FIX: Changed background to white to prevent transparency bleed-through
 const ajioInput = { width:'100%', padding: '12px 0', borderRadius: '0', border: 'none', borderBottom: '1px solid #ddd', fontSize: '15px', boxSizing: 'border-box', background: '#fff', color: '#333', outline:'none' }; 
 
 // 🚨 STUNNING GPS SECTION OVERHAUL
@@ -149,23 +145,9 @@ const blackSaveBtn = {
     boxShadow: '0 4px 15px rgba(0,0,0,0.2)'
 };
 
-const logoutBtn = { width:'100%', background:'#d32f2f', color:'white', border:'none', padding:'16px', borderRadius:'12px', fontSize:'17px', fontWeight:'bold', cursor:'pointer', marginTop:'30px' };
-
-const settingsItem = { display:'flex', justifyContent:'space-between', alignItems:'center', padding:'15px 0', borderBottom:'1px solid #f0f0f0' };
-
-
-// We keep the rating rendering helpers as they are used in the Seller Profile view (View 3)
-const renderStars = (rating) => {
-    const stars = [];
-    const roundedRating = Math.max(0, Math.min(5, Math.round(rating)));
-    for (let i = 1; i <= 5; i++) {
-        stars.push(<span key={i} style={{color: i <= roundedRating ? '#FFC107' : '#E0E0E0', fontSize:'24px'}}>★</span>);
-    }
-    return stars;
-};
-
+// RATING HELPERS
 const renderRatingBreakdown = () => {
-    const breakdown = { '5': 25, '4': 15, '3': 20, '2': 10, '1': 30 }; // Mock data
+    const breakdown = { '5': 25, '4': 15, '3': 20, '2': 10, '1': 30 }; 
     const keys = ['5', '4', '3', '2', '1'];
     return (
         <div style={{width: '100%'}}>
@@ -173,14 +155,7 @@ const renderRatingBreakdown = () => {
                 <div key={star} style={{display: 'flex', alignItems: 'center', margin: '6px 0'}}>
                     <span style={{fontSize: '13px', color: '#333', width: '20px', fontWeight: '600'}}>{star}★</span>
                     <div style={{flexGrow: 1, height: '8px', background: '#F0F0F0', borderRadius: '4px', margin: '0 10px'}}>
-                        <div 
-                            style={{
-                                width: `${breakdown[star] || 0}%`, 
-                                height: '100%', 
-                                background: '#4CAF50', 
-                                borderRadius: '4px'
-                            }}
-                        ></div>
+                        <div style={{width: `${breakdown[star] || 0}%`, height: '100%', background: '#4CAF50', borderRadius: '4px'}}></div>
                     </div>
                     <span style={{fontSize: '13px', color: '#666', width: '40px', textAlign: 'right'}}>{breakdown[star] || 0}%</span>
                 </div>
@@ -195,14 +170,7 @@ const renderCategoryRating = (title, score, maxScore = 5) => (
         <div style={{ display: 'flex', alignItems: 'center' }}>
             <span style={{ fontSize: '16px', color: '#333', fontWeight: 'bold', width: '30px' }}>{score.toFixed(1)}</span>
             <div style={{ flexGrow: 1, height: '8px', background: '#F0F0F0', borderRadius: '4px', margin: '0 10px' }}>
-                <div 
-                    style={{
-                        width: `${(score / maxScore) * 100}%`, 
-                        height: '100%', 
-                        background: '#FFC107', 
-                        borderRadius: '4px'
-                    }}
-                ></div>
+                <div style={{width: `${(score / maxScore) * 100}%`, height: '100%', background: '#FFC107', borderRadius: '4px'}}></div>
             </div>
         </div>
     </div>
@@ -235,39 +203,46 @@ function Profile() {
         setTimeout(() => setNotification({ message: '', type: '' }), 4000);
     };
 
-    // --- Data Loading and Saving Logic ---
+    // --- Data Loading Logic (Improved Error Handling) ---
     useEffect(() => { 
         const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
             if (currentUser) {
                 setUser(currentUser);
-                const docRef = doc(db, "users", currentUser.uid);
-                const docSnap = await getDoc(docRef);
-                
-                if (docSnap.exists()) {
-                    const data = docSnap.data();
+                try {
+                    const docRef = doc(db, "users", currentUser.uid);
+                    const docSnap = await getDoc(docRef);
                     
-                    const extractAddress = (source) => ({
-                          pincode: source.pincode || '', city: source.city || '', state: source.state || '', 
-                          locality: source.locality || '', building: source.building || '', landmark: source.landmark || '',
-                          lat: source.lat || null, lng: source.lng || null
-                    });
-
-                    setProfileData(prev => ({ 
-                        ...prev, 
-                        ...data,
-                        homeAddress: data.homeAddress ? extractAddress(data.homeAddress) : prev.homeAddress,
-                        businessAddress: data.businessAddress ? extractAddress(data.businessAddress) : prev.businessAddress,
+                    if (docSnap.exists()) {
+                        const data = docSnap.data();
                         
-                        phone: data.phone || '', alternatePhone: data.alternatePhone || '', 
-                        sellerName: data.sellerName || 'Unnamed Shop', bio: data.bio || prev.bio,
-                        ordersCompleted: data.ordersCompleted || 0, rating: data.rating || 4.8,
-                        ratingBreakdown: data.ratingBreakdown || prev.ratingBreakdown, 
-                        serviceOrders: data.serviceOrders || 15, productOrders: data.productOrders || 25, 
-                        serviceRating: data.serviceRating || 4.6, productRating: data.productRating || 4.4, 
-                        serviceMetrics: data.serviceMetrics || prev.serviceMetrics, productMetrics: data.productMetrics || prev.productMetrics,
-                    }));
-                } else {
-                    setProfileData(prev => ({...prev, name: currentUser.displayName || 'New User', photo: currentUser.photoURL || prev.photo}));
+                        const extractAddress = (source) => ({
+                              pincode: source.pincode || '', city: source.city || '', state: source.state || '', 
+                              locality: source.locality || '', building: source.building || '', landmark: source.landmark || '',
+                              lat: source.lat || null, lng: source.lng || null
+                        });
+
+                        setProfileData(prev => ({ 
+                            ...prev, 
+                            ...data,
+                            homeAddress: data.homeAddress ? extractAddress(data.homeAddress) : prev.homeAddress,
+                            businessAddress: data.businessAddress ? extractAddress(data.businessAddress) : prev.businessAddress,
+                            
+                            phone: data.phone || '', alternatePhone: data.alternatePhone || '', 
+                            sellerName: data.sellerName || 'Unnamed Shop', bio: data.bio || prev.bio,
+                            ordersCompleted: data.ordersCompleted || 0, rating: data.rating || 4.8,
+                            ratingBreakdown: data.ratingBreakdown || prev.ratingBreakdown, 
+                            serviceOrders: data.serviceOrders || 15, productOrders: data.productOrders || 25, 
+                            serviceRating: data.serviceRating || 4.6, productRating: data.productRating || 4.4, 
+                            serviceMetrics: data.serviceMetrics || prev.serviceMetrics, productMetrics: data.productMetrics || prev.productMetrics,
+                        }));
+                    } else {
+                        setProfileData(prev => ({...prev, name: currentUser.displayName || 'New User', photo: currentUser.photoURL || prev.photo}));
+                    }
+                } catch (err) {
+                    console.error("Firestore Permission Error:", err);
+                    // Don't block UI on error, just let them edit
+                    setProfileData(prev => ({...prev, name: currentUser.displayName || 'New User'}));
+                    showNotification("Database permission required (Check Rules)", 'error');
                 }
             }
             setLoading(false);
@@ -307,7 +282,7 @@ function Profile() {
             
             showNotification("Profile saved successfully!", 'success');
         } catch (e) { 
-            showNotification("Error saving profile: " + e.message, 'error'); 
+            showNotification("Error saving (Check Permissions): " + e.message, 'error'); 
         } finally {
             setIsSaving(false);
         }
@@ -363,7 +338,7 @@ function Profile() {
         navigate('/login'); 
     };
 
-    if (loading) return <div style={{color:'black', textAlign:'center', paddingTop:'50px'}}>Loading...</div>;
+    if (loading) return <div style={{color:'black', textAlign:'center', paddingTop:'50px'}}>Loading Profile...</div>;
 
     const NotificationBar = () => {
         if (!notification.message) return null;
@@ -490,7 +465,6 @@ function Profile() {
                     <button onClick={() => setActiveView('menu')} style={backBtn}>⬅ Back to Menu</button>
                     <h2 style={sectionTitle}>👤 Personal Details</h2>
                     
-                    {/* ORIGINAL INPUT LAYOUT RESTORED */}
                     <div style={formGroup}>
                         <label style={label}>Account Name</label>
                         <input type="text" value={profileData.name} onChange={e=>setProfileData({...profileData, name:e.target.value})} style={ajioInput} />
@@ -504,7 +478,6 @@ function Profile() {
                     <hr style={{margin:'25px 0', borderColor:'#eee'}}/>
                     <h3 style={subSectionTitle}>🏠 Primary Home Address</h3>
 
-                    {/* **STUNNING GPS TOOL OVERHAUL** */}
                     <div style={gpsBox}>
                          <div style={gpsToolHeader}>
                              <span style={{marginRight: '8px'}}>🛰️</span> GPS Tool
@@ -515,7 +488,6 @@ function Profile() {
                         <button onClick={() => setBaseLocation('homeAddress')} style={actionBtn}>Get Current GPS & Pre-fill</button>
                     </div>
 
-                    {/* ADDRESS FIELDS (Ajio Style Inputs) - NOW CORRECTLY LINKED to homeAddress */}
                     <div style={formRow}>
                         <div style={{...formGroup, flex:1}}>
                             <label style={label}>Pincode</label>
@@ -573,7 +545,6 @@ function Profile() {
                     <button onClick={() => setActiveView('menu')} style={backBtn}>⬅ Back to Menu</button>
                     <h2 style={sectionTitle}>🏪 Seller Profile Management</h2>
                     
-                    {/* PROFILE PICTURE & NAME */}
                     <div style={profileHeader}>
                         <div style={avatarLargeContainer}>
                             <img src={profileData.photo || "https://cdn-icons-png.flaticon.com/512/3135/3135715.png"} style={avatarImg} alt="Seller Photo" />
@@ -584,13 +555,11 @@ function Profile() {
                         </label>
                     </div>
                     
-                    {/* Shop Name Input */}
                     <div style={formGroup}>
                         <label style={label}>Shop / Business Name (Public)</label>
                         <input type="text" placeholder="e.g. Raju Tractors & Services" value={profileData.sellerName} onChange={e=>setProfileData({...profileData, sellerName:e.target.value})} style={ajioInput} />
                     </div>
 
-                    {/* Seller Name Input */}
                     <div style={formGroup}>
                         <label style={label}>Seller Name (Owner)</label>
                         <input type="text" placeholder="e.g. Arjun Reddy" value={profileData.name} onChange={e=>setProfileData({...profileData, name:e.target.value})} style={ajioInput} />
@@ -598,7 +567,6 @@ function Profile() {
                     
                     <hr style={{margin:'25px 0', borderColor:'#eee'}}/>
 
-                    {/* CONTACT INFORMATION */}
                     <h3 style={subSectionTitle}>Contact & Public Location</h3>
                     
                     <div style={formGroup}>
@@ -611,10 +579,8 @@ function Profile() {
                         <input type="tel" placeholder="Optional Backup Number" value={profileData.alternatePhone} onChange={e=>setProfileData({...profileData, alternatePhone:e.target.value})} style={ajioInput} />
                     </div>
 
-                    {/* **BUSINESS ADDRESS INPUT - NOW LINKED TO businessAddress** */}
                     <h3 style={subSectionTitle}>Home Base Address (For Directions/Filtering)</h3>
                     
-                    {/* **STUNNING GPS TOOL OVERHAUL** */}
                     <div style={gpsBox}>
                          <div style={gpsToolHeader}>
                              <span style={{marginRight: '8px'}}>🛰️</span> GPS Tool
@@ -625,7 +591,6 @@ function Profile() {
                         <button onClick={() => setBaseLocation('businessAddress')} style={actionBtn}>Get Current GPS & Pre-fill</button>
                     </div>
 
-                    {/* ADDRESS FIELDS (Ajio Style Inputs) - NOW CORRECTLY LINKED to businessAddress */}
                     <div style={formRow}>
                         <div style={{...formGroup, flex:1}}>
                             <label style={label}>Pincode</label>
@@ -660,12 +625,10 @@ function Profile() {
                     
                     <hr style={{margin:'25px 0', borderColor:'#eee'}}/>
                     
-                    {/* TRACK RECORD & BIO - ADVANCED RATING UI */}
                     <h3 style={subSectionTitle}>Track Record & Bio</h3>
 
                     <div style={{ border: '1px solid #eee', borderRadius:'10px', marginBottom:'20px', background:'#f9f9f9', padding:'15px' }}>
                         
-                        {/* OVERALL RATING HEADER */}
                         <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', borderBottom:'1px solid #ddd', paddingBottom:'10px', marginBottom:'15px'}}>
                             <div style={{textAlign:'left'}}>
                                 <div style={{fontSize:'45px', color:'#FFC107', fontWeight:'900', lineHeight:1}}>{profileData.rating.toFixed(1)}</div>
@@ -677,20 +640,17 @@ function Profile() {
                             </div>
                         </div>
 
-                        {/* RATING BREAKDOWN BARS */}
                         <h4 style={{margin:'0 0 10px 0', color:'#333', fontSize:'15px', fontWeight:'700'}}>User Rating Breakdown</h4>
                         {renderRatingBreakdown()}
                         
                         <hr style={{margin:'20px 0'}}/>
 
-                        {/* SERVICE RATING METRICS */}
                         <h4 style={{margin:'0 0 10px 0', color:'#333', fontSize:'15px', fontWeight:'700'}}>Service Quality ({profileData.serviceRating.toFixed(1)})</h4>
                         <p style={{fontSize:'11px', color:'#999', marginBottom:'10px'}}>Service Orders: {profileData.serviceOrders}</p>
                         {profileData.serviceMetrics.map((metric, index) => <div key={'s'+index}>{renderCategoryRating(metric.title, metric.score)}</div>)}
 
                         <hr style={{margin:'20px 0'}}/>
 
-                        {/* PRODUCT RATING METRICS */}
                         <h4 style={{margin:'0 0 10px 0', color:'#333', fontSize:'15px', fontWeight:'700'}}>Product Quality ({profileData.productRating.toFixed(1)})</h4>
                         <p style={{fontSize:'11px', color:'#999', marginBottom:'10px'}}>Product Orders: {profileData.productOrders}</p>
                         {profileData.productMetrics.map((metric, index) => <div key={'p'+index}>{renderCategoryRating(metric.title, metric.score)}</div>)}
@@ -702,7 +662,6 @@ function Profile() {
                         <textarea value={profileData.bio} onChange={e=>setProfileData({...profileData, bio:e.target.value})} style={{...ajioInput, minHeight:'100px'}} placeholder="Describe your experience..."></textarea>
                     </div>
 
-                    {/* AJIO STYLE BLACK BUTTON */}
                     <button onClick={() => saveData()} style={blackSaveBtn} disabled={isSaving}>
                         {isSaving ? 'Saving...' : 'Save Seller Details'}
                     </button>
@@ -711,7 +670,6 @@ function Profile() {
         );
     }
     
-    // --- Outsourced View Renders (Unchanged) ---
     if (activeView === 'listings') {
         return (
             <MyListingsPage 

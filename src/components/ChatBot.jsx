@@ -10,32 +10,11 @@ import remarkGfm from 'remark-gfm';
 
 /**
  * =================================================================================================
- * 🌿 FARM BUDDY: TITANIUM "GENESIS" EDITION (v106.0)
+ * 🌿 FARM BUDDY: TITANIUM "GENESIS" EDITION (v107.0)
  * =================================================================================================
  * * PROPRIETARY AGRICULTURAL AI INTERFACE & DIAGNOSTIC ENGINE
  * COPYRIGHT © 2026 FARM BUDDY INC.
  * DEVELOPED FOR: HIGH-PERFORMANCE WEB & MOBILE ENVIRONMENTS
- * * =================================================================================================
- * 🔧 SYSTEM ARCHITECTURE & CHANGELOG (v106.0):
- * =================================================================================================
- * * 1. 🖊️ EDIT & REGENERATE ENGINE:
- * - Implemented "Time Travel" logic. Users can edit past messages.
- * - System automatically truncates future context and re-triggers the AI pipeline.
- * * 2. 🏷️ SESSION MANAGEMENT v2:
- * - Inline Title Editing in Sidebar (Rename conversations).
- * - Persisted state updates for custom titles.
- * * 3. 🎙️ PRO UI ASSETS:
- * - Vector SVG Microphone Icon (White, Material Design standard).
- * - Consolidated Window Controls (Single Close/Minimize action).
- * * 4. 🧠 30-MODEL "BRUTE FORCE" GRID (FULL REDUNDANCY):
- * - Tier 0: Gemini 1.5 Flash (Primary Vision Engine).
- * - Tier 1: Hugging Face Specialized (Crop Disease, Pests).
- * - Tier 2: Groq Llama 3.2 Vision (High-Speed Inference).
- * - Tier 3: Legacy Vision (Gemini Pro Vision, GPT-4o mimics).
- * - Tier 4: Text-Only "Safety Net" (Llama 3, Mistral, Gemma).
- * * 5. 🖼️ "PRE-FLIGHT" IMAGE ALGORITHM v6:
- * - Automatic Canvas Resizing (Max 512px).
- * - Dual-Output Generation: Raw Base64 + DataURI.
  * * =================================================================================================
  */
 
@@ -52,9 +31,7 @@ function ChatBot() {
   // 🛠️ SYSTEM BOOT SEQUENCE
   useEffect(() => {
     console.group("🚀 FARM BUDDY: GENESIS KERNEL INITIALIZED");
-    console.log("Kernel Version: v106.0 (Titanium)");
-    console.log("Feature Set: Edit/Regen, Title Rename, Vector UI");
-    console.log("Backup Grid: 30+ Models Loaded");
+    console.log("Kernel Version: v107.0 (Titanium)");
     
     const status = {
         GROQ: GROQ_KEY ? "🟢 ONLINE" : "🔴 OFFLINE",
@@ -71,22 +48,10 @@ function ChatBot() {
   // ===============================================================================================
   
   const MODEL_QUEUE = useMemo(() => [
-    
-    // ---------------------------------------------------------------------------------------------
-    // TIER 1: MODERN STABLE VISION (High Priority)
-    // ---------------------------------------------------------------------------------------------
     { provider: 'gemini', id: 'gemini-1.5-flash', vision: true, desc: "Gemini 1.5 Flash" },
     { provider: 'gemini', id: 'gemini-1.5-pro', vision: true, desc: "Gemini 1.5 Pro" },
-    
-    // ---------------------------------------------------------------------------------------------
-    // TIER 2: GROQ LPU VISION (Extreme Speed Inference)
-    // ---------------------------------------------------------------------------------------------
     { provider: 'groq', id: 'llama-3.2-11b-vision-preview', vision: true, desc: "Llama 3.2 11B Vision" },
     { provider: 'groq', id: 'llama-3.2-90b-vision-preview', vision: true, desc: "Llama 3.2 90B Vision" },
-
-    // ---------------------------------------------------------------------------------------------
-    // TIER 3: HUGGING FACE SPECIALIZED (Domain Specific Logic)
-    // ---------------------------------------------------------------------------------------------
     { provider: 'hf', id: 'linkan/plant-disease-classification-v2', vision: true, desc: "HF Plant Disease V2" },
     { provider: 'hf', id: 'google/vit-base-patch16-224', vision: true, desc: "Google ViT" },
     { provider: 'hf', id: 'microsoft/resnet-50', vision: true, desc: "ResNet-50" },
@@ -94,17 +59,9 @@ function ChatBot() {
     { provider: 'hf', id: 'google/vit-large-patch16-224', vision: true, desc: "Google ViT Large" },
     { provider: 'hf', id: 'nateraw/vit-base-beans', vision: true, desc: "HF Beans Disease" },
     { provider: 'hf', id: 'jazmys/vit-base-patch16-224-in21k-finetuned-lora-food', vision: true, desc: "HF Food Analysis" },
-
-    // ---------------------------------------------------------------------------------------------
-    // TIER 4: LEGACY / EXPERIMENTAL VISION (Backup Systems)
-    // ---------------------------------------------------------------------------------------------
     { provider: 'gemini', id: 'gemini-2.0-flash-exp', vision: true, desc: "Gemini 2.0 Exp" },
     { provider: 'gemini', id: 'gemini-pro-vision', vision: true, desc: "Gemini 1.0 Vision" },
     { provider: 'gemini', id: 'gemini-1.5-flash-8b', vision: true, desc: "Gemini 1.5 Flash 8B" },
-
-    // ---------------------------------------------------------------------------------------------
-    // TIER 5: TEXT-ONLY FALLBACKS (Absolute Last Resort)
-    // ---------------------------------------------------------------------------------------------
     { provider: 'groq', id: 'llama-3.3-70b-versatile', vision: false }, 
     { provider: 'groq', id: 'llama-3.1-70b-versatile', vision: false },
     { provider: 'groq', id: 'llama-3.1-8b-instant', vision: false },
@@ -151,7 +108,7 @@ function ChatBot() {
 
   // 3.3 Greeting Generator
   const getGreeting = useCallback(() => ({ 
-      text: "🚜 **Farm Buddy: Genesis Mode.**\n\nI am connected to the Titanium v106 Grid. \n\n📸 **Upload a photo** to unleash the vision engine.\n🎨 **Type 'Generate an image of...'** for AI art.\n\n*System Ready. Awaiting input.*", 
+      text: "🚜 **Farm Buddy: Genesis Mode.**\n\nI am connected to the Titanium v107 Grid. \n\n📸 **Upload a photo** to unleash the vision engine.\n🎨 **Type 'Generate an image of...'** for AI art.\n\n*System Ready. Awaiting input.*", 
       sender: "bot",
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
   }), []);
@@ -196,9 +153,10 @@ function ChatBot() {
       mimeType: null 
   });
 
-  // 3.9 Legal & Permission
+  // 3.9 Legal & Permission (UPDATED KEY v107)
   const [termsAccepted, setTermsAccepted] = useState(() => {
-    return typeof window !== "undefined" && localStorage.getItem('farmbuddy_terms_v60') === 'true';
+    // We use v107 to force a reset, ensuring the user sees it "the first time" on this update
+    return typeof window !== "undefined" && localStorage.getItem('farmbuddy_terms_v107') === 'true';
   });
   const [showFullTerms, setShowFullTerms] = useState(false);
 
@@ -283,9 +241,6 @@ function ChatBot() {
   };
 
   // ✏️ EDITING FUNCTIONS
-  // ---------------------------------------------------------------------------
-  
-  // 1. Sidebar Title Editing
   const startEditingSession = (e, session) => {
       e.stopPropagation();
       setEditingSessionId(session.id);
@@ -298,7 +253,6 @@ function ChatBot() {
       setEditingSessionId(null);
   };
 
-  // 2. Message Editing & Regeneration
   const startEditingMessage = (index, currentText) => {
       setEditingMessageIndex(index);
       setEditMessageText(currentText);
@@ -310,24 +264,15 @@ function ChatBot() {
   };
 
   const saveAndRegenerateMessage = (index) => {
-      // 1. Get current session messages
       const currentMessages = sessions.find(s => s.id === currentSessionId).messages;
-      
-      // 2. Slice history: Keep messages UP TO the edited one. Discard everything after.
       const slicedMessages = currentMessages.slice(0, index);
-      
-      // 3. Create the new user message object (preserving original timestamp or updating it)
       const newMessage = {
           text: editMessageText,
           sender: "user",
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          // Preserve image if it was the original message type, strictly speaking logic would be complex here
-          // For simplicity, we assume text edit. If image was attached, we'd need to track that state. 
-          // Current simplified approach: Text edit triggers regeneration.
           image: currentMessages[index].image 
       };
 
-      // 4. Update Session State
       setSessions(prev => prev.map(s => {
           if (s.id === currentSessionId) {
               return { ...s, messages: [...slicedMessages, newMessage] };
@@ -335,19 +280,10 @@ function ChatBot() {
           return s;
       }));
 
-      // 5. Reset UI
       setEditingMessageIndex(null);
       setEditMessageText("");
-      
-      // 6. Trigger AI Regeneration
-      // We need to pass the image data if it existed on THIS message.
-      // NOTE: If the user uploaded a file, 'lastRequest' holds the binary data. 
-      // If they are editing an old message, we might lose the binary data unless stored in history.
-      // For V106, we assume re-generation uses the text.
       setIsLoading(true);
       setIsTyping(true);
-      
-      // Execute Loop
       executeAILoop(editMessageText, rawBase64, dataUrl, mimeType);
   };
 
@@ -426,7 +362,7 @@ function ChatBot() {
   };
 
   // ===============================================================================================
-  // SECTION 6: BOUNDARY-PROTECTED DRAGGABLE UI
+  // SECTION 6: BOUNDARY-PROTECTED DRAGGABLE UI & TERMS LOGIC
   // ===============================================================================================
   const [position, setPosition] = useState({ x: window.innerWidth - 100, y: window.innerHeight - 100 });
   const [isDragging, setIsDragging] = useState(false);
@@ -493,31 +429,35 @@ function ChatBot() {
 
   const handleClickButton = () => { 
       if (!isDragging) {
-          setIsOpen(true);
+          handleOpenChat();
       }
   };
   
   const handleOpenChat = () => { 
       setIsOpen(true); 
-      if (!termsAccepted) { setShowFullTerms(true); }
+      // STRICT CHECK: If terms not accepted, show modal immediately.
+      if (!termsAccepted) { 
+          setShowFullTerms(true); 
+      }
   };
   
   const handleAcceptTerms = (e) => { 
       if(e && e.stopPropagation) e.stopPropagation(); 
       setTermsAccepted(true); 
       setShowFullTerms(false); 
-      localStorage.setItem('farmbuddy_terms_v60', 'true'); 
+      localStorage.setItem('farmbuddy_terms_v107', 'true'); 
       setIsOpen(true); 
   };
 
   const handleCloseTerms = (e) => {
       if(e && e.stopPropagation) e.stopPropagation();
       setShowFullTerms(false);
+      // STRICT KICK-OUT: If they close the terms modal without accepting, close the whole chat.
       if(!termsAccepted) setIsOpen(false);
   };
 
   // ===============================================================================================
-  // SECTION 7: "PRE-FLIGHT" IMAGE ALGORITHM (v6)
+  // SECTION 7: "PRE-FLIGHT" IMAGE ALGORITHM
   // ===============================================================================================
   
   const startListening = () => {
@@ -616,7 +556,9 @@ function ChatBot() {
   // ===============================================================================================
   
   const handleSend = async () => {
+    // DOUBLE CHECK: Even if they bypass UI, logic prevents sending without terms.
     if (!termsAccepted) { setShowFullTerms(true); return; }
+    
     if (!isOnline) { 
         addMessage({ text: "⚠️ **Connection Error:** You are currently OFFLINE.", sender: "bot", timestamp: new Date().toLocaleTimeString() }); 
         return; 
@@ -742,15 +684,111 @@ function ChatBot() {
   };
 
   // ===============================================================================================
-  // SECTION 9: SUB-COMPONENTS (MODALS)
+  // SECTION 9: SUB-COMPONENTS (MODALS) - UPDATED FOR 8 LANGUAGES
   // ===============================================================================================
   
   const FullTermsModal = () => (
     <div style={styles.modalOverlay} onClick={(e)=>e.stopPropagation()}>
       <div style={styles.modalContent} onClick={(e)=>e.stopPropagation()}>
-        <div style={styles.modalHeader}><span>⚖️ TERMS & CONDITIONS</span><button onClick={handleCloseTerms} style={styles.closeX}>✖</button></div>
-        <div style={styles.modalBody}><p style={styles.warnText}>⚠️ AGRICULTURAL LIABILITY DISCLAIMER</p><p>AI suggestions are not expert advice. Verify everything.</p></div>
-        <button onClick={handleAcceptTerms} style={styles.acceptBtn}>I HAVE READ AND AGREE</button>
+        <div style={styles.modalHeader}>
+            <span>⚖️ TERMS OF USE / उपयोग की शर्तें</span>
+            <button onClick={handleCloseTerms} style={styles.closeX}>✖</button>
+        </div>
+        <div style={styles.modalBody}>
+            <p style={styles.warnText}>⚠️ IMPORTANT: READ BEFORE CONTINUING</p>
+            
+            {/* ENGLISH */}
+            <div style={styles.langBlock}>
+                <h4>🇬🇧 English</h4>
+                <p><strong>1. Use at Your Own Risk:</strong> This application is provided only for general information purposes. You are using this app entirely at your own risk. The owners and developers are not responsible for any outcomes resulting from its use.</p>
+                <p><strong>2. User Responsibility:</strong> You are solely responsible for how you use the information provided by this AI. Any decisions you make based on the app’s responses are your own responsibility.</p>
+                <p><strong>3. No Liability for Losses:</strong> The owners and developers are not responsible for any crop loss, financial loss, production loss, or any other damage that may occur from using the information provided by this app.</p>
+                <p><strong>4. AI Can Make Mistakes:</strong> This chatbot is built using multiple AI systems. AI-generated information may be incorrect, incomplete, or outdated. Always verify the information with agricultural experts or official sources before taking action.</p>
+                <p><strong>5. Not a Professional Service:</strong> This app does not replace professional agricultural, scientific, or government advice. For serious crop issues, always consult qualified agricultural officers or experts.</p>
+            </div>
+
+            {/* HINDI */}
+            <div style={styles.langBlock}>
+                <h4>🇮🇳 हिंदी (Hindi)</h4>
+                <p><strong>1. अपने जोखिम पर उपयोग करें:</strong> यह एप्लिकेशन केवल सामान्य जानकारी के लिए है। इसका उपयोग आप पूरी तरह से अपने जोखिम पर कर रहे हैं। डेवलपर्स किसी भी परिणाम के लिए जिम्मेदार नहीं हैं।</p>
+                <p><strong>2. उपयोगकर्ता की जिम्मेदारी:</strong> इस AI द्वारा दी गई जानकारी का उपयोग कैसे करना है, इसकी पूरी जिम्मेदारी आपकी है।</p>
+                <p><strong>3. नुकसान के लिए कोई दायित्व नहीं:</strong> फसल के नुकसान, वित्तीय हानि या किसी अन्य क्षति के लिए मालिक और डेवलपर्स जिम्मेदार नहीं हैं।</p>
+                <p><strong>4. AI गलतियाँ कर सकता है:</strong> यह जानकारी गलत या पुरानी हो सकती है। कार्रवाई करने से पहले हमेशा कृषि विशेषज्ञों से जांच करें।</p>
+                <p><strong>5. पेशेवर सेवा नहीं:</strong> यह ऐप पेशेवर कृषि सलाह की जगह नहीं लेता है। गंभीर मुद्दों के लिए हमेशा योग्य कृषि अधिकारियों से परामर्श करें।</p>
+            </div>
+
+            {/* BENGALI */}
+            <div style={styles.langBlock}>
+                <h4>🇮🇳 বাংলা (Bengali)</h4>
+                <p><strong>1. নিজের ঝুঁকিতে ব্যবহার করুন:</strong> এই অ্যাপটি শুধুমাত্র সাধারণ তথ্যের জন্য। আপনি এটি সম্পূর্ণ নিজের ঝুঁকিতে ব্যবহার করছেন।</p>
+                <p><strong>2. ব্যবহারকারীর দায়িত্ব:</strong> এই AI-এর দেওয়া তথ্য ব্যবহারের সম্পূর্ণ দায়িত্ব আপনার।</p>
+                <p><strong>3. ক্ষতির কোনো দায় নেই:</strong> ফসলের ক্ষতি বা আর্থিক লোকসানের জন্য মালিকরা দায়ী নন।</p>
+                <p><strong>4. AI ভুল করতে পারে:</strong> তথ্য ভুল বা অসম্পূর্ণ হতে পারে। ব্যবস্থা নেওয়ার আগে সর্বদা বিশেষজ্ঞদের সাথে যাচাই করুন।</p>
+                <p><strong>5. পেশাদার পরিষেবা নয়:</strong> এটি পেশাদার কৃষি পরামর্শের বিকল্প নয়।</p>
+            </div>
+
+            {/* TELUGU */}
+            <div style={styles.langBlock}>
+                <h4>🇮🇳 తెలుగు (Telugu)</h4>
+                <p><strong>1. మీ స్వంత పూచీకత్తుతో ఉపయోగించండి:</strong> ఈ యాప్ సాధారణ సమాచారం కోసం మాత్రమే. దీనిని ఉపయోగించడం పూర్తిగా మీ బాధ్యత.</p>
+                <p><strong>2. వినియోగదారు బాధ్యత:</strong> ఈ AI అందించిన సమాచారం ఆధారంగా మీరు తీసుకునే నిర్ణయాలకు మీదే బాధ్యత.</p>
+                <p><strong>3. నష్టాలకు బాధ్యత లేదు:</strong> పంట నష్టం లేదా ఆర్థిక నష్టానికి డెవలపర్లు బాధ్యత వహించరు.</p>
+                <p><strong>4. AI తప్పులు చేయవచ్చు:</strong> సమాచారం తప్పుగా ఉండవచ్చు. చర్య తీసుకునే ముందు ఎల్లప్పుడూ వ్యవసాయ నిపుణులను సంప్రదించండి.</p>
+                <p><strong>5. వృత్తిపరమైన సేవ కాదు:</strong> ఇది ప్రభుత్వ లేదా శాస్త్రీయ సలహాలకు ప్రత్యామ్నాయం కాదు.</p>
+            </div>
+
+            {/* MARATHI */}
+            <div style={styles.langBlock}>
+                <h4>🇮🇳 मराठी (Marathi)</h4>
+                <p><strong>1. आपल्या स्वतःच्या जोखमीवर वापरा:</strong> हे ॲप केवळ सामान्य माहितीसाठी आहे. आपण हे पूर्णपणे आपल्या स्वतःच्या जोखमीवर वापरत आहात.</p>
+                <p><strong>2. वापरकर्त्याची जबाबदारी:</strong> या AI द्वारे दिलेल्या माहितीचा वापर कसा करायचा, याची संपूर्ण जबाबदारी तुमची आहे.</p>
+                <p><strong>3. नुकसानीसाठी जबाबदारी नाही:</strong> पिकांचे नुकसान किंवा आर्थिक नुकसानीसाठी मालक जबाबदार नाहीत.</p>
+                <p><strong>4. AI चुका करू शकते:</strong> ही माहिती चुकीची असू शकते. कारवाई करण्यापूर्वी नेहमी कृषी तज्ञांशी संपर्क साधा.</p>
+                <p><strong>5. व्यावसायिक सेवा नाही:</strong> हे ॲप व्यावसायिक कृषी सल्ल्याची जागा घेत नाही.</p>
+            </div>
+
+            {/* TAMIL */}
+            <div style={styles.langBlock}>
+                <h4>🇮🇳 தமிழ் (Tamil)</h4>
+                <p><strong>1. உங்கள் சொந்தப் பொறுப்பில் பயன்படுத்தவும்:</strong> இந்த செயலி பொதுவான தகவலுக்காக மட்டுமே. இதை உங்கள் சொந்தப் பொறுப்பில் பயன்படுத்துகிறீர்கள்.</p>
+                <p><strong>2. பயனரின் பொறுப்பு:</strong> இந்த AI வழங்கும் தகவலைப் பயன்படுத்துவது உங்கள் முழுப் பொறுப்பாகும்.</p>
+                <p><strong>3. இழப்புகளுக்குப் பொறுப்பல்ல:</strong> பயிர் இழப்பு அல்லது பண இழப்புக்கு உரிமையாளர்கள் பொறுப்பல்ல.</p>
+                <p><strong>4. AI தவறுகள் செய்யலாம்:</strong> தகவல் தவறாக இருக்கலாம். செயல்படுவதற்கு முன் எப்போதும் வேளாண் நிபுணர்களை அணுகவும்.</p>
+                <p><strong>5. தொழில்முறை சேவை அல்ல:</strong> இது தொழில்முறை வேளாண் ஆலோசனையை மாற்றாது.</p>
+            </div>
+
+            {/* GUJARATI */}
+            <div style={styles.langBlock}>
+                <h4>🇮🇳 ગુજરાતી (Gujarati)</h4>
+                <p><strong>1. તમારા પોતાના જોખમે ઉપયોગ કરો:</strong> આ એપ્લિકેશન માત્ર સામાન્ય માહિતી માટે છે. તમે તેનો ઉપયોગ તમારા પોતાના જોખમે કરી રહ્યા છો.</p>
+                <p><strong>2. વપરાશકર્તાની જવાબદારી:</strong> આ AI દ્વારા આપવામાં આવેલી માહિતીના ઉપયોગની સંપૂર્ણ જવાબદારી તમારી છે.</p>
+                <p><strong>3. નુકસાન માટે કોઈ જવાબદારી નથી:</strong> પાકના નુકસાન કે આર્થિક નુકસાન માટે માલિકો જવાબદાર નથી.</p>
+                <p><strong>4. AI ભૂલો કરી શકે છે:</strong> માહિતી ખોટી હોઈ શકે છે. પગલાં લેતા પહેલા હંમેશા કૃષિ નિષ્ણાતોની સલાહ લો.</p>
+                <p><strong>5. વ્યાવસાયિક સેવા નથી:</strong> આ એપ વ્યાવસાયિક કૃષિ સલાહનો વિકલ્પ નથી.</p>
+            </div>
+
+            {/* KANNADA */}
+            <div style={styles.langBlock}>
+                <h4>🇮🇳 ಕನ್ನಡ (Kannada)</h4>
+                <p><strong>1. ನಿಮ್ಮ ಸ್ವಂತ ಅಪಾಯದಲ್ಲಿ ಬಳಸಿ:</strong> ಈ ಅಪ್ಲಿಕೇಶನ್ ಸಾಮಾನ್ಯ ಮಾಹಿತಿಗಾಗಿ ಮಾತ್ರ. ನೀವು ಇದನ್ನು ಸಂಪೂರ್ಣವಾಗಿ ನಿಮ್ಮ ಸ್ವಂತ ಅಪಾಯದಲ್ಲಿ ಬಳಸುತ್ತಿದ್ದೀರಿ.</p>
+                <p><strong>2. ಬಳಕೆದಾರರ ಜವಾಬ್ದಾರಿ:</strong> ಈ AI ನೀಡುವ ಮಾಹಿತಿಯನ್ನು ಹೇಗೆ ಬಳಸುತ್ತೀರಿ ಎಂಬುದು ನಿಮ್ಮ ಜವಾಬ್ದಾರಿಯಾಗಿದೆ.</p>
+                <p><strong>3. ನಷ್ಟಗಳಿಗೆ ಹೊಣೆಗಾರಿಕೆ ಇಲ್ಲ:</strong> ಬೆಳೆ ನಷ್ಟ ಅಥವಾ ಆರ್ಥಿಕ ನಷ್ಟಕ್ಕೆ ಮಾಲೀಕರು ಜವಾಬ್ದಾರರಲ್ಲ.</p>
+                <p><strong>4. AI ತಪ್ಪುಗಳನ್ನು ಮಾಡಬಹುದು:</strong> ಮಾಹಿತಿ ತಪ್ಪಾಗಿರಬಹುದು. ಕ್ರಮ ಕೈಗೊಳ್ಳುವ ಮೊದಲು ಯಾವಾಗಲೂ ಕೃಷಿ ತಜ್ಞರನ್ನು ಸಂಪರ್ಕಿಸಿ.</p>
+                <p><strong>5. ವೃತ್ತಿಪರ ಸೇವೆಯಲ್ಲ:</strong> ಇದು ವೃತ್ತಿಪರ ಕೃಷಿ ಸಲಹೆಗೆ ಬದಲಿಯಲ್ಲ.</p>
+            </div>
+
+            {/* MALAYALAM */}
+            <div style={styles.langBlock}>
+                <h4>🇮🇳 മലയാളം (Malayalam)</h4>
+                <p><strong>1. സ്വന്തം ഉത്തരവാദിത്തത്തിൽ ഉപയോഗിക്കുക:</strong> ഈ ആപ്പ് പൊതുവിവരങ്ങൾക്ക് മാത്രമുള്ളതാണ്. ഇത് നിങ്ങളുടെ സ്വന്തം റിസ്കിൽ ഉപയോഗിക്കുക.</p>
+                <p><strong>2. ഉപയോക്താവിന്റെ ഉത്തരവാദിത്തം:</strong> ഈ വിവരങ്ങൾ എങ്ങനെ ഉപയോഗിക്കുന്നു എന്നത് നിങ്ങളുടെ പൂർണ്ണ ഉത്തരവാദിത്തമാണ്.</p>
+                <p><strong>3. നഷ്ടങ്ങൾക്ക് ഉത്തരവാദികളല്ല:</strong> വിളനാശത്തിനോ സാമ്പത്തിക നഷ്ടത്തിനോ ഡെവലപ്പർമാർ ഉത്തരവാദികളല്ല.</p>
+                <p><strong>4. AI തെറ്റുകൾ വരുത്തിയേക്കാം:</strong> വിവരങ്ങൾ തെറ്റായേക്കാം. നടപടിയെടുക്കുന്നതിന് മുമ്പ് കാർഷിക വിദഗ്ധരുമായി പരിശോധിക്കുക.</p>
+                <p><strong>5. പ്രൊഫഷണൽ സേവനമല്ല:</strong> ഇത് ഔദ്യോഗിക കാർഷിക ഉപദേശത്തിന് പകരമല്ല.</p>
+            </div>
+
+        </div>
+        <button onClick={handleAcceptTerms} style={styles.acceptBtn}>Agree and Continue</button>
       </div>
     </div>
   );
@@ -784,10 +822,10 @@ function ChatBot() {
                                   {editingSessionId === sess.id ? (
                                       <div style={styles.editRow}>
                                           <input 
-                                            value={editTitleInput} 
-                                            onChange={(e) => setEditTitleInput(e.target.value)} 
-                                            onClick={(e) => e.stopPropagation()}
-                                            style={styles.editInput}
+                                              value={editTitleInput} 
+                                              onChange={(e) => setEditTitleInput(e.target.value)} 
+                                              onClick={(e) => e.stopPropagation()}
+                                              style={styles.editInput}
                                           />
                                           <button onClick={(e) => saveSessionTitle(e)} style={styles.saveBtn}>✓</button>
                                       </div>
@@ -817,7 +855,7 @@ function ChatBot() {
             
             <div style={{ textAlign: 'center' }}>
                 <div style={{ color: 'white', fontWeight: 'bold', fontSize: '18px' }}>Farm Buddy 🌾</div>
-                <div style={{ fontSize: '12px', color: '#81C784' }}>Genesis Edition v106.0</div>
+                <div style={{ fontSize: '12px', color: '#81C784' }}>Genesis Edition v107.0</div>
             </div>
             
             <button onClick={(e) => handleClearChat(e)} style={styles.backBtn} title="Clear">🗑️</button>
@@ -1017,16 +1055,17 @@ const styles = {
     sendOutlineBtn: { width: '50px', height: '50px', borderRadius: '50%', backgroundColor: 'transparent', border: '2px solid white', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22px', cursor: 'pointer', flexShrink: 0, boxShadow: '0 0 15px rgba(255,255,255,0.05)', transition: 'all 0.2s ease' },
     
     modalOverlay: { position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', backgroundColor: 'rgba(0,0,0,0.85)', zIndex: 10002, display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'auto', backdropFilter: 'blur(4px)' },
-    modalContent: { width: '90%', maxWidth: '550px', backgroundColor: 'white', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)', display: 'flex', flexDirection: 'column', maxHeight: '85vh', animation: 'fadeIn 0.2s ease-out' },
+    modalContent: { width: '90%', maxWidth: '600px', backgroundColor: 'white', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)', display: 'flex', flexDirection: 'column', maxHeight: '85vh', animation: 'fadeIn 0.2s ease-out' },
     modalHeader: { padding: '20px 24px', backgroundColor: '#F3F4F6', borderBottom: '1px solid #E5E7EB', fontWeight: 'bold', fontSize: '16px', display: 'flex', justifyContent: 'space-between', color: '#1F2937' },
     modalBody: { padding: '24px', overflowY: 'auto', color: '#4B5563', fontSize: '14px', lineHeight: '1.6', flex: 1 },
     closeX: { background: 'none', border: 'none', fontSize: '24px', cursor: 'pointer', color: '#9CA3AF' },
     acceptBtn: { width: '100%', padding: '20px', backgroundColor: '#2E7D32', color: 'white', border: 'none', fontWeight: 'bold', fontSize: '15px', cursor: 'pointer', textTransform: 'uppercase', letterSpacing: '1px' },
     warnText: { color: '#DC2626', fontWeight: 'bold', borderBottom:'2px solid #F3F4F6', paddingBottom:'12px', marginBottom:'16px', textAlign:'center', fontSize: '15px' },
+    langBlock: { marginBottom: '25px', borderBottom: '1px solid #eee', paddingBottom: '15px' },
     legalLinks: { textAlign: 'center', marginTop: '12px', fontSize: '12px', color: '#666' },
     readTerms: { color: '#81C784', textDecoration: 'underline', cursor: 'pointer', fontWeight: 'bold', marginLeft: '5px' },
     imgBadge: { color: '#81C784', fontSize: '12px', marginTop: '10px', display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'center', backgroundColor: 'rgba(46, 125, 50, 0.1)', padding: '4px 10px', borderRadius: '12px', width: 'fit-content', margin: '10px auto 0 auto' },
     delBadge: { background: '#EF4444', color: 'white', border: 'none', borderRadius: '50%', width: '18px', height: '18px', fontSize: '10px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }
 };
 
-export default ChatBot;
+export default ChatBot; 

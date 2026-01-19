@@ -5,13 +5,13 @@ import {
   WiHumidity, WiThermometer, WiRain, WiBarometer, WiTime3 
 } from 'react-icons/wi';
 import { 
-  IoMdAdd, IoMdSearch, IoMdVolumeHigh, IoMdVolumeOff, IoMdClose, IoMdNavigate, IoMdArrowBack 
+  IoMdAdd, IoMdSearch, IoMdVolumeHigh, IoMdVolumeOff, IoMdClose, IoMdNavigate, IoMdArrowBack, IoMdRefresh 
 } from 'react-icons/io';
-import { MdLocationOn, MdDelete, MdGpsFixed } from 'react-icons/md';
+import { MdLocationOn, MdDelete, MdGpsFixed, MdUpdate } from 'react-icons/md';
 import { FaMaskFace } from 'react-icons/fa6'; 
 import { FaWind } from 'react-icons/fa';
 
-// --- ASSETS (MATCHING YOUR EXACT FILENAMES) ---
+// --- ASSETS (UNCHANGED) ---
 import clearDayVideo from '../assets/weather-videos/clear-day.mp4';
 import clearNightVideo from '../assets/weather-videos/clear-night.mp4';
 import cloudyDayVideo from '../assets/weather-videos/cloudy-day.mp4';
@@ -28,7 +28,7 @@ import stormVideo from '../assets/weather-videos/thunder.mp4';
 import sunriseVideo from '../assets/weather-videos/sunrise.mp4';
 import sunsetVideo from '../assets/weather-videos/sunset.mp4';
 
-// --- SOUNDS ---
+// --- SOUNDS (UNCHANGED) ---
 import clearDaySound from '../assets/weather-sounds/clear-day.mp3';
 import clearNightSound from '../assets/weather-sounds/clear-night.mp3';
 import rainDaySound from '../assets/weather-sounds/rainy-day.mp3';
@@ -37,6 +37,33 @@ import stormSound from '../assets/weather-sounds/thunderstorm.mp3';
 import mistSound from '../assets/weather-sounds/mist.mp3';
 import sunriseSound from '../assets/weather-sounds/sunrise.mp3';
 import sunsetSound from '../assets/weather-sounds/sunset.mp3';
+
+// --- HELPER COMPONENTS ---
+
+// 1. Shimmering Skeleton Loader
+const SkeletonLoader = () => (
+  <div style={styles.skeletonContainer}>
+    <div style={{...styles.skeletonBox, height: '40px', width: '60%', marginBottom: '20px'}}></div>
+    <div style={{...styles.skeletonBox, height: '150px', width: '150px', borderRadius: '50%', marginBottom: '20px'}}></div>
+    <div style={{...styles.skeletonBox, height: '30px', width: '40%', marginBottom: '40px'}}></div>
+    <div style={{...styles.skeletonBox, height: '200px', width: '100%', borderRadius: '24px'}}></div>
+    <style>{`
+      @keyframes shimmer { 0% { background-position: -200px 0; } 100% { background-position: 200px 0; } }
+    `}</style>
+  </div>
+);
+
+// 2. Toast Notification
+const Toast = ({ message, show }) => (
+  <div style={{
+    ...styles.toast,
+    opacity: show ? 1 : 0,
+    transform: show ? 'translate(-50%, 0)' : 'translate(-50%, 20px)',
+    pointerEvents: 'none'
+  }}>
+    {message}
+  </div>
+);
 
 const Weather = () => {
   const navigate = useNavigate();
@@ -47,6 +74,7 @@ const Weather = () => {
   const [currentIndex, setCurrentIndex] = useState(0); 
   const [loading, setLoading] = useState(true);
   const [isSoundOn, setIsSoundOn] = useState(false);
+  const [unit, setUnit] = useState('C'); // 'C' or 'F'
   
   const [showCityManager, setShowCityManager] = useState(false);
   const [showSearchOverlay, setShowSearchOverlay] = useState(false); 
@@ -55,34 +83,80 @@ const Weather = () => {
   const [gpsResult, setGpsResult] = useState(null); 
   const [isSearchingGPS, setIsSearchingGPS] = useState(false);
   const [showFullForecast, setShowFullForecast] = useState(false);
+
+  // UX States
+  const [toastMsg, setToastMsg] = useState("");
+  const [showToast, setShowToast] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   
-  const [touchStart, setTouchStart] = useState(null);
-  const [touchEnd, setTouchEnd] = useState(null);
+  // Touch Logic
+  const [touchStartX, setTouchStartX] = useState(null);
+  const [touchEndX, setTouchEndX] = useState(null);
+  const [touchStartY, setTouchStartY] = useState(null);
+  const [touchEndY, setTouchEndY] = useState(null);
 
   const popularCities = ['Mumbai', 'Delhi', 'Bangalore', 'Hyderabad', 'Chennai', 'Kolkata', 'Pune', 'Jaipur'];
 
   useEffect(() => { loadAllCities(); }, []);
 
-  // --- SYNC & AUDIO LOGIC (FIXED) ---
+  // --- TOAST HELPER ---
+  const triggerToast = (msg) => {
+    setToastMsg(msg);
+    setShowToast(true);
+    setTimeout(() => setShowToast(false), 3000);
+  };
+
+  // --- UNIT CONVERSION ALGORITHM ---
+  const getTemp = (celsius) => {
+      if (unit === 'C') return Math.round(celsius);
+      return Math.round((celsius * 9/5) + 32);
+  };
+
+  // --- AQI COLOR ALGORITHM ---
+  const getAqiColor = (pm10) => {
+      if (!pm10) return 'rgba(255,255,255,0.2)';
+      if (pm10 <= 50) return 'rgba(76, 175, 80, 0.4)'; // Good (Green)
+      if (pm10 <= 100) return 'rgba(255, 235, 59, 0.4)'; // Moderate (Yellow)
+      if (pm10 <= 200) return 'rgba(255, 152, 0, 0.4)'; // Unhealthy (Orange)
+      return 'rgba(244, 67, 54, 0.4)'; // Hazardous (Red)
+  };
+
+  // --- SUN POSITION ALGORITHM ---
+  const getSunPosition = (sunriseStr, sunsetStr) => {
+      try {
+          const now = new Date();
+          const parseTime = (str) => {
+             const [time, modifier] = str.split(' ');
+             let [hours, minutes] = time.split(':');
+             if (hours === '12') hours = '00';
+             if (modifier === 'PM') hours = parseInt(hours, 10) + 12;
+             const d = new Date();
+             d.setHours(hours, minutes, 0);
+             return d;
+          };
+          const sunrise = parseTime(sunriseStr);
+          const sunset = parseTime(sunsetStr);
+          if (now < sunrise) return 0;
+          if (now > sunset) return 100;
+          const totalDuration = sunset - sunrise;
+          const elapsed = now - sunrise;
+          return Math.min(100, Math.max(0, (elapsed / totalDuration) * 100));
+      } catch (e) { return 50; } 
+  };
+
+  // --- AUDIO SYNC LOGIC ---
   useEffect(() => {
     if (savedWeatherList.length > 0) {
       const currentCity = savedWeatherList[currentIndex];
       const { sound } = getAssetLogic(currentCity);
       
-      // Update source only if changed
       if (audioRef.current.src !== sound && sound) {
         audioRef.current.src = sound;
         audioRef.current.loop = true;
       }
 
-      // Play logic based on user preference
       if (isSoundOn) {
-          const playPromise = audioRef.current.play();
-          if (playPromise !== undefined) {
-              playPromise.catch(() => {
-                  // Auto-play might be blocked, harmless error
-              });
-          }
+          audioRef.current.play().catch(() => {});
       } else {
           audioRef.current.pause();
       }
@@ -94,16 +168,15 @@ const Weather = () => {
       }));
     }
 
-    // 👇 THIS IS THE CRITICAL FIX: CLEANUP FUNCTION
     return () => {
         if (audioRef.current) {
             audioRef.current.pause();
-            audioRef.current.currentTime = 0; // Reset audio
+            audioRef.current.currentTime = 0;
         }
     };
   }, [currentIndex, savedWeatherList, isSoundOn]);
 
-  // --- DATA LOADING ---
+  // --- DATA LOADING (HIGH ACCURACY GPS) ---
   const loadAllCities = async () => {
     setLoading(true);
     const saved = localStorage.getItem('farmBuddy_cities');
@@ -113,18 +186,26 @@ const Weather = () => {
         if (navigator.geolocation) {
              navigator.geolocation.getCurrentPosition(
                 async (pos) => {
+                    // 🚀 HIGH ACCURACY FETCH using Lat/Lon directly
                     const data = await fetchSingleCity(`${pos.coords.latitude},${pos.coords.longitude}`);
                     if(data) {
                         setSavedWeatherList([data]);
                         saveCityToLocal(data, data.location.name); 
+                        triggerToast(`Located: ${data.location.name}`);
                     }
                     setLoading(false);
                 },
-                () => setLoading(false)
+                (err) => {
+                    console.error("GPS Error", err);
+                    setLoading(false);
+                    triggerToast("GPS Failed. Please search manually.");
+                },
+                { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 } // 🔥 CRITICAL ACCURACY FIX
             );
         } else { setLoading(false); }
     } else {
         const promises = citiesToFetch.map(async (city) => {
+            // Always fetch fresh data using LAT/LON, never just name
             const data = await fetchSingleCity(`${city.lat},${city.lon}`);
             if (data) {
                 data.location.name = city.name; 
@@ -141,56 +222,55 @@ const Weather = () => {
   const fetchSingleCity = async (query) => {
     try {
       const apiKey = import.meta.env.VITE_WEATHER_KEY;
-      const url = `https://api.weatherapi.com/v1/forecast.json?key=${apiKey}&q=${query}&days=7&aqi=yes&alerts=no`;
+      // Using forecast.json allows us to get current + forecast in one accurate call
+      const url = `https://api.weatherapi.com/v1/forecast.json?key=${apiKey}&q=${query}&days=7&aqi=yes&alerts=yes`;
       const response = await axios.get(url);
       return response.data;
-    } catch (err) { return null; }
+    } catch (err) { 
+        console.error(err);
+        triggerToast("Network Error: Could not fetch weather");
+        return null; 
+    }
   };
 
-  // --- ASSET SELECTION LOGIC ---
+  const handleRefresh = async () => {
+      setIsRefreshing(true);
+      await loadAllCities();
+      setIsRefreshing(false);
+      triggerToast("Data Updated Successfully");
+  };
+
+  // --- EXPANDED ASSET LOGIC (ACCURACY FIX) ---
   const getAssetLogic = (currentCityData) => {
     if (!currentCityData) return { video: clearDayVideo, sound: clearDaySound };
     const code = currentCityData.current.condition.code;
     const isDay = currentCityData.current.is_day;
     const hour = new Date().getHours();
 
-    // 1. Thunder
-    if ([1087, 1273, 1276, 1279, 1282].includes(code)) {
-        return { video: stormVideo, sound: stormSound };
-    }
+    // ⛈️ THUNDERSTORM (1087, 1273, 1276, 1279, 1282)
+    if ([1087, 1273, 1276, 1279, 1282].includes(code)) return { video: stormVideo, sound: stormSound };
 
-    // 2. Drizzle (Light Rain)
+    // 🌧️ DRIZZLE / PATCHY RAIN (1063, 1150, 1153, 1180, 1183, 1186, 1189, 1240)
     if ([1063, 1150, 1153, 1180, 1183, 1186, 1189, 1240].includes(code)) {
-        return isDay ? { video: drizzleDayVideo, sound: rainDaySound } 
-                     : { video: rainNightVideo, sound: rainNightSound };
+        return isDay ? { video: drizzleDayVideo, sound: rainDaySound } : { video: rainNightVideo, sound: rainNightSound };
     }
 
-    // 3. Rain (Moderate/Heavy)
-    if ([1192, 1195, 1198, 1201, 1243, 1246].includes(code)) {
+    // ☔ HEAVY RAIN (1192, 1195, 1198, 1201, 1243, 1246, 1249, 1252)
+    if ([1192, 1195, 1198, 1201, 1243, 1246, 1249, 1252].includes(code)) {
         if (hour >= 16 && hour <= 19) return { video: rainEveningVideo, sound: rainDaySound };
-        return isDay ? { video: rainDayVideo, sound: rainDaySound } 
-                     : { video: rainNightVideo, sound: rainNightSound };
+        return isDay ? { video: rainDayVideo, sound: rainDaySound } : { video: rainNightVideo, sound: rainNightSound };
     }
 
-    // 4. Mist / Fog
-    if ([1030, 1135, 1147].includes(code)) {
-        return isDay ? { video: mistDayVideo, sound: mistSound } 
-                     : { video: mistNightVideo, sound: mistSound };
-    }
+    // 🌫️ MIST / FOG / HAZE (1030, 1135, 1147)
+    if ([1030, 1135, 1147].includes(code)) return isDay ? { video: mistDayVideo, sound: mistSound } : { video: mistNightVideo, sound: mistSound };
 
-    // 5. Cloudy / Overcast
-    if ([1006, 1009].includes(code)) {
-        return isDay ? { video: cloudyDayVideo, sound: clearDaySound } 
-                     : { video: cloudyNightVideo, sound: clearNightSound };
-    }
+    // ☁️ CLOUDY / OVERCAST (1006, 1009)
+    if ([1006, 1009].includes(code)) return isDay ? { video: cloudyDayVideo, sound: clearDaySound } : { video: cloudyNightVideo, sound: clearNightSound };
 
-    // 6. Partly Cloudy
-    if (code === 1003) {
-        return isDay ? { video: partlyCloudyDayVideo, sound: clearDaySound } 
-                     : { video: partlyCloudyNightVideo, sound: clearNightSound };
-    }
+    // ⛅ PARTLY CLOUDY (1003)
+    if (code === 1003) return isDay ? { video: partlyCloudyDayVideo, sound: clearDaySound } : { video: partlyCloudyNightVideo, sound: clearNightSound };
 
-    // 7. Clear / Sunny
+    // ☀️ CLEAR / SUNNY (1000)
     if (isDay) {
         if (hour === 6) return { video: sunriseVideo, sound: sunriseSound };
         if (hour >= 17 && hour <= 18) return { video: sunsetVideo, sound: sunsetSound };
@@ -199,6 +279,7 @@ const Weather = () => {
     return { video: clearNightVideo, sound: clearNightSound };
   };
 
+  // --- HANDLERS ---
   const handleSearchChange = async (e) => {
     const query = e.target.value;
     setSearchQuery(query);
@@ -220,10 +301,11 @@ const Weather = () => {
               const data = await fetchSingleCity(`${pos.coords.latitude},${pos.coords.longitude}`);
               setGpsResult(data);
               setIsSearchingGPS(false);
+              triggerToast("Precise Location Found");
           }, (err) => {
-              alert("Location access denied.");
+              triggerToast("GPS Permission Denied");
               setIsSearchingGPS(false);
-          });
+          }, { enableHighAccuracy: true, timeout: 10000 });
       }
   };
 
@@ -258,6 +340,7 @@ const Weather = () => {
     setGpsResult(null);
     setShowSearchOverlay(false); 
     setShowCityManager(false);
+    triggerToast(`Added ${selectedName}`);
   };
 
   const saveCityToLocal = (weatherData, forceName) => {
@@ -265,6 +348,7 @@ const Weather = () => {
       const currentList = saved ? JSON.parse(saved) : [];
       const nameToSave = forceName || weatherData.location.name;
 
+      // Save Lat/Lon to ensure next load is accurate
       if (!currentList.some(c => c.name === nameToSave)) {
           const newEntry = { 
               name: nameToSave, 
@@ -290,21 +374,52 @@ const Weather = () => {
       if (currentIndex >= newList.length) setCurrentIndex(Math.max(0, newList.length - 1));
   };
 
-  if (loading) return <div style={styles.loading}>Loading Weather...</div>;
+  // --- TOUCH HANDLERS (SWIPE & REFRESH) ---
+  const onTouchStart = (e) => { 
+      setTouchEndX(null); 
+      setTouchStartX(e.targetTouches[0].clientX); 
+      setTouchEndY(null);
+      setTouchStartY(e.targetTouches[0].clientY);
+  };
+  
+  const onTouchMove = (e) => {
+      setTouchEndX(e.targetTouches[0].clientX);
+      setTouchEndY(e.targetTouches[0].clientY);
+  };
+  
+  const onTouchEnd = () => {
+    if (!touchStartX || !touchEndX || !touchStartY || !touchEndY) return;
+    
+    const xDiff = touchStartX - touchEndX;
+    const yDiff = touchStartY - touchEndY; // Positive = Scroll Up, Negative = Drag Down
+
+    // Horizontal Swipe (City Switch)
+    if (Math.abs(xDiff) > 50 && Math.abs(yDiff) < 30) {
+        if (xDiff > 50 && currentIndex < savedWeatherList.length - 1) setCurrentIndex(currentIndex + 1);
+        if (xDiff < -50 && currentIndex > 0) setCurrentIndex(currentIndex - 1);
+    }
+
+    // Vertical Drag (Refresh)
+    if (yDiff < -100 && Math.abs(xDiff) < 40) {
+        handleRefresh();
+    }
+  };
+
+  // --- RENDER ---
+  if (loading) return (
+      <div style={styles.loadingContainer}>
+          <SkeletonLoader />
+      </div>
+  );
+  
   if (savedWeatherList.length === 0) return <div style={styles.loading}>No locations found.</div>;
 
   const weather = savedWeatherList[currentIndex]; 
   const { current, location, forecast } = weather;
   const { video } = getAssetLogic(weather);
   const visibleDays = showFullForecast ? forecast.forecastday : forecast.forecastday.slice(0, 3);
-
-  const onTouchStart = (e) => { setTouchEnd(null); setTouchStart(e.targetTouches[0].clientX); };
-  const onTouchMove = (e) => setTouchEnd(e.targetTouches[0].clientX);
-  const onTouchEnd = () => {
-    if (!touchStart || !touchEnd) return;
-    if (touchStart - touchEnd > 50 && currentIndex < savedWeatherList.length - 1) setCurrentIndex(currentIndex + 1);
-    if (touchStart - touchEnd < -50 && currentIndex > 0) setCurrentIndex(currentIndex - 1);
-  };
+  const sunPosition = getSunPosition(forecast.forecastday[0].astro.sunrise, forecast.forecastday[0].astro.sunset);
+  const aqiColor = getAqiColor(current.air_quality?.pm10);
 
   return (
     <div style={styles.container} onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd}>
@@ -312,6 +427,14 @@ const Weather = () => {
         <source src={video} type="video/mp4" />
       </video>
       <div style={styles.overlay}></div>
+      
+      {isRefreshing && (
+          <div style={styles.refreshIndicator}>
+              <div style={styles.spinner}></div>
+          </div>
+      )}
+
+      <Toast message={toastMsg} show={showToast} />
 
       {/* HEADER */}
       <div style={styles.topBar}>
@@ -319,10 +442,18 @@ const Weather = () => {
            <button onClick={() => setShowCityManager(true)} style={styles.iconBtn}><IoMdAdd size={30}/></button>
            <div style={styles.locationText}>
              <span style={styles.cityTitle}>{location.name}</span>
-             <span style={styles.regionTitle}>{location.region}</span>
+             <span style={styles.regionTitle}>
+                {location.region}
+                <span style={{marginLeft:'5px', opacity:0.6, fontSize:'10px'}}>
+                   <MdUpdate style={{marginBottom:'-2px'}}/> {new Date(current.last_updated).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}
+                </span>
+             </span>
            </div>
          </div>
          <div style={styles.topRight}>
+            <button onClick={() => setUnit(unit === 'C' ? 'F' : 'C')} style={styles.unitBtn}>
+                °{unit}
+            </button>
             <button onClick={() => setIsSoundOn(!isSoundOn)} style={styles.iconBtn}>
                 {isSoundOn ? <IoMdVolumeHigh size={26} /> : <IoMdVolumeOff size={26} />}
             </button>
@@ -356,7 +487,7 @@ const Weather = () => {
                                   <>
                                      <div style={styles.gpsRow} onClick={handleGPSClick}>
                                          {isSearchingGPS ? <span style={styles.spinner}></span> : <MdLocationOn size={20} color="#4CAF50"/>}
-                                         {isSearchingGPS ? "Finding..." : "Use Current Location"}
+                                         {isSearchingGPS ? "Pinpointing Location..." : "Use Precise GPS"}
                                      </div>
                                      <p style={styles.popularLabel}>POPULAR CITIES</p>
                                      <div style={styles.popularGrid}>
@@ -374,7 +505,7 @@ const Weather = () => {
                                         <MdGpsFixed color="#4CAF50" size={24} />
                                         <div>
                                             <div style={{fontWeight:'bold', fontSize:'16px'}}>{gpsResult.location.name}</div>
-                                            <div style={{fontSize:'12px', opacity:0.7}}>{gpsResult.location.region} (Current Location)</div>
+                                            <div style={{fontSize:'12px', opacity:0.7}}>{gpsResult.location.region} (Detected)</div>
                                         </div>
                                     </div>
                                     <IoMdAdd size={24} color="#4CAF50"/>
@@ -403,13 +534,15 @@ const Weather = () => {
                                   <div key={idx} style={styles.cityCard} onClick={() => { setCurrentIndex(idx); setShowCityManager(false); }}>
                                       <div style={styles.cardLeft}>
                                           <span style={styles.cardCityName}>{city.location.name}</span>
-                                          <span style={styles.cardAqi}>AQI {city.current.air_quality?.pm10 ? Math.round(city.current.air_quality.pm10) : 'N/A'}</span>
+                                          <span style={{...styles.cardAqi, color: getAqiColor(city.current.air_quality?.pm10).replace('0.4','1')}}>
+                                              AQI {city.current.air_quality?.pm10 ? Math.round(city.current.air_quality.pm10) : 'N/A'}
+                                          </span>
                                       </div>
                                       <div style={styles.cardRight}>
-                                          <span style={styles.cardTemp}>{Math.round(city.current.temp_c)}°</span>
+                                          <span style={styles.cardTemp}>{getTemp(city.current.temp_c)}°</span>
                                           <div style={{display:'flex', gap:'10px', alignItems:'center'}}>
-                                             <span style={styles.cardHighLow}>{Math.round(city.forecast.forecastday[0].day.maxtemp_c)}° / {Math.round(city.forecast.forecastday[0].day.mintemp_c)}°</span>
-                                             {savedWeatherList.length > 1 && <MdDelete size={20} color="#ff6b6b" onClick={(e) => handleRemoveCity(e, idx)} />}
+                                              <span style={styles.cardHighLow}>{getTemp(city.forecast.forecastday[0].day.maxtemp_c)}° / {getTemp(city.forecast.forecastday[0].day.mintemp_c)}°</span>
+                                              {savedWeatherList.length > 1 && <MdDelete size={20} color="#ff6b6b" onClick={(e) => handleRemoveCity(e, idx)} />}
                                           </div>
                                       </div>
                                   </div>
@@ -425,11 +558,13 @@ const Weather = () => {
       <div style={styles.scrollContent}>
           <div style={styles.hero}>
               <div style={styles.tempWrapper}>
-                  <h1 style={styles.bigTemp}>{Math.round(current.temp_c)}</h1>
-                  <span style={styles.celcius}>°C</span>
+                  <h1 style={styles.bigTemp}>{getTemp(current.temp_c)}</h1>
+                  <span style={styles.celcius}>°{unit}</span>
               </div>
               <p style={styles.condition}>{current.condition.text}</p>
-              <div style={styles.aqiPill}><FaMaskFace /> AQI {Math.round(current.air_quality?.pm10 || 0)}</div>
+              <div style={{...styles.aqiPill, background: aqiColor, borderColor: aqiColor}}>
+                  <FaMaskFace /> AQI {Math.round(current.air_quality?.pm10 || 0)}
+              </div>
           </div>
 
           <div style={styles.glassSection}>
@@ -445,8 +580,8 @@ const Weather = () => {
                           {day.day.daily_chance_of_rain > 30 && <span style={styles.rainChance}>{day.day.daily_chance_of_rain}%</span>}
                       </div>
                       <div style={styles.tempRange}>
-                          <span style={{fontWeight:'600'}}>{Math.round(day.day.maxtemp_c)}°</span>
-                          <span style={{opacity:0.6}}>{Math.round(day.day.mintemp_c)}°</span>
+                          <span style={{fontWeight:'600'}}>{getTemp(day.day.maxtemp_c)}°</span>
+                          <span style={{opacity:0.6}}>{getTemp(day.day.mintemp_c)}°</span>
                       </div>
                   </div>
               ))}
@@ -463,7 +598,7 @@ const Weather = () => {
                           <div key={i} style={styles.hourItem}>
                               <span>{new Date(h.time).getHours()}:00</span>
                               <img src={h.condition.icon} style={{width:'32px'}} alt=""/>
-                              <span style={{fontWeight:'bold'}}>{Math.round(h.temp_c)}°</span>
+                              <span style={{fontWeight:'bold'}}>{getTemp(h.temp_c)}°</span>
                           </div>
                       )
                   })}
@@ -487,6 +622,20 @@ const Weather = () => {
                       <div style={styles.cardLabel}>Sun & Moon</div>
                       <div style={styles.sunArcWrapper}>
                           <div style={styles.sunArc}></div>
+                          {/* Live Sun Tracker Icon */}
+                          <div style={{
+                              position: 'absolute',
+                              top: 0, left: '50%',
+                              width: '100%', height: '70px',
+                              transform: `translateX(-50%) rotate(${(sunPosition / 100 * 180) - 90}deg)`
+                          }}>
+                              <div style={{
+                                  width: '12px', height: '12px', background: '#FFD700', borderRadius: '50%',
+                                  position: 'absolute', top: '-6px', left: '50%', transform: 'translateX(-50%)',
+                                  boxShadow: '0 0 10px #FFD700'
+                              }}></div>
+                          </div>
+                          
                           <div style={styles.sunTimes}>
                               <div style={{fontSize:'10px', opacity:0.8}}>Sunrise</div>
                               <div style={{fontWeight:'bold'}}>{forecast.forecastday[0].astro.sunrise}</div>
@@ -506,7 +655,7 @@ const Weather = () => {
                       </div>
                       <div style={styles.detailItem}>
                            <div style={styles.cardLabel}><WiThermometer size={22}/> Real Feel</div>
-                           <div style={styles.cardValue}>{Math.round(current.feelslike_c)}°</div>
+                           <div style={styles.cardValue}>{getTemp(current.feelslike_c)}°</div>
                       </div>
                       <div style={styles.detailItem}>
                            <div style={styles.cardLabel}>UV Index</div>
@@ -520,18 +669,18 @@ const Weather = () => {
               </div>
 
               <div style={styles.fullWidthCard}>
-                   <div style={{display:'flex', alignItems:'center', gap:'10px'}}>
-                       <div style={styles.cardLabel}><WiRain size={24}/> Chance of Rain</div>
-                       <div style={{fontSize:'24px', fontWeight:'bold', marginLeft:'auto'}}>
-                           {forecast.forecastday[0].day.daily_chance_of_rain}%
-                       </div>
-                   </div>
-                   <div style={{fontSize:'11px', opacity:0.6, marginTop:'5px'}}>
-                       {forecast.forecastday[0].day.daily_chance_of_rain < 10 ? "No rain expected today." :
-                        forecast.forecastday[0].day.daily_chance_of_rain < 40 ? "Low chance of rain." :
-                        forecast.forecastday[0].day.daily_chance_of_rain < 70 ? "You might need an umbrella." :
-                        "High chance of rain. Plan accordingly."}
-                   </div>
+                    <div style={{display:'flex', alignItems:'center', gap:'10px'}}>
+                        <div style={styles.cardLabel}><WiRain size={24}/> Chance of Rain</div>
+                        <div style={{fontSize:'24px', fontWeight:'bold', marginLeft:'auto'}}>
+                            {forecast.forecastday[0].day.daily_chance_of_rain}%
+                        </div>
+                    </div>
+                    <div style={{fontSize:'11px', opacity:0.6, marginTop:'5px'}}>
+                        {forecast.forecastday[0].day.daily_chance_of_rain < 10 ? "No rain expected today." :
+                         forecast.forecastday[0].day.daily_chance_of_rain < 40 ? "Low chance of rain." :
+                         forecast.forecastday[0].day.daily_chance_of_rain < 70 ? "You might need an umbrella." :
+                         "High chance of rain. Plan accordingly."}
+                    </div>
               </div>
           </div>
 
@@ -545,7 +694,12 @@ const styles = {
   container: { position:'fixed', top:0, left:0, width:'100%', height:'100%', color:'white', fontFamily:'"SF Pro Display", sans-serif', background:'#111' },
   videoBg: { position:'absolute', top:0, left:0, width:'100%', height:'100%', objectFit:'cover', zIndex:-2 },
   overlay: { position:'absolute', top:0, left:0, width:'100%', height:'100%', background:'rgba(0,0,0,0.4)', zIndex:-1 },
-  loading: { height:'100vh', display:'flex', alignItems:'center', justifyContent:'center', color:'#fff', background:'#000' },
+  loadingContainer: { height:'100vh', display:'flex', alignItems:'center', justifyContent:'center', background:'#111' },
+  skeletonContainer: { width: '80%', display: 'flex', flexDirection: 'column', alignItems: 'center' },
+  skeletonBox: { background: '#333', borderRadius: '12px', animation: 'shimmer 1.5s infinite linear', backgroundSize: '400px 100%', backgroundImage: 'linear-gradient(to right, #333 0%, #444 20%, #333 40%, #333 100%)' },
+
+  refreshIndicator: { position: 'absolute', top: '20px', left: '50%', transform: 'translateX(-50%)', zIndex: 99, background: 'rgba(0,0,0,0.7)', borderRadius: '50%', padding: '10px' },
+  toast: { position: 'fixed', bottom: '80px', left: '50%', background: '#333', color: '#fff', padding: '10px 20px', borderRadius: '25px', boxShadow: '0 4px 12px rgba(0,0,0,0.3)', transition: 'all 0.3s ease', zIndex: 1000, whiteSpace: 'nowrap', fontSize: '14px', fontWeight: '500' },
   
   topBar: { display:'flex', justifyContent:'space-between', padding:'15px 20px', alignItems:'flex-start' },
   topLeft: { display:'flex', gap:'10px', alignItems:'center' },
@@ -553,7 +707,8 @@ const styles = {
   cityTitle: { fontSize:'22px', fontWeight:'700', textShadow:'0 2px 5px rgba(0,0,0,0.5)', letterSpacing:'0.5px' },
   regionTitle: { fontSize:'12px', opacity:0.9 },
   iconBtn: { background:'transparent', border:'none', color:'white', cursor:'pointer', padding:'5px', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))' },
-  topRight: { display:'flex', gap:'10px' },
+  unitBtn: { background:'rgba(255,255,255,0.2)', border:'1px solid rgba(255,255,255,0.3)', borderRadius:'50%', width:'30px', height:'30px', color:'white', cursor:'pointer', fontSize:'14px', fontWeight:'bold', backdropFilter:'blur(5px)' },
+  topRight: { display:'flex', gap:'10px', alignItems: 'center' },
   dotsContainer: { display: 'flex', justifyContent: 'center', gap: '8px', position: 'absolute', top: '70px', width: '100%', zIndex: 5 },
   dot: { width: '6px', height: '6px', borderRadius: '50%', transition: '0.3s' },
 
@@ -562,7 +717,7 @@ const styles = {
   bigTemp: { fontSize:'96px', fontWeight:'200', lineHeight:'1', margin:0, textShadow:'0 10px 30px rgba(0,0,0,0.2)' },
   celcius: { fontSize:'30px', fontWeight:'400', marginTop:'15px' },
   condition: { fontSize:'24px', textTransform:'capitalize', margin:'5px 0 15px', fontWeight:'500' },
-  aqiPill: { display:'inline-flex', alignItems:'center', gap:'8px', background:'rgba(255,255,255,0.2)', padding:'6px 16px', borderRadius:'20px', fontSize:'14px', backdropFilter:'blur(10px)', border:'1px solid rgba(255,255,255,0.1)' },
+  aqiPill: { display:'inline-flex', alignItems:'center', gap:'8px', padding:'6px 16px', borderRadius:'20px', fontSize:'14px', backdropFilter:'blur(10px)', border:'1px solid rgba(255,255,255,0.1)', transition: 'background 0.5s' },
 
   scrollContent: { height:'100%', overflowY:'auto', padding:'0 20px', scrollbarWidth:'none' },
   
@@ -591,7 +746,7 @@ const styles = {
       background:'linear-gradient(145deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%)', 
       backdropFilter:'blur(20px)', borderRadius:'24px', 
       padding:'18px', aspectRatio:'1/1', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'space-between',
-      border:'1px solid rgba(255,255,255,0.1)', boxShadow:'0 4px 20px rgba(0,0,0,0.1)'
+      border:'1px solid rgba(255,255,255,0.1)', boxShadow:'0 4px 20px rgba(0,0,0,0.1)', position: 'relative'
   },
   
   modernBigCard: {
@@ -615,7 +770,6 @@ const styles = {
   
   compassContainer: { position:'relative', display:'flex', flexDirection:'column', alignItems:'center' },
   compassCircle: { width:'55px', height:'55px', borderRadius:'50%', border:'2px solid rgba(255,255,255,0.3)', display:'flex', alignItems:'center', justifyContent:'center', marginBottom:'5px' },
-  directionText: { position:'absolute', fontSize:'9px', fontWeight:'bold', bottom:'15px' },
   windSpeed: { fontSize:'18px', fontWeight:'bold' },
   sunArcWrapper: { position:'relative', width:'100%', height:'50px', marginTop:'10px', display:'flex', justifyContent:'center' },
   sunArc: { width:'80%', height:'70px', borderTop:'2px solid rgba(255,255,255,0.5)', borderLeft:'2px solid transparent', borderRight:'2px solid transparent', borderRadius:'50% 50% 0 0', position:'absolute', top:0 },
@@ -638,7 +792,7 @@ const styles = {
   },
   cardLeft: { display:'flex', flexDirection:'column', gap:'5px' },
   cardCityName: { fontSize:'20px', fontWeight:'700' },
-  cardAqi: { fontSize:'13px', opacity:0.6 },
+  cardAqi: { fontSize:'13px', fontWeight:'bold' },
   cardRight: { display:'flex', flexDirection:'column', alignItems:'flex-end', gap:'5px' },
   cardTemp: { fontSize:'32px', fontWeight:'600' },
   cardHighLow: { fontSize:'13px', opacity:0.6 },
@@ -654,7 +808,7 @@ const styles = {
      marginTop: '15px', padding: '15px', background: 'rgba(76, 175, 80, 0.1)', borderRadius: '15px', border: '1px solid #4CAF50',
      display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer'
   },
-  spinner: { width:'20px', height:'20px', border:'2px solid #4CAF50', borderTop:'2px solid transparent', borderRadius:'50%', animation:'spin 1s linear infinite' },
+  spinner: { width:'20px', height:'20px', border:'2px solid #fff', borderTop:'2px solid transparent', borderRadius:'50%', animation:'spin 1s linear infinite' },
   
   popularLabel: { fontSize:'12px', opacity:0.5, marginTop:'30px', marginBottom:'15px', letterSpacing:'1px' },
   popularGrid: { display:'flex', flexWrap:'wrap', gap:'12px' },
