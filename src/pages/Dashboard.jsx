@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios'; 
 import LocationSheet from '../components/LocationSheet'; 
+import BottomNavigation from '../components/BottomNavigation'; // <--- NEW IMPORT
 import { ChevronDown } from 'lucide-react'; 
 
 // --- ASSET IMPORTS ---
@@ -42,33 +43,26 @@ function Dashboard() {
       ? 'https://images.unsplash.com/photo-1652454159675-11ead6275680?q=80&w=1170&auto=format&fit=crop' 
       : 'https://images.unsplash.com/photo-1625246333195-78d9c38ad449?q=80&w=2940&auto=format&fit=crop');
 
-    // --- 1. NEW: STRICT GPS CHECK ---
-    // If GPS is OFF/Denied, force the popup open immediately.
+    // --- 1. GPS CHECK ---
     if ("geolocation" in navigator) {
         navigator.geolocation.getCurrentPosition(
-            (position) => {
-                // GPS is ON. Do nothing, let the saved location logic handle it.
-            },
+            () => {}, // GPS On - Do nothing
             (error) => {
-                // GPS is OFF or DENIED -> Force Open Modal
-                // Error Code 1 = Denied, 2 = Unavailable (GPS Off), 3 = Timeout
-                console.warn("GPS Check Failed:", error.message);
+                console.warn("GPS is Off/Denied:", error.message);
                 setShowLocModal(true);
             },
-            { timeout: 4000, enableHighAccuracy: true }
+            { timeout: 4000 }
         );
     } else {
-        // Browser doesn't support GPS -> Force Open Modal
         setShowLocModal(true);
     }
 
-    // --- 2. EXISTING LOCATION LOADING ---
-    const loadLocation = () => {
+    // --- 2. DATA LOADING LOGIC ---
+    const loadData = () => {
+        // A. Handle Delivery Location Text
         const savedLoc = localStorage.getItem('userLocation'); 
         const savedTitle = localStorage.getItem('locationTitle');
-        const savedLat = localStorage.getItem('userLat');
-        const savedLng = localStorage.getItem('userLng');
-
+        
         // Fix Comma Bug check
         const isValidLoc = savedLoc && savedLoc.replace(/, /g, '').trim().length > 0;
 
@@ -78,18 +72,35 @@ function Dashboard() {
         } else {
             setUserLocation(savedLoc);
             if(savedTitle) setLocationTitle(savedTitle); 
+        }
+
+        // B. Handle Weather Card Data (PRIORITY: Weather Page > Delivery Loc)
+        const lastWeatherCity = localStorage.getItem('farmBuddy_lastCity');
+        
+        if (lastWeatherCity) {
+            // Priority 1: User manually selected a city in Weather Page
+            const cityData = JSON.parse(lastWeatherCity);
+            if (cityData.lat && cityData.lon) {
+                fetchLiveWeather(`${cityData.lat},${cityData.lon}`);
+            } else {
+                fetchLiveWeather(cityData.name);
+            }
+        } else {
+            // Priority 2: Fallback to Delivery Location
+            const savedLat = localStorage.getItem('userLat');
+            const savedLng = localStorage.getItem('userLng');
             
             if (savedLat && savedLng && savedLat !== 'undefined') {
                 fetchLiveWeather(`${savedLat},${savedLng}`);
-            } else {
+            } else if (savedLoc) {
                 fetchLiveWeather(savedLoc);
             }
         }
     };
 
-    loadLocation();
-    window.addEventListener('storage', loadLocation);
-    return () => window.removeEventListener('storage', loadLocation);
+    loadData();
+    window.addEventListener('storage', loadData);
+    return () => window.removeEventListener('storage', loadData);
 
   }, []);
 
@@ -133,10 +144,15 @@ function Dashboard() {
     
     localStorage.setItem('userLocation', fullAddress);
     localStorage.setItem('locationTitle', title);
+    
     if (lat && lng) {
       localStorage.setItem('userLat', lat);
       localStorage.setItem('userLng', lng);
-      fetchLiveWeather(`${lat},${lng}`);
+      
+      // Only force update weather if user hasn't manually set a weather city
+      if (!localStorage.getItem('farmBuddy_lastCity')) {
+          fetchLiveWeather(`${lat},${lng}`);
+      }
     }
     setShowLocModal(false); 
   };
@@ -157,6 +173,7 @@ function Dashboard() {
                   <div style={{fontSize:'20px', fontWeight:'800', color:'white', textShadow:'0 2px 4px rgba(0,0,0,0.6)', textTransform:'capitalize'}}>
                       <span style={{color:'#ff5252', marginRight:'6px'}}>📍</span>{locationTitle} 
                   </div>
+                  {/* Subtle Chevron */}
                   <ChevronDown size={20} color="white" style={{marginLeft:'2px', marginTop:'2px', opacity:0.9}} />
               </div>
               
@@ -274,6 +291,9 @@ function Dashboard() {
         </Link>
 
       </div>
+
+      {/* 3. NEW NAVIGATION BAR */}
+      <BottomNavigation />
 
       {showLocModal && (
         <LocationSheet 

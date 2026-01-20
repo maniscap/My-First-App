@@ -11,7 +11,7 @@ import { MdLocationOn, MdDelete, MdGpsFixed, MdUpdate } from 'react-icons/md';
 import { FaMaskFace } from 'react-icons/fa6'; 
 import { FaWind } from 'react-icons/fa';
 
-// --- ASSETS (UNCHANGED) ---
+// --- ASSETS ---
 import clearDayVideo from '../assets/weather-videos/clear-day.mp4';
 import clearNightVideo from '../assets/weather-videos/clear-night.mp4';
 import cloudyDayVideo from '../assets/weather-videos/cloudy-day.mp4';
@@ -28,7 +28,7 @@ import stormVideo from '../assets/weather-videos/thunder.mp4';
 import sunriseVideo from '../assets/weather-videos/sunrise.mp4';
 import sunsetVideo from '../assets/weather-videos/sunset.mp4';
 
-// --- SOUNDS (UNCHANGED) ---
+// --- SOUNDS ---
 import clearDaySound from '../assets/weather-sounds/clear-day.mp3';
 import clearNightSound from '../assets/weather-sounds/clear-night.mp3';
 import rainDaySound from '../assets/weather-sounds/rainy-day.mp3';
@@ -40,7 +40,6 @@ import sunsetSound from '../assets/weather-sounds/sunset.mp3';
 
 // --- HELPER COMPONENTS ---
 
-// 1. Shimmering Skeleton Loader
 const SkeletonLoader = () => (
   <div style={styles.skeletonContainer}>
     <div style={{...styles.skeletonBox, height: '40px', width: '60%', marginBottom: '20px'}}></div>
@@ -53,7 +52,6 @@ const SkeletonLoader = () => (
   </div>
 );
 
-// 2. Toast Notification
 const Toast = ({ message, show }) => (
   <div style={{
     ...styles.toast,
@@ -74,7 +72,7 @@ const Weather = () => {
   const [currentIndex, setCurrentIndex] = useState(0); 
   const [loading, setLoading] = useState(true);
   const [isSoundOn, setIsSoundOn] = useState(false);
-  const [unit, setUnit] = useState('C'); // 'C' or 'F'
+  const [unit, setUnit] = useState('C'); 
   
   const [showCityManager, setShowCityManager] = useState(false);
   const [showSearchOverlay, setShowSearchOverlay] = useState(false); 
@@ -97,31 +95,61 @@ const Weather = () => {
 
   const popularCities = ['Mumbai', 'Delhi', 'Bangalore', 'Hyderabad', 'Chennai', 'Kolkata', 'Pune', 'Jaipur'];
 
+  // --- INITIAL LOAD ---
   useEffect(() => { loadAllCities(); }, []);
 
-  // --- TOAST HELPER ---
+  // --- AUDIO SYNC ---
+  useEffect(() => {
+    if (savedWeatherList.length > 0) {
+      const currentCity = savedWeatherList[currentIndex];
+      
+      // CRITICAL: SAVE ACTIVE CITY FOR DASHBOARD
+      localStorage.setItem('farmBuddy_lastCity', JSON.stringify({ 
+          name: currentCity.location.name, 
+          lat: currentCity.location.lat, 
+          lon: currentCity.location.lon 
+      }));
+
+      const { sound } = getAssetLogic(currentCity);
+      if (audioRef.current.src !== sound && sound) {
+        audioRef.current.src = sound;
+        audioRef.current.loop = true;
+      }
+      if (isSoundOn) audioRef.current.play().catch(() => {});
+      else audioRef.current.pause();
+    }
+    return () => { if (audioRef.current) audioRef.current.pause(); };
+  }, [currentIndex, savedWeatherList, isSoundOn]);
+
   const triggerToast = (msg) => {
     setToastMsg(msg);
     setShowToast(true);
     setTimeout(() => setShowToast(false), 3000);
   };
 
-  // --- UNIT CONVERSION ALGORITHM ---
-  const getTemp = (celsius) => {
-      if (unit === 'C') return Math.round(celsius);
-      return Math.round((celsius * 9/5) + 32);
-  };
+  const getTemp = (celsius) => unit === 'C' ? Math.round(celsius) : Math.round((celsius * 9/5) + 32);
 
-  // --- AQI COLOR ALGORITHM ---
   const getAqiColor = (pm10) => {
       if (!pm10) return 'rgba(255,255,255,0.2)';
-      if (pm10 <= 50) return 'rgba(76, 175, 80, 0.4)'; // Good (Green)
-      if (pm10 <= 100) return 'rgba(255, 235, 59, 0.4)'; // Moderate (Yellow)
-      if (pm10 <= 200) return 'rgba(255, 152, 0, 0.4)'; // Unhealthy (Orange)
-      return 'rgba(244, 67, 54, 0.4)'; // Hazardous (Red)
+      if (pm10 <= 50) return 'rgba(76, 175, 80, 0.4)'; 
+      if (pm10 <= 100) return 'rgba(255, 235, 59, 0.4)'; 
+      if (pm10 <= 200) return 'rgba(255, 152, 0, 0.4)'; 
+      return 'rgba(244, 67, 54, 0.4)'; 
   };
 
-  // --- SUN POSITION ALGORITHM ---
+  // --- TIME FIX (Using City Local Time) ---
+  const formatCityTime = (timeString) => {
+      // timeString format from API: "2024-02-20 14:30"
+      if(!timeString) return "--:--";
+      const [date, time] = timeString.split(' ');
+      let [hr, min] = time.split(':');
+      let ampm = 'AM';
+      hr = parseInt(hr);
+      if(hr >= 12) { ampm = 'PM'; if(hr > 12) hr -= 12; }
+      if(hr === 0) hr = 12;
+      return `${hr}:${min} ${ampm}`;
+  };
+
   const getSunPosition = (sunriseStr, sunsetStr) => {
       try {
           const now = new Date();
@@ -144,49 +172,24 @@ const Weather = () => {
       } catch (e) { return 50; } 
   };
 
-  // --- AUDIO SYNC LOGIC ---
-  useEffect(() => {
-    if (savedWeatherList.length > 0) {
-      const currentCity = savedWeatherList[currentIndex];
-      const { sound } = getAssetLogic(currentCity);
-      
-      if (audioRef.current.src !== sound && sound) {
-        audioRef.current.src = sound;
-        audioRef.current.loop = true;
-      }
-
-      if (isSoundOn) {
-          audioRef.current.play().catch(() => {});
-      } else {
-          audioRef.current.pause();
-      }
-
-      localStorage.setItem('farmBuddy_lastCity', JSON.stringify({ 
-          name: currentCity.location.name, 
-          lat: currentCity.location.lat, 
-          lon: currentCity.location.lon 
-      }));
-    }
-
-    return () => {
-        if (audioRef.current) {
-            audioRef.current.pause();
-            audioRef.current.currentTime = 0;
-        }
-    };
-  }, [currentIndex, savedWeatherList, isSoundOn]);
-
-  // --- DATA LOADING (HIGH ACCURACY GPS) ---
+  // --- DATA LOADING ---
   const loadAllCities = async () => {
     setLoading(true);
+    // 1. Try to load saved cities list
     const saved = localStorage.getItem('farmBuddy_cities');
     let citiesToFetch = saved ? JSON.parse(saved) : [];
 
+    // 2. If no cities saved, try to load the LAST VIEWED city (from Dashboard sync)
+    if(citiesToFetch.length === 0) {
+        const lastCity = localStorage.getItem('farmBuddy_lastCity');
+        if(lastCity) citiesToFetch.push(JSON.parse(lastCity));
+    }
+
+    // 3. If still empty, use GPS
     if (citiesToFetch.length === 0) {
         if (navigator.geolocation) {
              navigator.geolocation.getCurrentPosition(
                 async (pos) => {
-                    // 🚀 HIGH ACCURACY FETCH using Lat/Lon directly
                     const data = await fetchSingleCity(`${pos.coords.latitude},${pos.coords.longitude}`);
                     if(data) {
                         setSavedWeatherList([data]);
@@ -195,17 +198,13 @@ const Weather = () => {
                     }
                     setLoading(false);
                 },
-                (err) => {
-                    console.error("GPS Error", err);
-                    setLoading(false);
-                    triggerToast("GPS Failed. Please search manually.");
-                },
-                { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 } // 🔥 CRITICAL ACCURACY FIX
+                (err) => { setLoading(false); triggerToast("GPS Failed. Please search manually."); },
+                { enableHighAccuracy: true } 
             );
         } else { setLoading(false); }
     } else {
+        // 4. Fetch updated data for saved list
         const promises = citiesToFetch.map(async (city) => {
-            // Always fetch fresh data using LAT/LON, never just name
             const data = await fetchSingleCity(`${city.lat},${city.lon}`);
             if (data) {
                 data.location.name = city.name; 
@@ -222,13 +221,11 @@ const Weather = () => {
   const fetchSingleCity = async (query) => {
     try {
       const apiKey = import.meta.env.VITE_WEATHER_KEY;
-      // Using forecast.json allows us to get current + forecast in one accurate call
       const url = `https://api.weatherapi.com/v1/forecast.json?key=${apiKey}&q=${query}&days=7&aqi=yes&alerts=yes`;
       const response = await axios.get(url);
       return response.data;
     } catch (err) { 
-        console.error(err);
-        triggerToast("Network Error: Could not fetch weather");
+        triggerToast("Network Error");
         return null; 
     }
   };
@@ -237,40 +234,26 @@ const Weather = () => {
       setIsRefreshing(true);
       await loadAllCities();
       setIsRefreshing(false);
-      triggerToast("Data Updated Successfully");
+      triggerToast("Data Updated");
   };
 
-  // --- EXPANDED ASSET LOGIC (ACCURACY FIX) ---
   const getAssetLogic = (currentCityData) => {
     if (!currentCityData) return { video: clearDayVideo, sound: clearDaySound };
     const code = currentCityData.current.condition.code;
     const isDay = currentCityData.current.is_day;
     const hour = new Date().getHours();
 
-    // ⛈️ THUNDERSTORM (1087, 1273, 1276, 1279, 1282)
     if ([1087, 1273, 1276, 1279, 1282].includes(code)) return { video: stormVideo, sound: stormSound };
-
-    // 🌧️ DRIZZLE / PATCHY RAIN (1063, 1150, 1153, 1180, 1183, 1186, 1189, 1240)
     if ([1063, 1150, 1153, 1180, 1183, 1186, 1189, 1240].includes(code)) {
         return isDay ? { video: drizzleDayVideo, sound: rainDaySound } : { video: rainNightVideo, sound: rainNightSound };
     }
-
-    // ☔ HEAVY RAIN (1192, 1195, 1198, 1201, 1243, 1246, 1249, 1252)
     if ([1192, 1195, 1198, 1201, 1243, 1246, 1249, 1252].includes(code)) {
         if (hour >= 16 && hour <= 19) return { video: rainEveningVideo, sound: rainDaySound };
         return isDay ? { video: rainDayVideo, sound: rainDaySound } : { video: rainNightVideo, sound: rainNightSound };
     }
-
-    // 🌫️ MIST / FOG / HAZE (1030, 1135, 1147)
     if ([1030, 1135, 1147].includes(code)) return isDay ? { video: mistDayVideo, sound: mistSound } : { video: mistNightVideo, sound: mistSound };
-
-    // ☁️ CLOUDY / OVERCAST (1006, 1009)
     if ([1006, 1009].includes(code)) return isDay ? { video: cloudyDayVideo, sound: clearDaySound } : { video: cloudyNightVideo, sound: clearNightSound };
-
-    // ⛅ PARTLY CLOUDY (1003)
     if (code === 1003) return isDay ? { video: partlyCloudyDayVideo, sound: clearDaySound } : { video: partlyCloudyNightVideo, sound: clearNightSound };
-
-    // ☀️ CLEAR / SUNNY (1000)
     if (isDay) {
         if (hour === 6) return { video: sunriseVideo, sound: sunriseSound };
         if (hour >= 17 && hour <= 18) return { video: sunsetVideo, sound: sunsetSound };
@@ -279,7 +262,6 @@ const Weather = () => {
     return { video: clearNightVideo, sound: clearNightSound };
   };
 
-  // --- HANDLERS ---
   const handleSearchChange = async (e) => {
     const query = e.target.value;
     setSearchQuery(query);
@@ -322,7 +304,6 @@ const Weather = () => {
     }
     
     if (!newWeatherData) return;
-
     newWeatherData.location.name = selectedName;
     
     const exists = savedWeatherList.findIndex(w => w.location.name === selectedName);
@@ -348,7 +329,6 @@ const Weather = () => {
       const currentList = saved ? JSON.parse(saved) : [];
       const nameToSave = forceName || weatherData.location.name;
 
-      // Save Lat/Lon to ensure next load is accurate
       if (!currentList.some(c => c.name === nameToSave)) {
           const newEntry = { 
               name: nameToSave, 
@@ -374,7 +354,6 @@ const Weather = () => {
       if (currentIndex >= newList.length) setCurrentIndex(Math.max(0, newList.length - 1));
   };
 
-  // --- TOUCH HANDLERS (SWIPE & REFRESH) ---
   const onTouchStart = (e) => { 
       setTouchEndX(null); 
       setTouchStartX(e.targetTouches[0].clientX); 
@@ -389,29 +368,17 @@ const Weather = () => {
   
   const onTouchEnd = () => {
     if (!touchStartX || !touchEndX || !touchStartY || !touchEndY) return;
-    
     const xDiff = touchStartX - touchEndX;
-    const yDiff = touchStartY - touchEndY; // Positive = Scroll Up, Negative = Drag Down
+    const yDiff = touchStartY - touchEndY; 
 
-    // Horizontal Swipe (City Switch)
     if (Math.abs(xDiff) > 50 && Math.abs(yDiff) < 30) {
         if (xDiff > 50 && currentIndex < savedWeatherList.length - 1) setCurrentIndex(currentIndex + 1);
         if (xDiff < -50 && currentIndex > 0) setCurrentIndex(currentIndex - 1);
     }
-
-    // Vertical Drag (Refresh)
-    if (yDiff < -100 && Math.abs(xDiff) < 40) {
-        handleRefresh();
-    }
+    if (yDiff < -100 && Math.abs(xDiff) < 40) handleRefresh();
   };
 
-  // --- RENDER ---
-  if (loading) return (
-      <div style={styles.loadingContainer}>
-          <SkeletonLoader />
-      </div>
-  );
-  
+  if (loading) return <div style={styles.loadingContainer}><SkeletonLoader /></div>;
   if (savedWeatherList.length === 0) return <div style={styles.loading}>No locations found.</div>;
 
   const weather = savedWeatherList[currentIndex]; 
@@ -428,12 +395,7 @@ const Weather = () => {
       </video>
       <div style={styles.overlay}></div>
       
-      {isRefreshing && (
-          <div style={styles.refreshIndicator}>
-              <div style={styles.spinner}></div>
-          </div>
-      )}
-
+      {isRefreshing && <div style={styles.refreshIndicator}><div style={styles.spinner}></div></div>}
       <Toast message={toastMsg} show={showToast} />
 
       {/* HEADER */}
@@ -444,16 +406,15 @@ const Weather = () => {
              <span style={styles.cityTitle}>{location.name}</span>
              <span style={styles.regionTitle}>
                 {location.region}
-                <span style={{marginLeft:'5px', opacity:0.6, fontSize:'10px'}}>
-                   <MdUpdate style={{marginBottom:'-2px'}}/> {new Date(current.last_updated).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}
+                {/* CORRECTED TIME DISPLAY */}
+                <span style={{marginLeft:'8px', opacity:0.8, fontSize:'11px', fontWeight:'600'}}>
+                   {formatCityTime(location.localtime)}
                 </span>
              </span>
            </div>
          </div>
          <div style={styles.topRight}>
-            <button onClick={() => setUnit(unit === 'C' ? 'F' : 'C')} style={styles.unitBtn}>
-                °{unit}
-            </button>
+            <button onClick={() => setUnit(unit === 'C' ? 'F' : 'C')} style={styles.unitBtn}>°{unit}</button>
             <button onClick={() => setIsSoundOn(!isSoundOn)} style={styles.iconBtn}>
                 {isSoundOn ? <IoMdVolumeHigh size={26} /> : <IoMdVolumeOff size={26} />}
             </button>
@@ -492,9 +453,7 @@ const Weather = () => {
                                      <p style={styles.popularLabel}>POPULAR CITIES</p>
                                      <div style={styles.popularGrid}>
                                          {popularCities.map(city => (
-                                              <div key={city} style={styles.popularChip} onClick={() => handleSelectSuggestion(city)}>
-                                                  {city}
-                                              </div>
+                                              <div key={city} style={styles.popularChip} onClick={() => handleSelectSuggestion(city)}>{city}</div>
                                          ))}
                                      </div>
                                   </>
@@ -622,11 +581,8 @@ const Weather = () => {
                       <div style={styles.cardLabel}>Sun & Moon</div>
                       <div style={styles.sunArcWrapper}>
                           <div style={styles.sunArc}></div>
-                          {/* Live Sun Tracker Icon */}
                           <div style={{
-                              position: 'absolute',
-                              top: 0, left: '50%',
-                              width: '100%', height: '70px',
+                              position: 'absolute', top: 0, left: '50%', width: '100%', height: '70px',
                               transform: `translateX(-50%) rotate(${(sunPosition / 100 * 180) - 90}deg)`
                           }}>
                               <div style={{
@@ -635,7 +591,6 @@ const Weather = () => {
                                   boxShadow: '0 0 10px #FFD700'
                               }}></div>
                           </div>
-                          
                           <div style={styles.sunTimes}>
                               <div style={{fontSize:'10px', opacity:0.8}}>Sunrise</div>
                               <div style={{fontWeight:'bold'}}>{forecast.forecastday[0].astro.sunrise}</div>
@@ -705,7 +660,7 @@ const styles = {
   topLeft: { display:'flex', gap:'10px', alignItems:'center' },
   locationText: { display:'flex', flexDirection:'column' },
   cityTitle: { fontSize:'22px', fontWeight:'700', textShadow:'0 2px 5px rgba(0,0,0,0.5)', letterSpacing:'0.5px' },
-  regionTitle: { fontSize:'12px', opacity:0.9 },
+  regionTitle: { fontSize:'12px', opacity:0.9, display:'flex', alignItems:'center' },
   iconBtn: { background:'transparent', border:'none', color:'white', cursor:'pointer', padding:'5px', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))' },
   unitBtn: { background:'rgba(255,255,255,0.2)', border:'1px solid rgba(255,255,255,0.3)', borderRadius:'50%', width:'30px', height:'30px', color:'white', cursor:'pointer', fontSize:'14px', fontWeight:'bold', backdropFilter:'blur(5px)' },
   topRight: { display:'flex', gap:'10px', alignItems: 'center' },
@@ -766,7 +721,6 @@ const styles = {
 
   cardLabel: { fontSize:'13px', opacity:0.7, display:'flex', gap:'6px', alignItems:'center', width:'100%', fontWeight:'500' },
   cardValue: { fontSize:'26px', fontWeight:'700', marginTop:'6px' },
-  cardSub: { fontSize:'11px', opacity:0.6, marginTop:'2px' },
   
   compassContainer: { position:'relative', display:'flex', flexDirection:'column', alignItems:'center' },
   compassCircle: { width:'55px', height:'55px', borderRadius:'50%', border:'2px solid rgba(255,255,255,0.3)', display:'flex', alignItems:'center', justifyContent:'center', marginBottom:'5px' },
@@ -790,7 +744,7 @@ const styles = {
       display:'flex', justifyContent:'space-between', alignItems:'center', cursor:'pointer', border:'1px solid #333',
       boxShadow: '0 4px 15px rgba(0,0,0,0.5)'
   },
-  cardLeft: { display:'flex', flexDirection:'column', gap:'5px' },
+  cardLeft: { display:'flex', flexDirection: 'column', gap:'5px' },
   cardCityName: { fontSize:'20px', fontWeight:'700' },
   cardAqi: { fontSize:'13px', fontWeight:'bold' },
   cardRight: { display:'flex', flexDirection:'column', alignItems:'flex-end', gap:'5px' },
