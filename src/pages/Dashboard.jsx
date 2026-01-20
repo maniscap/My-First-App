@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios'; 
 import LocationSheet from '../components/LocationSheet'; 
-import { ChevronDown } from 'lucide-react'; // Import simple chevron icon
+import { ChevronDown } from 'lucide-react'; 
 
 // --- ASSET IMPORTS ---
 import clearDayVideo from '../assets/weather-videos/clear-day.mp4';
@@ -42,6 +42,27 @@ function Dashboard() {
       ? 'https://images.unsplash.com/photo-1652454159675-11ead6275680?q=80&w=1170&auto=format&fit=crop' 
       : 'https://images.unsplash.com/photo-1625246333195-78d9c38ad449?q=80&w=2940&auto=format&fit=crop');
 
+    // --- 1. NEW: STRICT GPS CHECK ---
+    // If GPS is OFF/Denied, force the popup open immediately.
+    if ("geolocation" in navigator) {
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                // GPS is ON. Do nothing, let the saved location logic handle it.
+            },
+            (error) => {
+                // GPS is OFF or DENIED -> Force Open Modal
+                // Error Code 1 = Denied, 2 = Unavailable (GPS Off), 3 = Timeout
+                console.warn("GPS Check Failed:", error.message);
+                setShowLocModal(true);
+            },
+            { timeout: 4000, enableHighAccuracy: true }
+        );
+    } else {
+        // Browser doesn't support GPS -> Force Open Modal
+        setShowLocModal(true);
+    }
+
+    // --- 2. EXISTING LOCATION LOADING ---
     const loadLocation = () => {
         const savedLoc = localStorage.getItem('userLocation'); 
         const savedTitle = localStorage.getItem('locationTitle');
@@ -56,7 +77,7 @@ function Dashboard() {
             setUserLocation("Select Location");
         } else {
             setUserLocation(savedLoc);
-            if(savedTitle) setLocationTitle(savedTitle); // Takes "Home", "Work", etc.
+            if(savedTitle) setLocationTitle(savedTitle); 
             
             if (savedLat && savedLng && savedLat !== 'undefined') {
                 fetchLiveWeather(`${savedLat},${savedLng}`);
@@ -136,7 +157,6 @@ function Dashboard() {
                   <div style={{fontSize:'20px', fontWeight:'800', color:'white', textShadow:'0 2px 4px rgba(0,0,0,0.6)', textTransform:'capitalize'}}>
                       <span style={{color:'#ff5252', marginRight:'6px'}}>📍</span>{locationTitle} 
                   </div>
-                  {/* Subtle Chevron */}
                   <ChevronDown size={20} color="white" style={{marginLeft:'2px', marginTop:'2px', opacity:0.9}} />
               </div>
               
@@ -174,7 +194,7 @@ function Dashboard() {
 
       <div style={heroSection}><h1 style={fadedHeroTitle}>Growing Smarter Together</h1></div>
 
-      {/* 2. BENTO GRID (Unchanged) */}
+      {/* 2. BENTO GRID */}
       <div style={bentoGrid}>
         
         <Link to="/agri-insights" style={cardLink}>
