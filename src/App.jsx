@@ -14,8 +14,16 @@ import FarmFresh from './pages/FarmFresh';
 import Weather from './pages/Weather';
 import SearchResults from './pages/SearchResults';
 import Expenditure from './pages/Expenditure';
-import CropExpenses from './pages/CropExpenses'; // Your dynamic folder page
-import UserLocation from './pages/UserLocation'; // <--- NEW: Management Page
+import CropExpenses from './pages/CropExpenses'; 
+import UserLocation from './pages/UserLocation'; 
+
+// --- NEW PAGES ---
+import Radio from './pages/Radio';
+import Freelancing from './pages/Freelancing';
+
+// --- FIXED IMPORT ---
+// We import 'GPSMeasurement' because that is your actual file name
+import GPSMeasurement from './pages/GPSMeasurement';
 
 // --- IMPORT COMPONENTS ---
 import ChatBot from './components/ChatBot';
@@ -27,7 +35,6 @@ function App() {
   return (
     <div>
       {/* --- GLOBAL COMPONENTS --- */}
-      {/* Calculator handles its own visibility */}
       <FloatingCalculator /> 
 
       {/* --- MAIN PAGE CONTENT --- */}
@@ -38,7 +45,7 @@ function App() {
         {/* Main Dashboard */}
         <Route path="/dashboard" element={<Dashboard />} />
         
-        {/* Location Management Page (Full Screen) */}
+        {/* Location Management Page */}
         <Route path="/user-location" element={<UserLocation />} /> 
         
         {/* Expenditure Section */}
@@ -52,6 +59,14 @@ function App() {
         <Route path="/business" element={<Business />} />
         <Route path="/farm-fresh" element={<FarmFresh />} />
         <Route path="/weather" element={<Weather />} />
+
+        {/* --- NEW FEATURE ROUTES --- */}
+        <Route path="/radio" element={<Radio />} />
+        <Route path="/freelancing" element={<Freelancing />} />
+        
+        {/* GPS ROUTE */}
+        {/* This loads the GPSMeasurement page, which internally uses GpsExtension */}
+        <Route path="/gps-measurement" element={<GPSMeasurement />} />
         
         {/* Utilities */}
         <Route path="/admin" element={<Admin />} />
@@ -60,8 +75,8 @@ function App() {
         {/* 404 Error Page */}
         <Route path="*" element={
           <div style={{textAlign: 'center', marginTop: '50px', color: 'black'}}> 
-             <h1>❌ 404: Page Not Found</h1>
-             <p>Check your URL or <Link to="/" style={{color: '#4CAF50'}}>go back home</Link>.</p>
+              <h1>❌ 404: Page Not Found</h1>
+              <p>Check your URL or <Link to="/" style={{color: '#4CAF50'}}>go back home</Link>.</p>
           </div>
         } />
       </Routes>

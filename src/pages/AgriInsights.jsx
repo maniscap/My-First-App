@@ -1,237 +1,306 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { db } from '../firebase';
+import axios from 'axios';
+import { db } from '../firebase'; // Ensure this path is correct
 import { collection, getDocs } from 'firebase/firestore';
-import { IoMdArrowBack, IoMdBook, IoMdTrendingUp, IoMdVideocam, IoMdPaper, IoMdDownload } from 'react-icons/io';
-import { FaFilePdf, FaNewspaper } from 'react-icons/fa';
+import { IoMdArrowBack, IoMdRefresh } from 'react-icons/io';
+import { FaBook, FaYoutube, FaNewspaper, FaChartLine } from 'react-icons/fa';
 
-function AgriInsights() {
+const AgriInsights = () => {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState('rates'); // rates | library | videos | news
+  const [activeTab, setActiveTab] = useState('market'); // market, news, library
+  const [libraryTab, setLibraryTab] = useState('videos'); // videos, books
 
-  // --- STATE ---
+  // --- DATA STATES ---
   const [marketRates, setMarketRates] = useState([]);
-  const [library, setLibrary] = useState([]);
+  const [newsArticles, setNewsArticles] = useState([]);
   const [videos, setVideos] = useState([]);
-  const [news, setNews] = useState([]);
+  const [books, setBooks] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // --- FETCH DATA ---
-  useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
+  // --- FILTERS ---
+  const [newsState, setNewsState] = useState('national');
+
+  // --- API KEYS (From .env) ---
+  const MANDI_KEY = import.meta.env.VITE_GOVT_MANDI_KEY;
+  const RSS_KEY = import.meta.env.VITE_NEWS_RSS_KEY;
+  const YOUTUBE_KEY = import.meta.env.VITE_YOUTUBE_KEY;
+
+  // --- 1. FETCH MARKET RATES (Govt API) ---
+  const fetchMarketRates = async () => {
+    // Note: If API fails/key is empty, we use dummy data so UI doesn't break
+    try {
+      if (!MANDI_KEY) throw new Error("No Key");
+      // This is a sample OGD endpoint. You might need to adjust resource_id based on specific dataset
+      const url = `https://api.data.gov.in/resource/9ef84268-d588-465a-a308-a864a43d0070?api-key=${MANDI_KEY}&format=json&limit=20`;
+      const res = await axios.get(url);
+      if(res.data.records) {
+        setMarketRates(res.data.records);
+      }
+    } catch (err) {
+      console.warn("Using fallback market data (API Error or No Key)");
+      setMarketRates([
+        { state: 'Andhra Pradesh', commodity: 'Cotton', modal_price: '6200', market: 'Adoni' },
+        { state: 'Telangana', commodity: 'Chilli', modal_price: '14500', market: 'Warangal' },
+        { state: 'Karnataka', commodity: 'Maize', modal_price: '2100', market: 'Raichur' },
+        { state: 'Maharashtra', commodity: 'Onion', modal_price: '1800', market: 'Lasalgaon' },
+        { state: 'Tamil Nadu', commodity: 'Rice', modal_price: '3400', market: 'Erode' },
+      ]);
+    }
+  };
+
+  // --- 2. FETCH NEWS (RSS to JSON) ---
+  const fetchNews = async () => {
+    setLoading(true);
+    let rssUrl = '';
+
+    // Map States to their Local Newspaper RSS Feeds
+    switch(newsState) {
+        case 'ap': rssUrl = 'https://www.sakshi.com/rss/feed/andhra-pradesh'; break; // Sakshi
+        case 'ts': rssUrl = 'https://www.eenadu.net/rss/telangana'; break; // Eenadu
+        case 'tn': rssUrl = 'https://www.dtnext.in/rss'; break; // DT Next
+        case 'ka': rssUrl = 'https://kannada.oneindia.com/rss/kannada-news-fb.xml'; break;
+        default: rssUrl = 'https://timesofindia.indiatimes.com/rssfeeds/296589292.cms'; // TOI Agriculture
+    }
+
+    try {
+        // Use rss2json to convert XML to JSON we can read
+        const converterUrl = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(rssUrl)}&api_key=${RSS_KEY}`;
+        const res = await axios.get(converterUrl);
+        if(res.data.items) setNewsArticles(res.data.items);
+    } catch (err) {
+        console.error("News Error", err);
+    }
+    setLoading(false);
+  };
+
+  // --- 3. FETCH VIDEOS (YouTube API) ---
+  const fetchVideos = async () => {
       try {
-        // 1. Market Rates
-        try {
-            const ratesSnap = await getDocs(collection(db, "market_rates"));
-            setMarketRates(ratesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-        } catch(e) { console.log("Rates fetch error", e); }
+          // DD Kisan Channel ID: UCtL5Y... (Or generic search)
+          // We search for "Farming India" to get latest relevant videos
+          const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=10&q=modern+farming+india+techniques&type=video&key=${YOUTUBE_KEY}`;
+          const res = await axios.get(url);
+          setVideos(res.data.items);
+      } catch (err) {
+          console.error("YouTube Error", err);
+      }
+  };
 
-        // 2. Library (PDFs)
-        try {
-            const libSnap = await getDocs(collection(db, "library"));
-            setLibrary(libSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-        } catch(e) { console.log("Lib fetch error", e); }
+  // --- 4. FETCH BOOKS (Firebase) ---
+  const fetchBooks = async () => {
+      try {
+          const querySnapshot = await getDocs(collection(db, "library"));
+          const booksData = querySnapshot.docs.map(doc => ({id: doc.id, ...doc.data()}));
+          setBooks(booksData);
+      } catch (err) { console.error("Firebase Error", err); }
+  };
 
-        // 3. Videos
-        try {
-            const vidSnap = await getDocs(collection(db, "videos"));
-            setVideos(vidSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-        } catch(e) { console.log("Vid fetch error", e); }
-
-        // 4. News (Auto-Fetch)
-        try {
-            const rssUrl = "https://www.downtoearth.org.in/rss/agriculture"; 
-            const res = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(rssUrl)}`);
-            const data = await res.json();
-            if(data.items) setNews(data.items.slice(0, 10));
-        } catch (e) { console.log("News fetch error", e); }
-
-      } catch (error) { console.error("General Error:", error); }
-      setLoading(false);
-    };
-    fetchData();
+  // Load Data on Mount
+  useEffect(() => {
+      fetchMarketRates();
+      fetchVideos();
+      fetchBooks();
   }, []);
 
-  // --- RENDER HELPERS (With Safety Checks) ---
-  const renderRates = () => (
-    <div style={styles.grid}>
-      {marketRates.length === 0 ? <p style={styles.empty}>No rates updated today.</p> : marketRates.map((item) => (
-        <div key={item.id} style={styles.rateCard}>
-          <div style={styles.rateHeader}>
-            {/* Safety: Check if crop exists before getting charAt */}
-            <div style={styles.cropIcon}>{(item.crop || '?').charAt(0)}</div>
-            <div>
-              <h3 style={styles.cropName}>{item.crop || 'Unknown Crop'}</h3>
-              <p style={styles.marketLoc}>📍 {item.market || 'Unknown'}, {item.district}</p>
-            </div>
-            <div style={{textAlign:'right', marginLeft:'auto'}}>
-              <h3 style={styles.price}>₹{item.price || '0'}</h3>
-              <span style={{
-                ...styles.trendBadge, 
-                color: item.trend === 'up' ? '#4CAF50' : '#FF5252',
-                background: item.trend === 'up' ? 'rgba(76, 175, 80, 0.1)' : 'rgba(255, 82, 82, 0.1)'
-              }}>
-                {item.trend === 'up' ? '▲ Up' : item.trend === 'down' ? '▼ Down' : '● Stable'}
-              </span>
-            </div>
-          </div>
-          <div style={styles.dateBadge}>Updated: {item.date}</div>
-        </div>
-      ))}
-    </div>
-  );
-
-  const renderLibrary = () => (
-    <div style={styles.grid}>
-      {library.length === 0 ? <p style={styles.empty}>No books available.</p> : library.map((book) => (
-        <div key={book.id} style={styles.bookCard}>
-           <div style={styles.bookIcon}><FaFilePdf size={30} color="#FF5252"/></div>
-           <div style={{flex:1}}>
-             <h4 style={styles.bookTitle}>{book.title || 'Untitled'}</h4>
-             <p style={styles.bookAuthor}>By {book.author || 'FarmBuddy'}</p>
-           </div>
-           {book.link && (
-               <a href={book.link} target="_blank" rel="noreferrer" style={styles.readBtn}>
-                 Read <IoMdDownload />
-               </a>
-           )}
-        </div>
-      ))}
-    </div>
-  );
-
-  const renderVideos = () => (
-    <div style={styles.videoGrid}>
-      {videos.length === 0 ? <p style={styles.empty}>No videos available.</p> : videos.map((vid) => {
-        // Safety: Check if link exists before split
-        let videoId = "";
-        if (vid.link && vid.link.includes('v=')) {
-            videoId = vid.link.split('v=')[1]?.split('&')[0];
-        } else if (vid.link && vid.link.includes('youtu.be/')) {
-            videoId = vid.link.split('youtu.be/')[1];
-        }
-
-        if (!videoId) return null; // Skip invalid links
-
-        const embedUrl = `https://www.youtube.com/embed/${videoId}`;
-        return (
-          <div key={vid.id} style={styles.videoCard}>
-            <iframe 
-              src={embedUrl} 
-              title={vid.title || 'Video'} 
-              style={styles.iframe} 
-              frameBorder="0" 
-              allowFullScreen
-            ></iframe>
-            <div style={{padding:'15px'}}>
-              <h4 style={styles.videoTitle}>{vid.title || 'Agri Video'}</h4>
-            </div>
-          </div>
-        )
-      })}
-    </div>
-  );
-
-  const renderNews = () => (
-    <div style={styles.list}>
-       {news.length === 0 ? <p style={styles.empty}>Fetching latest news...</p> : news.map((n, i) => (
-         <div key={i} style={styles.newsCard} onClick={() => window.open(n.link, '_blank')}>
-            <div style={styles.newsIcon}><FaNewspaper /></div>
-            <div>
-              <h4 style={styles.newsTitle}>{n.title}</h4>
-              <p style={styles.newsDate}>{new Date(n.pubDate).toDateString()}</p>
-            </div>
-         </div>
-       ))}
-    </div>
-  );
+  // Reload News when State changes
+  useEffect(() => {
+      fetchNews();
+  }, [newsState]);
 
   return (
     <div style={styles.page}>
+      
       {/* HEADER */}
       <div style={styles.header}>
-        <button onClick={() => navigate('/dashboard')} style={styles.backBtn}>
-          <IoMdArrowBack size={24} color="#fff" />
-        </button>
-        <h2 style={styles.pageTitle}>Agri Insights</h2>
+          <button onClick={() => navigate('/dashboard')} style={styles.backBtn}><IoMdArrowBack size={24}/></button>
+          <h1 style={styles.title}>Agri Insights</h1>
+          <div style={{width: 24}}></div> {/* Spacer for alignment */}
       </div>
 
-      {/* TABS */}
+      {/* TICKER (Stock Market Style) */}
+      <div style={styles.tickerContainer}>
+          <div style={styles.tickerTrack}>
+              {marketRates.map((rate, i) => (
+                  <span key={i} style={styles.tickerItem}>
+                      {rate.commodity} ({rate.market}): <span style={{color:'#4CAF50'}}>₹{rate.modal_price}</span>
+                      <span style={{margin: '0 15px', opacity:0.3}}>|</span>
+                  </span>
+              ))}
+              {/* Duplicate for infinite scroll effect */}
+              {marketRates.map((rate, i) => (
+                  <span key={`dup-${i}`} style={styles.tickerItem}>
+                      {rate.commodity} ({rate.market}): <span style={{color:'#4CAF50'}}>₹{rate.modal_price}</span>
+                      <span style={{margin: '0 15px', opacity:0.3}}>|</span>
+                  </span>
+              ))}
+          </div>
+      </div>
+
+      {/* MAIN TABS */}
       <div style={styles.tabContainer}>
-        <div style={activeTab === 'rates' ? styles.activeTab : styles.tab} onClick={() => setActiveTab('rates')}>
-           <IoMdTrendingUp size={18}/> Market
-        </div>
-        <div style={activeTab === 'library' ? styles.activeTab : styles.tab} onClick={() => setActiveTab('library')}>
-           <IoMdBook size={18}/> Library
-        </div>
-        <div style={activeTab === 'videos' ? styles.activeTab : styles.tab} onClick={() => setActiveTab('videos')}>
-           <IoMdVideocam size={18}/> Videos
-        </div>
-        <div style={activeTab === 'news' ? styles.activeTab : styles.tab} onClick={() => setActiveTab('news')}>
-           <IoMdPaper size={18}/> News
-        </div>
+          <button onClick={() => setActiveTab('market')} style={activeTab === 'market' ? styles.activeTab : styles.tab}>
+             <FaChartLine /> Market
+          </button>
+          <button onClick={() => setActiveTab('news')} style={activeTab === 'news' ? styles.activeTab : styles.tab}>
+             <FaNewspaper /> News
+          </button>
+          <button onClick={() => setActiveTab('library')} style={activeTab === 'library' ? styles.activeTab : styles.tab}>
+             <FaBook /> Library
+          </button>
       </div>
 
-      {/* CONTENT */}
+      {/* CONTENT AREA */}
       <div style={styles.content}>
-         {loading ? <div style={styles.loader}>Loading Updates...</div> : (
-           <>
-             {activeTab === 'rates' && renderRates()}
-             {activeTab === 'library' && renderLibrary()}
-             {activeTab === 'videos' && renderVideos()}
-             {activeTab === 'news' && renderNews()}
-           </>
-         )}
+          
+          {/* --- MARKET TAB --- */}
+          {activeTab === 'market' && (
+              <div style={styles.grid}>
+                  {marketRates.map((rate, idx) => (
+                      <div key={idx} style={styles.marketCard}>
+                          <div style={{fontSize:'12px', opacity:0.7}}>{rate.state} • {rate.market}</div>
+                          <div style={{fontSize:'20px', fontWeight:'bold', margin:'5px 0', color:'#E23744'}}>{rate.commodity}</div>
+                          <div style={{display:'flex', justifyContent:'space-between', alignItems:'end'}}>
+                              <div style={{fontSize:'24px', fontWeight:'700'}}>₹{rate.modal_price}</div>
+                              <div style={styles.trendBadge}>Avg Price</div>
+                          </div>
+                      </div>
+                  ))}
+              </div>
+          )}
+
+          {/* --- NEWS TAB --- */}
+          {activeTab === 'news' && (
+              <div>
+                  {/* State Selector */}
+                  <div style={styles.filterRow}>
+                      <span style={{fontSize:'14px', opacity:0.8}}>Region:</span>
+                      <select value={newsState} onChange={(e) => setNewsState(e.target.value)} style={styles.select}>
+                          <option value="national">🇮🇳 National (English)</option>
+                          <option value="ap">Andhra Pradesh (Telugu)</option>
+                          <option value="ts">Telangana (Telugu)</option>
+                          <option value="tn">Tamil Nadu (Tamil)</option>
+                          <option value="ka">Karnataka (Kannada)</option>
+                      </select>
+                  </div>
+
+                  {loading ? <p style={{textAlign:'center', marginTop:'20px'}}>Fetching latest papers...</p> : (
+                      <div style={styles.newsList}>
+                          {newsArticles.map((item, idx) => (
+                              <div key={idx} style={styles.newsCard} onClick={() => window.open(item.link, '_blank')}>
+                                  {item.thumbnail && <img src={item.thumbnail} alt="" style={styles.newsImg}/>}
+                                  <div style={styles.newsContent}>
+                                      <h3 style={styles.newsTitle}>{item.title}</h3>
+                                      <div style={styles.newsMeta}>{new Date(item.pubDate).toLocaleDateString()} • Tap to Read</div>
+                                  </div>
+                              </div>
+                          ))}
+                      </div>
+                  )}
+              </div>
+          )}
+
+          {/* --- LIBRARY TAB --- */}
+          {activeTab === 'library' && (
+              <div>
+                  <div style={styles.subTabContainer}>
+                      <button onClick={() => setLibraryTab('videos')} style={libraryTab === 'videos' ? styles.subTabActive : styles.subTab}>
+                          <FaYoutube color="red"/> Videos
+                      </button>
+                      <button onClick={() => setLibraryTab('books')} style={libraryTab === 'books' ? styles.subTabActive : styles.subTab}>
+                          <FaBook color="#4CAF50"/> Guides
+                      </button>
+                  </div>
+
+                  {libraryTab === 'videos' ? (
+                      <div style={styles.grid}>
+                          {videos.map((vid, idx) => (
+                              <div key={idx} style={styles.videoCard} onClick={() => window.open(`https://www.youtube.com/watch?v=${vid.id.videoId}`, '_blank')}>
+                                  <img src={vid.snippet.thumbnails.medium.url} alt="" style={styles.vidThumb}/>
+                                  <div style={{padding:'10px'}}>
+                                      <div style={styles.vidTitle}>{vid.snippet.title}</div>
+                                      <div style={{fontSize:'10px', opacity:0.6}}>{vid.snippet.channelTitle}</div>
+                                  </div>
+                              </div>
+                          ))}
+                      </div>
+                  ) : (
+                      <div style={styles.grid}>
+                          {books.length === 0 ? <p style={{padding:'20px', textAlign:'center', width:'100%'}}>No books added yet.</p> : books.map((book, idx) => (
+                              <div key={idx} style={styles.bookCard} onClick={() => window.open(book.link, '_blank')}>
+                                  <div style={styles.bookIcon}><FaBook size={30} color="#fff"/></div>
+                                  <div style={styles.bookInfo}>
+                                      <div style={{fontWeight:'bold', fontSize:'14px'}}>{book.title}</div>
+                                      <div style={{fontSize:'12px', opacity:0.7}}>{book.author || 'Farm Guide'}</div>
+                                  </div>
+                              </div>
+                          ))}
+                      </div>
+                  )}
+              </div>
+          )}
       </div>
+
     </div>
   );
-}
+};
 
 // --- STYLES ---
 const styles = {
-  page: { position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: '#121212', color: 'white', fontFamily: '"SF Pro Display", sans-serif', overflowY: 'auto', paddingBottom:'80px' },
-  header: { display: 'flex', alignItems: 'center', padding: '20px', background: 'rgba(20,20,20,0.9)', position: 'sticky', top: 0, zIndex: 10, backdropFilter:'blur(10px)' },
-  backBtn: { background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius:'50%', width:'40px', height:'40px', display:'flex', alignItems:'center', justifyContent:'center', cursor: 'pointer', marginRight: '15px' },
-  pageTitle: { margin: 0, fontSize: '22px', fontWeight: '700' },
+  page: { background: '#000', minHeight: '100vh', color: '#fff', fontFamily: '"SF Pro Display", sans-serif', paddingBottom: '80px' },
+  header: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '20px', background: '#111', borderBottom: '1px solid #222' },
+  title: { fontSize: '20px', fontWeight: '700', margin: 0 },
+  backBtn: { background: 'none', border: 'none', color: '#fff', cursor: 'pointer' },
 
-  tabContainer: { display:'flex', padding:'0 10px', gap:'10px', overflowX:'auto', marginBottom:'15px', scrollbarWidth:'none' },
-  tab: { padding:'10px 20px', borderRadius:'25px', background:'rgba(255,255,255,0.05)', color:'#aaa', display:'flex', alignItems:'center', gap:'8px', cursor:'pointer', whiteSpace:'nowrap', fontSize:'14px' },
-  activeTab: { padding:'10px 20px', borderRadius:'25px', background:'#4CAF50', color:'white', display:'flex', alignItems:'center', gap:'8px', cursor:'pointer', whiteSpace:'nowrap', fontSize:'14px', fontWeight:'600', boxShadow:'0 4px 15px rgba(76, 175, 80, 0.4)' },
+  // Ticker Animation
+  tickerContainer: { background: '#1A1A1A', overflow: 'hidden', whiteSpace: 'nowrap', padding: '10px 0', borderBottom: '1px solid #333' },
+  tickerTrack: { display: 'inline-block', animation: 'marquee 20s linear infinite' },
+  tickerItem: { display: 'inline-block', fontSize: '14px', fontWeight: '500' },
 
-  content: { padding:'0 15px' },
-  grid: { display:'flex', flexDirection:'column', gap:'15px' },
-  empty: { textAlign:'center', color:'#666', marginTop:'50px' },
-  loader: { textAlign:'center', color:'#888', marginTop:'50px' },
+  // Tabs
+  tabContainer: { display: 'flex', padding: '15px', gap: '10px', background: '#000' },
+  tab: { flex: 1, padding: '12px', background: '#111', border: '1px solid #333', borderRadius: '30px', color: '#888', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', fontSize: '14px' },
+  activeTab: { flex: 1, padding: '12px', background: '#fff', border: '1px solid #fff', borderRadius: '30px', color: '#000', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', fontWeight: 'bold', fontSize: '14px' },
 
-  // Rate Card
-  rateCard: { background:'rgba(255,255,255,0.05)', padding:'15px', borderRadius:'16px', border:'1px solid rgba(255,255,255,0.1)' },
-  rateHeader: { display:'flex', alignItems:'center', gap:'15px' },
-  cropIcon: { width:'50px', height:'50px', borderRadius:'12px', background:'#2E7D32', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'24px', fontWeight:'bold' },
-  cropName: { margin:0, fontSize:'18px' },
-  marketLoc: { margin:0, fontSize:'12px', color:'#aaa', marginTop:'4px' },
-  price: { margin:0, fontSize:'20px', color:'#4CAF50' },
-  trendBadge: { fontSize:'10px', padding:'3px 8px', borderRadius:'6px', display:'inline-block', marginTop:'5px' },
-  dateBadge: { fontSize:'10px', color:'#666', marginTop:'10px', textAlign:'right' },
+  content: { padding: '15px' },
+  grid: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' },
 
-  // Library Card
-  bookCard: { background:'rgba(255,255,255,0.05)', padding:'15px', borderRadius:'16px', display:'flex', alignItems:'center', gap:'15px', border:'1px solid rgba(255,255,255,0.1)' },
-  bookIcon: { width:'50px', height:'60px', background:'rgba(255,255,255,0.1)', display:'flex', alignItems:'center', justifyContent:'center', borderRadius:'8px' },
-  bookTitle: { margin:0, fontSize:'16px' },
-  bookAuthor: { margin:0, fontSize:'12px', color:'#888', marginTop:'4px' },
-  readBtn: { background:'#2196F3', color:'white', textDecoration:'none', padding:'8px 16px', borderRadius:'20px', fontSize:'12px', display:'flex', alignItems:'center', gap:'5px' },
+  // Market Card
+  marketCard: { background: '#111', padding: '15px', borderRadius: '16px', border: '1px solid #333' },
+  trendBadge: { fontSize: '10px', background: 'rgba(255,255,255,0.1)', padding: '4px 8px', borderRadius: '10px' },
 
-  // Video Card
-  videoGrid: { display:'grid', gridTemplateColumns:'1fr', gap:'20px' },
-  videoCard: { background:'black', borderRadius:'16px', overflow:'hidden', border:'1px solid #333' },
-  iframe: { width:'100%', height:'200px', background:'#000' },
-  videoTitle: { margin:0, fontSize:'16px', color:'#eee' },
+  // News
+  filterRow: { display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '10px', marginBottom: '15px' },
+  select: { background: '#222', color: '#fff', border: '1px solid #444', padding: '8px', borderRadius: '8px', outline: 'none' },
+  newsList: { display: 'flex', flexDirection: 'column', gap: '15px' },
+  newsCard: { display: 'flex', background: '#111', borderRadius: '12px', overflow: 'hidden', border: '1px solid #222', cursor: 'pointer' },
+  newsImg: { width: '100px', objectFit: 'cover' },
+  newsContent: { padding: '15px', flex: 1 },
+  newsTitle: { fontSize: '14px', margin: '0 0 8px 0', lineHeight: '1.4' },
+  newsMeta: { fontSize: '11px', color: '#E23744', fontWeight: 'bold' },
 
-  // News Card
-  newsCard: { display:'flex', gap:'15px', padding:'15px', background:'rgba(255,255,255,0.03)', borderRadius:'12px', marginBottom:'10px', cursor:'pointer' },
-  newsIcon: { width:'40px', height:'40px', background:'#FF9800', borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center', color:'white' },
-  newsTitle: { margin:0, fontSize:'14px', lineHeight:'1.4' },
-  newsDate: { margin:0, fontSize:'11px', color:'#666', marginTop:'5px' }
+  // Library
+  subTabContainer: { display: 'flex', gap: '20px', marginBottom: '20px', borderBottom: '1px solid #333', paddingBottom: '10px' },
+  subTab: { background: 'none', border: 'none', color: '#666', fontSize: '16px', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' },
+  subTabActive: { background: 'none', border: 'none', color: '#fff', fontSize: '16px', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' },
+  
+  videoCard: { background: '#111', borderRadius: '12px', overflow: 'hidden', border: '1px solid #333', cursor: 'pointer' },
+  vidThumb: { width: '100%', height: '100px', objectFit: 'cover' },
+  vidTitle: { fontSize: '12px', fontWeight: 'bold', marginBottom: '4px', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' },
+
+  bookCard: { background: 'linear-gradient(135deg, #1e1e1e 0%, #111 100%)', borderRadius: '12px', padding: '15px', display: 'flex', alignItems: 'center', gap: '15px', gridColumn: 'span 2', border: '1px solid #333', cursor: 'pointer' },
+  bookIcon: { width: '50px', height: '60px', background: '#333', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center' },
+  bookInfo: { display: 'flex', flexDirection: 'column' }
 };
+
+// Inject CSS for Ticker
+const styleSheet = document.createElement("style");
+styleSheet.innerText = `
+@keyframes marquee {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+`;
+document.head.appendChild(styleSheet);
 
 export default AgriInsights;

@@ -2,10 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios'; 
 import LocationSheet from '../components/LocationSheet'; 
-import BottomNavigation from '../components/BottomNavigation'; // <--- NEW IMPORT
-import { ChevronDown } from 'lucide-react'; 
+import BottomNavigation from '../components/BottomNavigation'; 
+import { ChevronDown, Radio, Map, Briefcase } from 'lucide-react'; // Added icons
 
-// --- ASSET IMPORTS ---
+// --- ASSET IMPORTS (Keep existing weather assets) ---
 import clearDayVideo from '../assets/weather-videos/clear-day.mp4';
 import clearNightVideo from '../assets/weather-videos/clear-night.mp4';
 import cloudyDayVideo from '../assets/weather-videos/cloudy-day.mp4';
@@ -43,10 +43,9 @@ function Dashboard() {
       ? 'https://images.unsplash.com/photo-1652454159675-11ead6275680?q=80&w=1170&auto=format&fit=crop' 
       : 'https://images.unsplash.com/photo-1625246333195-78d9c38ad449?q=80&w=2940&auto=format&fit=crop');
 
-    // --- 1. GPS CHECK ---
     if ("geolocation" in navigator) {
         navigator.geolocation.getCurrentPosition(
-            () => {}, // GPS On - Do nothing
+            () => {}, 
             (error) => {
                 console.warn("GPS is Off/Denied:", error.message);
                 setShowLocModal(true);
@@ -57,13 +56,9 @@ function Dashboard() {
         setShowLocModal(true);
     }
 
-    // --- 2. DATA LOADING LOGIC ---
     const loadData = () => {
-        // A. Handle Delivery Location Text
         const savedLoc = localStorage.getItem('userLocation'); 
         const savedTitle = localStorage.getItem('locationTitle');
-        
-        // Fix Comma Bug check
         const isValidLoc = savedLoc && savedLoc.replace(/, /g, '').trim().length > 0;
 
         if (!isValidLoc) {
@@ -74,11 +69,8 @@ function Dashboard() {
             if(savedTitle) setLocationTitle(savedTitle); 
         }
 
-        // B. Handle Weather Card Data (PRIORITY: Weather Page > Delivery Loc)
         const lastWeatherCity = localStorage.getItem('farmBuddy_lastCity');
-        
         if (lastWeatherCity) {
-            // Priority 1: User manually selected a city in Weather Page
             const cityData = JSON.parse(lastWeatherCity);
             if (cityData.lat && cityData.lon) {
                 fetchLiveWeather(`${cityData.lat},${cityData.lon}`);
@@ -86,10 +78,8 @@ function Dashboard() {
                 fetchLiveWeather(cityData.name);
             }
         } else {
-            // Priority 2: Fallback to Delivery Location
             const savedLat = localStorage.getItem('userLat');
             const savedLng = localStorage.getItem('userLng');
-            
             if (savedLat && savedLng && savedLat !== 'undefined') {
                 fetchLiveWeather(`${savedLat},${savedLng}`);
             } else if (savedLoc) {
@@ -108,7 +98,6 @@ function Dashboard() {
       try {
           const apiKey = import.meta.env.VITE_WEATHER_KEY;
           if(!query || query.includes('undefined')) return;
-          
           const url = `https://api.weatherapi.com/v1/forecast.json?key=${apiKey}&q=${query}&days=1&aqi=no&alerts=no`;
           const response = await axios.get(url);
           setWeatherData(response.data);
@@ -137,19 +126,14 @@ function Dashboard() {
     return clearNightVideo;
   };
 
-  // Callback for initial popup
   const handleLocationSelect = (title, fullAddress, lat, lng) => {
     setLocationTitle(title);
     setUserLocation(fullAddress);
-    
     localStorage.setItem('userLocation', fullAddress);
     localStorage.setItem('locationTitle', title);
-    
     if (lat && lng) {
       localStorage.setItem('userLat', lat);
       localStorage.setItem('userLng', lng);
-      
-      // Only force update weather if user hasn't manually set a weather city
       if (!localStorage.getItem('farmBuddy_lastCity')) {
           fetchLiveWeather(`${lat},${lng}`);
       }
@@ -164,48 +148,29 @@ function Dashboard() {
   return (
     <div style={{...pageStyle, backgroundImage: `url('${bgImage}')`}}>
       
-      {/* 1. HEADER (ZOMATO STYLE) */}
+      {/* 1. HEADER */}
       <div style={headerWrapper}>
         <div style={topRow}>
            <div style={locationClickableArea} onClick={goToManagementPage}>
-              {/* Bold Title + Chevron */}
               <div style={{display:'flex', alignItems:'center'}}>
                   <div style={{fontSize:'20px', fontWeight:'800', color:'white', textShadow:'0 2px 4px rgba(0,0,0,0.6)', textTransform:'capitalize'}}>
                       <span style={{color:'#ff5252', marginRight:'6px'}}>📍</span>{locationTitle} 
                   </div>
-                  {/* Subtle Chevron */}
                   <ChevronDown size={20} color="white" style={{marginLeft:'2px', marginTop:'2px', opacity:0.9}} />
               </div>
-              
-              {/* Small Address Line */}
               <div style={{
-                  color:'rgba(255,255,255,0.85)', 
-                  fontSize:'12px', 
-                  marginTop:'2px', 
-                  maxWidth:'280px', 
-                  whiteSpace:'nowrap', 
-                  overflow:'hidden', 
-                  textOverflow:'ellipsis', 
-                  textShadow:'0 1px 2px rgba(0,0,0,0.8)', 
-                  fontWeight:'500',
-                  paddingLeft:'2px' 
+                  color:'rgba(255,255,255,0.85)', fontSize:'12px', marginTop:'2px', maxWidth:'280px', 
+                  whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis', textShadow:'0 1px 2px rgba(0,0,0,0.8)', fontWeight:'500', paddingLeft:'2px' 
               }}>
                 {userLocation}
               </div>
            </div>
-           
            <Link to="/profile" style={profileCircle}><span style={{fontSize:'24px'}}>🧢</span></Link>
         </div>
         
         <div style={searchBar}>
            <span style={{fontSize:'18px', color:'rgba(255,255,255,0.7)', marginRight:'10px'}}>🔍</span>
-           <input 
-             type="text" 
-             placeholder="Search 'cotton', 'workers'..." 
-             style={searchInput}
-             value={globalSearch}
-             onChange={(e) => setGlobalSearch(e.target.value)}
-           />
+           <input type="text" placeholder="Search 'cotton', 'workers'..." style={searchInput} value={globalSearch} onChange={(e) => setGlobalSearch(e.target.value)} />
         </div>
       </div>
 
@@ -250,15 +215,45 @@ function Dashboard() {
            </div>
         </Link>
 
-        <Link to="/expenditure" style={{...cardLink, gridColumn: 'span 2'}}>
-           <div className="glass-card" style={{...wideCardStyle, backgroundImage: "url('https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?q=80&w=1000&auto=format&fit=crop')"}}>
+        {/* --- ROW 3: Expenditure (Now Small) & Radio (New) --- */}
+        <Link to="/expenditure" style={cardLink}>
+           <div className="glass-card" style={{...cardStyle, backgroundImage: "url('https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?q=80&w=1000')"}}>
               <div style={cardTopOverlay}>
-                  <div><h3 style={{...cardTitle, margin:0}}>Crop Expenditure</h3><p style={cardSubtitle}>Track Expenses & Bills</p></div>
-                  <div style={whiteIconBox}><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg></div>
+                  <div><h3 style={{...cardTitle}}>Crop Exp.</h3><p style={cardSubtitle}>Track Expenses</p></div>
+                  <div style={whiteIconBox}><svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line></svg></div>
               </div>
            </div>
         </Link>
 
+        <Link to="/radio" style={cardLink}>
+           <div className="glass-card" style={{...cardStyle, backgroundImage: "url('https://images.unsplash.com/photo-1584677626993-e45f9e236592?q=80&w=600')"}}>
+              <div style={cardTopOverlay}>
+                  <div><h3 style={cardTitle}>Farm Radio</h3><p style={cardSubtitle}>News & Songs</p></div>
+                  <div style={whiteIconBox}><Radio size={28} color="white"/></div>
+              </div>
+           </div>
+        </Link>
+
+        {/* --- ROW 4: Freelancing (New) & GPS (New) --- */}
+        <Link to="/freelancing" style={cardLink}>
+           <div className="glass-card" style={{...cardStyle, backgroundImage: "url('https://images.unsplash.com/photo-1521737604893-d14cc237f11d?q=80&w=600')"}}>
+              <div style={cardTopOverlay}>
+                  <div><h3 style={cardTitle}>Freelancing</h3><p style={cardSubtitle}>Hire & Work</p></div>
+                  <div style={whiteIconBox}><Briefcase size={28} color="white"/></div>
+              </div>
+           </div>
+        </Link>
+
+        <Link to="/gps-measurement" style={cardLink}>
+           <div className="glass-card" style={{...cardStyle, backgroundImage: "url('https://images.unsplash.com/photo-1569336415962-a4bd9f69cd83?q=80&w=600')"}}>
+              <div style={cardTopOverlay}>
+                  <div><h3 style={cardTitle}>GPS Area</h3><p style={cardSubtitle}>Measure Land</p></div>
+                  <div style={whiteIconBox}><Map size={28} color="white"/></div>
+              </div>
+           </div>
+        </Link>
+
+        {/* --- ROW 5: Weather (Wide) --- */}
         <Link to="/weather" style={{...cardLink, gridColumn: 'span 2'}}>
            <div className="glass-card" style={{...wideCardStyle, position: 'relative', overflow: 'hidden'}}>
               <video key={weatherVideo} autoPlay loop muted playsInline style={videoBgStyle}>
@@ -292,7 +287,6 @@ function Dashboard() {
 
       </div>
 
-      {/* 3. NEW NAVIGATION BAR */}
       <BottomNavigation />
 
       {showLocModal && (
