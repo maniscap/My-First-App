@@ -1,42 +1,34 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { 
   WiHumidity, WiThermometer, WiRain, WiBarometer, WiTime3 
 } from 'react-icons/wi';
 import { 
-  IoMdAdd, IoMdSearch, IoMdVolumeHigh, IoMdVolumeOff, IoMdClose, IoMdNavigate, IoMdArrowBack, IoMdRefresh 
+  IoMdAdd, IoMdSearch, IoMdClose, IoMdNavigate, IoMdArrowBack 
 } from 'react-icons/io';
-import { MdLocationOn, MdDelete, MdGpsFixed, MdUpdate } from 'react-icons/md';
+import { MdLocationOn, MdDelete, MdGpsFixed } from 'react-icons/md';
 import { FaMaskFace } from 'react-icons/fa6'; 
 import { FaWind } from 'react-icons/fa';
 
-// --- ASSETS ---
-import clearDayVideo from '../assets/weather-videos/clear-day.mp4';
-import clearNightVideo from '../assets/weather-videos/clear-night.mp4';
-import cloudyDayVideo from '../assets/weather-videos/cloudy-day.mp4';
-import cloudyNightVideo from '../assets/weather-videos/cloudy-night.mp4'; 
-import partlyCloudyDayVideo from '../assets/weather-videos/partly-cloudy-day.mp4'; 
-import partlyCloudyNightVideo from '../assets/weather-videos/partly-cloudy-night.mp4'; 
-import drizzleDayVideo from '../assets/weather-videos/drizzle-day.mp4'; 
-import mistDayVideo from '../assets/weather-videos/mist-day.mp4'; 
-import mistNightVideo from '../assets/weather-videos/mist-night.mp4'; 
-import rainDayVideo from '../assets/weather-videos/rain-day.mp4';
-import rainEveningVideo from '../assets/weather-videos/rain-evening.mp4';
-import rainNightVideo from '../assets/weather-videos/rain-night.mp4';
-import stormVideo from '../assets/weather-videos/thunder.mp4'; 
-import sunriseVideo from '../assets/weather-videos/sunrise.mp4';
-import sunsetVideo from '../assets/weather-videos/sunset.mp4';
-
-// --- SOUNDS ---
-import clearDaySound from '../assets/weather-sounds/clear-day.mp3';
-import clearNightSound from '../assets/weather-sounds/clear-night.mp3';
-import rainDaySound from '../assets/weather-sounds/rainy-day.mp3';
-import rainNightSound from '../assets/weather-sounds/rainy-night.mp3';
-import stormSound from '../assets/weather-sounds/thunderstorm.mp3';
-import mistSound from '../assets/weather-sounds/mist.mp3';
-import sunriseSound from '../assets/weather-sounds/sunrise.mp3';
-import sunsetSound from '../assets/weather-sounds/sunset.mp3';
+// --- WEATHER IMAGE ASSETS (URLs) ---
+const weatherImages = {
+  clearDay: 'https://images.pexels.com/photos/296234/pexels-photo-296234.jpeg',
+  clearNight: 'https://images.pexels.com/photos/11752993/pexels-photo-11752993.jpeg',
+  cloudyDay: 'https://images.pexels.com/photos/158163/clouds-cloudporn-weather-lookup-158163.jpeg',
+  cloudyNight: 'https://www.pexels.com/photo/dramatic-storm-cloud-formation-at-dusk-29473893/',
+  partlyCloudyDay: 'https://images.pexels.com/photos/13958707/pexels-photo-13958707.jpeg',
+  partlyCloudyNight: 'https://images.pexels.com/photos/5489557/pexels-photo-5489557.jpeg',
+  mistDay: 'https://images.pexels.com/photos/6745483/pexels-photo-6745483.jpeg',
+  mistNight: 'https://images.pexels.com/photos/1529881/pexels-photo-1529881.jpeg',
+  rainDay: 'https://images.pexels.com/photos/30345921/pexels-photo-30345921.jpeg',
+  rainEvening: 'https://images.pexels.com/photos/8590614/pexels-photo-8590614.jpeg',
+  rainNight: 'https://images.pexels.com/photos/850488/pexels-photo-850488.png',
+  storm: 'https://images.pexels.com/photos/16218619/pexels-photo-16218619.jpeg',
+  sunrise: 'https://images.pexels.com/photos/10248028/pexels-photo-10248028.jpeg',
+  sunset: 'https://images.pexels.com/photos/539282/pexels-photo-539282.jpeg',
+  drizzle: 'https://images.pexels.com/photos/804474/pexels-photo-804474.jpeg'
+};
 
 // --- HELPER COMPONENTS ---
 
@@ -65,13 +57,11 @@ const Toast = ({ message, show }) => (
 
 const Weather = () => {
   const navigate = useNavigate();
-  const audioRef = useRef(new Audio());
 
   // --- STATE ---
   const [savedWeatherList, setSavedWeatherList] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0); 
   const [loading, setLoading] = useState(true);
-  const [isSoundOn, setIsSoundOn] = useState(false);
   const [unit, setUnit] = useState('C'); 
   
   const [showCityManager, setShowCityManager] = useState(false);
@@ -98,28 +88,18 @@ const Weather = () => {
   // --- INITIAL LOAD ---
   useEffect(() => { loadAllCities(); }, []);
 
-  // --- AUDIO SYNC ---
+  // --- SYNC LAST CITY ---
   useEffect(() => {
     if (savedWeatherList.length > 0) {
       const currentCity = savedWeatherList[currentIndex];
-      
       // CRITICAL: SAVE ACTIVE CITY FOR DASHBOARD
       localStorage.setItem('farmBuddy_lastCity', JSON.stringify({ 
           name: currentCity.location.name, 
           lat: currentCity.location.lat, 
           lon: currentCity.location.lon 
       }));
-
-      const { sound } = getAssetLogic(currentCity);
-      if (audioRef.current.src !== sound && sound) {
-        audioRef.current.src = sound;
-        audioRef.current.loop = true;
-      }
-      if (isSoundOn) audioRef.current.play().catch(() => {});
-      else audioRef.current.pause();
     }
-    return () => { if (audioRef.current) audioRef.current.pause(); };
-  }, [currentIndex, savedWeatherList, isSoundOn]);
+  }, [currentIndex, savedWeatherList]);
 
   const triggerToast = (msg) => {
     setToastMsg(msg);
@@ -238,28 +218,28 @@ const Weather = () => {
   };
 
   const getAssetLogic = (currentCityData) => {
-    if (!currentCityData) return { video: clearDayVideo, sound: clearDaySound };
+    if (!currentCityData) return weatherImages.clearDay;
     const code = currentCityData.current.condition.code;
     const isDay = currentCityData.current.is_day;
     const hour = new Date().getHours();
 
-    if ([1087, 1273, 1276, 1279, 1282].includes(code)) return { video: stormVideo, sound: stormSound };
+    if ([1087, 1273, 1276, 1279, 1282].includes(code)) return weatherImages.storm;
     if ([1063, 1150, 1153, 1180, 1183, 1186, 1189, 1240].includes(code)) {
-        return isDay ? { video: drizzleDayVideo, sound: rainDaySound } : { video: rainNightVideo, sound: rainNightSound };
+        return isDay ? weatherImages.drizzle : weatherImages.rainNight;
     }
     if ([1192, 1195, 1198, 1201, 1243, 1246, 1249, 1252].includes(code)) {
-        if (hour >= 16 && hour <= 19) return { video: rainEveningVideo, sound: rainDaySound };
-        return isDay ? { video: rainDayVideo, sound: rainDaySound } : { video: rainNightVideo, sound: rainNightSound };
+        if (hour >= 16 && hour <= 19) return weatherImages.rainEvening;
+        return isDay ? weatherImages.rainDay : weatherImages.rainNight;
     }
-    if ([1030, 1135, 1147].includes(code)) return isDay ? { video: mistDayVideo, sound: mistSound } : { video: mistNightVideo, sound: mistSound };
-    if ([1006, 1009].includes(code)) return isDay ? { video: cloudyDayVideo, sound: clearDaySound } : { video: cloudyNightVideo, sound: clearNightSound };
-    if (code === 1003) return isDay ? { video: partlyCloudyDayVideo, sound: clearDaySound } : { video: partlyCloudyNightVideo, sound: clearNightSound };
+    if ([1030, 1135, 1147].includes(code)) return isDay ? weatherImages.mistDay : weatherImages.mistNight;
+    if ([1006, 1009].includes(code)) return isDay ? weatherImages.cloudyDay : weatherImages.cloudyNight;
+    if (code === 1003) return isDay ? weatherImages.partlyCloudyDay : weatherImages.partlyCloudyNight;
     if (isDay) {
-        if (hour === 6) return { video: sunriseVideo, sound: sunriseSound };
-        if (hour >= 17 && hour <= 18) return { video: sunsetVideo, sound: sunsetSound };
-        return { video: clearDayVideo, sound: clearDaySound };
+        if (hour === 6) return weatherImages.sunrise;
+        if (hour >= 17 && hour <= 18) return weatherImages.sunset;
+        return weatherImages.clearDay;
     } 
-    return { video: clearNightVideo, sound: clearNightSound };
+    return weatherImages.clearNight;
   };
 
   const handleSearchChange = async (e) => {
@@ -383,16 +363,16 @@ const Weather = () => {
 
   const weather = savedWeatherList[currentIndex]; 
   const { current, location, forecast } = weather;
-  const { video } = getAssetLogic(weather);
+  const image = getAssetLogic(weather);
   const visibleDays = showFullForecast ? forecast.forecastday : forecast.forecastday.slice(0, 3);
   const sunPosition = getSunPosition(forecast.forecastday[0].astro.sunrise, forecast.forecastday[0].astro.sunset);
   const aqiColor = getAqiColor(current.air_quality?.pm10);
 
   return (
     <div style={styles.container} onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd}>
-      <video key={video} autoPlay loop muted playsInline style={styles.videoBg}>
-        <source src={video} type="video/mp4" />
-      </video>
+      {/* REPLACED VIDEO WITH IMAGE */}
+      <img src={image} alt="Weather Background" style={styles.videoBg} />
+      
       <div style={styles.overlay}></div>
       
       {isRefreshing && <div style={styles.refreshIndicator}><div style={styles.spinner}></div></div>}
@@ -415,9 +395,6 @@ const Weather = () => {
          </div>
          <div style={styles.topRight}>
             <button onClick={() => setUnit(unit === 'C' ? 'F' : 'C')} style={styles.unitBtn}>°{unit}</button>
-            <button onClick={() => setIsSoundOn(!isSoundOn)} style={styles.iconBtn}>
-                {isSoundOn ? <IoMdVolumeHigh size={26} /> : <IoMdVolumeOff size={26} />}
-            </button>
             <button onClick={() => navigate('/dashboard')} style={styles.iconBtn}><IoMdClose size={26}/></button>
          </div>
       </div>

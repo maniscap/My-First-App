@@ -3,24 +3,26 @@ import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios'; 
 import LocationSheet from '../components/LocationSheet'; 
 import BottomNavigation from '../components/BottomNavigation'; 
-import { ChevronDown, Radio, Map, Briefcase } from 'lucide-react'; // Added icons
+import { ChevronDown, Radio, Map, Briefcase } from 'lucide-react'; 
 
-// --- ASSET IMPORTS (Keep existing weather assets) ---
-import clearDayVideo from '../assets/weather-videos/clear-day.mp4';
-import clearNightVideo from '../assets/weather-videos/clear-night.mp4';
-import cloudyDayVideo from '../assets/weather-videos/cloudy-day.mp4';
-import cloudyNightVideo from '../assets/weather-videos/cloudy-night.mp4';
-import partlyCloudyDayVideo from '../assets/weather-videos/partly-cloudy-day.mp4';
-import partlyCloudyNightVideo from '../assets/weather-videos/partly-cloudy-night.mp4';
-import drizzleDayVideo from '../assets/weather-videos/drizzle-day.mp4';
-import mistDayVideo from '../assets/weather-videos/mist-day.mp4';
-import mistNightVideo from '../assets/weather-videos/mist-night.mp4';
-import rainDayVideo from '../assets/weather-videos/rain-day.mp4';
-import rainEveningVideo from '../assets/weather-videos/rain-evening.mp4';
-import rainNightVideo from '../assets/weather-videos/rain-night.mp4';
-import stormVideo from '../assets/weather-videos/thunder.mp4';
-import sunriseVideo from '../assets/weather-videos/sunrise.mp4';
-import sunsetVideo from '../assets/weather-videos/sunset.mp4';
+// --- WEATHER IMAGE ASSETS (URLs) ---
+const weatherImages = {
+ clearDay: 'https://images.pexels.com/photos/296234/pexels-photo-296234.jpeg',
+  clearNight: 'https://images.pexels.com/photos/11752993/pexels-photo-11752993.jpeg',
+  cloudyDay: 'https://images.pexels.com/photos/158163/clouds-cloudporn-weather-lookup-158163.jpeg',
+  cloudyNight: 'https://www.pexels.com/photo/dramatic-storm-cloud-formation-at-dusk-29473893/',
+  partlyCloudyDay: 'https://images.pexels.com/photos/13958707/pexels-photo-13958707.jpeg',
+  partlyCloudyNight: 'https://images.pexels.com/photos/5489557/pexels-photo-5489557.jpeg',
+  mistDay: 'https://images.pexels.com/photos/6745483/pexels-photo-6745483.jpeg',
+  mistNight: 'https://images.pexels.com/photos/1529881/pexels-photo-1529881.jpeg',
+  rainDay: 'https://images.pexels.com/photos/30345921/pexels-photo-30345921.jpeg',
+  rainEvening: 'https://images.pexels.com/photos/8590614/pexels-photo-8590614.jpeg',
+  rainNight: 'https://images.pexels.com/photos/850488/pexels-photo-850488.png',
+  storm: 'https://images.pexels.com/photos/16218619/pexels-photo-16218619.jpeg',
+  sunrise: 'https://images.pexels.com/photos/10248028/pexels-photo-10248028.jpeg',
+  sunset: 'https://images.pexels.com/photos/539282/pexels-photo-539282.jpeg',
+  drizzle: 'https://images.pexels.com/photos/804474/pexels-photo-804474.jpeg'
+};
 
 function Dashboard() {
   const navigate = useNavigate(); 
@@ -28,7 +30,7 @@ function Dashboard() {
   
   // Weather & UI State
   const [weatherData, setWeatherData] = useState(null);
-  const [weatherVideo, setWeatherVideo] = useState(clearDayVideo); 
+  const [weatherImage, setWeatherImage] = useState(weatherImages.clearDay); 
   const [globalSearch, setGlobalSearch] = useState('');
   
   // Location State
@@ -101,7 +103,7 @@ function Dashboard() {
           const url = `https://api.weatherapi.com/v1/forecast.json?key=${apiKey}&q=${query}&days=1&aqi=no&alerts=no`;
           const response = await axios.get(url);
           setWeatherData(response.data);
-          setWeatherVideo(getAssetLogic(response.data));
+          setWeatherImage(getAssetLogic(response.data));
       } catch (err) { console.error("Weather Fetch Error:", err); }
   };
 
@@ -109,21 +111,37 @@ function Dashboard() {
     const code = data.current.condition.code;
     const isDay = data.current.is_day === 1;
     const hour = new Date().getHours();
-    if ([1087, 1273, 1276, 1279, 1282].includes(code)) return stormVideo;
-    if ([1063, 1150, 1153, 1180, 1183, 1186, 1189, 1240].includes(code)) return isDay ? drizzleDayVideo : rainNightVideo;
-    if ([1192, 1195, 1198, 1201, 1243, 1246].includes(code)) {
-        if (hour >= 16 && hour <= 19) return rainEveningVideo;
-        return isDay ? rainDayVideo : rainNightVideo;
+    
+    // Storm
+    if ([1087, 1273, 1276, 1279, 1282].includes(code)) return weatherImages.storm;
+    
+    // Rain/Drizzle
+    if ([1063, 1150, 1153, 1180, 1183, 1186, 1189, 1240].includes(code)) {
+        return isDay ? weatherImages.drizzle : weatherImages.rainNight;
     }
-    if ([1030, 1135, 1147].includes(code)) return isDay ? mistDayVideo : mistNightVideo;
-    if ([1006, 1009].includes(code)) return isDay ? cloudyDayVideo : cloudyNightVideo;
-    if (code === 1003) return isDay ? partlyCloudyDayVideo : partlyCloudyNightVideo;
+    
+    // Heavy Rain
+    if ([1192, 1195, 1198, 1201, 1243, 1246].includes(code)) {
+        if (hour >= 16 && hour <= 19) return weatherImages.rainEvening;
+        return isDay ? weatherImages.rainDay : weatherImages.rainNight;
+    }
+    
+    // Mist/Fog
+    if ([1030, 1135, 1147].includes(code)) return isDay ? weatherImages.mistDay : weatherImages.mistNight;
+    
+    // Cloudy
+    if ([1006, 1009].includes(code)) return isDay ? weatherImages.cloudyDay : weatherImages.cloudyNight;
+    
+    // Partly Cloudy
+    if (code === 1003) return isDay ? weatherImages.partlyCloudyDay : weatherImages.partlyCloudyNight;
+    
+    // Clear / Sun
     if (isDay) {
-        if (hour === 6) return sunriseVideo;
-        if (hour >= 17 && hour <= 18) return sunsetVideo;
-        return clearDayVideo;
+        if (hour === 6) return weatherImages.sunrise;
+        if (hour >= 17 && hour <= 18) return weatherImages.sunset;
+        return weatherImages.clearDay;
     } 
-    return clearNightVideo;
+    return weatherImages.clearNight;
   };
 
   const handleLocationSelect = (title, fullAddress, lat, lng) => {
@@ -215,12 +233,11 @@ function Dashboard() {
            </div>
         </Link>
 
-        {/* --- ROW 3: Expenditure (Now Small) & Radio (New) --- */}
         <Link to="/expenditure" style={cardLink}>
            <div className="glass-card" style={{...cardStyle, backgroundImage: "url('https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?q=80&w=1000')"}}>
               <div style={cardTopOverlay}>
-                  <div><h3 style={{...cardTitle}}>Crop Exp.</h3><p style={cardSubtitle}>Track Expenses</p></div>
-                  <div style={whiteIconBox}><svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line></svg></div>
+                 <div><h3 style={{...cardTitle}}>Crop Exp.</h3><p style={cardSubtitle}>Track Expenses</p></div>
+                 <div style={whiteIconBox}><svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line></svg></div>
               </div>
            </div>
         </Link>
@@ -228,18 +245,17 @@ function Dashboard() {
         <Link to="/radio" style={cardLink}>
            <div className="glass-card" style={{...cardStyle, backgroundImage: "url('https://images.unsplash.com/photo-1584677626993-e45f9e236592?q=80&w=600')"}}>
               <div style={cardTopOverlay}>
-                  <div><h3 style={cardTitle}>Farm Radio</h3><p style={cardSubtitle}>News & Songs</p></div>
-                  <div style={whiteIconBox}><Radio size={28} color="white"/></div>
+                 <div><h3 style={cardTitle}>Farm Radio</h3><p style={cardSubtitle}>News & Songs</p></div>
+                 <div style={whiteIconBox}><Radio size={28} color="white"/></div>
               </div>
            </div>
         </Link>
 
-        {/* --- ROW 4: Freelancing (New) & GPS (New) --- */}
         <Link to="/freelancing" style={cardLink}>
            <div className="glass-card" style={{...cardStyle, backgroundImage: "url('https://images.unsplash.com/photo-1521737604893-d14cc237f11d?q=80&w=600')"}}>
               <div style={cardTopOverlay}>
-                  <div><h3 style={cardTitle}>Freelancing</h3><p style={cardSubtitle}>Hire & Work</p></div>
-                  <div style={whiteIconBox}><Briefcase size={28} color="white"/></div>
+                 <div><h3 style={cardTitle}>Freelancing</h3><p style={cardSubtitle}>Hire & Work</p></div>
+                 <div style={whiteIconBox}><Briefcase size={28} color="white"/></div>
               </div>
            </div>
         </Link>
@@ -247,8 +263,8 @@ function Dashboard() {
         <Link to="/gps-measurement" style={cardLink}>
            <div className="glass-card" style={{...cardStyle, backgroundImage: "url('https://images.unsplash.com/photo-1569336415962-a4bd9f69cd83?q=80&w=600')"}}>
               <div style={cardTopOverlay}>
-                  <div><h3 style={cardTitle}>GPS Area</h3><p style={cardSubtitle}>Measure Land</p></div>
-                  <div style={whiteIconBox}><Map size={28} color="white"/></div>
+                 <div><h3 style={cardTitle}>GPS Area</h3><p style={cardSubtitle}>Measure Land</p></div>
+                 <div style={whiteIconBox}><Map size={28} color="white"/></div>
               </div>
            </div>
         </Link>
@@ -256,9 +272,22 @@ function Dashboard() {
         {/* --- ROW 5: Weather (Wide) --- */}
         <Link to="/weather" style={{...cardLink, gridColumn: 'span 2'}}>
            <div className="glass-card" style={{...wideCardStyle, position: 'relative', overflow: 'hidden'}}>
-              <video key={weatherVideo} autoPlay loop muted playsInline style={videoBgStyle}>
-                  <source src={weatherVideo} type="video/mp4" />
-              </video>
+              
+              {/* FIXED IMAGE STYLE FOR DASHBOARD */}
+              <img 
+                 src={weatherImage} 
+                 alt="Weather Background" 
+                 style={{
+                     width: '100%',
+                     height: '100%',
+                     objectFit: 'cover',
+                     position: 'absolute',
+                     top: 0,
+                     left: 0,
+                     zIndex: -1 
+                 }} 
+               />
+              
               <div style={darkOverlay}></div>
               <div style={cardTopOverlay}>
                   <div style={{display:'flex', flexDirection:'column', justifyContent:'space-between', height:'100%', width:'100%'}}>
@@ -318,7 +347,6 @@ const cardTopOverlay = { position: 'absolute', top: 0, left: 0, width: '100%', h
 const whiteIconBox = { filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))' };
 const cardTitle = { margin: '0 0 4px 0', fontSize: '17px', fontWeight: '700', textShadow: '0 2px 4px rgba(0,0,0,0.5)' };
 const cardSubtitle = { margin: 0, fontSize: '13px', opacity: 0.9, fontWeight: '500', textShadow: '0 1px 2px rgba(0,0,0,0.5)' };
-const videoBgStyle = { position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover', zIndex: -2 };
-const darkOverlay = { position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.3)', zIndex: -1 };
+const darkOverlay = { position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.3)', zIndex: 1 }; // Adjusted Z-index
 
 export default Dashboard;

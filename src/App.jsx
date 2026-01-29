@@ -19,10 +19,10 @@ import UserLocation from './pages/UserLocation';
 
 // --- NEW PAGES ---
 import Radio from './pages/Radio';
+import GlobePage from './pages/GlobePage'; // <--- NEW IMPORT
 import Freelancing from './pages/Freelancing';
 
 // --- FIXED IMPORT ---
-// We import 'GPSMeasurement' because that is your actual file name
 import GPSMeasurement from './pages/GPSMeasurement';
 
 // --- IMPORT COMPONENTS ---
@@ -62,10 +62,10 @@ function App() {
 
         {/* --- NEW FEATURE ROUTES --- */}
         <Route path="/radio" element={<Radio />} />
+        <Route path="/globe" element={<GlobePage />} /> {/* <--- NEW ROUTE */}
         <Route path="/freelancing" element={<Freelancing />} />
         
         {/* GPS ROUTE */}
-        {/* This loads the GPSMeasurement page, which internally uses GpsExtension */}
         <Route path="/gps-measurement" element={<GPSMeasurement />} />
         
         {/* Utilities */}
