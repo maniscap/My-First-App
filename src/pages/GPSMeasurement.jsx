@@ -1,31 +1,25 @@
-import React, { useState, useEffect } from 'react';
-import { MapContainer, TileLayer, useMap, useMapEvents, Marker, Popup } from 'react-leaflet';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useRef } from 'react';
+import { MapContainer, TileLayer, useMap, useMapEvents, Marker, Popup, ImageOverlay } from 'react-leaflet';
 import L from 'leaflet';
 import { 
-  FiMenu, FiLayers, FiPlus, FiMinus, FiX,
-  FiDownload, FiMapPin, FiSearch, FiArrowLeft, FiMaximize, 
-  FiRotateCcw
+  FiMenu, FiLayers, FiPlus, FiMinus, FiX, FiDownload, FiMapPin, FiSearch, FiArrowLeft, FiMaximize, FiRotateCcw
 } from 'react-icons/fi';
 import { MdGpsFixed } from 'react-icons/md';
 import { FaMapMarkedAlt, FaDrawPolygon, FaRulerHorizontal } from 'react-icons/fa';
 import 'leaflet/dist/leaflet.css';
 
-// --- IMPORT EXTENSION ---
-// Ensure GpsExtension.jsx is in the same folder
-import { MeasureTool, FileManager, SaveScreen, GroupScreen, MenuOption, ImportMenu, MeasureMenu } from './GpsExtension'; 
+import { MeasureTool, FileManager, SaveScreen, GroupScreen, MenuOption, ImportMenu, MeasureMenu, PinMenu, MainMenu, GeoTagCamera, ProfileEditScreen, SettingsScreen, HelpScreen } from './GpsExtension'; 
 
-// Fix Leaflet Icons
 import icon from 'leaflet/dist/images/marker-icon.png';
 import iconShadow from 'leaflet/dist/images/marker-shadow.png';
 let DefaultIcon = L.icon({ iconUrl: icon, shadowUrl: iconShadow, iconSize: [25, 41], iconAnchor: [12, 41] });
 L.Marker.prototype.options.icon = DefaultIcon;
 
 const MAP_LAYERS = {
-  normal: { url: 'http://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', attr: 'Google Maps' },
-  hybrid: { url: 'http://{s}.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}', attr: 'Google Hybrid' },
-  satellite: { url: 'http://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', attr: 'Google Satellite' },
-  terrain: { url: 'http://{s}.google.com/vt/lyrs=p&x={x}&y={y}&z={z}', attr: 'Google Terrain' }
+  normal: { url: 'https://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', attr: 'Google Maps' },
+  hybrid: { url: 'https://{s}.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}', attr: 'Google Hybrid' },
+  satellite: { url: 'https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', attr: 'Google Satellite' },
+  terrain: { url: 'https://{s}.google.com/vt/lyrs=p&x={x}&y={y}&z={z}', attr: 'Google Terrain' }
 };
 
 const MapController = ({ setMap }) => {
@@ -34,7 +28,6 @@ const MapController = ({ setMap }) => {
   return null;
 };
 
-// --- HELPER: COORDINATE FORMATTER ---
 const formatCoordinate = (value, type) => {
     if (value === null || value === undefined) return '--.------° -';
     const direction = type === 'lat' ? (value >= 0 ? 'N' : 'S') : (value >= 0 ? 'E' : 'W');
@@ -47,19 +40,63 @@ const GPSMeasurement = () => {
   const [showLayerMenu, setShowLayerMenu] = useState(false);
   const [isLocating, setIsLocating] = useState(false);
   
-  // --- STATES ---
   const [isCreateMenuOpen, setIsCreateMenuOpen] = useState(false);
-  const [activeMenu, setActiveMenu] = useState('main'); 
-  const [activeMode, setActiveMode] = useState('default'); // 'default', 'marker', 'field', 'distance'
+  const [isMainMenuOpen, setIsMainMenuOpen] = useState(false);
   
-  // Extension States
+  // SCREENS
+  const [showGeoCam, setShowGeoCam] = useState(false);
+  const [showProfileScreen, setShowProfileScreen] = useState(false);
+  const [showSettingsScreen, setShowSettingsScreen] = useState(false);
+  const [showHelpScreen, setShowHelpScreen] = useState(false);
+
+  const [activeMenu, setActiveMenu] = useState('main'); 
+  const [activeMode, setActiveMode] = useState('default'); 
+  const [measureMethod, setMeasureMethod] = useState('manual'); 
+
   const [savedFiles, setSavedFiles] = useState([]);
   const [tempMeasureData, setTempMeasureData] = useState(null); 
   const [showSaveScreen, setShowSaveScreen] = useState(false);
   const [showFileManager, setShowFileManager] = useState(false);
   const [showGroupScreen, setShowGroupScreen] = useState(false);
 
-  // Data states
+  // --- APP SETTINGS (New structure) ---
+  const [userProfile, setUserProfile] = useState({ name: '', photo: null });
+  const [appSettings, setAppSettings] = useState({ 
+      distanceUnit: 'm', // Default to meters
+      areaUnit: 'm2'     // Default to sq meters
+  });
+
+  useEffect(() => {
+      const savedProfile = localStorage.getItem('userProfile');
+      if (savedProfile) setUserProfile(JSON.parse(savedProfile));
+      
+      const savedSettings = localStorage.getItem('appSettings');
+      if (savedSettings) setAppSettings(JSON.parse(savedSettings));
+  }, []);
+
+  const handleSaveProfile = (newProfile) => {
+      setUserProfile(newProfile);
+      localStorage.setItem('userProfile', JSON.stringify(newProfile));
+      setShowProfileScreen(false);
+  };
+
+  const handleSaveSettings = (newSettings) => {
+      // Merge with existing to avoid overwriting partial updates
+      const updated = { ...appSettings, ...newSettings };
+      setAppSettings(updated);
+      localStorage.setItem('appSettings', JSON.stringify(updated));
+      setShowSettingsScreen(false);
+  };
+
+  const handleLiveSettingUpdate = (updatedSettings) => {
+      const newSet = { ...appSettings, ...updatedSettings };
+      setAppSettings(newSet);
+      localStorage.setItem('appSettings', JSON.stringify(newSet));
+  };
+
+  const fileInputRef = useRef(null);
+  const [overlayImage, setOverlayImage] = useState(null);
+
   const [poiData, setPoiData] = useState({
       title: '', description: '', group: { name: 'Without group', color: 'transparent' }, date: new Date().toLocaleDateString()
   });
@@ -68,25 +105,49 @@ const GPSMeasurement = () => {
       { name: 'My Farm', color: '#4ade80' }
   ]);
 
-  // Search
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
 
-  // Marker Logic State
   const [markerPoints, setMarkerPoints] = useState([]); 
 
+  const getCurrentLocation = (onSuccess, onError) => {
+    if (!navigator.geolocation) {
+        alert("Geolocation not supported.");
+        if(onError) onError();
+        return;
+    }
+    navigator.geolocation.getCurrentPosition(onSuccess, (error) => {
+        if(onError) onError(error);
+    }, { enableHighAccuracy: true, timeout: 15000 });
+  };
+
   const handleLocationClick = () => {
-    if (!map || !navigator.geolocation) return;
+    if (!map) return;
     setIsLocating(true);
-    navigator.geolocation.getCurrentPosition(
+    getCurrentLocation(
         (pos) => {
             map.flyTo([pos.coords.latitude, pos.coords.longitude], 18);
             setIsLocating(false);
         },
-        () => setIsLocating(false),
-        { enableHighAccuracy: true } 
+        () => setIsLocating(false)
     );
+  };
+
+  const handleGpsPin = () => {
+      setIsLocating(true);
+      getCurrentLocation(
+          (pos) => {
+              const newPoint = L.latLng(pos.coords.latitude, pos.coords.longitude);
+              setMarkerPoints(prev => [...prev, newPoint]); 
+              setActiveMode('marker');
+              setIsCreateMenuOpen(false);
+              setIsSearchOpen(false);
+              setIsLocating(false);
+              if (map) map.setView(newPoint, 18);
+          },
+          () => setIsLocating(false)
+      );
   };
 
   const handleFitBounds = () => {
@@ -98,32 +159,76 @@ const GPSMeasurement = () => {
     }
   };
 
-  // --- SEARCH LOGIC (FIXED: Uses Photon + Fast Debounce) ---
+  const handleImportClick = (type) => {
+      if (fileInputRef.current) {
+          if (type === 'image') fileInputRef.current.accept = "image/*";
+          else if (type === 'pdf') fileInputRef.current.accept = ".pdf";
+          else if (type === 'geo') fileInputRef.current.accept = ".json,.geojson,.kml";
+          fileInputRef.current.click();
+      }
+  };
+
+  const handleFileSelect = (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      if (file.type.startsWith('image/')) {
+          const reader = new FileReader();
+          reader.onload = (event) => {
+              if (map) {
+                  const bounds = map.getBounds().pad(-0.2); 
+                  setOverlayImage({ url: event.target.result, bounds: bounds });
+                  setIsCreateMenuOpen(false);
+                  
+                  const newFileEntry = {
+                      id: Date.now(),
+                      type: 'import',
+                      details: {
+                          title: file.name,
+                          fileType: 'image',
+                          date: new Date().toLocaleDateString(),
+                          photo: event.target.result
+                      },
+                      geometry: { value: (file.size / 1024).toFixed(2) + ' KB' }
+                  };
+                  setSavedFiles(prev => [newFileEntry, ...prev]);
+                  alert("Image Imported to Map & Saved Records.");
+              }
+          };
+          reader.readAsDataURL(file);
+      } else {
+          const newFileEntry = {
+              id: Date.now(),
+              type: 'import',
+              details: {
+                  title: file.name,
+                  fileType: 'document',
+                  date: new Date().toLocaleDateString(),
+                  photo: null
+              },
+              geometry: { value: (file.size / 1024).toFixed(2) + ' KB' }
+          };
+          setSavedFiles(prev => [newFileEntry, ...prev]);
+          alert(`File '${file.name}' imported to Saved Records.`);
+          setIsCreateMenuOpen(false);
+      }
+  };
+
   useEffect(() => {
     const delayDebounceFn = setTimeout(async () => {
       if (searchQuery.length > 2) { 
         try {
-          // Using Photon API (No API Key required, very fast)
-          // limit=5: Shows top 5 results
-          const response = await fetch(
-            `https://photon.komoot.io/api/?q=${searchQuery}&limit=5`
-          );
+          const response = await fetch(`https://photon.komoot.io/api/?q=${searchQuery}&limit=5`);
           if (response.ok) {
             const data = await response.json();
             setSearchResults(data.features || []);
           }
-        } catch (error) {
-          console.error("Search failed:", error);
-        }
-      } else {
-        setSearchResults([]);
-      }
-    }, 300); // Wait only 300ms (Fast response)
-    
+        } catch (error) { }
+      } else { setSearchResults([]); }
+    }, 300);
     return () => clearTimeout(delayDebounceFn);
   }, [searchQuery]); 
 
-  // --- SAVE FLOW HANDLERS ---
   const handleSaveInit = (dataFromExtension) => {
       if (dataFromExtension) {
           setTempMeasureData(dataFromExtension);
@@ -133,6 +238,22 @@ const GPSMeasurement = () => {
       }
       setPoiData({ ...poiData, title: '', description: '', date: new Date().toLocaleDateString() });
       setShowSaveScreen(true);
+  };
+
+  const handleGeoTagSave = (photoDataUrl, locDetails) => {
+      const newFileEntry = {
+          id: Date.now(),
+          type: 'geo-photo',
+          details: {
+              title: 'Geo-Tagged Photo',
+              fileType: 'image',
+              date: locDetails.date,
+              photo: photoDataUrl
+          },
+          geometry: { value: `${locDetails.lat.toFixed(4)}, ${locDetails.lng.toFixed(4)}` }
+      };
+      setSavedFiles(prev => [newFileEntry, ...prev]);
+      alert("Geo-Tagged Photo Saved!");
   };
 
   const handleFinalSave = (finalPoiData) => {
@@ -147,82 +268,80 @@ const GPSMeasurement = () => {
       setMarkerPoints([]);
       setTempMeasureData(null);
       setActiveMode('default');
+      setOverlayImage(null); 
       alert("Saved successfully!");
   };
 
-  const handleCreateGroup = (newGroup) => {
-      setGroups([...groups, newGroup]);
-  };
+  const handleCreateGroup = (newGroup) => { setGroups([...groups, newGroup]); };
 
-  // --- RENDERERS ---
   const renderTopBar = () => {
-    // 1. MARKER MODE BAR (White + Black Strip)
     if (activeMode === 'marker') {
         const lastPoint = markerPoints[markerPoints.length - 1];
         return (
             <>
             <div style={styles.whiteTopBar}> 
-                <button onClick={() => { setActiveMode('default'); setMarkerPoints([]); }} style={styles.iconBtnBlack}>
-                    <FiArrowLeft size={24} color="#000" />
-                </button>
-                <span style={styles.centeredTitle}>Marker</span>
+                <button onClick={() => { setActiveMode('default'); setMarkerPoints([]); }} style={styles.iconBtnBlack}><FiArrowLeft size={24} color="#000" /></button>
+                <span style={styles.centeredTitle}>Pin Location</span>
                 <button onClick={() => handleSaveInit(null)} style={styles.headerTextBtnBlack}>NEXT</button>
             </div>
             <div style={styles.blackCoordStrip}>
-                <div style={styles.coordItem}>
-                    <span style={styles.coordLabel}>Latitude</span>
-                    <span style={styles.coordValue}>{formatCoordinate(lastPoint?.lat, 'lat')}</span>
-                </div>
-                <div style={styles.coordItem}>
-                    <span style={styles.coordLabel}>Longitude</span>
-                    <span style={styles.coordValue}>{formatCoordinate(lastPoint?.lng, 'lng')}</span>
-                </div>
+                <div style={styles.coordItem}><span style={styles.coordLabel}>Latitude</span><span style={styles.coordValue}>{formatCoordinate(lastPoint?.lat, 'lat')}</span></div>
+                <div style={styles.coordItem}><span style={styles.coordLabel}>Longitude</span><span style={styles.coordValue}>{formatCoordinate(lastPoint?.lng, 'lng')}</span></div>
             </div>
             </>
         );
     }
-    // 2. SEARCH BAR
     if (isSearchOpen) {
         return (
             <div style={styles.whiteTopBar}>
                 <div style={{width: '100%', display: 'flex', alignItems: 'center'}}>
                     <button onClick={() => setIsSearchOpen(false)} style={styles.iconBtnBlack}><FiArrowLeft size={24} /></button>
                     <div style={styles.searchContainer}>
-                        <FiSearch size={20} color="#666" style={{minWidth: '24px'}}/>
-                        <input type="text" placeholder="Search village..." style={styles.searchInput} value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} autoFocus />
-                        {searchQuery && <button onClick={() => {setSearchQuery(''); setSearchResults([]);}} style={styles.clearBtn}><FiX size={18} /></button>}
+                        <FiSearch size={20} color="#666" style={{minWidth: '24px'}}/><input type="text" placeholder="Search village..." style={styles.searchInput} value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} autoFocus />{searchQuery && <button onClick={() => {setSearchQuery(''); setSearchResults([]);}} style={styles.clearBtn}><FiX size={18} /></button>}
                     </div>
                 </div>
             </div>
         );
     }
-    // 3. DEFAULT BAR (REMOVED SAVED BUTTON)
     return (
         <div style={styles.whiteTopBar}>
-            <button style={styles.iconBtnBlack}><FiMenu size={24} /></button>
+            <button style={styles.iconBtnBlack} onClick={() => setIsMainMenuOpen(true)}><FiMenu size={24} /></button>
             <span style={styles.centeredTitle}>Map</span>
-            <div style={{display:'flex', gap: 10}}>
-                <button onClick={() => setIsSearchOpen(true)} style={styles.iconBtnBlack}><FiSearch size={24}/></button>
-            </div>
+            <div style={{display:'flex', gap: 10}}><button onClick={() => setIsSearchOpen(true)} style={styles.iconBtnBlack}><FiSearch size={24}/></button></div>
         </div>
     );
   };
 
-  // --- MAIN RENDER ---
   if (showSaveScreen) {
       if (showGroupScreen) return <GroupScreen groups={groups} onSelect={(grp) => { setPoiData({...poiData, group: grp}); setShowGroupScreen(false); }} onBack={() => setShowGroupScreen(false)} onCreateGroup={handleCreateGroup}/>;
-      return <SaveScreen poiData={poiData} setPoiData={setPoiData} onBack={() => setShowSaveScreen(false)} onSave={handleFinalSave} onOpenGroupBtn={() => setShowGroupScreen(true)}/>;
+      return <SaveScreen poiData={poiData} setPoiData={setPoiData} onBack={() => setShowSaveScreen(false)} onSave={handleFinalSave} onOpenGroupBtn={() => setShowGroupScreen(true)} geometryData={tempMeasureData} />;
   }
 
+  // --- RENDER MAIN MENU SCREENS ---
   if (showFileManager) return <FileManager onClose={() => setShowFileManager(false)} files={savedFiles} />;
+  if (showGeoCam) return <GeoTagCamera onSave={handleGeoTagSave} onClose={() => setShowGeoCam(false)} />;
+  if (showProfileScreen) return <ProfileEditScreen profile={userProfile} onSave={handleSaveProfile} onBack={() => setShowProfileScreen(false)} />;
+  if (showSettingsScreen) return <SettingsScreen settings={appSettings} onSave={handleSaveSettings} onBack={() => setShowSettingsScreen(false)} />;
+  if (showHelpScreen) return <HelpScreen onBack={() => setShowHelpScreen(false)} />;
 
   return (
     <div style={styles.page}>
       
-      {/* EXTENSION: MeasureTool has its own top bar, so we only render ours if MeasureTool is inactive */}
+      <MainMenu 
+          isOpen={isMainMenuOpen} 
+          onClose={() => setIsMainMenuOpen(false)} 
+          profile={userProfile}
+          onOpenProfile={() => setShowProfileScreen(true)}
+          onOpenFiles={() => setShowFileManager(true)}
+          onOpenGeoCam={() => setShowGeoCam(true)}
+          onOpenSettings={() => setShowSettingsScreen(true)}
+          onOpenHelp={() => setShowHelpScreen(true)}
+      />
+
+      <input type="file" ref={fileInputRef} style={{display:'none'}} onChange={handleFileSelect} />
+
       {activeMode !== 'field' && activeMode !== 'distance' && renderTopBar()}
 
-      {/* --- SEARCH RESULTS --- */}
       {isSearchOpen && searchResults.length > 0 && (
           <div style={styles.searchResultsList}>
             {searchResults.map((feature, index) => (
@@ -231,36 +350,35 @@ const GPSMeasurement = () => {
                   setSearchResults([]); setIsSearchOpen(false);
               }}>
                 <div style={{fontWeight: 'bold', color: '#000'}}>{feature.properties.name}</div>
-                <div style={{fontSize: '12px', color: '#666'}}>
-                    {[
-                        feature.properties.city,
-                        feature.properties.state, 
-                        feature.properties.country
-                    ].filter(Boolean).join(', ')}
-                </div>
+                <div style={{fontSize: '12px', color: '#666'}}>{[feature.properties.city, feature.properties.state, feature.properties.country].filter(Boolean).join(', ')}</div>
               </div>
             ))}
           </div>
       )}
 
-      {/* --- MAP --- */}
       <MapContainer center={[20.5937, 78.9629]} zoom={5} style={styles.map} zoomControl={false}>
         <TileLayer url={MAP_LAYERS[activeLayer].url} subdomains={['mt0','mt1','mt2','mt3']} />
         <MapController setMap={setMap} />
         
-        {/* EXTENSION: Measure Tool (Handles Drawing Logic) */}
-        <MeasureTool mode={activeMode} active={activeMode === 'field' || activeMode === 'distance'} onExit={() => setActiveMode('default')} onSave={handleSaveInit}/>
+        {overlayImage && <ImageOverlay url={overlayImage.url} bounds={overlayImage.bounds} opacity={0.7} />}
+
+        <MeasureTool 
+            key={`${activeMode}-${measureMethod}`} 
+            mode={activeMode} 
+            method={measureMethod} 
+            active={activeMode === 'field' || activeMode === 'distance'} 
+            settings={appSettings}
+            onUpdateSettings={handleLiveSettingUpdate}
+            onExit={() => setActiveMode('default')} 
+            onSave={handleSaveInit}
+        />
         
-        {/* Marker Logic (Local) */}
-        {activeMode === 'marker' && <MarkerClickLogic addPoint={(p) => setMarkerPoints([...markerPoints, p])} />}
+        {activeMode === 'marker' && <MarkerClickLogic addPoint={(p) => setMarkerPoints(prev => [...prev, p])} />}
         {markerPoints.map((p, i) => <Marker key={i} position={p}><Popup>{formatCoordinate(p.lat, 'lat')}, {formatCoordinate(p.lng, 'lng')}</Popup></Marker>)}
       </MapContainer>
 
-      {/* --- CONTROLS --- */}
-      {/* Left Controls */}
       <div style={styles.leftControls}>
           {activeMode === 'marker' && <button onClick={() => setMarkerPoints(prev => prev.slice(0, -1))} style={styles.controlBtnWhite}><FiRotateCcw size={22} color="#d32f2f" /></button>}
-          {/* Zoom: Push down if marker strip is visible */}
           <div style={{...styles.zoomGroupWhite, marginTop: activeMode === 'marker' ? '40px' : '0'}}>
                 <button onClick={() => map && map.zoomIn()} style={styles.zoomBtnTopWhite}><FiPlus size={24} color="#000" /></button>
                 <div style={styles.dividerWhite}></div>
@@ -268,9 +386,7 @@ const GPSMeasurement = () => {
           </div>
       </div>
 
-      {/* Right Controls */}
-      {/* Hide right controls if Create Menu or Measure Tool is active */}
-      {!isCreateMenuOpen && activeMode !== 'field' && activeMode !== 'distance' && (
+      {!isCreateMenuOpen && (
       <div style={{...styles.rightControlsTop, top: activeMode === 'marker' ? '120px' : '80px'}}>
         <button onClick={handleFitBounds} style={styles.controlBtnWhite}><FiMaximize size={24} color="#000" /></button>
         <div style={{position: 'relative'}}>
@@ -287,7 +403,6 @@ const GPSMeasurement = () => {
       </div>
       )}
 
-      {/* Bottom Button */}
       {!isCreateMenuOpen && activeMode === 'default' && (
       <div style={styles.bottomContainer}>
         <button onClick={() => { setIsCreateMenuOpen(true); setActiveMenu('main'); }} style={{...styles.createNewBtnWhite, ...styles.pulsatingBtn}}>
@@ -296,7 +411,6 @@ const GPSMeasurement = () => {
       </div>
       )}
 
-      {/* Side Menu */}
       {isCreateMenuOpen && ( 
           <>
             <div style={styles.sideMenuContainer}>
@@ -305,12 +419,29 @@ const GPSMeasurement = () => {
                         <MenuOption icon={<FiDownload size={24} />} label="Import" onClick={() => setActiveMenu('import')} />
                         <MenuOption icon={<FaDrawPolygon size={24} />} label="Field" onClick={() => setActiveMenu('field')} />
                         <MenuOption icon={<FaRulerHorizontal size={24} />} label="Distance" onClick={() => setActiveMenu('distance')} />
-                        <MenuOption icon={<FiMapPin size={24} />} label="Marker" onClick={() => { setIsCreateMenuOpen(false); setActiveMode('marker'); setIsSearchOpen(false); }} />
+                        <MenuOption icon={<FiMapPin size={24} />} label="Pin Location" onClick={() => setActiveMenu('pin')} />
                     </>
                 )}
-                {activeMenu === 'import' && <ImportMenu onBack={() => setActiveMenu('main')} />}
-                {activeMenu === 'field' && <MeasureMenu type="field" onBack={() => setActiveMenu('main')} onStart={(method) => { setIsCreateMenuOpen(false); setActiveMode('field'); }} />}
-                {activeMenu === 'distance' && <MeasureMenu type="distance" onBack={() => setActiveMenu('main')} onStart={(method) => { setIsCreateMenuOpen(false); setActiveMode('distance'); }} />}
+                {activeMenu === 'import' && <ImportMenu onBack={() => setActiveMenu('main')} onImport={handleImportClick} />}
+                
+                {activeMenu === 'field' && <MeasureMenu type="field" onBack={() => setActiveMenu('main')} onStart={(method) => { 
+                    setIsCreateMenuOpen(false); 
+                    setMeasureMethod(method); 
+                    setActiveMode('field'); 
+                }} />}
+                {activeMenu === 'distance' && <MeasureMenu type="distance" onBack={() => setActiveMenu('main')} onStart={(method) => { 
+                    setIsCreateMenuOpen(false); 
+                    setMeasureMethod(method); 
+                    setActiveMode('distance'); 
+                }} />}
+                
+                {activeMenu === 'pin' && (
+                    <PinMenu 
+                        onBack={() => setActiveMenu('main')} 
+                        onStartManual={() => { setIsCreateMenuOpen(false); setActiveMode('marker'); setIsSearchOpen(false); }}
+                        onStartGPS={handleGpsPin}
+                    />
+                )}
             </div>
             <button onClick={() => setIsCreateMenuOpen(false)} style={styles.closeMenuBtn}><FiX size={28} color="#fff"/></button>
         </>
@@ -319,12 +450,8 @@ const GPSMeasurement = () => {
   );
 };
 
-const MarkerClickLogic = ({ addPoint }) => {
-    useMapEvents({ click(e) { addPoint(e.latlng); } });
-    return null;
-};
+const MarkerClickLogic = ({ addPoint }) => { useMapEvents({ click(e) { addPoint(e.latlng); } }); return null; };
 
-// --- STYLES ---
 const styles = {
   page: { position: 'fixed', inset: 0, display: 'flex', flexDirection: 'column', backgroundColor: '#fff' },
   whiteTopBar: { position: 'absolute', top: 0, left: 0, right: 0, height: '60px', backgroundColor: '#fff', zIndex: 20, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 15px', boxShadow: '0 2px 5px rgba(0,0,0,0.1)' },
@@ -350,7 +477,6 @@ const styles = {
   closeMenuBtn: { position: 'absolute', bottom: '30px', right: '15px', width: '50px', height: '50px', backgroundColor: '#4285F4', borderRadius: '12px', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', zIndex: 20 },
   layerMenu: { position: 'absolute', top: 0, right: '60px', backgroundColor: 'rgba(30,30,30,0.95)', padding: '10px', borderRadius: '12px', width: '150px' },
   layerMenuItem: { color: '#fff', padding: '10px', cursor: 'pointer' },
-  // Search
   searchContainer: { display: 'flex', alignItems: 'center', backgroundColor: '#f1f1f1', borderRadius: '8px', padding: '0 10px', height: '40px', flex: 1, border: '1px solid #ddd', marginLeft: '10px' },
   searchInput: { border: 'none', background: 'transparent', outline: 'none', fontSize: '16px', width: '100%', color: '#000', marginLeft: '8px' },
   clearBtn: { background: 'transparent', border: 'none', color: '#666', cursor: 'pointer' },
