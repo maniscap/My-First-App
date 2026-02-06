@@ -58,7 +58,10 @@ const fetchAddress = async (lat, lng) => {
                     city: r.name || "",
                     state: r.admin1 || "",
                     country: r.country || "",
-                    full: `${r.name}, ${r.admin1 || ''}, ${r.country || ''}`
+                    // Create a separate field for the header
+                    header: [r.name, r.admin1, r.country].filter(Boolean).join(', '),
+                    // Create a specific address line
+                    full: [r.name, r.admin3, r.admin2].filter(Boolean).join(', ')
                 };
             }
         }
@@ -68,6 +71,7 @@ const fetchAddress = async (lat, lng) => {
         city: "Location Found",
         state: "",
         country: "",
+        header: "Location Found",
         full: `${lat.toFixed(5)}, ${lng.toFixed(5)}`
     };
 };
@@ -133,13 +137,13 @@ export const MainMenu = ({ isOpen, onClose, profile, onOpenProfile, onOpenFiles,
                     <div style={styles.menuItem} onClick={() => { onOpenSettings(); onClose(); }}><FiSettings size={20} style={{marginRight: 15, color:'#555'}}/> Settings</div>
                     <div style={styles.menuItem} onClick={() => { onOpenHelp(); onClose(); }}><FiHelpCircle size={20} style={{marginRight: 15, color:'#555'}}/> Help & Guide</div>
                 </div>
-                <div style={styles.menuFooter}>FarmCap v3.2 Pro</div>
+                <div style={styles.menuFooter}>FarmCap v3.3 Pro</div>
             </div>
         </div>
     );
 };
 
-// --- 2. GEO-TAG CAMERA (PERFECTED: Height, Curves, Info & Branding) ---
+// --- 2. GEO-TAG CAMERA (REFINED: Matching Reference Card Exactly) ---
 export const GeoTagCamera = ({ onSave, onClose }) => {
     const videoRef = useRef(null);
     const canvasRef = useRef(null);
@@ -177,14 +181,15 @@ export const GeoTagCamera = ({ onSave, onClose }) => {
                     if (latitude === null || longitude === null || isNaN(latitude) || isNaN(longitude)) return;
                     
                     const addrData = await fetchAddress(latitude, longitude);
-                    const city = addrData ? `${addrData.city}` : 'Location Found';
-                    const fullAddr = addrData ? addrData.full : 'Fetching Address...';
-                    // Expanded Date Format including time
-                    const now = new Date();
-                    const dateStr = now.toLocaleDateString('en-GB', { weekday: 'long', day: '2-digit', month: 'short', year: 'numeric' });
-                    const timeStr = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+                    const city = addrData.header || 'Location Found';
+                    const fullAddr = addrData.full || 'Fetching Address...';
                     
-                    setLocData({ lat: latitude, lng: longitude, city, address: fullAddr, date: dateStr, time: timeStr });
+                    const now = new Date();
+                    const dateStr = now.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' });
+                    const timeStr = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+                    const fullDateTime = `${now.toLocaleString('en-US', {weekday: 'long'})}, ${dateStr} ${timeStr}`;
+
+                    setLocData({ lat: latitude, lng: longitude, city, address: fullAddr, date: fullDateTime });
                     
                     if (!mapTile && latitude && longitude) {
                         const zoom = 15;
@@ -235,7 +240,7 @@ export const GeoTagCamera = ({ onSave, onClose }) => {
         }
     };
 
-    // --- FINAL CARD DESIGN LOGIC ---
+    // --- FINAL CANVAS DRAWING LOGIC: Matching Reference ---
     const takePicture = () => {
         if (!videoRef.current || !canvasRef.current) return;
         setFinalLocData(locData);
@@ -245,36 +250,36 @@ export const GeoTagCamera = ({ onSave, onClose }) => {
         const ctx = canvas.getContext('2d'); ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
         
         if (locData) {
-            const margin = canvas.width * 0.04; // 4% margin
-            // FIX: Decreased height to 16% for a sleek look
-            const cardHeight = canvas.height * 0.16; 
+            const margin = canvas.width * 0.04;
+            // Increased height slightly to accommodate 4 lines comfortably with padding
+            const cardHeight = canvas.height * 0.22; 
             const cardWidth = canvas.width - (margin * 2);
             const cardX = margin;
             const cardY = canvas.height - cardHeight - margin;
-            const radius = 30; // More rounded corners
+            const radius = 25;
 
-            // Draw Background
+            // Background
             ctx.save();
             ctx.beginPath();
             ctx.roundRect(cardX, cardY, cardWidth, cardHeight, radius);
             ctx.fillStyle = "rgba(0, 0, 0, 0.75)";
             ctx.fill();
-            ctx.strokeStyle = "rgba(255, 255, 255, 0.15)";
             ctx.lineWidth = 1;
+            ctx.strokeStyle = "rgba(255, 255, 255, 0.2)";
             ctx.stroke();
             ctx.clip(); 
 
-            // 1. Branding (Top Right of Card)
+            // 1. Branding (TOP RIGHT of Card)
             ctx.textAlign = "right";
             const brandX = cardX + cardWidth - 20;
-            const brandY = cardY + 35;
+            const brandY = cardY + 40; // Padded from top
             
             ctx.fillStyle = "#4ade80"; // FarmCap Green
-            ctx.font = `bold ${canvas.width * 0.03}px sans-serif`;
+            ctx.font = `bold ${canvas.width * 0.035}px sans-serif`;
             ctx.fillText("🧢 FarmCap", brandX, brandY); 
 
-            // 2. Draw Map (Left Square)
-            const mapPadding = 15;
+            // 2. Map (Left Square)
+            const mapPadding = 20;
             const mapSize = cardHeight - (mapPadding * 2);
             const mapX = cardX + mapPadding;
             const mapY = cardY + mapPadding;
@@ -286,42 +291,43 @@ export const GeoTagCamera = ({ onSave, onClose }) => {
                 ctx.clip();
                 ctx.drawImage(mapTile, mapX, mapY, mapSize, mapSize);
                 ctx.restore();
-                
-                // Pin
                 ctx.fillStyle = "red"; ctx.beginPath(); ctx.arc(mapX + mapSize/2, mapY + mapSize/2, mapSize*0.08, 0, Math.PI*2); ctx.fill();
                 ctx.strokeStyle = "#fff"; ctx.lineWidth = 2; ctx.stroke();
             }
 
-            // 3. Text Content
-            const textX = mapX + mapSize + 25;
-            const textWidth = (cardX + cardWidth) - textX - 20;
-            let textY = mapY + 25;
-
+            // 3. Text Details (Matching Reference Layout)
             ctx.textAlign = "left";
-            
-            // City Name (Top Left of text area)
+            const textX = mapX + mapSize + 25; // Space after map
+            const textWidth = (cardX + cardWidth) - textX - 10;
+            let textY = mapY + 25; // Start aligned with map top
+
+            // LINE 1: Header (City, State, Country) - Large White
             ctx.fillStyle = "#ffffff";
-            ctx.font = `bold ${canvas.width * 0.045}px sans-serif`;
-            ctx.fillText(locData.city, textX, textY);
+            ctx.font = `bold ${canvas.width * 0.04}px sans-serif`;
+            // Limit text width
+            let headerText = locData.city;
+            if (ctx.measureText(headerText).width > textWidth - 100) { // -100 to avoid branding
+                 headerText = headerText.substring(0, 20) + '...';
+            }
+            ctx.fillText(headerText, textX, textY);
             
-            // Address (Middle)
+            // LINE 2: Address (Street/Area) - Medium Light Grey
             textY += (canvas.width * 0.05);
-            ctx.fillStyle = "#cccccc";
-            ctx.font = `${canvas.width * 0.024}px sans-serif`;
-            const addr = locData.address.substring(0, 55) + (locData.address.length > 55 ? '...' : '');
+            ctx.fillStyle = "#e0e0e0";
+            ctx.font = `${canvas.width * 0.025}px sans-serif`;
+            const addr = locData.address.substring(0, 50) + (locData.address.length > 50 ? '...' : '');
             ctx.fillText(addr, textX, textY);
 
-            // Coordinates (Bottom)
-            textY += (canvas.width * 0.04);
-            ctx.fillStyle = "#aaaaaa";
-            ctx.font = `${canvas.width * 0.02}px monospace`;
-            ctx.fillText(`${locData.lat.toFixed(5)}, ${locData.lng.toFixed(5)}`, textX, textY);
+            // LINE 3: Lat / Long - Medium White
+            textY += (canvas.width * 0.045);
+            ctx.fillStyle = "#ffffff";
+            ctx.font = `${canvas.width * 0.025}px sans-serif`;
+            ctx.fillText(`Lat ${locData.lat.toFixed(6)}° Long ${locData.lng.toFixed(6)}°`, textX, textY);
             
-            // Date & Time (Next to Coords or Below)
-            textY += (canvas.width * 0.035);
-            ctx.fillStyle = "#888888";
-            ctx.font = `${canvas.width * 0.02}px sans-serif`;
-            ctx.fillText(`${locData.date} • ${locData.time}`, textX, textY);
+            // LINE 4: Date & Time - Medium White
+            textY += (canvas.width * 0.045);
+            ctx.fillStyle = "#ffffff";
+            ctx.fillText(locData.date, textX, textY);
 
             ctx.restore();
         }
@@ -345,33 +351,47 @@ export const GeoTagCamera = ({ onSave, onClose }) => {
                             <div style={{width:28}}></div>
                         </div>
                         
-                        {/* LIVE PREVIEW: Matching Final Output */}
+                        {/* LIVE PREVIEW CARD */}
                         <div style={{
                             position:'absolute', 
                             bottom: 120, 
                             left: '4%', 
                             right: '4%', 
-                            height: '16%', // Reduced to 16%
+                            height: '20%', // Adjusted height for 4 lines
                             backgroundColor: 'rgba(0,0,0,0.75)', 
-                            borderRadius: 30, // More rounded
+                            borderRadius: 25, 
                             border: '1px solid rgba(255,255,255,0.2)', 
                             display: 'flex', 
                             padding: 15, 
                             alignItems: 'center', 
                             backdropFilter: 'blur(5px)'
                         }}>
-                             <div style={{height: '100%', aspectRatio: '1/1', borderRadius: 15, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.3)', position: 'relative', marginRight: 15}}>
+                             {/* Map Box */}
+                             <div style={{height: '100%', aspectRatio: '1/1', borderRadius: 12, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.5)', position: 'relative', marginRight: 15, flexShrink: 0}}>
                                 {mapTile ? <img src={mapTile.src} style={{width:'100%', height:'100%', objectFit:'cover'}} alt="map"/> : <div style={{width:'100%', height:'100%', display:'flex', alignItems:'center', justifyContent:'center', backgroundColor:'#333'}}><FiLoader color="#fff"/></div>}
                              </div>
-                             <div style={{flex: 1, display:'flex', flexDirection:'column', justifyContent:'center'}}>
-                                 <div style={{color: '#fff', fontSize: '18px', fontWeight: 'bold', marginBottom: 2}}>{locData?.city || "Locating..."}</div>
-                                 <div style={{color: '#ccc', fontSize: '11px', marginBottom: 2, lineHeight: 1.1}}>{locData?.address ? locData.address.substring(0, 45) + '...' : "Fetching Address..."}</div>
-                                 <div style={{color: '#aaa', fontSize: '10px', marginBottom: 2}}>{locData?.lat ? `${locData.lat.toFixed(4)}, ${locData.lng.toFixed(4)}` : ""}</div>
-                                 <div style={{color: '#888', fontSize: '10px'}}>{locData?.date ? `${locData.date} • ${locData.time}` : ""}</div>
-                             </div>
-                             {/* BRANDING: Top Right of Preview Card */}
-                             <div style={{position:'absolute', top: 15, right: 20, color: '#4ade80', fontWeight: 'bold', fontSize: '14px', fontFamily: 'sans-serif'}}>
-                                🧢 FarmCap
+                             
+                             {/* Text Content */}
+                             <div style={{flex: 1, display:'flex', flexDirection:'column', justifyContent:'center', overflow:'hidden'}}>
+                                 <div style={{display:'flex', justifyContent:'space-between', alignItems:'flex-start'}}>
+                                     <div style={{color: '#fff', fontSize: '16px', fontWeight: 'bold', marginBottom: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '65%'}}>
+                                         {locData?.city || "Locating..."}
+                                     </div>
+                                     {/* Branding Top Right inside Text Area */}
+                                     <div style={{color: '#4ade80', fontWeight: 'bold', fontSize: '12px'}}>🧢 FarmCap</div>
+                                 </div>
+                                 
+                                 <div style={{color: '#e0e0e0', fontSize: '11px', marginBottom: 3, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'}}>
+                                     {locData?.address ? locData.address : "Fetching Address..."}
+                                 </div>
+                                 
+                                 <div style={{color: '#fff', fontSize: '11px', marginBottom: 3}}>
+                                     {locData?.lat ? `Lat ${locData.lat.toFixed(6)}° Long ${locData.lng.toFixed(6)}°` : ""}
+                                 </div>
+                                 
+                                 <div style={{color: '#fff', fontSize: '11px'}}>
+                                     {locData?.date || ""}
+                                 </div>
                              </div>
                         </div>
 
