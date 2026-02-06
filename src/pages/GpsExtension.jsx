@@ -45,38 +45,40 @@ const formatCoord = (lat, lng) => {
     return `${Math.abs(lat).toFixed(6)}° ${latDir}, ${Math.abs(lng).toFixed(6)}° ${lngDir}`;
 };
 
-// --- NEW ALGORITHM: BigDataCloud API (Best for Mobile/No-CORS) ---
+// --- API: Improved Address Fetching ---
 const fetchAddress = async (lat, lng) => {
     if (!lat || !lng) return null;
     try {
-        // This API is generally more robust for "Village/State" without needing an API key on mobile
+        // Using BigDataCloud with structured parsing
         const response = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lng}&localityLanguage=en`);
         if (response.ok) {
             const data = await response.json();
             
-            // Prioritize: Locality (Village) -> City -> Principal Subdivision (State)
-            const village = data.locality || data.city || "";
+            // Extract the most relevant "Village" or "Area" name
+            let village = data.locality || "";
+            // If locality is missing or same as city, try finding a better name in localityInfo
+            if ((!village || village === data.city) && data.localityInfo && data.localityInfo.informative) {
+                const subLocality = data.localityInfo.informative.find(x => x.order > 10); // Look for smaller admin boundaries
+                if (subLocality) village = subLocality.name;
+            }
+
+            const city = data.city || "";
             const state = data.principalSubdivision || "";
             const country = data.countryName || "India";
             
-            // Construct Header: "Village, State, Country"
-            const header = [village, state, country].filter(Boolean).join(', ');
+            // Header: "Village, State, Country" (Filtered)
+            const headerParts = [village, city, state, country].filter((v, i, a) => v && a.indexOf(v) === i).slice(0, 3);
+            const header = headerParts.join(', ');
             
-            // Construct Detail: Full hierarchy if available
-            // If API returns limited info, we fallback to a formatted string
-            const detail = data.localityInfo ? 
-                data.localityInfo.administrative.map(x => x.name).slice(0, 3).join(', ') : 
-                [village, state, data.postcode].filter(Boolean).join(', ');
+            // Detail: formatted full string
+            const detail = [village, city, state, data.postcode].filter(Boolean).join(', ');
 
             return { header, detail };
         }
     } catch (error) { console.warn("API Error", error); }
     
-    // Backup Fallback
-    return { 
-        header: "Location Found", 
-        detail: "Fetching detailed address..." 
-    };
+    // Fallback if network fails
+    return { header: "Location Found", detail: `${lat.toFixed(4)}, ${lng.toFixed(4)}` };
 };
 
 // --- UNIT CONVERSION ---
@@ -128,13 +130,13 @@ export const MainMenu = ({ isOpen, onClose, profile, onOpenProfile, onOpenFiles,
                     <div style={styles.menuItem} onClick={() => { onOpenSettings(); onClose(); }}><FiSettings size={20} style={{marginRight: 15, color:'#555'}}/> Settings</div>
                     <div style={styles.menuItem} onClick={() => { onOpenHelp(); onClose(); }}><FiHelpCircle size={20} style={{marginRight: 15, color:'#555'}}/> Help & Guide</div>
                 </div>
-                <div style={styles.menuFooter}>FarmCap v3.5 Pro</div>
+                <div style={styles.menuFooter}>FarmCap v3.6 Pro</div>
             </div>
         </div>
     );
 };
 
-// --- 2. GEO-TAG CAMERA (PERFECTED: Layout, Data & Text Wrap) ---
+// --- 2. GEO-TAG CAMERA (PERFECTED) ---
 export const GeoTagCamera = ({ onSave, onClose }) => {
     const videoRef = useRef(null);
     const canvasRef = useRef(null);
@@ -187,14 +189,15 @@ export const GeoTagCamera = ({ onSave, onClose }) => {
                     });
                     
                     if (!mapTile && latitude && longitude) {
-                        const zoom = 15;
+                        const zoom = 16; // Slightly zoomed in for satellite
                         const tileX = Math.floor((longitude + 180) / 360 * Math.pow(2, zoom));
                         const tileY = Math.floor((1 - Math.log(Math.tan(latitude * Math.PI / 180) + 1 / Math.cos(latitude * Math.PI / 180)) / Math.PI) / 2 * Math.pow(2, zoom));
                         
                         if (isFinite(tileX) && isFinite(tileY)) {
                             const mapImg = new Image(); 
                             mapImg.crossOrigin = "Anonymous";
-                            mapImg.src = `https://tile.openstreetmap.org/${zoom}/${tileX}/${tileY}.png`;
+                            // FIX: Using Esri Satellite Tiles
+                            mapImg.src = `https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/${zoom}/${tileY}/${tileX}`;
                             mapImg.onload = () => setMapTile(mapImg);
                         }
                     }
@@ -235,29 +238,7 @@ export const GeoTagCamera = ({ onSave, onClose }) => {
         }
     };
 
-    // --- TEXT WRAPPING HELPER ---
-    const wrapText = (ctx, text, x, y, maxWidth, lineHeight) => {
-        const words = text.split(' ');
-        let line = '';
-        let currentY = y;
-
-        for (let n = 0; n < words.length; n++) {
-            const testLine = line + words[n] + ' ';
-            const metrics = ctx.measureText(testLine);
-            const testWidth = metrics.width;
-            if (testWidth > maxWidth && n > 0) {
-                ctx.fillText(line, x, currentY);
-                line = words[n] + ' ';
-                currentY += lineHeight;
-            } else {
-                line = testLine;
-            }
-        }
-        ctx.fillText(line, x, currentY);
-        return currentY + lineHeight; // Return next Y position
-    };
-
-    // --- CANVAS DRAWING ---
+    // --- CANVAS DRAWING (FIXED LAYOUT) ---
     const takePicture = () => {
         if (!videoRef.current || !canvasRef.current) return;
         setFinalLocData(locData);
@@ -268,7 +249,6 @@ export const GeoTagCamera = ({ onSave, onClose }) => {
         
         if (locData) {
             const margin = canvas.width * 0.04;
-            // Height adjusted for wrapped text space
             const cardHeight = canvas.height * 0.22; 
             const cardWidth = canvas.width - (margin * 2);
             const cardX = margin;
@@ -286,20 +266,21 @@ export const GeoTagCamera = ({ onSave, onClose }) => {
             ctx.stroke();
             ctx.clip(); 
 
-            // 1. Branding (TOP RIGHT)
+            // 1. Branding (TOP RIGHT) - Fixed Position
             ctx.textAlign = "right";
             const brandX = cardX + cardWidth - 20;
-            const brandY = cardY + 40; 
+            const brandY = cardY + 35; // Moved down slightly
             
             ctx.fillStyle = "#4ade80"; 
             ctx.font = `bold ${canvas.width * 0.035}px sans-serif`;
             ctx.fillText("🧢 FarmCap", brandX, brandY); 
 
-            // 2. Map (Left)
+            // 2. Map (Left - Small & Square)
             const mapPadding = 20;
-            const mapSize = cardHeight - (mapPadding * 2);
+            // FIX: Map size calculation
+            const mapSize = cardHeight * 0.75; // 75% of card height
             const mapX = cardX + mapPadding;
-            const mapY = cardY + mapPadding;
+            const mapY = cardY + (cardHeight - mapSize) / 2; // Vertically centered
             
             if (mapTile) {
                 ctx.save();
@@ -314,48 +295,52 @@ export const GeoTagCamera = ({ onSave, onClose }) => {
 
             // 3. Text Info (Right Side)
             const textX = mapX + mapSize + 25;
-            const textRightBoundary = cardX + cardWidth - 20; 
-            const maxTextWidth = textRightBoundary - textX;
-            let textY = mapY + 25;
+            // FIX: Width limit to avoid hitting branding
+            const brandingWidth = canvas.width * 0.25; 
+            const maxTextWidth = (cardX + cardWidth) - textX - 10;
+            const maxHeaderWidth = (cardX + cardWidth) - textX - brandingWidth - 10; // Avoid branding for header line
+            
+            let textY = mapY + 20; // Align with map top
 
             ctx.textAlign = "left";
 
-            // LINE 1: Header + Flag (No overlap with branding)
+            // LINE 1: Header + Flag (Bold)
             ctx.fillStyle = "#ffffff";
             ctx.font = `bold ${canvas.width * 0.045}px sans-serif`;
             let header = locData.header || "Location Found";
-            const flag = " 🇮🇳";
-            
-            // Check if header needs truncation to fit branding
-            const brandingWidth = canvas.width * 0.25; // Approximate space for "FarmCap"
-            if (ctx.measureText(header + flag).width > maxTextWidth - brandingWidth) {
-                 // Truncate logic
-                 header = header.substring(0, 15) + '...';
+            // Truncate Header if too long
+            if (ctx.measureText(header).width > maxHeaderWidth) { 
+                // Simple binary search truncation for performance
+                while (ctx.measureText(header + "...").width > maxHeaderWidth && header.length > 0) {
+                    header = header.substring(0, header.length - 1);
+                }
+                header += "...";
             }
-            ctx.fillText(header + flag, textX, textY);
+            ctx.fillText(header + " 🇮🇳", textX, textY); 
 
-            // LINE 2: Address (Wrapped Text)
+            // LINE 2: Address (Bold, Smaller)
             textY += (canvas.width * 0.055);
-            ctx.fillStyle = "#dddddd";
-            ctx.font = `${canvas.width * 0.026}px sans-serif`;
-            const lineHeight = canvas.width * 0.035;
-            const detailText = locData.detail || "Fetching address details...";
-            
-            // Use wrapText helper
-            textY = wrapText(ctx, detailText, textX, textY, maxTextWidth, lineHeight);
+            ctx.fillStyle = "#e0e0e0";
+            ctx.font = `bold ${canvas.width * 0.025}px sans-serif`;
+            let detail = locData.detail || "Fetching...";
+            if (ctx.measureText(detail).width > maxTextWidth) {
+                 while (ctx.measureText(detail + "...").width > maxTextWidth && detail.length > 0) {
+                    detail = detail.substring(0, detail.length - 1);
+                }
+                detail += "...";
+            }
+            ctx.fillText(detail, textX, textY);
 
-            // Add extra spacing after wrapped text
-            textY += (canvas.width * 0.02);
-
-            // LINE 3: Lat / Long
+            // LINE 3: Lat / Long (Bold)
+            textY += (canvas.width * 0.045);
             ctx.fillStyle = "#ffffff";
-            ctx.font = `${canvas.width * 0.025}px monospace`;
+            ctx.font = `bold ${canvas.width * 0.025}px monospace`;
             ctx.fillText(`Lat ${locData.lat.toFixed(5)}° Long ${locData.lng.toFixed(5)}°`, textX, textY);
 
-            // LINE 4: Date & Time
-            textY += (canvas.width * 0.04);
+            // LINE 4: Date & Time (Bold)
+            textY += (canvas.width * 0.045);
             ctx.fillStyle = "#ffffff";
-            ctx.font = `${canvas.width * 0.025}px sans-serif`;
+            ctx.font = `bold ${canvas.width * 0.025}px sans-serif`;
             ctx.fillText(locData.date, textX, textY);
 
             ctx.restore();
@@ -380,7 +365,7 @@ export const GeoTagCamera = ({ onSave, onClose }) => {
                             <div style={{width:28}}></div>
                         </div>
                         
-                        {/* LIVE PREVIEW: Matching Canvas Layout */}
+                        {/* LIVE PREVIEW: MATCHING CANVAS LOGIC */}
                         <div style={{
                             position:'absolute', 
                             bottom: 120, 
@@ -395,33 +380,33 @@ export const GeoTagCamera = ({ onSave, onClose }) => {
                             alignItems: 'center', 
                             backdropFilter: 'blur(5px)'
                         }}>
-                             {/* Map */}
-                             <div style={{height: '100%', aspectRatio: '1/1', borderRadius: 10, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.3)', position: 'relative', marginRight: 15, flexShrink: 0}}>
+                             {/* Map (Smaller & Satellite) */}
+                             <div style={{height: '75%', aspectRatio: '1/1', borderRadius: 10, overflow: 'hidden', border: '2px solid #fff', position: 'relative', marginRight: 15, flexShrink: 0}}>
                                 {mapTile ? <img src={mapTile.src} style={{width:'100%', height:'100%', objectFit:'cover'}} alt="map"/> : <div style={{width:'100%', height:'100%', display:'flex', alignItems:'center', justifyContent:'center', backgroundColor:'#333'}}><FiLoader color="#fff"/></div>}
                              </div>
                              
                              {/* Text Content */}
                              <div style={{flex: 1, display:'flex', flexDirection:'column', justifyContent:'center', overflow:'hidden', position:'relative', height:'100%'}}>
                                  {/* Branding (Top Right Absolute) */}
-                                 <div style={{position:'absolute', top: 0, right: 0, color: '#4ade80', fontWeight: 'bold', fontSize: '13px'}}>🧢 FarmCap</div>
+                                 <div style={{position:'absolute', top: 5, right: 0, color: '#4ade80', fontWeight: 'bold', fontSize: '14px'}}>🧢 FarmCap</div>
 
                                  {/* Line 1: Header + Flag */}
-                                 <div style={{color: '#fff', fontSize: '16px', fontWeight: 'bold', marginBottom: 2, marginTop: 15, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', width: '75%'}}>
+                                 <div style={{color: '#fff', fontSize: '16px', fontWeight: 'bold', marginBottom: 2, marginTop: 10, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', width: '70%'}}>
                                      {locData?.header ? `${locData.header} 🇮🇳` : "Locating..."}
                                  </div>
                                  
-                                 {/* Line 2: Details (Wrapped visual via CSS) */}
-                                 <div style={{color: '#ddd', fontSize: '11px', marginBottom: 4, lineHeight: '1.2', maxHeight: '2.4em', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical'}}>
+                                 {/* Line 2: Details */}
+                                 <div style={{color: '#ddd', fontSize: '12px', fontWeight: 'bold', marginBottom: 4, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'}}>
                                      {locData?.detail || "Fetching Address..."}
                                  </div>
                                  
                                  {/* Line 3: Lat/Long */}
-                                 <div style={{color: '#fff', fontSize: '11px', marginBottom: 2, fontFamily: 'monospace'}}>
+                                 <div style={{color: '#fff', fontSize: '11px', fontWeight: 'bold', marginBottom: 4, fontFamily: 'monospace'}}>
                                      {locData?.lat ? `Lat ${locData.lat.toFixed(5)}° Long ${locData.lng.toFixed(5)}°` : ""}
                                  </div>
                                  
                                  {/* Line 4: Date */}
-                                 <div style={{color: '#fff', fontSize: '11px'}}>
+                                 <div style={{color: '#fff', fontSize: '11px', fontWeight: 'bold'}}>
                                      {locData?.date || ""}
                                  </div>
                              </div>
