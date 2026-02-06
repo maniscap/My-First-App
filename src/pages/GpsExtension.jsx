@@ -122,13 +122,13 @@ export const MainMenu = ({ isOpen, onClose, profile, onOpenProfile, onOpenFiles,
                     <div style={styles.menuItem} onClick={() => { onOpenSettings(); onClose(); }}><FiSettings size={20} style={{marginRight: 15, color:'#555'}}/> Settings</div>
                     <div style={styles.menuItem} onClick={() => { onOpenHelp(); onClose(); }}><FiHelpCircle size={20} style={{marginRight: 15, color:'#555'}}/> Help & Guide</div>
                 </div>
-                <div style={styles.menuFooter}>FarmCap v3.8 Pro</div>
+                <div style={styles.menuFooter}>FarmCap v3.9 Pro</div>
             </div>
         </div>
     );
 };
 
-// --- 2. GEO-TAG CAMERA (PERFECTED CENTERED LAYOUT) ---
+// --- 2. GEO-TAG CAMERA (PERFECTED CENTERED LAYOUT & CANVAS MATCH) ---
 export const GeoTagCamera = ({ onSave, onClose }) => {
     const videoRef = useRef(null);
     const canvasRef = useRef(null);
@@ -230,16 +230,26 @@ export const GeoTagCamera = ({ onSave, onClose }) => {
         }
     };
 
-    const wrapText = (ctx, text, x, y, maxWidth, lineHeight) => {
+    // --- FIX: New Wrap Text helper that limits lines to mimic CSS line-clamp ---
+    const wrapTextLimited = (ctx, text, x, y, maxWidth, lineHeight, maxLines) => {
         const words = text.split(' ');
         let line = '';
         let currentY = y;
-        let linesCount = 0;
+        let linesCount = 1;
 
         for (let n = 0; n < words.length; n++) {
             const testLine = line + words[n] + ' ';
             const metrics = ctx.measureText(testLine);
             if (metrics.width > maxWidth && n > 0) {
+                // Check if next line exceeds maxLines
+                if (linesCount >= maxLines) {
+                    // Truncate current line with ... and stop
+                    while (ctx.measureText(line + "...").width > maxWidth && line.length > 0) {
+                            line = line.substring(0, line.length - 1);
+                    }
+                    ctx.fillText(line + "...", x, currentY);
+                    return currentY + lineHeight; // Exit
+                }
                 ctx.fillText(line, x, currentY);
                 line = words[n] + ' ';
                 currentY += lineHeight;
@@ -252,7 +262,7 @@ export const GeoTagCamera = ({ onSave, onClose }) => {
         return currentY + lineHeight;
     };
 
-    // --- CANVAS DRAWING (CENTERED) ---
+    // --- CANVAS DRAWING (CENTERED & MATCHING PREVIEW LAYOUT) ---
     const takePicture = () => {
         if (!videoRef.current || !canvasRef.current) return;
         setFinalLocData(locData);
@@ -262,9 +272,13 @@ export const GeoTagCamera = ({ onSave, onClose }) => {
         const ctx = canvas.getContext('2d'); ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
         
         if (locData) {
-            // DYNAMIC CARD SIZING BASED ON IMAGE WIDTH
-            const cardWidth = Math.min(canvas.width * 0.92, 800); // 92% width on mobile, max 800px on desktop
-            const cardHeight = cardWidth * 0.35; // Fixed aspect ratio for consistency
+            // DYNAMIC CARD SIZING matching preview 92% width, max 500px equivalent relative to canvas width
+            let cardWidthStr = (canvas.width * 0.92);
+            if (canvas.width > 600) cardWidthStr = canvas.width * 0.6; // Scale down on larger screens to mimic max-width
+            const cardWidth = Math.min(cardWidthStr, canvas.width - 40);
+
+            // Match aspect ratio 3.5/1 from preview
+            const cardHeight = cardWidth / 3.5;
             
             const cardX = (canvas.width - cardWidth) / 2; // Perfectly Centered
             const cardY = canvas.height - cardHeight - (canvas.height * 0.05); // 5% from bottom
@@ -285,17 +299,17 @@ export const GeoTagCamera = ({ onSave, onClose }) => {
             // 1. Branding (TOP RIGHT)
             ctx.textAlign = "right";
             const brandX = cardX + cardWidth - (cardWidth * 0.05);
-            const brandY = cardY + (cardHeight * 0.18);
+            const brandY = cardY + (cardHeight * 0.22); // Adjusted vertical alignment
             
             ctx.fillStyle = "#4ade80"; 
-            ctx.font = `bold ${cardWidth * 0.04}px sans-serif`;
+            ctx.font = `bold ${cardWidth * 0.04}px sans-serif`; // ~14px equivalent
             ctx.fillText("🧢 FarmCap", brandX, brandY); 
 
-            // 2. Map (Left - Pro Square)
-            const mapPadding = cardHeight * 0.1;
-            const mapSize = cardHeight - (mapPadding * 2);
-            const mapX = cardX + mapPadding;
-            const mapY = cardY + mapPadding;
+            // 2. Map (Left - Pro Square) Match preview 80% height
+            const mapSize = cardHeight * 0.80;
+            const mapPaddingVertical = (cardHeight - mapSize) / 2;
+            const mapX = cardX + mapPaddingVertical;
+            const mapY = cardY + mapPaddingVertical;
             
             if (mapTile) {
                 ctx.save();
@@ -321,19 +335,21 @@ export const GeoTagCamera = ({ onSave, onClose }) => {
                 ctx.arc(centerX, centerY - pinSize, pinSize * 0.4, 0, Math.PI * 2); ctx.fill();
             }
 
-            // 3. Text Info (Right Side)
+            // 3. Text Info (Right Side) - Calibrated spacing
             const textX = mapX + mapSize + (cardWidth * 0.04);
             const textRightBoundary = cardX + cardWidth - (cardWidth * 0.05);
             const maxTextWidth = textRightBoundary - textX;
-            let textY = mapY + (mapSize * 0.15);
+            // Start text slightly below top of map
+            let textY = mapY + (mapSize * 0.18);
 
             ctx.textAlign = "left";
 
-            // LINE 1: Header + Flag
+            // LINE 1: Header + Flag (Matched ~15px bold)
             ctx.fillStyle = "#ffffff";
-            ctx.font = `bold ${cardWidth * 0.045}px sans-serif`;
+            ctx.font = `bold ${cardWidth * 0.043}px sans-serif`;
             let header = locData.header || "Location Found";
             const brandingSafeWidth = maxTextWidth - (cardWidth * 0.25); // Avoid logo
+            // Truncate header if too long (mimic overflow: hidden, ellipsis)
             if (ctx.measureText(header).width > brandingSafeWidth) { 
                 while (ctx.measureText(header + "...").width > brandingSafeWidth && header.length > 0) {
                     header = header.substring(0, header.length - 1);
@@ -342,24 +358,26 @@ export const GeoTagCamera = ({ onSave, onClose }) => {
             }
             ctx.fillText(header + " 🇮🇳", textX, textY); 
 
-            // LINE 2: Address (Wrapped)
-            textY += (cardWidth * 0.06);
+            // LINE 2: Address (Wrapped limited to 2 lines, matched ~11px bold, line-height 1.2)
+            textY += (cardWidth * 0.07); // Spacing between header and address
             ctx.fillStyle = "#e0e0e0";
-            ctx.font = `bold ${cardWidth * 0.025}px sans-serif`;
+            const detailFontSize = cardWidth * 0.031;
+            ctx.font = `bold ${detailFontSize}px sans-serif`;
             const detail = locData.detail || "Fetching...";
-            const lineHeight = cardWidth * 0.035;
-            textY = wrapText(ctx, detail, textX, textY, maxTextWidth, lineHeight);
+            const lineHeight = detailFontSize * 1.3;
+            // Use new wrapTextLimited to limit to 2 lines exactly like preview
+            textY = wrapTextLimited(ctx, detail, textX, textY, maxTextWidth, lineHeight, 2);
 
             // Spacer
-            textY += (cardWidth * 0.02);
+            textY += (cardWidth * 0.03);
 
-            // LINE 3: Lat / Long
+            // LINE 3: Lat / Long (Matched ~10px bold monospace)
             ctx.fillStyle = "#ffffff";
             ctx.font = `bold ${cardWidth * 0.028}px monospace`;
             ctx.fillText(`Lat ${locData.lat.toFixed(5)}° Long ${locData.lng.toFixed(5)}°`, textX, textY);
 
-            // LINE 4: Date
-            textY += (cardWidth * 0.045);
+            // LINE 4: Date (Matched ~10px bold)
+            textY += (cardWidth * 0.05);
             ctx.fillStyle = "#ffffff";
             ctx.font = `bold ${cardWidth * 0.028}px sans-serif`;
             ctx.fillText(locData.date, textX, textY);
