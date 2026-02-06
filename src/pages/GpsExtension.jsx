@@ -272,13 +272,13 @@ export const GeoTagCamera = ({ onSave, onClose }) => {
         const ctx = canvas.getContext('2d'); ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
         
         if (locData) {
-            // DYNAMIC CARD SIZING matching preview 92% width, max 500px equivalent relative to canvas width
-            let cardWidthStr = (canvas.width * 0.92);
+            // DYNAMIC CARD SIZING matching preview 96% width, max 500px equivalent relative to canvas width
+            let cardWidthStr = (canvas.width * 0.98);
             if (canvas.width > 600) cardWidthStr = canvas.width * 0.6; // Scale down on larger screens to mimic max-width
             const cardWidth = Math.min(cardWidthStr, canvas.width - 40);
 
-            // Match aspect ratio 3.5/1 from preview
-            const cardHeight = cardWidth / 3.5;
+            // Match aspect ratio 3.0/1 from preview
+            const cardHeight = cardWidth / 3.0;
             
             const cardX = (canvas.width - cardWidth) / 2; // Perfectly Centered
             const cardY = canvas.height - cardHeight - (canvas.height * 0.05); // 5% from bottom
