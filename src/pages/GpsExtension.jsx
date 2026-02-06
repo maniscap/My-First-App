@@ -122,13 +122,13 @@ export const MainMenu = ({ isOpen, onClose, profile, onOpenProfile, onOpenFiles,
                     <div style={styles.menuItem} onClick={() => { onOpenSettings(); onClose(); }}><FiSettings size={20} style={{marginRight: 15, color:'#555'}}/> Settings</div>
                     <div style={styles.menuItem} onClick={() => { onOpenHelp(); onClose(); }}><FiHelpCircle size={20} style={{marginRight: 15, color:'#555'}}/> Help & Guide</div>
                 </div>
-                <div style={styles.menuFooter}>FarmCap v3.9 Pro</div>
+                <div style={styles.menuFooter}>FarmCap v3.95 Pro</div>
             </div>
         </div>
     );
 };
 
-// --- 2. GEO-TAG CAMERA (PERFECTED CENTERED LAYOUT & CANVAS MATCH) ---
+// --- 2. GEO-TAG CAMERA (UPDATED SIZING) ---
 export const GeoTagCamera = ({ onSave, onClose }) => {
     const videoRef = useRef(null);
     const canvasRef = useRef(null);
@@ -188,7 +188,6 @@ export const GeoTagCamera = ({ onSave, onClose }) => {
                         if (isFinite(tileX) && isFinite(tileY)) {
                             const mapImg = new Image(); 
                             mapImg.crossOrigin = "Anonymous";
-                            // Esri Satellite
                             mapImg.src = `https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/${zoom}/${tileY}/${tileX}`;
                             mapImg.onload = () => setMapTile(mapImg);
                         }
@@ -230,7 +229,6 @@ export const GeoTagCamera = ({ onSave, onClose }) => {
         }
     };
 
-    // --- FIX: New Wrap Text helper that limits lines to mimic CSS line-clamp ---
     const wrapTextLimited = (ctx, text, x, y, maxWidth, lineHeight, maxLines) => {
         const words = text.split(' ');
         let line = '';
@@ -241,14 +239,12 @@ export const GeoTagCamera = ({ onSave, onClose }) => {
             const testLine = line + words[n] + ' ';
             const metrics = ctx.measureText(testLine);
             if (metrics.width > maxWidth && n > 0) {
-                // Check if next line exceeds maxLines
                 if (linesCount >= maxLines) {
-                    // Truncate current line with ... and stop
                     while (ctx.measureText(line + "...").width > maxWidth && line.length > 0) {
                             line = line.substring(0, line.length - 1);
                     }
                     ctx.fillText(line + "...", x, currentY);
-                    return currentY + lineHeight; // Exit
+                    return currentY + lineHeight; 
                 }
                 ctx.fillText(line, x, currentY);
                 line = words[n] + ' ';
@@ -262,7 +258,7 @@ export const GeoTagCamera = ({ onSave, onClose }) => {
         return currentY + lineHeight;
     };
 
-    // --- CANVAS DRAWING (CENTERED & MATCHING PREVIEW LAYOUT) ---
+    // --- CANVAS DRAWING ---
     const takePicture = () => {
         if (!videoRef.current || !canvasRef.current) return;
         setFinalLocData(locData);
@@ -272,16 +268,15 @@ export const GeoTagCamera = ({ onSave, onClose }) => {
         const ctx = canvas.getContext('2d'); ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
         
         if (locData) {
-            // DYNAMIC CARD SIZING matching preview 96% width, max 500px equivalent relative to canvas width
-            let cardWidthStr = (canvas.width * 0.98);
-            if (canvas.width > 600) cardWidthStr = canvas.width * 0.6; // Scale down on larger screens to mimic max-width
+            // FIX: INCREASED WIDTH TO 96% and ADJUSTED ASPECT RATIO TO 2.9 (TALLER)
+            let cardWidthStr = (canvas.width * 0.96); // 96% Width
+            if (canvas.width > 600) cardWidthStr = canvas.width * 0.6; 
             const cardWidth = Math.min(cardWidthStr, canvas.width - 40);
 
-            // Match aspect ratio 3.0/1 from preview
-            const cardHeight = cardWidth / 3.0;
+            const cardHeight = cardWidth / 2.9; // Taller Card
             
-            const cardX = (canvas.width - cardWidth) / 2; // Perfectly Centered
-            const cardY = canvas.height - cardHeight - (canvas.height * 0.05); // 5% from bottom
+            const cardX = (canvas.width - cardWidth) / 2;
+            const cardY = canvas.height - cardHeight - (canvas.height * 0.05); 
             
             const radius = 30;
 
@@ -299,13 +294,13 @@ export const GeoTagCamera = ({ onSave, onClose }) => {
             // 1. Branding (TOP RIGHT)
             ctx.textAlign = "right";
             const brandX = cardX + cardWidth - (cardWidth * 0.05);
-            const brandY = cardY + (cardHeight * 0.22); // Adjusted vertical alignment
+            const brandY = cardY + (cardHeight * 0.22); 
             
             ctx.fillStyle = "#4ade80"; 
-            ctx.font = `bold ${cardWidth * 0.04}px sans-serif`; // ~14px equivalent
+            ctx.font = `bold ${cardWidth * 0.04}px sans-serif`; 
             ctx.fillText("🧢 FarmCap", brandX, brandY); 
 
-            // 2. Map (Left - Pro Square) Match preview 80% height
+            // 2. Map (Left)
             const mapSize = cardHeight * 0.80;
             const mapPaddingVertical = (cardHeight - mapSize) / 2;
             const mapX = cardX + mapPaddingVertical;
@@ -335,21 +330,19 @@ export const GeoTagCamera = ({ onSave, onClose }) => {
                 ctx.arc(centerX, centerY - pinSize, pinSize * 0.4, 0, Math.PI * 2); ctx.fill();
             }
 
-            // 3. Text Info (Right Side) - Calibrated spacing
+            // 3. Text Info
             const textX = mapX + mapSize + (cardWidth * 0.04);
             const textRightBoundary = cardX + cardWidth - (cardWidth * 0.05);
             const maxTextWidth = textRightBoundary - textX;
-            // Start text slightly below top of map
-            let textY = mapY + (mapSize * 0.18);
+            let textY = mapY + (mapSize * 0.15);
 
             ctx.textAlign = "left";
 
-            // LINE 1: Header + Flag (Matched ~15px bold)
+            // LINE 1: Header + Flag
             ctx.fillStyle = "#ffffff";
             ctx.font = `bold ${cardWidth * 0.043}px sans-serif`;
             let header = locData.header || "Location Found";
-            const brandingSafeWidth = maxTextWidth - (cardWidth * 0.25); // Avoid logo
-            // Truncate header if too long (mimic overflow: hidden, ellipsis)
+            const brandingSafeWidth = maxTextWidth - (cardWidth * 0.25); 
             if (ctx.measureText(header).width > brandingSafeWidth) { 
                 while (ctx.measureText(header + "...").width > brandingSafeWidth && header.length > 0) {
                     header = header.substring(0, header.length - 1);
@@ -358,25 +351,24 @@ export const GeoTagCamera = ({ onSave, onClose }) => {
             }
             ctx.fillText(header + " 🇮🇳", textX, textY); 
 
-            // LINE 2: Address (Wrapped limited to 2 lines, matched ~11px bold, line-height 1.2)
-            textY += (cardWidth * 0.07); // Spacing between header and address
+            // LINE 2: Address
+            textY += (cardWidth * 0.07);
             ctx.fillStyle = "#e0e0e0";
             const detailFontSize = cardWidth * 0.031;
             ctx.font = `bold ${detailFontSize}px sans-serif`;
             const detail = locData.detail || "Fetching...";
             const lineHeight = detailFontSize * 1.3;
-            // Use new wrapTextLimited to limit to 2 lines exactly like preview
             textY = wrapTextLimited(ctx, detail, textX, textY, maxTextWidth, lineHeight, 2);
 
             // Spacer
             textY += (cardWidth * 0.03);
 
-            // LINE 3: Lat / Long (Matched ~10px bold monospace)
+            // LINE 3: Lat / Long
             ctx.fillStyle = "#ffffff";
             ctx.font = `bold ${cardWidth * 0.028}px monospace`;
             ctx.fillText(`Lat ${locData.lat.toFixed(5)}° Long ${locData.lng.toFixed(5)}°`, textX, textY);
 
-            // LINE 4: Date (Matched ~10px bold)
+            // LINE 4: Date
             textY += (cardWidth * 0.05);
             ctx.fillStyle = "#ffffff";
             ctx.font = `bold ${cardWidth * 0.028}px sans-serif`;
@@ -404,16 +396,16 @@ export const GeoTagCamera = ({ onSave, onClose }) => {
                             <div style={{width:28}}></div>
                         </div>
                         
-                        {/* LIVE PREVIEW: FIXED CENTERED LAYOUT */}
+                        {/* LIVE PREVIEW: FIXED 96% WIDTH & TALLER ASPECT RATIO */}
                         <div style={{
                             position:'absolute', 
                             bottom: 120, 
-                            left: '50%', // Center horizontally
-                            transform: 'translateX(-50%)', // Perfect center align
-                            width: '92%', // Mobile width
-                            maxWidth: '500px', // Laptop max width (Fixed Middle)
+                            left: '50%', 
+                            transform: 'translateX(-50%)', 
+                            width: '96%', // 96% Width
+                            maxWidth: '500px', 
                             height: 'auto',
-                            aspectRatio: '3.5/1', // Maintain rectangular shape
+                            aspectRatio: '2.9/1', // Taller aspect ratio
                             backgroundColor: 'rgba(0,0,0,0.8)', 
                             borderRadius: 25, 
                             border: '1px solid rgba(255,255,255,0.2)', 
@@ -437,7 +429,7 @@ export const GeoTagCamera = ({ onSave, onClose }) => {
                                 )}
                              </div>
                              
-                             {/* Text Content - Flex Column for Perfect Spacing */}
+                             {/* Text Content */}
                              <div style={{flex: 1, display:'flex', flexDirection:'column', justifyContent:'center', overflow:'hidden', position:'relative', height:'100%'}}>
                                  {/* Branding */}
                                  <div style={{position:'absolute', top: 0, right: 0, color: '#4ade80', fontWeight: 'bold', fontSize: '14px'}}>🧢 FarmCap</div>
