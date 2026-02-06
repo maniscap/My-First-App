@@ -53,22 +53,17 @@ const fetchAddress = async (lat, lng) => {
         if (response.ok) {
             const data = await response.json();
             
-            // Prioritize: Sub-locality (Village) > Locality (City)
             let village = "";
             if (data.localityInfo && data.localityInfo.informative) {
-                // Find order 10-12 (usually village/suburb level)
                 const precise = data.localityInfo.informative.find(x => x.order >= 10 && x.order <= 12);
                 if (precise) village = precise.name;
             }
             if (!village) village = data.locality || data.city || "";
 
             const state = data.principalSubdivision || "";
-            const country = "India"; // Explicit for formatting
+            const country = "India"; 
             
-            // Header: "Village, State, Country"
             const header = [village, state, country].filter(Boolean).join(', ');
-            
-            // Detail: Full hierarchy
             const detail = [data.locality, data.city, data.principalSubdivision, data.postcode].filter((v, i, a) => v && a.indexOf(v) === i).join(', ');
 
             return { header, detail };
@@ -127,13 +122,13 @@ export const MainMenu = ({ isOpen, onClose, profile, onOpenProfile, onOpenFiles,
                     <div style={styles.menuItem} onClick={() => { onOpenSettings(); onClose(); }}><FiSettings size={20} style={{marginRight: 15, color:'#555'}}/> Settings</div>
                     <div style={styles.menuItem} onClick={() => { onOpenHelp(); onClose(); }}><FiHelpCircle size={20} style={{marginRight: 15, color:'#555'}}/> Help & Guide</div>
                 </div>
-                <div style={styles.menuFooter}>FarmCap v3.7 Pro</div>
+                <div style={styles.menuFooter}>FarmCap v3.8 Pro</div>
             </div>
         </div>
     );
 };
 
-// --- 2. GEO-TAG CAMERA (PROFESSIONAL PIN + LAYOUT) ---
+// --- 2. GEO-TAG CAMERA (PERFECTED CENTERED LAYOUT) ---
 export const GeoTagCamera = ({ onSave, onClose }) => {
     const videoRef = useRef(null);
     const canvasRef = useRef(null);
@@ -193,7 +188,7 @@ export const GeoTagCamera = ({ onSave, onClose }) => {
                         if (isFinite(tileX) && isFinite(tileY)) {
                             const mapImg = new Image(); 
                             mapImg.crossOrigin = "Anonymous";
-                            // Esri Satellite for Pro Look
+                            // Esri Satellite
                             mapImg.src = `https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/${zoom}/${tileY}/${tileX}`;
                             mapImg.onload = () => setMapTile(mapImg);
                         }
@@ -235,7 +230,6 @@ export const GeoTagCamera = ({ onSave, onClose }) => {
         }
     };
 
-    // --- HELPER: Wrap Text for multi-line address ---
     const wrapText = (ctx, text, x, y, maxWidth, lineHeight) => {
         const words = text.split(' ');
         let line = '';
@@ -258,7 +252,7 @@ export const GeoTagCamera = ({ onSave, onClose }) => {
         return currentY + lineHeight;
     };
 
-    // --- CANVAS DRAWING (PROFESSIONAL LOOK) ---
+    // --- CANVAS DRAWING (CENTERED) ---
     const takePicture = () => {
         if (!videoRef.current || !canvasRef.current) return;
         setFinalLocData(locData);
@@ -268,35 +262,37 @@ export const GeoTagCamera = ({ onSave, onClose }) => {
         const ctx = canvas.getContext('2d'); ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
         
         if (locData) {
-            const margin = canvas.width * 0.04;
-            const cardHeight = canvas.height * 0.22; 
-            const cardWidth = canvas.width - (margin * 2);
-            const cardX = margin;
-            const cardY = canvas.height - cardHeight - margin;
-            const radius = 25;
+            // DYNAMIC CARD SIZING BASED ON IMAGE WIDTH
+            const cardWidth = Math.min(canvas.width * 0.92, 800); // 92% width on mobile, max 800px on desktop
+            const cardHeight = cardWidth * 0.35; // Fixed aspect ratio for consistency
+            
+            const cardX = (canvas.width - cardWidth) / 2; // Perfectly Centered
+            const cardY = canvas.height - cardHeight - (canvas.height * 0.05); // 5% from bottom
+            
+            const radius = 30;
 
             // Background
             ctx.save();
             ctx.beginPath();
             ctx.roundRect(cardX, cardY, cardWidth, cardHeight, radius);
-            ctx.fillStyle = "rgba(0, 0, 0, 0.75)";
+            ctx.fillStyle = "rgba(0, 0, 0, 0.8)";
             ctx.fill();
-            ctx.lineWidth = 1;
-            ctx.strokeStyle = "rgba(255, 255, 255, 0.15)";
+            ctx.lineWidth = 2;
+            ctx.strokeStyle = "rgba(255, 255, 255, 0.2)";
             ctx.stroke();
             ctx.clip(); 
 
             // 1. Branding (TOP RIGHT)
             ctx.textAlign = "right";
-            const brandX = cardX + cardWidth - 20;
-            const brandY = cardY + 45; // Moved down slightly
+            const brandX = cardX + cardWidth - (cardWidth * 0.05);
+            const brandY = cardY + (cardHeight * 0.18);
             
             ctx.fillStyle = "#4ade80"; 
-            ctx.font = `bold ${canvas.width * 0.035}px sans-serif`;
+            ctx.font = `bold ${cardWidth * 0.04}px sans-serif`;
             ctx.fillText("🧢 FarmCap", brandX, brandY); 
 
-            // 2. Map (Left - Small & Square)
-            const mapPadding = 20;
+            // 2. Map (Left - Pro Square)
+            const mapPadding = cardHeight * 0.1;
             const mapSize = cardHeight - (mapPadding * 2);
             const mapX = cardX + mapPadding;
             const mapY = cardY + mapPadding;
@@ -304,78 +300,68 @@ export const GeoTagCamera = ({ onSave, onClose }) => {
             if (mapTile) {
                 ctx.save();
                 ctx.beginPath();
-                ctx.roundRect(mapX, mapY, mapSize, mapSize, 12);
+                ctx.roundRect(mapX, mapY, mapSize, mapSize, 15);
                 ctx.clip();
                 ctx.drawImage(mapTile, mapX, mapY, mapSize, mapSize);
                 ctx.restore();
                 
-                // --- STYLISH PIN (RED MARKER) ---
+                // Red Pin
                 const centerX = mapX + mapSize / 2;
                 const centerY = mapY + mapSize / 2;
-                const pinSize = mapSize * 0.15; // Size relative to map
+                const pinSize = mapSize * 0.15;
 
-                ctx.shadowColor = "rgba(0,0,0,0.5)";
-                ctx.shadowBlur = 5;
-                ctx.fillStyle = "#ff2222"; // Red
-                ctx.beginPath();
-                ctx.arc(centerX, centerY - pinSize, pinSize, 0, Math.PI * 2); // Top circle
+                ctx.shadowColor = "rgba(0,0,0,0.5)"; ctx.shadowBlur = 5;
+                ctx.fillStyle = "#ff2222"; ctx.beginPath();
+                ctx.arc(centerX, centerY - pinSize, pinSize, 0, Math.PI * 2);
                 ctx.moveTo(centerX - pinSize * 0.9, centerY - pinSize * 0.5);
-                ctx.lineTo(centerX, centerY + pinSize * 1.5); // Pointy bottom
+                ctx.lineTo(centerX, centerY + pinSize * 1.5);
                 ctx.lineTo(centerX + pinSize * 0.9, centerY - pinSize * 0.5);
                 ctx.fill();
-
-                // Inner White Dot
-                ctx.shadowBlur = 0;
-                ctx.fillStyle = "#ffffff";
-                ctx.beginPath();
-                ctx.arc(centerX, centerY - pinSize, pinSize * 0.4, 0, Math.PI * 2);
-                ctx.fill();
+                ctx.shadowBlur = 0; ctx.fillStyle = "#ffffff"; ctx.beginPath();
+                ctx.arc(centerX, centerY - pinSize, pinSize * 0.4, 0, Math.PI * 2); ctx.fill();
             }
 
             // 3. Text Info (Right Side)
-            const textX = mapX + mapSize + 25;
-            const brandingWidth = canvas.width * 0.28; 
-            const maxHeaderWidth = (cardX + cardWidth) - textX - brandingWidth;
-            const maxTextWidth = (cardX + cardWidth) - textX - 20; // Allow address to go further right below branding
-            
-            let textY = mapY + 25;
+            const textX = mapX + mapSize + (cardWidth * 0.04);
+            const textRightBoundary = cardX + cardWidth - (cardWidth * 0.05);
+            const maxTextWidth = textRightBoundary - textX;
+            let textY = mapY + (mapSize * 0.15);
 
             ctx.textAlign = "left";
 
-            // LINE 1: Header + Flag (Bold)
+            // LINE 1: Header + Flag
             ctx.fillStyle = "#ffffff";
-            ctx.font = `bold ${canvas.width * 0.045}px sans-serif`;
+            ctx.font = `bold ${cardWidth * 0.045}px sans-serif`;
             let header = locData.header || "Location Found";
-            // Truncate to avoid hitting branding
-            if (ctx.measureText(header).width > maxHeaderWidth) { 
-                while (ctx.measureText(header + "...").width > maxHeaderWidth && header.length > 0) {
+            const brandingSafeWidth = maxTextWidth - (cardWidth * 0.25); // Avoid logo
+            if (ctx.measureText(header).width > brandingSafeWidth) { 
+                while (ctx.measureText(header + "...").width > brandingSafeWidth && header.length > 0) {
                     header = header.substring(0, header.length - 1);
                 }
                 header += "...";
             }
             ctx.fillText(header + " 🇮🇳", textX, textY); 
 
-            // LINE 2: Address (Wrapped, Bold, Smaller)
-            textY += (canvas.width * 0.06);
-            ctx.fillStyle = "#dddddd";
-            ctx.font = `bold ${canvas.width * 0.026}px sans-serif`;
+            // LINE 2: Address (Wrapped)
+            textY += (cardWidth * 0.06);
+            ctx.fillStyle = "#e0e0e0";
+            ctx.font = `bold ${cardWidth * 0.025}px sans-serif`;
             const detail = locData.detail || "Fetching...";
-            // Wrap text logic
-            const lineHeight = canvas.width * 0.038;
+            const lineHeight = cardWidth * 0.035;
             textY = wrapText(ctx, detail, textX, textY, maxTextWidth, lineHeight);
 
             // Spacer
-            textY += (canvas.width * 0.02);
+            textY += (cardWidth * 0.02);
 
-            // LINE 3: Lat / Long (Bold)
+            // LINE 3: Lat / Long
             ctx.fillStyle = "#ffffff";
-            ctx.font = `bold ${canvas.width * 0.025}px monospace`;
+            ctx.font = `bold ${cardWidth * 0.028}px monospace`;
             ctx.fillText(`Lat ${locData.lat.toFixed(5)}° Long ${locData.lng.toFixed(5)}°`, textX, textY);
 
-            // LINE 4: Date & Time (Bold)
-            textY += (canvas.width * 0.04);
+            // LINE 4: Date
+            textY += (cardWidth * 0.045);
             ctx.fillStyle = "#ffffff";
-            ctx.font = `bold ${canvas.width * 0.025}px sans-serif`;
+            ctx.font = `bold ${cardWidth * 0.028}px sans-serif`;
             ctx.fillText(locData.date, textX, textY);
 
             ctx.restore();
@@ -400,29 +386,32 @@ export const GeoTagCamera = ({ onSave, onClose }) => {
                             <div style={{width:28}}></div>
                         </div>
                         
-                        {/* LIVE PREVIEW: MATCHING CANVAS LOGIC */}
+                        {/* LIVE PREVIEW: FIXED CENTERED LAYOUT */}
                         <div style={{
                             position:'absolute', 
                             bottom: 120, 
-                            left: '4%', 
-                            right: '4%', 
-                            height: '22%', 
-                            backgroundColor: 'rgba(0,0,0,0.75)', 
-                            borderRadius: 20, 
+                            left: '50%', // Center horizontally
+                            transform: 'translateX(-50%)', // Perfect center align
+                            width: '92%', // Mobile width
+                            maxWidth: '500px', // Laptop max width (Fixed Middle)
+                            height: 'auto',
+                            aspectRatio: '3.5/1', // Maintain rectangular shape
+                            backgroundColor: 'rgba(0,0,0,0.8)', 
+                            borderRadius: 25, 
                             border: '1px solid rgba(255,255,255,0.2)', 
                             display: 'flex', 
                             padding: 15, 
                             alignItems: 'center', 
-                            backdropFilter: 'blur(5px)'
+                            backdropFilter: 'blur(5px)',
+                            boxShadow: '0 4px 15px rgba(0,0,0,0.3)'
                         }}>
-                             {/* Map (Smaller & Satellite) */}
-                             <div style={{height: '75%', aspectRatio: '1/1', borderRadius: 10, overflow: 'hidden', border: '2px solid #fff', position: 'relative', marginRight: 15, flexShrink: 0}}>
+                             {/* Map */}
+                             <div style={{height: '80%', aspectRatio: '1/1', borderRadius: 12, overflow: 'hidden', border: '2px solid #fff', position: 'relative', marginRight: 15, flexShrink: 0}}>
                                 {mapTile ? (
                                     <>
                                         <img src={mapTile.src} style={{width:'100%', height:'100%', objectFit:'cover'}} alt="map"/>
-                                        {/* Stylish Red Pin Overlay */}
                                         <div style={{position:'absolute', top:'50%', left:'50%', transform:'translate(-50%, -100%)'}}>
-                                            <MdLocationPin size={32} color="#ff2222" style={{filter: 'drop-shadow(0px 2px 2px rgba(0,0,0,0.5))'}}/>
+                                            <MdLocationPin size={28} color="#ff2222" style={{filter: 'drop-shadow(0px 2px 2px rgba(0,0,0,0.5))'}}/>
                                         </div>
                                     </>
                                 ) : (
@@ -430,28 +419,28 @@ export const GeoTagCamera = ({ onSave, onClose }) => {
                                 )}
                              </div>
                              
-                             {/* Text Content */}
+                             {/* Text Content - Flex Column for Perfect Spacing */}
                              <div style={{flex: 1, display:'flex', flexDirection:'column', justifyContent:'center', overflow:'hidden', position:'relative', height:'100%'}}>
-                                 {/* Branding (Top Right Absolute) */}
-                                 <div style={{position:'absolute', top: 5, right: 0, color: '#4ade80', fontWeight: 'bold', fontSize: '14px'}}>🧢 FarmCap</div>
+                                 {/* Branding */}
+                                 <div style={{position:'absolute', top: 0, right: 0, color: '#4ade80', fontWeight: 'bold', fontSize: '14px'}}>🧢 FarmCap</div>
 
-                                 {/* Line 1: Header + Flag */}
-                                 <div style={{color: '#fff', fontSize: '16px', fontWeight: 'bold', marginBottom: 2, marginTop: 10, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', width: '70%'}}>
+                                 {/* Header */}
+                                 <div style={{color: '#fff', fontSize: '15px', fontWeight: 'bold', marginBottom: 3, marginTop: 12, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', width: '75%'}}>
                                      {locData?.header ? `${locData.header} 🇮🇳` : "Locating..."}
                                  </div>
                                  
-                                 {/* Line 2: Details */}
-                                 <div style={{color: '#ddd', fontSize: '12px', fontWeight: 'bold', marginBottom: 4, lineHeight: '1.2', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden'}}>
+                                 {/* Address */}
+                                 <div style={{color: '#e0e0e0', fontSize: '11px', fontWeight: 'bold', marginBottom: 4, lineHeight: '1.2', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden'}}>
                                      {locData?.detail || "Fetching Address..."}
                                  </div>
                                  
-                                 {/* Line 3: Lat/Long */}
-                                 <div style={{color: '#fff', fontSize: '11px', fontWeight: 'bold', marginBottom: 2, fontFamily: 'monospace'}}>
+                                 {/* Coords */}
+                                 <div style={{color: '#fff', fontSize: '10px', fontWeight: 'bold', marginBottom: 2, fontFamily: 'monospace'}}>
                                      {locData?.lat ? `Lat ${locData.lat.toFixed(5)}° Long ${locData.lng.toFixed(5)}°` : ""}
                                  </div>
                                  
-                                 {/* Line 4: Date */}
-                                 <div style={{color: '#fff', fontSize: '11px', fontWeight: 'bold'}}>
+                                 {/* Date */}
+                                 <div style={{color: '#fff', fontSize: '10px', fontWeight: 'bold'}}>
                                      {locData?.date || ""}
                                  </div>
                              </div>
