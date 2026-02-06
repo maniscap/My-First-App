@@ -45,26 +45,38 @@ const formatCoord = (lat, lng) => {
     return `${Math.abs(lat).toFixed(6)}° ${latDir}, ${Math.abs(lng).toFixed(6)}° ${lngDir}`;
 };
 
-// --- API: Open-Meteo Geocoding ---
+// --- NEW ALGORITHM: BigDataCloud API (Best for Mobile/No-CORS) ---
 const fetchAddress = async (lat, lng) => {
     if (!lat || !lng) return null;
     try {
-        const response = await fetch(`https://geocoding-api.open-meteo.com/v1/reverse?latitude=${lat}&longitude=${lng}&count=1&format=json`);
+        // This API is generally more robust for "Village/State" without needing an API key on mobile
+        const response = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lng}&localityLanguage=en`);
         if (response.ok) {
             const data = await response.json();
-            if (data.results && data.results.length > 0) {
-                const r = data.results[0];
-                return {
-                    // Header: Village/City, State, Country
-                    header: `${r.name}, ${r.admin1 || ''}, ${r.country || ''}`,
-                    // Detail: District/Sub-district, Postcode
-                    detail: `${r.admin3 || r.admin2 || ''} ${r.postcode ? '- ' + r.postcode : ''}`
-                };
-            }
+            
+            // Prioritize: Locality (Village) -> City -> Principal Subdivision (State)
+            const village = data.locality || data.city || "";
+            const state = data.principalSubdivision || "";
+            const country = data.countryName || "India";
+            
+            // Construct Header: "Village, State, Country"
+            const header = [village, state, country].filter(Boolean).join(', ');
+            
+            // Construct Detail: Full hierarchy if available
+            // If API returns limited info, we fallback to a formatted string
+            const detail = data.localityInfo ? 
+                data.localityInfo.administrative.map(x => x.name).slice(0, 3).join(', ') : 
+                [village, state, data.postcode].filter(Boolean).join(', ');
+
+            return { header, detail };
         }
     } catch (error) { console.warn("API Error", error); }
     
-    return { header: "Location Found", detail: "Fetching details..." };
+    // Backup Fallback
+    return { 
+        header: "Location Found", 
+        detail: "Fetching detailed address..." 
+    };
 };
 
 // --- UNIT CONVERSION ---
@@ -116,13 +128,13 @@ export const MainMenu = ({ isOpen, onClose, profile, onOpenProfile, onOpenFiles,
                     <div style={styles.menuItem} onClick={() => { onOpenSettings(); onClose(); }}><FiSettings size={20} style={{marginRight: 15, color:'#555'}}/> Settings</div>
                     <div style={styles.menuItem} onClick={() => { onOpenHelp(); onClose(); }}><FiHelpCircle size={20} style={{marginRight: 15, color:'#555'}}/> Help & Guide</div>
                 </div>
-                <div style={styles.menuFooter}>FarmCap v3.4 Pro</div>
+                <div style={styles.menuFooter}>FarmCap v3.5 Pro</div>
             </div>
         </div>
     );
 };
 
-// --- 2. GEO-TAG CAMERA (PERFECTED: Exact Reference Mirror) ---
+// --- 2. GEO-TAG CAMERA (PERFECTED: Layout, Data & Text Wrap) ---
 export const GeoTagCamera = ({ onSave, onClose }) => {
     const videoRef = useRef(null);
     const canvasRef = useRef(null);
@@ -162,9 +174,9 @@ export const GeoTagCamera = ({ onSave, onClose }) => {
                     const addrData = await fetchAddress(latitude, longitude);
                     
                     const now = new Date();
-                    const dateStr = now.toLocaleDateString('en-GB', { weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric' });
+                    const dateStr = now.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' });
                     const timeStr = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
-                    const fullDateTime = `${dateStr} ${timeStr} GMT +05:30`; // Mocking GMT for reference look
+                    const fullDateTime = `${now.toLocaleString('en-US', {weekday: 'long'})}, ${dateStr} ${timeStr}`;
 
                     setLocData({ 
                         lat: latitude, 
@@ -188,7 +200,7 @@ export const GeoTagCamera = ({ onSave, onClose }) => {
                     }
                 }, (err) => { console.warn("GeoCam Location Error:", err); }, {enableHighAccuracy: true, timeout: 5000});
             }
-        }, 3000); 
+        }, 4000); 
         
         return () => { 
             stopCamera(); 
@@ -223,7 +235,29 @@ export const GeoTagCamera = ({ onSave, onClose }) => {
         }
     };
 
-    // --- CANVAS DRAWING: EXACT REFERENCE REPLICATION ---
+    // --- TEXT WRAPPING HELPER ---
+    const wrapText = (ctx, text, x, y, maxWidth, lineHeight) => {
+        const words = text.split(' ');
+        let line = '';
+        let currentY = y;
+
+        for (let n = 0; n < words.length; n++) {
+            const testLine = line + words[n] + ' ';
+            const metrics = ctx.measureText(testLine);
+            const testWidth = metrics.width;
+            if (testWidth > maxWidth && n > 0) {
+                ctx.fillText(line, x, currentY);
+                line = words[n] + ' ';
+                currentY += lineHeight;
+            } else {
+                line = testLine;
+            }
+        }
+        ctx.fillText(line, x, currentY);
+        return currentY + lineHeight; // Return next Y position
+    };
+
+    // --- CANVAS DRAWING ---
     const takePicture = () => {
         if (!videoRef.current || !canvasRef.current) return;
         setFinalLocData(locData);
@@ -234,13 +268,14 @@ export const GeoTagCamera = ({ onSave, onClose }) => {
         
         if (locData) {
             const margin = canvas.width * 0.04;
-            const cardHeight = canvas.height * 0.22; // Height for 4 distinct lines
+            // Height adjusted for wrapped text space
+            const cardHeight = canvas.height * 0.22; 
             const cardWidth = canvas.width - (margin * 2);
             const cardX = margin;
             const cardY = canvas.height - cardHeight - margin;
-            const radius = 20;
+            const radius = 25;
 
-            // Background Card
+            // Background
             ctx.save();
             ctx.beginPath();
             ctx.roundRect(cardX, cardY, cardWidth, cardHeight, radius);
@@ -251,11 +286,14 @@ export const GeoTagCamera = ({ onSave, onClose }) => {
             ctx.stroke();
             ctx.clip(); 
 
-            // 1. Branding (TOP RIGHT - Inside Card)
+            // 1. Branding (TOP RIGHT)
             ctx.textAlign = "right";
+            const brandX = cardX + cardWidth - 20;
+            const brandY = cardY + 40; 
+            
             ctx.fillStyle = "#4ade80"; 
             ctx.font = `bold ${canvas.width * 0.035}px sans-serif`;
-            ctx.fillText("🧢 FarmCap", cardX + cardWidth - 20, cardY + 45);
+            ctx.fillText("🧢 FarmCap", brandX, brandY); 
 
             // 2. Map (Left)
             const mapPadding = 20;
@@ -266,7 +304,7 @@ export const GeoTagCamera = ({ onSave, onClose }) => {
             if (mapTile) {
                 ctx.save();
                 ctx.beginPath();
-                ctx.roundRect(mapX, mapY, mapSize, mapSize, 10);
+                ctx.roundRect(mapX, mapY, mapSize, mapSize, 12);
                 ctx.clip();
                 ctx.drawImage(mapTile, mapX, mapY, mapSize, mapSize);
                 ctx.restore();
@@ -276,41 +314,46 @@ export const GeoTagCamera = ({ onSave, onClose }) => {
 
             // 3. Text Info (Right Side)
             const textX = mapX + mapSize + 25;
-            const textRightBoundary = cardX + cardWidth - 20; // Safe margin from right edge
+            const textRightBoundary = cardX + cardWidth - 20; 
             const maxTextWidth = textRightBoundary - textX;
             let textY = mapY + 25;
 
             ctx.textAlign = "left";
 
-            // LINE 1: Header (City, State, Country) + Flag
+            // LINE 1: Header + Flag (No overlap with branding)
             ctx.fillStyle = "#ffffff";
             ctx.font = `bold ${canvas.width * 0.045}px sans-serif`;
             let header = locData.header || "Location Found";
-            // Check width to avoid branding overlap
-            if (ctx.measureText(header).width > maxTextWidth - 100) { 
-                header = header.substring(0, 18) + '...'; 
+            const flag = " 🇮🇳";
+            
+            // Check if header needs truncation to fit branding
+            const brandingWidth = canvas.width * 0.25; // Approximate space for "FarmCap"
+            if (ctx.measureText(header + flag).width > maxTextWidth - brandingWidth) {
+                 // Truncate logic
+                 header = header.substring(0, 15) + '...';
             }
-            ctx.fillText(header + " 🇮🇳", textX, textY); // Added India Flag
+            ctx.fillText(header + flag, textX, textY);
 
-            // LINE 2: Detailed Address (Wrap if needed)
+            // LINE 2: Address (Wrapped Text)
             textY += (canvas.width * 0.055);
             ctx.fillStyle = "#dddddd";
-            ctx.font = `${canvas.width * 0.025}px sans-serif`;
-            let detail = locData.detail || "Fetching Address...";
-            // Simple truncation if too long for one line (to match reference clean look)
-            if (ctx.measureText(detail).width > maxTextWidth) {
-                detail = detail.substring(0, 35) + '...';
-            }
-            ctx.fillText(detail, textX, textY);
+            ctx.font = `${canvas.width * 0.026}px sans-serif`;
+            const lineHeight = canvas.width * 0.035;
+            const detailText = locData.detail || "Fetching address details...";
+            
+            // Use wrapText helper
+            textY = wrapText(ctx, detailText, textX, textY, maxTextWidth, lineHeight);
+
+            // Add extra spacing after wrapped text
+            textY += (canvas.width * 0.02);
 
             // LINE 3: Lat / Long
-            textY += (canvas.width * 0.045);
             ctx.fillStyle = "#ffffff";
             ctx.font = `${canvas.width * 0.025}px monospace`;
             ctx.fillText(`Lat ${locData.lat.toFixed(5)}° Long ${locData.lng.toFixed(5)}°`, textX, textY);
 
             // LINE 4: Date & Time
-            textY += (canvas.width * 0.045);
+            textY += (canvas.width * 0.04);
             ctx.fillStyle = "#ffffff";
             ctx.font = `${canvas.width * 0.025}px sans-serif`;
             ctx.fillText(locData.date, textX, textY);
@@ -337,7 +380,7 @@ export const GeoTagCamera = ({ onSave, onClose }) => {
                             <div style={{width:28}}></div>
                         </div>
                         
-                        {/* LIVE PREVIEW: EXACTLY MATCHING CANVAS LAYOUT */}
+                        {/* LIVE PREVIEW: Matching Canvas Layout */}
                         <div style={{
                             position:'absolute', 
                             bottom: 120, 
@@ -363,17 +406,17 @@ export const GeoTagCamera = ({ onSave, onClose }) => {
                                  <div style={{position:'absolute', top: 0, right: 0, color: '#4ade80', fontWeight: 'bold', fontSize: '13px'}}>🧢 FarmCap</div>
 
                                  {/* Line 1: Header + Flag */}
-                                 <div style={{color: '#fff', fontSize: '16px', fontWeight: 'bold', marginBottom: 4, marginTop: 15, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', width: '80%'}}>
+                                 <div style={{color: '#fff', fontSize: '16px', fontWeight: 'bold', marginBottom: 2, marginTop: 15, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', width: '75%'}}>
                                      {locData?.header ? `${locData.header} 🇮🇳` : "Locating..."}
                                  </div>
                                  
-                                 {/* Line 2: Details */}
-                                 <div style={{color: '#ddd', fontSize: '11px', marginBottom: 4, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'}}>
+                                 {/* Line 2: Details (Wrapped visual via CSS) */}
+                                 <div style={{color: '#ddd', fontSize: '11px', marginBottom: 4, lineHeight: '1.2', maxHeight: '2.4em', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical'}}>
                                      {locData?.detail || "Fetching Address..."}
                                  </div>
                                  
                                  {/* Line 3: Lat/Long */}
-                                 <div style={{color: '#fff', fontSize: '11px', marginBottom: 4, fontFamily: 'monospace'}}>
+                                 <div style={{color: '#fff', fontSize: '11px', marginBottom: 2, fontFamily: 'monospace'}}>
                                      {locData?.lat ? `Lat ${locData.lat.toFixed(5)}° Long ${locData.lng.toFixed(5)}°` : ""}
                                  </div>
                                  
@@ -636,9 +679,9 @@ export const SaveScreen = ({ poiData, setPoiData, onBack, onSave, onOpenGroupBtn
                 if(pointsList[0]) { 
                     const addr = await fetchAddress(pointsList[0].lat, pointsList[0].lng); 
                     if (addr) { 
-                        setAddressText(addr.full); 
+                        setAddressText(addr.header + ", " + addr.detail); 
                         // FIX: Update parent state automatically so it saves!
-                        setPoiData(prev => ({ ...prev, address: addr.full }));
+                        setPoiData(prev => ({ ...prev, address: addr.header }));
                     } else { 
                         setAddressText("Location details unavailable"); 
                     } 
