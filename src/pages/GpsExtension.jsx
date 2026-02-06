@@ -45,7 +45,7 @@ const formatCoord = (lat, lng) => {
     return `${Math.abs(lat).toFixed(6)}° ${latDir}, ${Math.abs(lng).toFixed(6)}° ${lngDir}`;
 };
 
-// --- API: Open-Meteo Geocoding (Robust & Free) ---
+// --- API: Open-Meteo Geocoding ---
 const fetchAddress = async (lat, lng) => {
     if (!lat || !lng) return null;
     try {
@@ -133,13 +133,13 @@ export const MainMenu = ({ isOpen, onClose, profile, onOpenProfile, onOpenFiles,
                     <div style={styles.menuItem} onClick={() => { onOpenSettings(); onClose(); }}><FiSettings size={20} style={{marginRight: 15, color:'#555'}}/> Settings</div>
                     <div style={styles.menuItem} onClick={() => { onOpenHelp(); onClose(); }}><FiHelpCircle size={20} style={{marginRight: 15, color:'#555'}}/> Help & Guide</div>
                 </div>
-                <div style={styles.menuFooter}>FarmCap v3.1 Mobile</div>
+                <div style={styles.menuFooter}>FarmCap v3.2 Pro</div>
             </div>
         </div>
     );
 };
 
-// --- 2. GEO-TAG CAMERA (UPDATED: Slimmer Card + Branding) ---
+// --- 2. GEO-TAG CAMERA (PERFECTED: Height, Curves, Info & Branding) ---
 export const GeoTagCamera = ({ onSave, onClose }) => {
     const videoRef = useRef(null);
     const canvasRef = useRef(null);
@@ -179,9 +179,12 @@ export const GeoTagCamera = ({ onSave, onClose }) => {
                     const addrData = await fetchAddress(latitude, longitude);
                     const city = addrData ? `${addrData.city}` : 'Location Found';
                     const fullAddr = addrData ? addrData.full : 'Fetching Address...';
-                    const dateStr = new Date().toLocaleString('en-GB', { weekday: 'long', day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true });
+                    // Expanded Date Format including time
+                    const now = new Date();
+                    const dateStr = now.toLocaleDateString('en-GB', { weekday: 'long', day: '2-digit', month: 'short', year: 'numeric' });
+                    const timeStr = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
                     
-                    setLocData({ lat: latitude, lng: longitude, city, address: fullAddr, date: dateStr });
+                    setLocData({ lat: latitude, lng: longitude, city, address: fullAddr, date: dateStr, time: timeStr });
                     
                     if (!mapTile && latitude && longitude) {
                         const zoom = 15;
@@ -232,7 +235,7 @@ export const GeoTagCamera = ({ onSave, onClose }) => {
         }
     };
 
-    // --- DRAWING LOGIC: Slimmer Card + Branding ---
+    // --- FINAL CARD DESIGN LOGIC ---
     const takePicture = () => {
         if (!videoRef.current || !canvasRef.current) return;
         setFinalLocData(locData);
@@ -242,13 +245,13 @@ export const GeoTagCamera = ({ onSave, onClose }) => {
         const ctx = canvas.getContext('2d'); ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
         
         if (locData) {
-            const margin = canvas.width * 0.05;
-            // FIX: Reduced height to 0.18 (approx 18% of screen) to make it slimmer
-            const cardHeight = canvas.height * 0.18; 
+            const margin = canvas.width * 0.04; // 4% margin
+            // FIX: Decreased height to 16% for a sleek look
+            const cardHeight = canvas.height * 0.16; 
             const cardWidth = canvas.width - (margin * 2);
             const cardX = margin;
             const cardY = canvas.height - cardHeight - margin;
-            const radius = 20;
+            const radius = 30; // More rounded corners
 
             // Draw Background
             ctx.save();
@@ -256,62 +259,69 @@ export const GeoTagCamera = ({ onSave, onClose }) => {
             ctx.roundRect(cardX, cardY, cardWidth, cardHeight, radius);
             ctx.fillStyle = "rgba(0, 0, 0, 0.75)";
             ctx.fill();
+            ctx.strokeStyle = "rgba(255, 255, 255, 0.15)";
             ctx.lineWidth = 1;
-            ctx.strokeStyle = "rgba(255, 255, 255, 0.2)";
             ctx.stroke();
             ctx.clip(); 
 
-            // 1. Draw Map
-            const mapSize = cardHeight - 30; // 15px padding top/bottom
-            const mapX = cardX + 15;
-            const mapY = cardY + 15;
+            // 1. Branding (Top Right of Card)
+            ctx.textAlign = "right";
+            const brandX = cardX + cardWidth - 20;
+            const brandY = cardY + 35;
+            
+            ctx.fillStyle = "#4ade80"; // FarmCap Green
+            ctx.font = `bold ${canvas.width * 0.03}px sans-serif`;
+            ctx.fillText("🧢 FarmCap", brandX, brandY); 
+
+            // 2. Draw Map (Left Square)
+            const mapPadding = 15;
+            const mapSize = cardHeight - (mapPadding * 2);
+            const mapX = cardX + mapPadding;
+            const mapY = cardY + mapPadding;
             
             if (mapTile) {
                 ctx.save();
                 ctx.beginPath();
-                ctx.roundRect(mapX, mapY, mapSize, mapSize, 12);
+                ctx.roundRect(mapX, mapY, mapSize, mapSize, 15);
                 ctx.clip();
                 ctx.drawImage(mapTile, mapX, mapY, mapSize, mapSize);
                 ctx.restore();
                 
-                // Border around map
-                ctx.strokeStyle = "#fff"; ctx.lineWidth = 2; 
-                ctx.strokeRect(mapX, mapY, mapSize, mapSize);
-                
                 // Pin
-                ctx.fillStyle = "red"; ctx.beginPath(); ctx.arc(mapX + mapSize/2, mapY + mapSize/2, mapSize*0.06, 0, Math.PI*2); ctx.fill();
+                ctx.fillStyle = "red"; ctx.beginPath(); ctx.arc(mapX + mapSize/2, mapY + mapSize/2, mapSize*0.08, 0, Math.PI*2); ctx.fill();
+                ctx.strokeStyle = "#fff"; ctx.lineWidth = 2; ctx.stroke();
             }
 
-            // 2. Text Content
+            // 3. Text Content
             const textX = mapX + mapSize + 25;
-            const textWidth = (cardX + cardWidth) - textX - 15;
+            const textWidth = (cardX + cardWidth) - textX - 20;
             let textY = mapY + 25;
 
             ctx.textAlign = "left";
+            
+            // City Name (Top Left of text area)
             ctx.fillStyle = "#ffffff";
-            ctx.font = `bold ${canvas.width * 0.04}px sans-serif`;
+            ctx.font = `bold ${canvas.width * 0.045}px sans-serif`;
             ctx.fillText(locData.city, textX, textY);
             
+            // Address (Middle)
             textY += (canvas.width * 0.05);
             ctx.fillStyle = "#cccccc";
-            ctx.font = `${canvas.width * 0.022}px sans-serif`;
-            
-            const addr = locData.address.substring(0, 50) + (locData.address.length > 50 ? '...' : '');
+            ctx.font = `${canvas.width * 0.024}px sans-serif`;
+            const addr = locData.address.substring(0, 55) + (locData.address.length > 55 ? '...' : '');
             ctx.fillText(addr, textX, textY);
 
+            // Coordinates (Bottom)
             textY += (canvas.width * 0.04);
-            ctx.fillStyle = "#888888";
+            ctx.fillStyle = "#aaaaaa";
             ctx.font = `${canvas.width * 0.02}px monospace`;
             ctx.fillText(`${locData.lat.toFixed(5)}, ${locData.lng.toFixed(5)}`, textX, textY);
             
-            // 3. Branding Tag (Bottom Right)
-            ctx.textAlign = "right";
-            const brandX = cardX + cardWidth - 15;
-            const brandY = cardY + cardHeight - 15;
-            
-            ctx.fillStyle = "#4ade80"; // FarmCap Green
-            ctx.font = `bold ${canvas.width * 0.032}px sans-serif`; // Nice visible font size
-            ctx.fillText("🧢 FarmCap", brandX, brandY); 
+            // Date & Time (Next to Coords or Below)
+            textY += (canvas.width * 0.035);
+            ctx.fillStyle = "#888888";
+            ctx.font = `${canvas.width * 0.02}px sans-serif`;
+            ctx.fillText(`${locData.date} • ${locData.time}`, textX, textY);
 
             ctx.restore();
         }
@@ -335,31 +345,32 @@ export const GeoTagCamera = ({ onSave, onClose }) => {
                             <div style={{width:28}}></div>
                         </div>
                         
-                        {/* LIVE PREVIEW: Matching the Slimmer Card Design */}
+                        {/* LIVE PREVIEW: Matching Final Output */}
                         <div style={{
                             position:'absolute', 
                             bottom: 120, 
-                            left: '5%', 
-                            right: '5%', 
-                            height: '18%', // Reduced height to match canvas
+                            left: '4%', 
+                            right: '4%', 
+                            height: '16%', // Reduced to 16%
                             backgroundColor: 'rgba(0,0,0,0.75)', 
-                            borderRadius: 20, 
+                            borderRadius: 30, // More rounded
                             border: '1px solid rgba(255,255,255,0.2)', 
                             display: 'flex', 
                             padding: 15, 
                             alignItems: 'center', 
                             backdropFilter: 'blur(5px)'
                         }}>
-                             <div style={{height: '100%', aspectRatio: '1/1', borderRadius: 12, overflow: 'hidden', border: '1px solid #fff', position: 'relative', marginRight: 15}}>
+                             <div style={{height: '100%', aspectRatio: '1/1', borderRadius: 15, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.3)', position: 'relative', marginRight: 15}}>
                                 {mapTile ? <img src={mapTile.src} style={{width:'100%', height:'100%', objectFit:'cover'}} alt="map"/> : <div style={{width:'100%', height:'100%', display:'flex', alignItems:'center', justifyContent:'center', backgroundColor:'#333'}}><FiLoader color="#fff"/></div>}
                              </div>
                              <div style={{flex: 1, display:'flex', flexDirection:'column', justifyContent:'center'}}>
-                                 <div style={{color: '#fff', fontSize: '18px', fontWeight: 'bold', marginBottom: 4}}>{locData?.city || "Locating..."}</div>
-                                 <div style={{color: '#ccc', fontSize: '11px', marginBottom: 4, lineHeight: 1.2}}>{locData?.address ? locData.address.substring(0, 45) + '...' : "Fetching Address..."}</div>
-                                 <div style={{color: '#888', fontSize: '10px'}}>{locData?.lat ? `${locData.lat.toFixed(4)}, ${locData.lng.toFixed(4)}` : ""}</div>
+                                 <div style={{color: '#fff', fontSize: '18px', fontWeight: 'bold', marginBottom: 2}}>{locData?.city || "Locating..."}</div>
+                                 <div style={{color: '#ccc', fontSize: '11px', marginBottom: 2, lineHeight: 1.1}}>{locData?.address ? locData.address.substring(0, 45) + '...' : "Fetching Address..."}</div>
+                                 <div style={{color: '#aaa', fontSize: '10px', marginBottom: 2}}>{locData?.lat ? `${locData.lat.toFixed(4)}, ${locData.lng.toFixed(4)}` : ""}</div>
+                                 <div style={{color: '#888', fontSize: '10px'}}>{locData?.date ? `${locData.date} • ${locData.time}` : ""}</div>
                              </div>
-                             {/* BRANDING IN LIVE PREVIEW */}
-                             <div style={{position:'absolute', bottom: 12, right: 15, color: '#4ade80', fontWeight: 'bold', fontSize: '14px'}}>
+                             {/* BRANDING: Top Right of Preview Card */}
+                             <div style={{position:'absolute', top: 15, right: 20, color: '#4ade80', fontWeight: 'bold', fontSize: '14px', fontFamily: 'sans-serif'}}>
                                 🧢 FarmCap
                              </div>
                         </div>
