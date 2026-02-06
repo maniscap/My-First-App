@@ -4,7 +4,7 @@ import L from 'leaflet';
 import { 
   FiMenu, FiLayers, FiPlus, FiMinus, FiX, FiDownload, FiMapPin, FiSearch, FiArrowLeft, FiMaximize, FiRotateCcw, FiClock
 } from 'react-icons/fi';
-import { MdGpsFixed } from 'react-icons/md';
+import { MdGpsFixed, MdLocationOff, MdWarning } from 'react-icons/md';
 import { FaMapMarkedAlt, FaDrawPolygon, FaRulerHorizontal } from 'react-icons/fa';
 import 'leaflet/dist/leaflet.css';
 
@@ -29,7 +29,25 @@ const MAP_LAYERS = {
   terrain: { url: 'https://{s}.google.com/vt/lyrs=p&x={x}&y={y}&z={z}', attr: 'Google Terrain' }
 };
 
-const LocationController = ({ isLocating, onLocationFound, isPreviewing }) => {
+const LocationWarningModal = ({ onClose }) => (
+    <div style={styles.modalOverlay}>
+        <div style={styles.warningCard}>
+            <div style={styles.warningIconBox}><MdLocationOff size={32} color="#fff"/></div>
+            <div style={{fontSize: '18px', fontWeight: 'bold', marginBottom: '10px', color: '#333'}}>Location Services Off</div>
+            <div style={{fontSize: '14px', color: '#666', textAlign: 'center', marginBottom: '20px', lineHeight: '1.4'}}>
+                This app needs your location for GPS measuring and tagging. <br/>Please turn on <b>Location/GPS</b> in your device settings.
+            </div>
+            <button onClick={() => { window.location.reload(); }} style={styles.warningBtn}>
+                Check Again / Reload
+            </button>
+            <button onClick={onClose} style={styles.warningBtnSec}>
+                Continue Without GPS
+            </button>
+        </div>
+    </div>
+);
+
+const LocationController = ({ isLocating, onLocationFound, isPreviewing, onError }) => {
     const map = useMap();
     const [pos, setPos] = useState(null);
     const hasCenteredRef = useRef(false);
@@ -47,7 +65,10 @@ const LocationController = ({ isLocating, onLocationFound, isPreviewing }) => {
                 }
                 if (onLocationFound) onLocationFound(newPos);
             },
-            (err) => console.warn(err),
+            (err) => {
+                console.warn(err);
+                if (onError) onError(err);
+            },
             { enableHighAccuracy: true, maximumAge: 10000, timeout: 10000 }
         );
         return () => navigator.geolocation.clearWatch(watchId);
@@ -90,6 +111,8 @@ const GPSMeasurement = () => {
       const saved = localStorage.getItem('savedFiles');
       return saved ? JSON.parse(saved) : [];
   });
+  
+  const [showLocationWarning, setShowLocationWarning] = useState(false);
 
   useEffect(() => { localStorage.setItem('savedFiles', JSON.stringify(savedFiles)); }, [savedFiles]);
 
@@ -166,7 +189,7 @@ const GPSMeasurement = () => {
           setActiveMode('marker');
           setIsCreateMenuOpen(false);
           if (map) map.setView(newPoint, 18);
-      } else { alert("Waiting for GPS signal..."); }
+      } else { setShowLocationWarning(true); }
   };
 
   const handleFitBounds = () => {
@@ -283,7 +306,15 @@ const GPSMeasurement = () => {
     if (isSearchOpen) {
         return ( <div style={styles.whiteTopBar}> <div style={{width: '100%', display: 'flex', alignItems: 'center'}}> <button onClick={() => setIsSearchOpen(false)} style={styles.iconBtnBlack}><FiArrowLeft size={24} /></button> <div style={styles.searchContainer}> <FiSearch size={20} color="#666" style={{minWidth: '24px'}}/><input type="text" placeholder="Search village..." style={styles.searchInput} value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} autoFocus />{searchQuery && <button onClick={() => {setSearchQuery(''); setSearchResults([]);}} style={styles.clearBtn}><FiX size={18} /></button>} </div> </div> </div> );
     }
-    return ( <div style={styles.whiteTopBar}> <button style={styles.iconBtnBlack} onClick={() => previewData ? setPreviewData(null) : setIsMainMenuOpen(true)}>{previewData ? <FiArrowLeft size={24} /> : <FiMenu size={24} />}</button> <span style={styles.centeredTitle}>{previewData ? "Preview" : "Map"}</span> <div style={{display:'flex', gap: 10}}><button onClick={() => setIsSearchOpen(true)} style={styles.iconBtnBlack}><FiSearch size={24}/></button></div> </div> );
+    return ( 
+        <div style={styles.whiteTopBar}> 
+            <button style={styles.iconBtnBlack} onClick={() => previewData ? setPreviewData(null) : setIsMainMenuOpen(true)}>{previewData ? <FiArrowLeft size={24} /> : <FiMenu size={24} />}</button> 
+            <span style={styles.centeredTitle}>{previewData ? "Preview" : "FarmCap"}</span> 
+            <div style={{display:'flex', gap: 10}}>
+                <button onClick={() => setIsSearchOpen(true)} style={styles.iconBtnBlack}><FiSearch size={24}/></button>
+            </div> 
+        </div> 
+    );
   };
 
   if (showSaveScreen) { if (showGroupScreen) return <GroupScreen groups={groups} onSelect={(grp) => { setPoiData({...poiData, group: grp}); setShowGroupScreen(false); }} onBack={() => setShowGroupScreen(false)} onCreateGroup={handleCreateGroup}/>; return <SaveScreen poiData={poiData} setPoiData={setPoiData} onBack={() => setShowSaveScreen(false)} onSave={handleFinalSave} onOpenGroupBtn={() => setShowGroupScreen(true)} geometryData={tempMeasureData} />; }
@@ -297,6 +328,9 @@ const GPSMeasurement = () => {
   return (
     <div style={styles.page}>
       <MainMenu isOpen={isMainMenuOpen} onClose={() => setIsMainMenuOpen(false)} profile={userProfile} onOpenProfile={() => setShowProfileScreen(true)} onOpenFiles={() => setShowFileManager(true)} onOpenGeoCam={() => setShowGeoCam(true)} onOpenSettings={() => setShowSettingsScreen(true)} onOpenHelp={() => setShowHelpScreen(true)} />
+      
+      {showLocationWarning && <LocationWarningModal onClose={() => setShowLocationWarning(false)} />}
+      
       <input type="file" ref={fileInputRef} style={{display:'none'}} onChange={handleFileSelect} />
       {activeMode !== 'field' && activeMode !== 'distance' && renderTopBar()}
 
@@ -312,7 +346,14 @@ const GPSMeasurement = () => {
       <MapContainer center={[20.5937, 78.9629]} zoom={5} style={styles.map} zoomControl={false}>
         <TileLayer url={MAP_LAYERS[activeLayer].url} subdomains={['mt0','mt1','mt2','mt3']} />
         <MapController setMap={setMap} />
-        <LocationController isLocating={isLocating} onLocationFound={setCurrentUserLoc} isPreviewing={!!previewData} />
+        <LocationController 
+            isLocating={isLocating} 
+            onLocationFound={setCurrentUserLoc} 
+            isPreviewing={!!previewData} 
+            onError={(err) => {
+                if (err.code === 1 || err.code === 2) setShowLocationWarning(true);
+            }}
+        />
         {overlayImage && <ImageOverlay url={overlayImage.url} bounds={overlayImage.bounds} opacity={0.7} />}
         <MeasureTool key={`${activeMode}-${measureMethod}`} mode={activeMode} method={measureMethod} active={activeMode === 'field' || activeMode === 'distance'} settings={appSettings} currentUserLoc={currentUserLoc} onUpdateSettings={handleLiveSettingUpdate} onExit={() => { setActiveMode('default'); setMeasurePoints([]); }} onSave={handleSaveInit} points={measurePoints} setPoints={setMeasurePoints} />
         {activeMode === 'marker' && <MarkerClickLogic addPoint={(p) => setMarkerPoints(prev => [...prev, p])} />}
@@ -411,6 +452,11 @@ const styles = {
   clearBtn: { background: 'transparent', border: 'none', color: '#666', cursor: 'pointer' },
   searchResultsList: { position: 'absolute', top: '60px', left: 0, right: 0, backgroundColor: '#fff', borderBottom: '1px solid #eee', boxShadow: '0 4px 15px rgba(0,0,0,0.1)', zIndex: 50, maxHeight: '40vh', overflowY: 'auto' },
   searchResultItem: { padding: '15px 20px', borderBottom: '1px solid #f0f0f0', cursor: 'pointer' },
+  modalOverlay: { position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10000 },
+  warningCard: { backgroundColor: '#fff', width: '85%', maxWidth: '300px', borderRadius: '16px', padding: '25px', display: 'flex', flexDirection: 'column', alignItems: 'center', boxShadow: '0 10px 30px rgba(0,0,0,0.3)' },
+  warningIconBox: { width: '60px', height: '60px', borderRadius: '50%', backgroundColor: '#ef4444', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '15px' },
+  warningBtn: { backgroundColor: '#4285F4', color: '#fff', border: 'none', borderRadius: '8px', padding: '12px 20px', width: '100%', fontSize: '16px', fontWeight: 'bold', cursor: 'pointer', marginBottom: '10px' },
+  warningBtnSec: { backgroundColor: 'transparent', color: '#666', border: 'none', padding: '10px', fontSize: '14px', cursor: 'pointer' }
 };
 
 const styleSheet = document.createElement("style");

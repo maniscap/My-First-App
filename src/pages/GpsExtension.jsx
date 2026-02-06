@@ -4,10 +4,11 @@ import L from 'leaflet';
 import { 
   FiArrowLeft, FiCalendar, FiImage, FiCamera, FiMoreVertical, FiPlus, FiSearch, FiCheck,
   FiRotateCcw, FiTrash2, FiChevronRight, FiMapPin, FiLoader, FiPause, FiPlay, FiSquare, FiFileText,
-  FiUser, FiSettings, FiHelpCircle, FiShare2, FiX, FiFolder, FiEdit2, FiCheckCircle, FiChevronDown, FiZoomIn
+  FiUser, FiSettings, FiHelpCircle, FiShare2, FiX, FiFolder, FiEdit2, FiCheckCircle, FiChevronDown, FiZoomIn,
+  FiAlertTriangle, FiRefreshCw
 } from 'react-icons/fi';
 import { FaDrawPolygon, FaRulerCombined, FaMap, FaRuler } from 'react-icons/fa';
-import { MdTouchApp, MdDirectionsWalk, MdGpsFixed, MdCameraAlt, MdFlipCameraIos } from 'react-icons/md';
+import { MdTouchApp, MdDirectionsWalk, MdGpsFixed, MdCameraAlt, MdFlipCameraIos, MdLocationOff } from 'react-icons/md';
 
 // --- STYLES ---
 const glassStyles = `
@@ -44,23 +45,31 @@ const formatCoord = (lat, lng) => {
     return `${Math.abs(lat).toFixed(6)}° ${latDir}, ${Math.abs(lng).toFixed(6)}° ${lngDir}`;
 };
 
-// Robust Address Fetching (Safe Fixed Precision)
+// --- API: Open-Meteo Geocoding (Robust & Free) ---
 const fetchAddress = async (lat, lng) => {
     if (!lat || !lng) return null;
     try {
-        const safeLat = parseFloat(lat).toFixed(6);
-        const safeLng = parseFloat(lng).toFixed(6);
-        // Using BigDataCloud for reliability
-        const response = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${safeLat}&longitude=${safeLng}&localityLanguage=en`);
-        if (!response.ok) return null;
-        const data = await response.json();
-        return {
-            city: data.city || data.locality || "",
-            state: data.principalSubdivision || "",
-            country: data.countryName || "",
-            full: [data.locality, data.city, data.principalSubdivision, data.countryName].filter(Boolean).join(', ')
-        };
-    } catch (error) { return null; }
+        const response = await fetch(`https://geocoding-api.open-meteo.com/v1/reverse?latitude=${lat}&longitude=${lng}&count=1&format=json`);
+        if (response.ok) {
+            const data = await response.json();
+            if (data.results && data.results.length > 0) {
+                const r = data.results[0];
+                return {
+                    city: r.name || "",
+                    state: r.admin1 || "",
+                    country: r.country || "",
+                    full: `${r.name}, ${r.admin1 || ''}, ${r.country || ''}`
+                };
+            }
+        }
+    } catch (error) { console.warn("API Error", error); }
+    
+    return {
+        city: "Location Found",
+        state: "",
+        country: "",
+        full: `${lat.toFixed(5)}, ${lng.toFixed(5)}`
+    };
 };
 
 // --- UNIT CONVERSION ---
@@ -124,18 +133,18 @@ export const MainMenu = ({ isOpen, onClose, profile, onOpenProfile, onOpenFiles,
                     <div style={styles.menuItem} onClick={() => { onOpenSettings(); onClose(); }}><FiSettings size={20} style={{marginRight: 15, color:'#555'}}/> Settings</div>
                     <div style={styles.menuItem} onClick={() => { onOpenHelp(); onClose(); }}><FiHelpCircle size={20} style={{marginRight: 15, color:'#555'}}/> Help & Guide</div>
                 </div>
-                <div style={styles.menuFooter}>FarmCap v2.7</div>
+                <div style={styles.menuFooter}>FarmCap v3.1 Mobile</div>
             </div>
         </div>
     );
 };
 
-// --- 2. GEO-TAG CAMERA (FIXED: Hardware light off & Back button) ---
+// --- 2. GEO-TAG CAMERA (UPDATED: Slimmer Card + Branding) ---
 export const GeoTagCamera = ({ onSave, onClose }) => {
     const videoRef = useRef(null);
     const canvasRef = useRef(null);
     const [stream, setStream] = useState(null);
-    const streamRef = useRef(null); // Ref to hold stream for cleanup
+    const streamRef = useRef(null); 
 
     const [capturedImage, setCapturedImage] = useState(null);
     const [locData, setLocData] = useState(null);
@@ -145,19 +154,12 @@ export const GeoTagCamera = ({ onSave, onClose }) => {
     const [permissionError, setPermissionError] = useState(false);
     const locIntervalRef = useRef(null);
 
-    // FIX: Aggressive camera stop to kill hardware light
     const stopCamera = () => {
         if (streamRef.current) {
-            streamRef.current.getTracks().forEach(track => {
-                track.stop();
-                track.enabled = false;
-            });
+            streamRef.current.getTracks().forEach(track => { track.stop(); track.enabled = false; });
             streamRef.current = null;
         }
-        // Redundant check on state stream
-        if (stream) {
-            stream.getTracks().forEach(track => track.stop());
-        }
+        if (stream) stream.getTracks().forEach(track => track.stop());
         if (videoRef.current && videoRef.current.srcObject) {
             const tracks = videoRef.current.srcObject.getTracks();
             tracks.forEach(track => track.stop());
@@ -172,22 +174,30 @@ export const GeoTagCamera = ({ onSave, onClose }) => {
             if (navigator.geolocation && !finalLocData) {
                 navigator.geolocation.getCurrentPosition(async (pos) => {
                     const { latitude, longitude } = pos.coords;
+                    if (latitude === null || longitude === null || isNaN(latitude) || isNaN(longitude)) return;
+                    
                     const addrData = await fetchAddress(latitude, longitude);
-                    const city = addrData ? `${addrData.city}, ${addrData.state}` : 'Location Found';
+                    const city = addrData ? `${addrData.city}` : 'Location Found';
                     const fullAddr = addrData ? addrData.full : 'Fetching Address...';
                     const dateStr = new Date().toLocaleString('en-GB', { weekday: 'long', day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true });
+                    
                     setLocData({ lat: latitude, lng: longitude, city, address: fullAddr, date: dateStr });
-                    if (!mapTile) {
+                    
+                    if (!mapTile && latitude && longitude) {
                         const zoom = 15;
                         const tileX = Math.floor((longitude + 180) / 360 * Math.pow(2, zoom));
                         const tileY = Math.floor((1 - Math.log(Math.tan(latitude * Math.PI / 180) + 1 / Math.cos(latitude * Math.PI / 180)) / Math.PI) / 2 * Math.pow(2, zoom));
-                        const mapImg = new Image(); mapImg.crossOrigin = "Anonymous";
-                        mapImg.src = `https://tile.openstreetmap.org/${zoom}/${tileX}/${tileY}.png`;
-                        mapImg.onload = () => setMapTile(mapImg);
+                        
+                        if (isFinite(tileX) && isFinite(tileY)) {
+                            const mapImg = new Image(); 
+                            mapImg.crossOrigin = "Anonymous";
+                            mapImg.src = `https://tile.openstreetmap.org/${zoom}/${tileX}/${tileY}.png`;
+                            mapImg.onload = () => setMapTile(mapImg);
+                        }
                     }
-                }, (err) => console.warn(err), {enableHighAccuracy: true});
+                }, (err) => { console.warn("GeoCam Location Error:", err); }, {enableHighAccuracy: true, timeout: 5000});
             }
-        }, 3000); 
+        }, 5000); 
         
         return () => { 
             stopCamera(); 
@@ -201,7 +211,7 @@ export const GeoTagCamera = ({ onSave, onClose }) => {
             const mediaStream = await navigator.mediaDevices.getUserMedia({ 
                 video: { facingMode: cameraMode, width: { ideal: 1920 }, height: { ideal: 1080 } } 
             });
-            streamRef.current = mediaStream; // Save to Ref
+            streamRef.current = mediaStream; 
             setStream(mediaStream);
             setPermissionError(false);
             if (videoRef.current) { videoRef.current.srcObject = mediaStream; }
@@ -222,6 +232,7 @@ export const GeoTagCamera = ({ onSave, onClose }) => {
         }
     };
 
+    // --- DRAWING LOGIC: Slimmer Card + Branding ---
     const takePicture = () => {
         if (!videoRef.current || !canvasRef.current) return;
         setFinalLocData(locData);
@@ -231,31 +242,78 @@ export const GeoTagCamera = ({ onSave, onClose }) => {
         const ctx = canvas.getContext('2d'); ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
         
         if (locData) {
-            const barHeight = canvas.height * 0.22; const bottomY = canvas.height - barHeight;
-            const padding = canvas.width * 0.04;
-            ctx.fillStyle = "rgba(0, 0, 0, 0.7)"; ctx.fillRect(0, bottomY, canvas.width, barHeight);
-            if (mapTile) {
-                const mapSize = barHeight * 0.8; const mapY = bottomY + (barHeight - mapSize)/2;
-                const mapX = padding; ctx.save(); ctx.beginPath(); ctx.rect(mapX, mapY, mapSize, mapSize); ctx.clip();
-                ctx.drawImage(mapTile, mapX, mapY, mapSize, mapSize); ctx.restore();
-                ctx.strokeStyle = "#fff"; ctx.lineWidth = 3; ctx.strokeRect(mapX, mapY, mapSize, mapSize);
-                // Red Dot
-                ctx.fillStyle = "red"; ctx.beginPath(); ctx.arc(mapX + mapSize/2, mapY + mapSize/2, mapSize*0.08, 0, Math.PI*2); ctx.fill();
-            }
-            // Text Drawing
-            const mapWidth = (barHeight * 0.8) + padding; const textX = padding + mapWidth + 15; let textY = bottomY + padding + (canvas.width * 0.015);
-            ctx.textAlign = "left"; ctx.fillStyle = "white"; ctx.font = `bold ${canvas.width * 0.045}px sans-serif`;
-            ctx.fillText(locData.city, textX, textY);
-            textY += (canvas.width * 0.06);
-            ctx.font = `${canvas.width * 0.025}px sans-serif`;
-            ctx.fillText(locData.address.substring(0, 40) + '...', textX, textY); 
+            const margin = canvas.width * 0.05;
+            // FIX: Reduced height to 0.18 (approx 18% of screen) to make it slimmer
+            const cardHeight = canvas.height * 0.18; 
+            const cardWidth = canvas.width - (margin * 2);
+            const cardX = margin;
+            const cardY = canvas.height - cardHeight - margin;
+            const radius = 20;
+
+            // Draw Background
+            ctx.save();
+            ctx.beginPath();
+            ctx.roundRect(cardX, cardY, cardWidth, cardHeight, radius);
+            ctx.fillStyle = "rgba(0, 0, 0, 0.75)";
+            ctx.fill();
+            ctx.lineWidth = 1;
+            ctx.strokeStyle = "rgba(255, 255, 255, 0.2)";
+            ctx.stroke();
+            ctx.clip(); 
+
+            // 1. Draw Map
+            const mapSize = cardHeight - 30; // 15px padding top/bottom
+            const mapX = cardX + 15;
+            const mapY = cardY + 15;
             
-            // Branding: FIX - Updated Name
-            const logoX = canvas.width - padding; const logoY = bottomY + padding + 10;
-            ctx.textAlign = "right"; ctx.fillStyle = "#4ade80"; ctx.font = `bold ${canvas.width * 0.022}px sans-serif`;
-            ctx.fillText("Farm connect", logoX, logoY + (canvas.width * 0.04));
-            ctx.font = `${canvas.width * 0.06}px serif`;
-            ctx.fillText("🧢", logoX, logoY); 
+            if (mapTile) {
+                ctx.save();
+                ctx.beginPath();
+                ctx.roundRect(mapX, mapY, mapSize, mapSize, 12);
+                ctx.clip();
+                ctx.drawImage(mapTile, mapX, mapY, mapSize, mapSize);
+                ctx.restore();
+                
+                // Border around map
+                ctx.strokeStyle = "#fff"; ctx.lineWidth = 2; 
+                ctx.strokeRect(mapX, mapY, mapSize, mapSize);
+                
+                // Pin
+                ctx.fillStyle = "red"; ctx.beginPath(); ctx.arc(mapX + mapSize/2, mapY + mapSize/2, mapSize*0.06, 0, Math.PI*2); ctx.fill();
+            }
+
+            // 2. Text Content
+            const textX = mapX + mapSize + 25;
+            const textWidth = (cardX + cardWidth) - textX - 15;
+            let textY = mapY + 25;
+
+            ctx.textAlign = "left";
+            ctx.fillStyle = "#ffffff";
+            ctx.font = `bold ${canvas.width * 0.04}px sans-serif`;
+            ctx.fillText(locData.city, textX, textY);
+            
+            textY += (canvas.width * 0.05);
+            ctx.fillStyle = "#cccccc";
+            ctx.font = `${canvas.width * 0.022}px sans-serif`;
+            
+            const addr = locData.address.substring(0, 50) + (locData.address.length > 50 ? '...' : '');
+            ctx.fillText(addr, textX, textY);
+
+            textY += (canvas.width * 0.04);
+            ctx.fillStyle = "#888888";
+            ctx.font = `${canvas.width * 0.02}px monospace`;
+            ctx.fillText(`${locData.lat.toFixed(5)}, ${locData.lng.toFixed(5)}`, textX, textY);
+            
+            // 3. Branding Tag (Bottom Right)
+            ctx.textAlign = "right";
+            const brandX = cardX + cardWidth - 15;
+            const brandY = cardY + cardHeight - 15;
+            
+            ctx.fillStyle = "#4ade80"; // FarmCap Green
+            ctx.font = `bold ${canvas.width * 0.032}px sans-serif`; // Nice visible font size
+            ctx.fillText("🧢 FarmCap", brandX, brandY); 
+
+            ctx.restore();
         }
 
         setCapturedImage(canvas.toDataURL('image/jpeg', 0.95));
@@ -272,17 +330,42 @@ export const GeoTagCamera = ({ onSave, onClose }) => {
                     <video ref={videoRef} autoPlay playsInline muted style={{width: '100%', height: '100%', objectFit: 'cover'}} />
                     <div style={styles.camOverlayContainer}>
                         <div style={styles.camTopBar}>
-                            {/* FIX: Back Arrow */}
                             <button onClick={handleBack} style={styles.iconBtn}><FiArrowLeft size={28} color="#fff"/></button>
                             <span style={{color:'#fff', fontWeight:'bold'}}>FarmCap Cam</span>
                             <div style={{width:28}}></div>
                         </div>
-                        <div style={styles.liveInfoBar}>
-                            <div style={styles.liveMapBox}>{mapTile ? <img src={mapTile.src} style={{width:'100%', height:'100%', objectFit:'cover'}} alt="map"/> : <FiLoader/>}</div>
-                            <div style={{flex:1, paddingLeft: 10, color:'#fff'}}><div style={{fontSize:'16px', fontWeight:'bold'}}>{locData?.city || "Finding..."}</div><div style={{fontSize:'10px'}}>{locData?.address}</div></div>
+                        
+                        {/* LIVE PREVIEW: Matching the Slimmer Card Design */}
+                        <div style={{
+                            position:'absolute', 
+                            bottom: 120, 
+                            left: '5%', 
+                            right: '5%', 
+                            height: '18%', // Reduced height to match canvas
+                            backgroundColor: 'rgba(0,0,0,0.75)', 
+                            borderRadius: 20, 
+                            border: '1px solid rgba(255,255,255,0.2)', 
+                            display: 'flex', 
+                            padding: 15, 
+                            alignItems: 'center', 
+                            backdropFilter: 'blur(5px)'
+                        }}>
+                             <div style={{height: '100%', aspectRatio: '1/1', borderRadius: 12, overflow: 'hidden', border: '1px solid #fff', position: 'relative', marginRight: 15}}>
+                                {mapTile ? <img src={mapTile.src} style={{width:'100%', height:'100%', objectFit:'cover'}} alt="map"/> : <div style={{width:'100%', height:'100%', display:'flex', alignItems:'center', justifyContent:'center', backgroundColor:'#333'}}><FiLoader color="#fff"/></div>}
+                             </div>
+                             <div style={{flex: 1, display:'flex', flexDirection:'column', justifyContent:'center'}}>
+                                 <div style={{color: '#fff', fontSize: '18px', fontWeight: 'bold', marginBottom: 4}}>{locData?.city || "Locating..."}</div>
+                                 <div style={{color: '#ccc', fontSize: '11px', marginBottom: 4, lineHeight: 1.2}}>{locData?.address ? locData.address.substring(0, 45) + '...' : "Fetching Address..."}</div>
+                                 <div style={{color: '#888', fontSize: '10px'}}>{locData?.lat ? `${locData.lat.toFixed(4)}, ${locData.lng.toFixed(4)}` : ""}</div>
+                             </div>
+                             {/* BRANDING IN LIVE PREVIEW */}
+                             <div style={{position:'absolute', bottom: 12, right: 15, color: '#4ade80', fontWeight: 'bold', fontSize: '14px'}}>
+                                🧢 FarmCap
+                             </div>
                         </div>
-                        <div style={{position:'absolute', bottom: '180px', width:'100%', display:'flex', justifyContent:'center'}}><button onClick={takePicture} style={styles.shutterBtn}></button></div>
-                        <div style={{position:'absolute', bottom: '190px', right: '30px'}}><button onClick={() => setCameraMode(m => m === 'user' ? 'environment' : 'user')} style={styles.iconBtn}><MdFlipCameraIos size={30}/></button></div>
+
+                        <div style={{position:'absolute', bottom: '30px', width:'100%', display:'flex', justifyContent:'center'}}><button onClick={takePicture} disabled={!locData} style={{...styles.shutterBtn, opacity: locData ? 1 : 0.5}}></button></div>
+                        <div style={{position:'absolute', bottom: '40px', right: '30px'}}><button onClick={() => setCameraMode(m => m === 'user' ? 'environment' : 'user')} style={styles.iconBtn}><MdFlipCameraIos size={30}/></button></div>
                     </div>
                 </>
             ) : (
@@ -372,7 +455,6 @@ export const MeasureTool = ({ mode, method, active, onExit, onSave, settings, on
           />
       ))}
 
-      {/* GHOST MARKERS */}
       {points.length > 1 && points.map((p, i) => {
           if (mode === 'distance' && i === points.length - 1) return null;
           const nextP = points[(i + 1) % points.length];
