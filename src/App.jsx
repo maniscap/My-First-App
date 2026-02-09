@@ -6,6 +6,9 @@ import Home from './pages/Home';
 import Dashboard from './pages/Dashboard';
 import Service from './pages/Service';
 import AgriInsights from './pages/AgriInsights';
+import MarketRates from './pages/MarketRates'; // <--- NEW IMPORT
+import NewsUpdates from './pages/NewsUpdates';      // <--- NEW IMPORT
+import DigitalLibrary from './pages/DigitalLibrary'; // <--- NEW IMPORT
 import Business from './pages/Business';
 import Login from './pages/Login';
 import Profile from './pages/Profile';
@@ -19,7 +22,7 @@ import UserLocation from './pages/UserLocation';
 
 // --- NEW PAGES ---
 import Radio from './pages/Radio';
-import GlobePage from './pages/GlobePage'; // <--- NEW IMPORT
+import GlobePage from './pages/GlobePage'; 
 import Freelancing from './pages/Freelancing';
 
 // --- FIXED IMPORT ---
@@ -54,7 +57,13 @@ function App() {
         
         {/* Feature Pages */}
         <Route path="/profile" element={<Profile />} />
+        
+        {/* --- AGRI INSIGHTS & SUB-PAGES --- */}
         <Route path="/agri-insights" element={<AgriInsights />} />
+        <Route path="/market-rates" element={<MarketRates />} /> {/* <--- NEW ROUTE */}
+        <Route path="/news" element={<NewsUpdates />} />         {/* <--- NEW ROUTE */}
+        <Route path="/library" element={<DigitalLibrary />} />   {/* <--- NEW ROUTE */}
+        
         <Route path="/service" element={<Service />} />
         <Route path="/business" element={<Business />} />
         <Route path="/farm-fresh" element={<FarmFresh />} />
@@ -62,7 +71,7 @@ function App() {
 
         {/* --- NEW FEATURE ROUTES --- */}
         <Route path="/radio" element={<Radio />} />
-        <Route path="/globe" element={<GlobePage />} /> {/* <--- NEW ROUTE */}
+        <Route path="/globe" element={<GlobePage />} /> 
         <Route path="/freelancing" element={<Freelancing />} />
         
         {/* GPS ROUTE */}
