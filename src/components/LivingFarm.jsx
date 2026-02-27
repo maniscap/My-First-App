@@ -2,7 +2,7 @@ import React from 'react';
 
 const LivingFarm = () => {
   // Your custom GitHub Raw Video Link pointing to your new assets folder!
-  const videoUrl = 'https://github.com/maniscap/My-First-App/raw/refs/heads/main/src/assets/Peaceful_Indian_Village_Sunrise_Animation.mp4';
+  const videoUrl = 'https://github.com/maniscap/Farm_cap_assets/raw/refs/heads/main/Peaceful_Indian_Village_Sunrise_Animation.mp4';
 
   return (
     <div style={styles.backgroundContainer}>
