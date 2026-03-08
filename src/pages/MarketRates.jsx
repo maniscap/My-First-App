@@ -5,8 +5,13 @@ import { IoMdArrowBack, IoMdRefresh, IoMdSearch, IoMdCalendar, IoMdArrowDropdown
 import { FaMapMarkerAlt, FaStar, FaRegStar, FaLeaf } from 'react-icons/fa';
 import { INDIA_LOCATIONS, STATIC_MARKETS } from '../Data/marketData';
 
-// --- BACKGROUND ASSET ---
-const BG_IMAGE = "https://images.unsplash.com/photo-1625246333195-78d9c38ad449?q=80&w=2940&auto=format&fit=crop";
+// --- CAROUSEL BANNERS ---
+const BANNERS = [
+  "https://img.freepik.com/premium-photo/smart-farmer-holding-smartphone-with-ai-tech-interface-farm-background-future-smart-farming_1162141-40976.jpg",
+  "https://cdn.siasat.com/wp-content/uploads/2020/10/2020_10img07_Oct_2020_PTI07-10-2020_000074B-1-scaled.jpg",
+  "https://www.unite.ai/wp-content/uploads/2024/12/AI-for-Agriculture.webp",
+  "https://olimpum.com/en/wp-content/uploads/WhatsApp-Image-2024-09-20-at-00.22.46.jpeg"
+];
 
 const generateRobustDummyData = () => { 
     return [
@@ -22,6 +27,7 @@ const MarketRates = () => {
   const navigate = useNavigate();
   
   // --- UI STATE ---
+  const [currentBanner, setCurrentBanner] = useState(0);
   const [bgLoaded, setBgLoaded] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState(null);
   const [filterDate, setFilterDate] = useState(new Date().toISOString().split('T')[0]);
@@ -52,7 +58,6 @@ const MarketRates = () => {
   const [selectedState, setSelectedState] = useState(pinnedMarket ? pinnedMarket.state : 'Andhra Pradesh');
   const [selectedDistrict, setSelectedDistrict] = useState(pinnedMarket ? pinnedMarket.district : 'All');
   const [selectedMarket, setSelectedMarket] = useState(pinnedMarket ? pinnedMarket.market : 'All');
-  const [searchQuery, setSearchQuery] = useState('');
 
   // Lists for Dropdowns
   const [districtsList, setDistrictsList] = useState([]);
@@ -61,6 +66,14 @@ const MarketRates = () => {
   const MANDI_KEY = import.meta.env.VITE_GOVT_MANDI_KEY;
 
   const stateKeys = Object.keys(INDIA_LOCATIONS).sort();
+
+  // --- CAROUSEL EFFECT ---
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentBanner(prev => (prev + 1) % BANNERS.length);
+    }, 4000);
+    return () => clearInterval(timer);
+  }, []);
 
   // --- FETCH REAL DATA ---
   const fetchMarketRates = async () => {
@@ -143,13 +156,8 @@ const MarketRates = () => {
       data = data.filter(item => item.market === selectedMarket);
     }
 
-    if (searchQuery) {
-      const q = searchQuery.toLowerCase();
-      data = data.filter(item => item.commodity.toLowerCase().includes(q));
-    }
-
     setFilteredData(data);
-  }, [allMarketData, selectedState, selectedDistrict, selectedMarket, searchQuery]);
+  }, [allMarketData, selectedState, selectedDistrict, selectedMarket]);
 
   // --- PIN MARKET FUNCTION ---
   const togglePinMarket = () => {
@@ -182,7 +190,7 @@ const MarketRates = () => {
   const isCurrentMarketPinned = pinnedMarket && pinnedMarket.market === selectedMarket && selectedMarket !== 'All';
 
   return (
-    <div style={{...styles.page, backgroundImage: `url(${BG_IMAGE})`}}>
+    <div style={styles.page}>
       <div style={styles.overlay}></div>
       
       {/* HEADER */}
@@ -202,22 +210,38 @@ const MarketRates = () => {
             <IoMdRefresh size={24} color="white" className={loading ? "spin" : ""}/>
           </button>
         </div>
-
-        {/* SEARCH BAR */}
-        <div style={styles.searchContainer}>
-          <IoMdSearch size={20} color="rgba(255,255,255,0.7)" />
-          <input 
-            type="text" 
-            placeholder="Search crops (e.g. Tomato, Cotton)..." 
-            style={styles.searchInput}
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-        </div>
       </div>
 
       {/* MAIN SCROLLABLE CONTENT */}
       <div style={styles.scrollContent}>
+
+        {/* 1. PROFESSIONAL CAROUSEL BANNER */}
+        <div style={styles.carouselWrapper}>
+            {BANNERS.map((src, i) => (
+                <img 
+                    key={i} 
+                    src={src} 
+                    style={{
+                        ...styles.bannerImg, 
+                        opacity: currentBanner === i ? 1 : 0 
+                    }} 
+                />
+            ))}
+            <div style={styles.bannerOverlay}>
+                <div style={styles.bannerTitle}>FarmCap</div>
+                <div style={styles.bannerSubtitle}>Your Harvest. Your Capital. Your Control.</div>
+            </div>
+            <div style={styles.dotsContainer}>
+                {BANNERS.map((_, i) => (
+                    <div key={i} style={{...styles.dot, background: i === currentBanner ? '#fff' : 'rgba(255,255,255,0.4)'}} />
+                ))}
+            </div>
+        </div>
+
+        {/* 2. GOV STYLE TICKER */}
+        <div style={styles.tickerContainer}>
+            <div style={styles.tickerText}>Live Market Analytics Powered by AGMARKNET | Department of Agriculture & Farmers Welfare, Government of India</div>
+        </div>
         
         {/* VERTICAL FILTER STACK */}
         <div style={styles.filterStack}>
@@ -361,6 +385,7 @@ const MarketRates = () => {
         .spin { animation: spin 1s linear infinite; }
         @keyframes spin { 100% { transform: rotate(360deg); } }
         .loader { border: 3px solid rgba(255,255,255,0.3); border-top: 3px solid #4ade80; border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; }
+        @keyframes marquee { 0% { transform: translateX(100%); } 100% { transform: translateX(-100%); } }
       `}</style>
     </div>
   );
@@ -370,7 +395,7 @@ const MarketRates = () => {
 const styles = {
   page: { 
       position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', 
-      backgroundSize: 'cover', backgroundPosition: 'center', 
+      background: '#111',
       fontFamily: '"Inter", sans-serif', color: 'white', overflow: 'hidden',
       display: 'flex', flexDirection: 'column'
   },
@@ -390,15 +415,59 @@ const styles = {
   iconBtn: { background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: '12px', width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' },
   pinIconBtn: { background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: '8px', width: '30px', height: '30px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' },
 
-  searchContainer: { 
-      display: 'flex', alignItems: 'center', gap: '10px', 
-      background: 'rgba(0,0,0,0.3)', padding: '10px 15px', borderRadius: '12px', 
-      border: '1px solid rgba(255,255,255,0.1)' 
-  },
-  searchInput: { background: 'transparent', border: 'none', color: 'white', fontSize: '14px', width: '100%', outline: 'none' },
-
   scrollContent: { flex: 1, overflowY: 'auto', padding: '20px', position: 'relative', zIndex: 5 },
   
+  // --- CAROUSEL STYLES ---
+  carouselWrapper: {
+    position: 'relative',
+    width: '100%',
+    height: '220px',
+    borderRadius: '20px',
+    overflow: 'hidden',
+    marginBottom: '20px',
+    boxShadow: '0 10px 30px rgba(0,0,0,0.5)',
+  },
+  bannerImg: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    width: '100%',
+    height: '100%',
+    objectFit: 'cover',
+    transition: 'opacity 1s ease-in-out'
+  },
+  bannerOverlay: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    width: '100%',
+    background: 'linear-gradient(to top, rgba(0,0,0,0.9), transparent)',
+    padding: '20px',
+    boxSizing: 'border-box'
+  },
+  bannerTitle: { fontSize: '20px', fontWeight: '800', color: 'white', marginBottom: '4px' },
+  bannerSubtitle: { fontSize: '12px', color: '#4ade80', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '1px' },
+  dotsContainer: { position: 'absolute', bottom: '15px', right: '20px', display: 'flex', gap: '6px', zIndex: 2 },
+  dot: { width: '6px', height: '6px', borderRadius: '50%', transition: 'background 0.3s' },
+
+  // --- TICKER STYLES ---
+  tickerContainer: {
+    background: 'rgba(255,255,255,0.05)',
+    borderRadius: '12px',
+    padding: '10px 15px',
+    marginBottom: '25px',
+    border: '1px solid rgba(255,255,255,0.1)',
+    overflow: 'hidden',
+    whiteSpace: 'nowrap',
+    backdropFilter: 'blur(5px)'
+  },
+  tickerText: {
+    fontSize: '12px',
+    color: '#ccc',
+    display: 'inline-block',
+    animation: 'marquee 15s linear infinite'
+  },
+
   filterStack: { display: 'flex', flexDirection: 'column', gap: '15px', marginBottom: '30px' },
   dropdownContainer: { position: 'relative' },
   dropdownLabel: { display: 'block', color: 'rgba(255,255,255,0.6)', fontSize: '12px', marginBottom: '6px', marginLeft: '4px', fontWeight: '600', textTransform: 'uppercase' },
