@@ -1,71 +1,90 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { IoMdArrowBack, IoMdRefresh, IoMdSearch, IoMdCalendar } from 'react-icons/io';
-import { FaMapMarkerAlt, FaSortAmountDown, FaFilter, FaArrowUp, FaArrowDown, FaMinus, FaExclamationCircle } from 'react-icons/fa';
+import { IoMdArrowBack, IoMdRefresh, IoMdSearch, IoMdCalendar, IoMdArrowDropdown, IoMdArrowDropup } from 'react-icons/io';
+import { FaMapMarkerAlt, FaStar, FaRegStar, FaLeaf } from 'react-icons/fa';
+import { INDIA_LOCATIONS, STATIC_MARKETS } from '../Data/marketData';
+
+// --- BACKGROUND ASSET ---
+const BG_IMAGE = "https://images.unsplash.com/photo-1625246333195-78d9c38ad449?q=80&w=2940&auto=format&fit=crop";
+
+const generateRobustDummyData = () => { 
+    return [
+        {commodity: "Tomato", market: "Guntur", district: "Guntur", state: "Andhra Pradesh", modal_price: 1500, min_price: 1200, max_price: 1800, arrival_date: "12/10/2023"},
+        {commodity: "Cotton", market: "Adilabad", district: "Adilabad", state: "Telangana", modal_price: 6500, min_price: 6000, max_price: 7000, arrival_date: "12/10/2023"},
+        {commodity: "Onion", market: "Lasalgaon", district: "Nashik", state: "Maharashtra", modal_price: 2200, min_price: 1800, max_price: 2500, arrival_date: "12/10/2023"},
+        {commodity: "Potato", market: "Agra", district: "Agra", state: "Uttar Pradesh", modal_price: 900, min_price: 800, max_price: 1000, arrival_date: "12/10/2023"},
+        {commodity: "Rice", market: "Burdwan", district: "Bardhaman", state: "West Bengal", modal_price: 3200, min_price: 3000, max_price: 3400, arrival_date: "12/10/2023"}
+    ]; 
+};
 
 const MarketRates = () => {
   const navigate = useNavigate();
+  
+  // --- UI STATE ---
+  const [bgLoaded, setBgLoaded] = useState(false);
+  const [activeDropdown, setActiveDropdown] = useState(null);
+  const [filterDate, setFilterDate] = useState(new Date().toISOString().split('T')[0]);
+
   const [loading, setLoading] = useState(false);
   const [lastUpdated, setLastUpdated] = useState('');
+  const [dataSource, setDataSource] = useState('');
 
   // --- DATA STATES ---
-  const [allMarketData, setAllMarketData] = useState([]); // Raw API Data
-  const [filteredData, setFilteredData] = useState([]); // Display Data
+  const [allMarketData, setAllMarketData] = useState([]); 
+  const [filteredData, setFilteredData] = useState([]); 
+
+  // --- LOCAL STORAGE: Learned Markets (Dynamic Cache) ---
+  const [learnedMarkets, setLearnedMarkets] = useState(() => {
+    try {
+      const saved = localStorage.getItem('farmcap_learned_markets');
+      return saved ? JSON.parse(saved) : {};
+    } catch (e) { return {}; }
+  });
+
+  // --- LOCAL STORAGE: Check for Pinned Market on Load ---
+  const [pinnedMarket, setPinnedMarket] = useState(() => {
+    const saved = localStorage.getItem('farmcap_pinned_market');
+    return saved ? JSON.parse(saved) : null;
+  });
 
   // --- FILTER STATES ---
-  const [selectedState, setSelectedState] = useState('Andhra Pradesh'); // Default State
-  const [selectedDistrict, setSelectedDistrict] = useState('All');
-  const [selectedMarket, setSelectedMarket] = useState('All');
-  const [selectedCommodity, setSelectedCommodity] = useState('All');
+  const [selectedState, setSelectedState] = useState(pinnedMarket ? pinnedMarket.state : 'Andhra Pradesh');
+  const [selectedDistrict, setSelectedDistrict] = useState(pinnedMarket ? pinnedMarket.district : 'All');
+  const [selectedMarket, setSelectedMarket] = useState(pinnedMarket ? pinnedMarket.market : 'All');
   const [searchQuery, setSearchQuery] = useState('');
 
   // Lists for Dropdowns
   const [districtsList, setDistrictsList] = useState([]);
   const [marketsList, setMarketsList] = useState([]);
-  const [commoditiesList, setCommoditiesList] = useState([]);
 
-  // --- API KEY ---
   const MANDI_KEY = import.meta.env.VITE_GOVT_MANDI_KEY;
-
-  // --- 1. HUGE LOCATION DATABASE (Static Fallback for Smooth UX) ---
-  const INDIA_LOCATIONS = {
-    "Andhra Pradesh": ["Anantapur", "Chittoor", "East Godavari", "Guntur", "Krishna", "Kurnool", "Prakasam", "Srikakulam", "Visakhapatnam", "Vizianagaram", "West Godavari", "YSR Kadapa"],
-    "Telangana": ["Adilabad", "Bhadradri Kothagudem", "Hyderabad", "Jagtial", "Jangaon", "Karimnagar", "Khammam", "Mahabubabad", "Mancherial", "Medak", "Nalgonda", "Nizamabad", "Peddapalli", "Rajanna Sircilla", "Rangareddy", "Sangareddy", "Siddipet", "Suryapet", "Vikarabad", "Wanaparthy", "Warangal", "Yadadri Bhuvanagiri"],
-    "Tamil Nadu": ["Ariyalur", "Chengalpattu", "Chennai", "Coimbatore", "Cuddalore", "Dharmapuri", "Dindigul", "Erode", "Kallakurichi", "Kancheepuram", "Karur", "Krishnagiri", "Madurai", "Nagapattinam", "Namakkal", "Nilgiris", "Perambalur", "Pudukkottai", "Ramanathapuram", "Ranipet", "Salem", "Sivaganga", "Tenkasi", "Thanjavur", "Theni", "Thoothukudi", "Tiruchirappalli", "Tirunelveli", "Tirupathur", "Tiruppur", "Tiruvallur", "Tiruvannamalai", "Tiruvarur", "Vellore", "Viluppuram", "Virudhunagar"],
-    "Karnataka": ["Bagalkot", "Ballari", "Belagavi", "Bengaluru Rural", "Bengaluru Urban", "Bidar", "Chamarajanagar", "Chikkaballapura", "Chikkamagaluru", "Chitradurga", "Dakshina Kannada", "Davangere", "Dharwad", "Gadag", "Hassan", "Haveri", "Kalaburagi", "Kodagu", "Kolar", "Koppal", "Mandya", "Mysuru", "Raichur", "Ramanagara", "Shivamogga", "Tumakuru", "Udupi", "Uttara Kannada", "Vijayapura", "Yadgir"],
-    "Maharashtra": ["Ahmednagar", "Akola", "Amravati", "Aurangabad", "Beed", "Bhandara", "Buldhana", "Chandrapur", "Dhule", "Gadchiroli", "Gondia", "Hingoli", "Jalgaon", "Jalna", "Kolhapur", "Latur", "Mumbai City", "Mumbai Suburban", "Nagpur", "Nanded", "Nandurbar", "Nashik", "Osmanabad", "Palghar", "Parbhani", "Pune", "Raigad", "Ratnagiri", "Sangli", "Satara", "Sindhudurg", "Solapur", "Thane", "Wardha", "Washim", "Yavatmal"],
-    "Kerala": ["Alappuzha", "Ernakulam", "Idukki", "Kannur", "Kasaragod", "Kollam", "Kottayam", "Kozhikode", "Malappuram", "Palakkad", "Pathanamthitta", "Thiruvananthapuram", "Thrissur", "Wayanad"],
-    "Gujarat": ["Ahmedabad", "Amreli", "Anand", "Aravalli", "Banaskantha", "Bharuch", "Bhavnagar", "Botad", "Chhota Udaipur", "Dahod", "Dang", "Devbhoomi Dwarka", "Gandhinagar", "Gir Somnath", "Jamnagar", "Junagadh", "Kheda", "Kutch", "Mahisagar", "Mehsana", "Morbi", "Narmada", "Navsari", "Panchmahal", "Patan", "Porbandar", "Rajkot", "Sabarkantha", "Surat", "Surendranagar", "Tapi", "Vadodara", "Valsad"],
-    "Punjab": ["Amritsar", "Barnala", "Bathinda", "Faridkot", "Fatehgarh Sahib", "Fazilka", "Ferozepur", "Gurdaspur", "Hoshiarpur", "Jalandhar", "Kapurthala", "Ludhiana", "Mansa", "Moga", "Muktsar", "Pathankot", "Patiala", "Rupnagar", "Sahibzada Ajit Singh Nagar", "Sangrur", "Shahid Bhagat Singh Nagar", "Sri Muktsar Sahib", "Tarn Taran"],
-    "Haryana": ["Ambala", "Bhiwani", "Charkhi Dadri", "Faridabad", "Fatehabad", "Gurugram", "Hisar", "Jhajjar", "Jind", "Kaithal", "Karnal", "Kurukshetra", "Mahendragarh", "Nuh", "Palwal", "Panchkula", "Panipat", "Rewari", "Rohtak", "Sirsa", "Sonipat", "Yamunanagar"],
-    "Uttar Pradesh": ["Agra", "Aligarh", "Prayagraj", "Ambedkar Nagar", "Amethi", "Amroha", "Auraiya", "Ayodhya", "Azamgarh", "Baghpat", "Bahraich", "Ballia", "Balrampur", "Banda", "Barabanki", "Bareilly", "Basti", "Bhadohi", "Bijnor", "Budaun", "Bulandshahr", "Chandauli", "Chitrakoot", "Deoria", "Etah", "Etawah", "Farrukhabad", "Fatehpur", "Firozabad", "Gautam Buddha Nagar", "Ghaziabad", "Ghazipur", "Gonda", "Gorakhpur", "Hamirpur", "Hapur", "Hardoi", "Hathras", "Jalaun", "Jaunpur", "Jhansi", "Kannauj", "Kanpur Dehat", "Kanpur Nagar", "Kasganj", "Kaushambi", "Kheri", "Kushinagar", "Lalitpur", "Lucknow", "Maharajganj", "Mahoba", "Mainpuri", "Mathura", "Mau", "Meerut", "Mirzapur", "Moradabad", "Muzaffarnagar", "Pilibhit", "Pratapgarh", "Raebareli", "Rampur", "Saharanpur", "Sambhal", "Sant Kabir Nagar", "Shahjahanpur", "Shamli", "Shravasti", "Siddharthnagar", "Sitapur", "Sonbhadra", "Sultanpur", "Unnao", "Varanasi"],
-    "Madhya Pradesh": ["Agar Malwa", "Alirajpur", "Anuppur", "Ashoknagar", "Balaghat", "Barwani", "Betul", "Bhind", "Bhopal", "Burhanpur", "Chhatarpur", "Chhindwara", "Damoh", "Datia", "Dewas", "Dhar", "Dindori", "Guna", "Gwalior", "Harda", "Hoshangabad", "Indore", "Jabalpur", "Jhabua", "Katni", "Khandwa", "Khargone", "Mandla", "Mandsaur", "Morena", "Narsinghpur", "Neemuch", "Panna", "Raisen", "Rajgarh", "Ratlam", "Rewa", "Sagar", "Satna", "Sehore", "Seoni", "Shahdol", "Shajapur", "Sheopur", "Shivpuri", "Sidhi", "Singrauli", "Tikamgarh", "Ujjain", "Umaria", "Vidisha"],
-    "Rajasthan": ["Ajmer", "Alwar", "Banswara", "Baran", "Barmer", "Bharatpur", "Bhilwara", "Bikaner", "Bundi", "Chittorgarh", "Churu", "Dausa", "Dholpur", "Dungarpur", "Hanumangarh", "Jaipur", "Jaisalmer", "Jalore", "Jhalawar", "Jhunjhunu", "Jodhpur", "Karauli", "Kota", "Nagaur", "Pali", "Pratapgarh", "Rajsamand", "Sawai Madhopur", "Sikar", "Sirohi", "Sri Ganganagar", "Tonk", "Udaipur"],
-    "Bihar": ["Araria", "Arwal", "Aurangabad", "Banka", "Begusarai", "Bhagalpur", "Bhojpur", "Buxar", "Darbhanga", "East Champaran", "Gaya", "Gopalganj", "Jamui", "Jehanabad", "Kaimur", "Katihar", "Khagaria", "Kishanganj", "Lakhisarai", "Madhepura", "Madhubani", "Munger", "Muzaffarpur", "Nalanda", "Nawada", "Patna", "Purnia", "Rohtas", "Saharsa", "Samastipur", "Saran", "Sheikhpura", "Sheohar", "Sitamarhi", "Siwan", "Supaul", "Vaishali", "West Champaran"],
-    "West Bengal": ["Alipurduar", "Bankura", "Birbhum", "Cooch Behar", "Dakshin Dinajpur", "Darjeeling", "Hooghly", "Howrah", "Jalpaiguri", "Jhargram", "Kalimpong", "Kolkata", "Malda", "Murshidabad", "Nadia", "North 24 Parganas", "Paschim Bardhaman", "Paschim Medinipur", "Purba Bardhaman", "Purba Medinipur", "Purulia", "South 24 Parganas", "Uttar Dinajpur"],
-    "Odisha": ["Angul", "Balangir", "Balasore", "Bargarh", "Bhadrak", "Boudh", "Cuttack", "Deogarh", "Dhenkanal", "Gajapati", "Ganjam", "Jagatsinghpur", "Jajpur", "Jharsuguda", "Kalahandi", "Kandhamal", "Kendrapara", "Kendujhar", "Khordha", "Koraput", "Malkangiri", "Mayurbhanj", "Nabarangpur", "Nayagarh", "Nuapada", "Puri", "Rayagada", "Sambalpur", "Subarnapur", "Sundargarh"]
-  };
 
   const stateKeys = Object.keys(INDIA_LOCATIONS).sort();
 
-  // --- 2. FETCH REAL DATA ---
+  // --- FETCH REAL DATA ---
   const fetchMarketRates = async () => {
     setLoading(true);
+    
+    if (!MANDI_KEY) {
+        console.warn("⚠️ No API Key found. Using Demo Data.");
+        processData(generateRobustDummyData());
+        setDataSource('🟠 Demo Mode (No Key)');
+        setLoading(false);
+        return;
+    }
+
     try {
-      // Fetching 3000 records to maximize coverage
-      const url = `https://api.data.gov.in/resource/9ef84268-d588-465a-a308-a864a43d0070?api-key=${MANDI_KEY}&format=json&limit=3000`;
+      const url = `https://api.data.gov.in/resource/9ef84268-d588-465a-a308-a864a43d0070?api-key=${MANDI_KEY}&format=json&limit=10000`;
       const res = await axios.get(url);
-      
       if(res.data.records && res.data.records.length > 0) {
         processData(res.data.records);
-      } else {
-        throw new Error("Empty API Response");
-      }
+        setDataSource('🟢 Live Govt Data');
+      } else throw new Error("Empty");
     } catch (err) {
-      console.warn("API Limit/Error - Using Robust Fallback Data");
-      const dummy = generateRobustDummyData();
-      processData(dummy);
+      console.error("API Fetch Error:", err);
+      processData(generateRobustDummyData()); // Fallback
+      setDataSource('🔴 Offline / Demo Data');
     }
     setLoading(false);
   };
@@ -73,316 +92,370 @@ const MarketRates = () => {
   const processData = (data) => {
     setAllMarketData(data);
     setLastUpdated(new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}));
+
+    // --- DYNAMICALLY LEARN NEW MARKETS ---
+    setLearnedMarkets(prev => {
+      const newLearned = { ...prev };
+      let hasUpdates = false;
+      data.forEach(item => {
+        const { state, district, market } = item;
+        if (!state || !district || !market) return;
+        if (!newLearned[state]) newLearned[state] = {};
+        if (!newLearned[state][district]) newLearned[state][district] = [];
+        if (!newLearned[state][district].includes(market)) {
+          newLearned[state][district].push(market);
+          hasUpdates = true;
+        }
+      });
+      if (hasUpdates) localStorage.setItem('farmcap_learned_markets', JSON.stringify(newLearned));
+      return hasUpdates ? newLearned : prev;
+    });
   };
 
-  useEffect(() => {
-    fetchMarketRates();
-  }, []);
+  useEffect(() => { fetchMarketRates(); }, []);
 
-  // --- 3. FILTERING ENGINE ---
+  // --- FILTERING ENGINE ---
   useEffect(() => {
     let data = allMarketData;
 
-    // Filter by State
     if (selectedState !== 'All') {
       data = data.filter(item => item.state === selectedState);
-      // Update District Dropdown dynamically from API data + Static List fallback
       const apiDistricts = [...new Set(data.map(item => item.district))];
       const staticDistricts = INDIA_LOCATIONS[selectedState] || [];
-      const combinedDistricts = [...new Set([...apiDistricts, ...staticDistricts])].sort();
-      setDistrictsList(['All', ...combinedDistricts]);
-    } else {
-      setDistrictsList(['All']);
+      setDistrictsList(['All', ...new Set([...apiDistricts, ...staticDistricts])].sort());
     }
 
-    // Filter by District
     if (selectedDistrict !== 'All') {
-      data = data.filter(item => item.district === selectedDistrict);
-      const uniqueMarkets = [...new Set(data.map(item => item.market))].sort();
-      setMarketsList(['All', ...uniqueMarkets]);
-    } else {
-      setMarketsList(['All']);
+      // 1. Filter data for the grid
+      const districtData = data.filter(item => item.district === selectedDistrict);
+      
+      // 2. Populate Markets Dropdown (Merge API markets + Static markets)
+      const apiMarkets = [...new Set(districtData.map(item => item.market))];
+      const staticMarkets = (STATIC_MARKETS[selectedState] && STATIC_MARKETS[selectedState][selectedDistrict]) || [];
+      const cachedMarkets = (learnedMarkets[selectedState] && learnedMarkets[selectedState][selectedDistrict]) || [];
+      setMarketsList(['All', ...new Set([...apiMarkets, ...staticMarkets, ...cachedMarkets])].sort());
+      
+      // 3. Update data for next steps
+      data = districtData;
     }
 
-    // Filter by Market
     if (selectedMarket !== 'All') {
       data = data.filter(item => item.market === selectedMarket);
     }
 
-    // Update Commodity List based on remaining data
-    const uniqueCommodities = [...new Set(data.map(item => item.commodity))].sort();
-    setCommoditiesList(['All', ...uniqueCommodities]);
-
-    // Filter by Commodity
-    if (selectedCommodity !== 'All') {
-      data = data.filter(item => item.commodity === selectedCommodity);
-    }
-
-    // Filter by Search Query
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
-      data = data.filter(item => 
-        item.commodity.toLowerCase().includes(q) || 
-        item.market.toLowerCase().includes(q)
-      );
+      data = data.filter(item => item.commodity.toLowerCase().includes(q));
     }
 
     setFilteredData(data);
-  }, [allMarketData, selectedState, selectedDistrict, selectedMarket, selectedCommodity, searchQuery]);
+  }, [allMarketData, selectedState, selectedDistrict, selectedMarket, searchQuery]);
 
-
-  // --- HELPER: Trend Icon ---
-  const getTrendIcon = (min, max, modal) => {
-      const avg = (parseInt(min) + parseInt(max)) / 2;
-      const current = parseInt(modal);
-      if (current > avg) return <span style={{color: '#4caf50', display:'flex', alignItems:'center', gap:'2px', fontSize:'11px', fontWeight:'bold'}}><FaArrowUp size={10}/> Bullish</span>;
-      if (current < avg) return <span style={{color: '#f44336', display:'flex', alignItems:'center', gap:'2px', fontSize:'11px', fontWeight:'bold'}}><FaArrowDown size={10}/> Bearish</span>;
-      return <span style={{color: '#ff9800', display:'flex', alignItems:'center', gap:'2px', fontSize:'11px', fontWeight:'bold'}}><FaMinus size={10}/> Stable</span>;
+  // --- PIN MARKET FUNCTION ---
+  const togglePinMarket = () => {
+    if (pinnedMarket && pinnedMarket.market === selectedMarket) {
+      // Unpin if currently pinned
+      localStorage.removeItem('farmcap_pinned_market');
+      setPinnedMarket(null);
+    } else {
+      // Pin
+      const newPin = { state: selectedState, district: selectedDistrict, market: selectedMarket };
+      localStorage.setItem('farmcap_pinned_market', JSON.stringify(newPin));
+      setPinnedMarket(newPin);
+    }
   };
 
+  const toggleDropdown = (key) => {
+    if (activeDropdown === key) {
+        setActiveDropdown(null);
+    } else {
+        setActiveDropdown(key);
+    }
+  };
+
+  // --- AI CARD EXPANSION PLACEHOLDER ---
+  const handleCardClick = (commodity) => {
+    console.log(`Clicked ${commodity}! This is where the Gemini AI will fetch 7-day data and expand!`);
+    // We will build this logic in Phase 2
+  };
+
+  const isCurrentMarketPinned = pinnedMarket && pinnedMarket.market === selectedMarket && selectedMarket !== 'All';
+
   return (
-    <div style={styles.page}>
+    <div style={{...styles.page, backgroundImage: `url(${BG_IMAGE})`}}>
+      <div style={styles.overlay}></div>
       
       {/* HEADER */}
-      <div style={styles.header}>
-        <div style={{display:'flex', alignItems:'center', gap:'15px'}}>
-            <button onClick={() => navigate('/agri-insights')} style={styles.backBtn}><IoMdArrowBack size={24}/></button>
-            <div>
-                <h1 style={styles.title}>Mandi Rates</h1>
-                <p style={styles.subtitle}>All India Live Market Prices</p>
+      <div style={styles.glassHeader}>
+        <div style={styles.headerTop}>
+          <button onClick={() => navigate('/agri-insights')} style={styles.iconBtn}>
+            <IoMdArrowBack size={24} color="white"/>
+          </button>
+          <div style={{textAlign:'center'}}>
+            <h1 style={styles.title}>Mandi Rates</h1>
+            <div style={{display:'flex', alignItems:'center', justifyContent:'center', gap:'6px'}}>
+              <p style={styles.subtitle}>Live Market Prices</p>
+              {dataSource && <span style={styles.sourceBadge}>{dataSource}</span>}
             </div>
+          </div>
+          <button onClick={fetchMarketRates} style={styles.iconBtn}>
+            <IoMdRefresh size={24} color="white" className={loading ? "spin" : ""}/>
+          </button>
         </div>
-        <button onClick={fetchMarketRates} style={styles.refreshBtn}>
-            <IoMdRefresh size={20} className={loading ? "spin" : ""}/>
-        </button>
+
+        {/* SEARCH BAR */}
+        <div style={styles.searchContainer}>
+          <IoMdSearch size={20} color="rgba(255,255,255,0.7)" />
+          <input 
+            type="text" 
+            placeholder="Search crops (e.g. Tomato, Cotton)..." 
+            style={styles.searchInput}
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </div>
       </div>
 
-      {/* FILTERS CONTAINER */}
-      <div style={styles.filtersContainer}>
+      {/* MAIN SCROLLABLE CONTENT */}
+      <div style={styles.scrollContent}>
         
-        {/* ROW 1: State & District */}
-        <div style={styles.filterRow}>
-            <div style={styles.filterGroup}>
-                <label style={styles.label}>Select State</label>
-                <select 
-                    value={selectedState} 
-                    onChange={(e) => { setSelectedState(e.target.value); setSelectedDistrict('All'); }} 
-                    style={styles.select}
-                >
-                    {stateKeys.map(s => <option key={s} value={s}>{s}</option>)}
-                </select>
-            </div>
-
-            <div style={styles.filterGroup}>
-                <label style={styles.label}>Select District</label>
-                <select 
-                    value={selectedDistrict} 
-                    onChange={(e) => setSelectedDistrict(e.target.value)} 
-                    style={styles.select}
-                >
-                    <option value="All">All Districts</option>
-                    {districtsList.map(d => <option key={d} value={d}>{d}</option>)}
-                </select>
-            </div>
-        </div>
-
-        {/* ROW 2: Market & Commodity */}
-        <div style={styles.filterRow}>
-            <div style={styles.filterGroup}>
-                <label style={styles.label}>Market Yard</label>
-                <select 
-                    value={selectedMarket} 
-                    onChange={(e) => setSelectedMarket(e.target.value)} 
-                    style={styles.select}
-                    disabled={selectedDistrict === 'All'}
-                >
-                    <option value="All">All Markets</option>
-                    {marketsList.map(m => <option key={m} value={m}>{m}</option>)}
-                </select>
-            </div>
+        {/* VERTICAL FILTER STACK */}
+        <div style={styles.filterStack}>
             
-            <div style={styles.filterGroup}>
-                <label style={styles.label}>Commodity</label>
-                <select 
-                    value={selectedCommodity} 
-                    onChange={(e) => setSelectedCommodity(e.target.value)} 
-                    style={styles.select}
-                >
-                    <option value="All">All Crops</option>
-                    {commoditiesList.map(c => <option key={c} value={c}>{c}</option>)}
-                </select>
+            {/* DATE SELECTOR */}
+            <div style={styles.dropdownContainer}>
+                <label style={styles.dropdownLabel}>Select Date</label>
+                <div style={styles.glassInputWrapper}>
+                    <IoMdCalendar size={20} color="rgba(255,255,255,0.8)"/>
+                    <input 
+                        type="date" 
+                        value={filterDate} 
+                        onChange={(e) => setFilterDate(e.target.value)} 
+                        style={styles.dateInput}
+                    />
+                </div>
             </div>
+
+            {/* STATE SELECTOR */}
+            <div style={styles.dropdownContainer}>
+                <label style={styles.dropdownLabel}>Select State</label>
+                <div style={styles.dropdownHeader} onClick={() => toggleDropdown('state')}>
+                    <span>{selectedState === 'All' ? 'Select State' : selectedState}</span>
+                    {activeDropdown === 'state' ? <IoMdArrowDropup size={20}/> : <IoMdArrowDropdown size={20}/>}
+                </div>
+                {activeDropdown === 'state' && (
+                    <div style={styles.dropdownList}>
+                        {stateKeys.map(state => (
+                            <div key={state} style={styles.dropdownItem} onClick={() => {
+                                setSelectedState(state); setSelectedDistrict('All'); setSelectedMarket('All'); setActiveDropdown(null);
+                            }}>
+                                {state}
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
+
+            {/* DISTRICT SELECTOR */}
+            {selectedState !== 'All' && (
+                <div style={styles.dropdownContainer}>
+                    <label style={styles.dropdownLabel}>Select District</label>
+                    <div style={styles.dropdownHeader} onClick={() => toggleDropdown('district')}>
+                        <span>{selectedDistrict === 'All' ? 'Select District' : selectedDistrict}</span>
+                        {activeDropdown === 'district' ? <IoMdArrowDropup size={20}/> : <IoMdArrowDropdown size={20}/>}
+                    </div>
+                    {activeDropdown === 'district' && (
+                        <div style={styles.dropdownList}>
+                            {districtsList.map(dist => (
+                                <div key={dist} style={styles.dropdownItem} onClick={() => {
+                                    setSelectedDistrict(dist); setSelectedMarket('All'); setActiveDropdown(null);
+                                }}>
+                                    {dist}
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            )}
+
+            {/* MARKET SELECTOR */}
+            {selectedDistrict !== 'All' && (
+                <div style={styles.dropdownContainer}>
+                    <label style={styles.dropdownLabel}>Select Market</label>
+                    <div style={styles.dropdownHeader} onClick={() => toggleDropdown('market')}>
+                        <div style={{display:'flex', alignItems:'center', gap:'10px'}}>
+                            <span>{selectedMarket === 'All' ? 'Select Market' : selectedMarket}</span>
+                            {selectedMarket !== 'All' && (
+                                <div onClick={(e) => { e.stopPropagation(); togglePinMarket(); }}>
+                                    {isCurrentMarketPinned ? <FaStar color="#FFD700"/> : <FaRegStar color="rgba(255,255,255,0.5)"/>}
+                                </div>
+                            )}
+                        </div>
+                        {activeDropdown === 'market' ? <IoMdArrowDropup size={20}/> : <IoMdArrowDropdown size={20}/>}
+                    </div>
+                    {activeDropdown === 'market' && (
+                        <div style={styles.dropdownList}>
+                            {marketsList.map(mkt => (
+                                <div key={mkt} style={styles.dropdownItem} onClick={() => {
+                                    setSelectedMarket(mkt); setActiveDropdown(null);
+                                }}>
+                                    {mkt}
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            )}
         </div>
 
-        {/* Search Bar */}
-        <div style={styles.searchWrapper}>
-            <IoMdSearch color="#888" size={18}/>
-            <input 
-                type="text" 
-                placeholder="Search specific crop (e.g. Onion, Tomato)..." 
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                style={styles.searchInput}
-            />
-        </div>
-      </div>
+        {/* 4. COMMODITIES GRID */}
+        <div style={{...styles.section, marginBottom: '40px'}}>
+          <div style={styles.sectionHeader}>
+            <span style={styles.sectionTitle}>
+                {selectedMarket !== 'All' ? `${selectedMarket} Rates` : 'All Commodities'}
+            </span>
+            <span style={styles.sectionCount}>{filteredData.length} Items</span>
+          </div>
 
-      {/* RESULTS AREA */}
-      <div style={styles.resultsInfo}>
-          <span>Last Updated: {lastUpdated || 'Just Now'}</span>
-          <span><b>{filteredData.length}</b> Markets Found</span>
-      </div>
-
-      <div style={styles.listContainer}>
           {loading ? (
-              <div style={styles.emptyState}>
+              <div style={styles.loaderContainer}>
                   <div className="loader"></div>
-                  <p>Fetching latest prices from Agmarknet...</p>
-              </div>
-          ) : filteredData.length === 0 ? (
-              <div style={styles.emptyState}>
-                  <FaExclamationCircle size={40} color="#ccc"/>
-                  <h3>No Data Reported Today</h3>
-                  <p>Markets in <b>{selectedDistrict}</b> may be closed or haven't uploaded today's auction data yet.</p>
-                  <button onClick={() => setSelectedDistrict('All')} style={styles.resetBtn}>View All in {selectedState}</button>
+                  <p style={{color:'white', marginTop:'10px'}}>Fetching Live Rates...</p>
               </div>
           ) : (
-              filteredData.map((item, index) => (
-                  <div key={index} style={styles.card}>
-                      
-                      {/* 1. Header: Commodity Name & Date */}
-                      <div style={styles.cardHeader}>
-                          <div>
-                              <h3 style={styles.commodityName}>{item.commodity}</h3>
-                              <span style={styles.varietyTag}>{item.variety}</span>
-                          </div>
-                          <div style={styles.dateBadge}>
-                              <IoMdCalendar size={12}/> {item.arrival_date}
-                          </div>
-                      </div>
-
-                      {/* 2. Market Location */}
-                      <div style={styles.marketRow}>
-                          <FaMapMarkerAlt color="#d32f2f" size={14}/>
-                          <span>{item.market}, <b>{item.district}</b></span>
-                      </div>
-
-                      {/* 3. Price Grid (Min | Modal | Max) */}
-                      <div style={styles.priceGrid}>
-                          <div style={styles.priceBlock}>
-                              <span style={styles.priceLabel}>Min Price</span>
-                              <span style={styles.priceVal}>₹{item.min_price}</span>
-                          </div>
-                          <div style={styles.priceBlockMain}>
-                              <span style={styles.priceLabelMain}>AVG PRICE</span>
-                              <span style={styles.priceValMain}>₹{item.modal_price}</span>
-                          </div>
-                          <div style={styles.priceBlock}>
-                              <span style={styles.priceLabel}>Max Price</span>
-                              <span style={styles.priceVal}>₹{item.max_price}</span>
-                          </div>
-                      </div>
-
-                      {/* 4. Footer: Trend */}
-                      <div style={styles.cardFooter}>
-                          <div style={styles.trendBox}>
-                              Trend: {getTrendIcon(item.min_price, item.max_price, item.modal_price)}
-                          </div>
-                          <div style={styles.unitTag}>1 Quintal (100kg)</div>
-                      </div>
+            <div style={styles.grid}>
+              {filteredData.length === 0 && (
+                  <div style={styles.emptyState}>
+                      <FaLeaf size={40} color="rgba(255,255,255,0.3)"/>
+                      <p>No data found for this selection.</p>
                   </div>
-              ))
+              )}
+              {filteredData.map((item, index) => (
+                  <div key={index} style={styles.glassCard} onClick={() => handleCardClick(item.commodity)}>
+                      <div style={styles.cardHeader}>
+                          <h3 style={styles.commodityName}>{item.commodity}</h3>
+                          <span style={styles.dateBadge}>{item.arrival_date}</span>
+                      </div>
+                      <div style={styles.locationRow}>
+                          <FaMapMarkerAlt size={12} color="#4ade80"/> 
+                          <span>{item.market}, {item.district}</span>
+                      </div>
+                      <div style={styles.priceRow}>
+                          <div style={styles.priceLabel}>Modal Price</div>
+                          <div style={styles.priceValue}>₹{item.modal_price}<span>/qtl</span></div>
+                      </div>
+                      <div style={styles.minMaxRow}>
+                          <span>Min: ₹{item.min_price}</span>
+                          <span>Max: ₹{item.max_price}</span>
+                      </div>
+                      <div style={styles.aiBadge}>Tap for AI Analysis ✨</div>
+                  </div>
+              ))}
+            </div>
           )}
+        </div>
+
       </div>
 
       <style>{`
         .spin { animation: spin 1s linear infinite; }
         @keyframes spin { 100% { transform: rotate(360deg); } }
-        .loader { border: 4px solid #f3f3f3; border-top: 4px solid #2e7d32; border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; margin: 0 auto 10px auto; }
+        .loader { border: 3px solid rgba(255,255,255,0.3); border-top: 3px solid #4ade80; border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; }
       `}</style>
     </div>
   );
 };
 
-// --- ROBUST DUMMY DATA GENERATOR ---
-const generateRobustDummyData = () => {
-    const data = [];
-    const apDistricts = ["Anantapur", "Chittoor", "Guntur", "Krishna", "Kurnool", "Prakasam", "Visakhapatnam", "West Godavari"];
-    const commodities = [
-        {name: "Rice", min: 3200, max: 4500},
-        {name: "Cotton", min: 6500, max: 8200},
-        {name: "Chilli (Red)", min: 12000, max: 18500},
-        {name: "Turmeric", min: 6800, max: 7500},
-        {name: "Maize", min: 1800, max: 2200},
-        {name: "Onion", min: 1200, max: 2500},
-        {name: "Tomato", min: 800, max: 1500},
-        {name: "Groundnut", min: 5500, max: 6800}
-    ];
-
-    apDistricts.forEach(dist => {
-        for(let m=1; m<=3; m++) {
-            const marketName = `${dist} Mandi ${m}`;
-            for(let c=0; c<5; c++) {
-                const comm = commodities[Math.floor(Math.random() * commodities.length)];
-                const min = comm.min + Math.floor(Math.random() * 200);
-                const max = comm.max + Math.floor(Math.random() * 400);
-                const modal = Math.floor((min + max) / 2);
-                data.push({
-                    state: "Andhra Pradesh", district: dist, market: marketName,
-                    commodity: comm.name, variety: "Hybrid",
-                    min_price: min, max_price: max, modal_price: modal,
-                    arrival_date: new Date().toLocaleDateString('en-GB')
-                });
-            }
-        }
-    });
-    return data;
-};
-
-// --- STYLES ---
+// --- PREMIUM GLASSMORPHISM STYLES ---
 const styles = {
-  page: { background: '#f5f7fa', minHeight: '100vh', fontFamily: 'sans-serif', display: 'flex', flexDirection: 'column' },
+  page: { 
+      position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', 
+      backgroundSize: 'cover', backgroundPosition: 'center', 
+      fontFamily: '"Inter", sans-serif', color: 'white', overflow: 'hidden',
+      display: 'flex', flexDirection: 'column'
+  },
+  overlay: { position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 0 },
   
-  header: { background: '#1b5e20', color: '#fff', padding: '15px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: '0 2px 10px rgba(0,0,0,0.1)' },
-  backBtn: { background: 'transparent', border: 'none', color: '#fff', cursor: 'pointer', padding: 0 },
-  title: { fontSize: '20px', margin: 0, fontWeight: '700' },
+  glassHeader: { 
+      position: 'relative', zIndex: 10, 
+      background: 'rgba(255, 255, 255, 0.1)', 
+      backdropFilter: 'blur(15px)', WebkitBackdropFilter: 'blur(15px)',
+      borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+      padding: '15px 20px', display: 'flex', flexDirection: 'column', gap: '15px'
+  },
+  headerTop: { display: 'flex', justifyContent: 'space-between', alignItems: 'center' },
+  title: { fontSize: '22px', margin: 0, fontWeight: '800', letterSpacing: '0.5px' },
   subtitle: { fontSize: '12px', opacity: 0.8, margin: 0 },
-  refreshBtn: { background: 'rgba(255,255,255,0.2)', border: 'none', borderRadius: '50%', width: '40px', height: '40px', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' },
+  sourceBadge: { fontSize: '9px', background: 'rgba(74, 222, 128, 0.2)', color: '#4ade80', padding: '2px 6px', borderRadius: '4px', border: '1px solid rgba(74, 222, 128, 0.3)' },
+  iconBtn: { background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: '12px', width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' },
+  pinIconBtn: { background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: '8px', width: '30px', height: '30px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' },
 
-  filtersContainer: { background: '#fff', padding: '15px', borderRadius: '0 0 20px 20px', boxShadow: '0 4px 15px rgba(0,0,0,0.05)', zIndex: 10 },
-  filterRow: { display: 'flex', gap: '15px', marginBottom: '15px' },
-  filterGroup: { flex: 1 },
-  label: { display: 'block', fontSize: '11px', fontWeight: '700', color: '#666', marginBottom: '5px', textTransform: 'uppercase' },
-  select: { width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #e0e0e0', background: '#f9f9f9', fontSize: '14px', fontWeight: '500', color: '#333', outline: 'none' },
-  searchWrapper: { display: 'flex', alignItems: 'center', background: '#f9f9f9', border: '1px solid #e0e0e0', borderRadius: '8px', padding: '0 12px' },
-  searchInput: { border: 'none', background: 'transparent', padding: '12px', width: '100%', outline: 'none', fontSize: '14px' },
+  searchContainer: { 
+      display: 'flex', alignItems: 'center', gap: '10px', 
+      background: 'rgba(0,0,0,0.3)', padding: '10px 15px', borderRadius: '12px', 
+      border: '1px solid rgba(255,255,255,0.1)' 
+  },
+  searchInput: { background: 'transparent', border: 'none', color: 'white', fontSize: '14px', width: '100%', outline: 'none' },
 
-  resultsInfo: { padding: '15px 20px 5px', display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#888', fontWeight: '500' },
-
-  listContainer: { flex: 1, padding: '15px', overflowY: 'auto' },
+  scrollContent: { flex: 1, overflowY: 'auto', padding: '20px', position: 'relative', zIndex: 5 },
   
-  card: { background: '#fff', borderRadius: '12px', padding: '15px', marginBottom: '15px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)', borderLeft: '5px solid #2e7d32' },
-  cardHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' },
-  commodityName: { margin: 0, fontSize: '18px', fontWeight: '700', color: '#333' },
-  varietyTag: { fontSize: '11px', background: '#e8f5e9', color: '#2e7d32', padding: '2px 8px', borderRadius: '4px', fontWeight: '600' },
-  dateBadge: { fontSize: '11px', color: '#999', display: 'flex', alignItems: 'center', gap: '4px' },
+  filterStack: { display: 'flex', flexDirection: 'column', gap: '15px', marginBottom: '30px' },
+  dropdownContainer: { position: 'relative' },
+  dropdownLabel: { display: 'block', color: 'rgba(255,255,255,0.6)', fontSize: '12px', marginBottom: '6px', marginLeft: '4px', fontWeight: '600', textTransform: 'uppercase' },
+  dropdownHeader: {
+      background: 'rgba(255, 255, 255, 0.1)', backdropFilter: 'blur(10px)',
+      border: '1px solid rgba(255, 255, 255, 0.15)', borderRadius: '12px',
+      padding: '14px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+      color: 'white', cursor: 'pointer', fontSize: '15px', fontWeight: '500',
+      transition: 'background 0.2s'
+  },
+  dropdownList: {
+      position: 'absolute', top: '100%', left: 0, right: 0,
+      background: '#1e1e1e', border: '1px solid rgba(255,255,255,0.1)',
+      borderRadius: '12px', marginTop: '5px', maxHeight: '250px', overflowY: 'auto',
+      zIndex: 100, boxShadow: '0 10px 40px rgba(0,0,0,0.5)'
+  },
+  dropdownItem: { padding: '12px 16px', borderBottom: '1px solid rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.9)', cursor: 'pointer', fontSize: '14px' },
   
-  marketRow: { display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: '#555', marginBottom: '15px' },
+  glassInputWrapper: { background: 'rgba(255, 255, 255, 0.1)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255, 255, 255, 0.15)', borderRadius: '12px', padding: '12px 16px', display: 'flex', alignItems: 'center', gap: '10px' },
+  dateInput: { background: 'transparent', border: 'none', color: 'white', fontSize: '15px', width: '100%', outline: 'none', fontFamily: 'inherit', colorScheme: 'dark' },
 
-  priceGrid: { display: 'grid', gridTemplateColumns: '1fr 1.2fr 1fr', gap: '10px', background: '#fafafa', padding: '12px', borderRadius: '8px', border: '1px solid #eee' },
-  priceBlock: { display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' },
-  priceBlockMain: { display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', borderLeft: '1px solid #ddd', borderRight: '1px solid #ddd' },
-  priceLabel: { fontSize: '10px', color: '#888', textTransform: 'uppercase', fontWeight: '600' },
-  priceVal: { fontSize: '15px', fontWeight: '700', color: '#333' },
-  priceLabelMain: { fontSize: '10px', color: '#2e7d32', textTransform: 'uppercase', fontWeight: '700' },
-  priceValMain: { fontSize: '20px', fontWeight: '800', color: '#2e7d32' },
+  section: { marginBottom: '25px' },
+  sectionHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px', padding: '0 5px' },
+  sectionTitle: { fontSize: '14px', fontWeight: '700', color: 'rgba(255,255,255,0.9)', textTransform: 'uppercase', letterSpacing: '1px' },
+  sectionCount: { fontSize: '12px', color: 'rgba(255,255,255,0.5)' },
 
-  cardFooter: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '10px', paddingTop: '8px', borderTop: '1px dashed #eee' },
-  trendBox: { fontSize: '11px', color: '#555' },
-  unitTag: { fontSize: '10px', background: '#eee', padding: '2px 6px', borderRadius: '4px', color: '#666' },
+  grid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: '15px' },
+  
+  glassCard: { 
+      background: 'rgba(255, 255, 255, 0.07)', 
+      backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)',
+      border: '1px solid rgba(255, 255, 255, 0.1)', 
+      borderRadius: '16px', padding: '15px', 
+      display: 'flex', flexDirection: 'column', gap: '8px',
+      cursor: 'pointer', transition: 'transform 0.2s',
+      boxShadow: '0 4px 20px rgba(0,0,0,0.2)'
+  },
+  cardHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' },
+  commodityName: { margin: 0, fontSize: '16px', fontWeight: '700', color: '#fff' },
+  dateBadge: { fontSize: '10px', color: 'rgba(255,255,255,0.5)' },
+  
+  locationRow: { display: 'flex', alignItems: 'center', gap: '5px', fontSize: '11px', color: 'rgba(255,255,255,0.7)' },
+  
+  priceRow: { marginTop: '5px', background: 'rgba(0,0,0,0.2)', padding: '8px', borderRadius: '8px', textAlign: 'center' },
+  priceLabel: { fontSize: '10px', color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase' },
+  priceValue: { fontSize: '18px', fontWeight: '800', color: '#4ade80' },
+  
+  minMaxRow: { display: 'flex', justifyContent: 'space-between', fontSize: '10px', color: 'rgba(255,255,255,0.5)', marginTop: '2px' },
+  
+  aiBadge: { 
+      marginTop: '5px', fontSize: '10px', textAlign: 'center', 
+      color: '#60a5fa', fontWeight: '600', letterSpacing: '0.5px',
+      borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '8px'
+  },
 
-  emptyState: { textAlign: 'center', padding: '50px 20px', color: '#888' },
-  resetBtn: { marginTop: '15px', padding: '10px 20px', background: '#1b5e20', color: '#fff', border: 'none', borderRadius: '25px', cursor: 'pointer', fontWeight: '600' }
+  loaderContainer: { display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px' },
+  emptyState: { gridColumn: '1 / -1', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px', color: 'rgba(255,255,255,0.5)', gap: '10px' }
 };
 
 export default MarketRates;

@@ -1,5 +1,5 @@
-const CACHE_NAME = 'farmcap-core-v2';
-const DYNAMIC_CACHE = 'farmcap-dynamic-images-v2';
+const CACHE_NAME = 'farmcap-core-v3';
+const DYNAMIC_CACHE = 'farmcap-dynamic-images-v3';
 const MAX_DYNAMIC_IMAGES = 100;
 const MAX_FILE_SIZE = 20971520; // 20MB in bytes
 

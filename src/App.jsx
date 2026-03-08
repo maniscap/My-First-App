@@ -19,6 +19,7 @@ import SearchResults from './pages/SearchResults';
 import Expenditure from './pages/Expenditure';
 import CropExpenses from './pages/CropExpenses'; 
 import UserLocation from './pages/UserLocation'; 
+import ModernTech from './pages/ModernTech';
 
 // --- NEW PAGES ---
 import Radio from './pages/Radio';
@@ -63,6 +64,7 @@ function App() {
         <Route path="/market-rates" element={<MarketRates />} /> {/* <--- NEW ROUTE */}
         <Route path="/news" element={<NewsUpdates />} />         {/* <--- NEW ROUTE */}
         <Route path="/library" element={<DigitalLibrary />} />   {/* <--- NEW ROUTE */}
+        <Route path="/modern-tech" element={<ModernTech />} />
         
         <Route path="/service" element={<Service />} />
         <Route path="/business" element={<Business />} />

@@ -83,7 +83,8 @@ const actionItemCard = {
     background: '#f9f9f9', borderRadius: '6px'
 };
 
-const COLLECTION_MAP = { 'Service': 'services', 'Product': 'daily_products', 'Business': 'crops' };
+// 🚨 UPDATED: Collection map matches the new Firestore Rules
+const COLLECTION_MAP = { 'Service': 'Service', 'Product': 'FarmFresh', 'Business': 'Business' };
 const TYPE_DISPLAY_MAP = { 'Service': 'Service Hub', 'Product': 'Farm Fresh', 'Business': 'Business Zone' };
 
 // --- MAIN LISTINGS COMPONENT (Now acting as a router/container) ---
@@ -101,13 +102,20 @@ export function MyListingsPage({ user, profileData, setActiveView, showNotificat
     const fetchListings = async (uid) => {
         if (!uid) return;
         setLoading(true);
-        const collectionNames = ['services', 'crops', 'daily_products'];
+        
+        // 🚨 UPDATED: Fetching from the new exactly-named collections
+        const collectionNames = ['Service', 'Business', 'FarmFresh'];
+        
         const fetchPromises = collectionNames.map(name => {
+            // This is the query that filters data so a user only sees their own uploads!
             const q = query(collection(db, name), where("userId", "==", uid)); 
+            
             return getDocs(q).then(snapshot => 
                 snapshot.docs.map(doc => ({
-                    id: doc.id, collectionName: name, 
-                    type: name === 'services' ? 'Service' : (name === 'crops' ? 'Business' : 'Product'), 
+                    id: doc.id, 
+                    collectionName: name, 
+                    // 🚨 UPDATED: Maps the new collection names to your UI types
+                    type: name === 'Service' ? 'Service' : (name === 'Business' ? 'Business' : 'Product'), 
                     ...doc.data(),
                     inquiries: doc.data().inquiries || [], 
                 }))

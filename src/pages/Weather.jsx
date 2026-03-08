@@ -16,7 +16,7 @@ const weatherImages = {
   clearDay: 'https://images.pexels.com/photos/296234/pexels-photo-296234.jpeg',
   clearNight: 'https://images.pexels.com/photos/11752993/pexels-photo-11752993.jpeg',
   cloudyDay: 'https://images.pexels.com/photos/158163/clouds-cloudporn-weather-lookup-158163.jpeg',
-  cloudyNight: 'https://www.pexels.com/photo/dramatic-storm-cloud-formation-at-dusk-29473893/',
+  cloudyNight: 'https://images.pexels.com/photos/29473893/pexels-photo-29473893.jpeg',
   partlyCloudyDay: 'https://images.pexels.com/photos/13958707/pexels-photo-13958707.jpeg',
   partlyCloudyNight: 'https://images.pexels.com/photos/5489557/pexels-photo-5489557.jpeg',
   mistDay: 'https://images.pexels.com/photos/6745483/pexels-photo-6745483.jpeg',
@@ -27,11 +27,26 @@ const weatherImages = {
   storm: 'https://images.pexels.com/photos/16218619/pexels-photo-16218619.jpeg',
   sunrise: 'https://images.pexels.com/photos/10248028/pexels-photo-10248028.jpeg',
   sunset: 'https://images.pexels.com/photos/539282/pexels-photo-539282.jpeg',
-  drizzle: 'https://images.pexels.com/photos/804474/pexels-photo-804474.jpeg'
+  drizzle: 'https://images.pexels.com/photos/804474/pexels-photo-804474.jpeg',
+  defaultFallback: 'https://images.pexels.com/photos/1107717/pexels-photo-1107717.jpeg' 
+};
+
+// --- SMART TEXT MATCHER AS SECONDARY FALLBACK ---
+const getBackgroundImage = (conditionText) => {
+  if (!conditionText) return weatherImages.defaultFallback;
+  const text = conditionText.toLowerCase();
+  
+  if (text.includes('overcast') || text.includes('cloud')) return weatherImages.cloudyDay; 
+  if (text.includes('rain') || text.includes('shower')) return weatherImages.rainDay;
+  if (text.includes('drizzle')) return weatherImages.drizzle;
+  if (text.includes('clear') || text.includes('sun')) return weatherImages.clearDay;
+  if (text.includes('mist') || text.includes('fog')) return weatherImages.mistDay;
+  if (text.includes('thunder') || text.includes('storm')) return weatherImages.storm;
+  
+  return weatherImages.defaultFallback;
 };
 
 // --- HELPER COMPONENTS ---
-
 const SkeletonLoader = () => (
   <div style={styles.skeletonContainer}>
     <div style={{...styles.skeletonBox, height: '40px', width: '60%', marginBottom: '20px'}}></div>
@@ -71,6 +86,9 @@ const Weather = () => {
   const [gpsResult, setGpsResult] = useState(null); 
   const [isSearchingGPS, setIsSearchingGPS] = useState(false);
   const [showFullForecast, setShowFullForecast] = useState(false);
+  
+  // --- SEARCH HISTORY STATE ---
+  const [searchHistory, setSearchHistory] = useState([]);
 
   // UX States
   const [toastMsg, setToastMsg] = useState("");
@@ -86,13 +104,17 @@ const Weather = () => {
   const popularCities = ['Mumbai', 'Delhi', 'Bangalore', 'Hyderabad', 'Chennai', 'Kolkata', 'Pune', 'Jaipur'];
 
   // --- INITIAL LOAD ---
-  useEffect(() => { loadAllCities(); }, []);
+  useEffect(() => { 
+      loadAllCities(); 
+      // Load History
+      const savedHistory = localStorage.getItem('farmBuddy_searchHistory');
+      if (savedHistory) setSearchHistory(JSON.parse(savedHistory));
+  }, []);
 
   // --- SYNC LAST CITY ---
   useEffect(() => {
     if (savedWeatherList.length > 0) {
       const currentCity = savedWeatherList[currentIndex];
-      // CRITICAL: SAVE ACTIVE CITY FOR DASHBOARD
       localStorage.setItem('farmBuddy_lastCity', JSON.stringify({ 
           name: currentCity.location.name, 
           lat: currentCity.location.lat, 
@@ -117,9 +139,7 @@ const Weather = () => {
       return 'rgba(244, 67, 54, 0.4)'; 
   };
 
-  // --- TIME FIX (Using City Local Time) ---
   const formatCityTime = (timeString) => {
-      // timeString format from API: "2024-02-20 14:30"
       if(!timeString) return "--:--";
       const [date, time] = timeString.split(' ');
       let [hr, min] = time.split(':');
@@ -152,20 +172,16 @@ const Weather = () => {
       } catch (e) { return 50; } 
   };
 
-  // --- DATA LOADING ---
   const loadAllCities = async () => {
     setLoading(true);
-    // 1. Try to load saved cities list
     const saved = localStorage.getItem('farmBuddy_cities');
     let citiesToFetch = saved ? JSON.parse(saved) : [];
 
-    // 2. If no cities saved, try to load the LAST VIEWED city (from Dashboard sync)
     if(citiesToFetch.length === 0) {
         const lastCity = localStorage.getItem('farmBuddy_lastCity');
         if(lastCity) citiesToFetch.push(JSON.parse(lastCity));
     }
 
-    // 3. If still empty, use GPS
     if (citiesToFetch.length === 0) {
         if (navigator.geolocation) {
              navigator.geolocation.getCurrentPosition(
@@ -183,7 +199,6 @@ const Weather = () => {
             );
         } else { setLoading(false); }
     } else {
-        // 4. Fetch updated data for saved list
         const promises = citiesToFetch.map(async (city) => {
             const data = await fetchSingleCity(`${city.lat},${city.lon}`);
             if (data) {
@@ -220,6 +235,7 @@ const Weather = () => {
   const getAssetLogic = (currentCityData) => {
     if (!currentCityData) return weatherImages.clearDay;
     const code = currentCityData.current.condition.code;
+    const text = currentCityData.current.condition.text; 
     const isDay = currentCityData.current.is_day;
     const hour = new Date().getHours();
 
@@ -234,6 +250,10 @@ const Weather = () => {
     if ([1030, 1135, 1147].includes(code)) return isDay ? weatherImages.mistDay : weatherImages.mistNight;
     if ([1006, 1009].includes(code)) return isDay ? weatherImages.cloudyDay : weatherImages.cloudyNight;
     if (code === 1003) return isDay ? weatherImages.partlyCloudyDay : weatherImages.partlyCloudyNight;
+    
+    const smartMatch = getBackgroundImage(text);
+    if (smartMatch !== weatherImages.defaultFallback) return smartMatch;
+
     if (isDay) {
         if (hour === 6) return weatherImages.sunrise;
         if (hour >= 17 && hour <= 18) return weatherImages.sunset;
@@ -271,6 +291,7 @@ const Weather = () => {
       }
   };
 
+  // --- HANDLE SELECT SUGGESTION LOGIC FOR GEOGRAPHY ---
   const handleSelectSuggestion = async (placeOrData) => {
     let newWeatherData;
     let selectedName = "";
@@ -278,12 +299,17 @@ const Weather = () => {
     if (placeOrData.current) {
         newWeatherData = placeOrData;
         selectedName = placeOrData.location.name;
+    } else if (typeof placeOrData === 'string') {
+        selectedName = placeOrData;
+        const searchTarget = popularCities.includes(placeOrData) ? `${placeOrData}, India` : placeOrData;
+        newWeatherData = await fetchSingleCity(searchTarget); 
     } else {
         selectedName = placeOrData.name; 
-        newWeatherData = await fetchSingleCity(placeOrData.url || placeOrData); 
+        newWeatherData = await fetchSingleCity(placeOrData.url || placeOrData.name); 
     }
     
     if (!newWeatherData) return;
+    
     newWeatherData.location.name = selectedName;
     
     const exists = savedWeatherList.findIndex(w => w.location.name === selectedName);
@@ -295,6 +321,10 @@ const Weather = () => {
     } else {
         setCurrentIndex(exists);
     }
+
+    const updatedHistory = [selectedName, ...searchHistory.filter(item => item !== selectedName)].slice(0, 5);
+    setSearchHistory(updatedHistory);
+    localStorage.setItem('farmBuddy_searchHistory', JSON.stringify(updatedHistory));
 
     setSearchQuery("");
     setSuggestions([]);
@@ -370,9 +400,7 @@ const Weather = () => {
 
   return (
     <div style={styles.container} onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd}>
-      {/* REPLACED VIDEO WITH IMAGE */}
       <img src={image} alt="Weather Background" style={styles.videoBg} />
-      
       <div style={styles.overlay}></div>
       
       {isRefreshing && <div style={styles.refreshIndicator}><div style={styles.spinner}></div></div>}
@@ -386,7 +414,6 @@ const Weather = () => {
              <span style={styles.cityTitle}>{location.name}</span>
              <span style={styles.regionTitle}>
                 {location.region}
-                {/* CORRECTED TIME DISPLAY */}
                 <span style={{marginLeft:'8px', opacity:0.8, fontSize:'11px', fontWeight:'600'}}>
                    {formatCityTime(location.localtime)}
                 </span>
@@ -411,22 +438,45 @@ const Weather = () => {
       {showCityManager && (
           <div style={styles.modalOverlay}>
               <div style={styles.modalContent}>
+                  
+                  {/* --- NEW STYLED SEARCH OVERLAY --- */}
                   {showSearchOverlay ? (
                       <div style={styles.searchOverlay}>
                           <div style={styles.searchHeader}>
-                              <IoMdArrowBack size={24} onClick={() => {setShowSearchOverlay(false); setGpsResult(null);}} style={{cursor:'pointer'}} />
+                              <IoMdArrowBack size={24} onClick={() => {setShowSearchOverlay(false); setGpsResult(null);}} style={{cursor:'pointer', color: '#ccc'}} />
                               <input 
-                                autoFocus type="text" placeholder="Enter city name..." 
+                                autoFocus type="text" placeholder="Search for a city..." 
                                 value={searchQuery} onChange={handleSearchChange} style={styles.searchInputBig}
                               />
+                              {searchQuery && (
+                                  <IoMdClose size={22} color="#888" style={{cursor:'pointer'}} onClick={() => setSearchQuery("")} />
+                              )}
                           </div>
+                          
                           <div style={styles.suggestionsList}>
                               {searchQuery.length === 0 && !gpsResult && (
                                   <>
                                      <div style={styles.gpsRow} onClick={handleGPSClick}>
-                                         {isSearchingGPS ? <span style={styles.spinner}></span> : <MdLocationOn size={20} color="#4CAF50"/>}
+                                         {isSearchingGPS ? <span style={styles.spinner}></span> : <MdLocationOn size={22} color="#4CAF50"/>}
                                          {isSearchingGPS ? "Pinpointing Location..." : "Use Precise GPS"}
                                      </div>
+
+                                     {/* SEARCH HISTORY SECTION */}
+                                     {searchHistory.length > 0 && (
+                                         <>
+                                            <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '25px', marginBottom: '10px'}}>
+                                                <p style={{...styles.popularLabel, margin: 0}}>RECENT SEARCHES</p>
+                                                <span style={styles.clearBtn} onClick={() => {setSearchHistory([]); localStorage.removeItem('farmBuddy_searchHistory')}}>Clear</span>
+                                            </div>
+                                            {searchHistory.map((historyItem, idx) => (
+                                                <div key={`hist-${idx}`} style={styles.historyRow} onClick={() => handleSelectSuggestion(historyItem)}>
+                                                    <WiTime3 size={20} color="#888" />
+                                                    <span>{historyItem}</span>
+                                                </div>
+                                            ))}
+                                         </>
+                                     )}
+
                                      <p style={styles.popularLabel}>POPULAR CITIES</p>
                                      <div style={styles.popularGrid}>
                                          {popularCities.map(city => (
@@ -435,6 +485,8 @@ const Weather = () => {
                                      </div>
                                   </>
                               )}
+                              
+                              {/* GPS & Live Suggestion Results */}
                               {gpsResult && (
                                 <div style={styles.gpsResultCard} onClick={() => handleSelectSuggestion(gpsResult)}>
                                     <div style={{display:'flex', gap:'10px', alignItems:'center'}}>
@@ -449,7 +501,7 @@ const Weather = () => {
                               )}
                               {suggestions.map((place, idx) => (
                                   <div key={idx} style={styles.suggestionItem} onClick={() => handleSelectSuggestion(place)}>
-                                      <span>{place.name}, {place.region}</span>
+                                      <span>{place.name}, <span style={{opacity: 0.6, fontSize: '14px'}}>{place.region}</span></span>
                                       <IoMdAdd size={20} color="#aaa"/>
                                   </div>
                               ))}
@@ -463,7 +515,7 @@ const Weather = () => {
                           </div>
                           <div style={styles.searchBarTrigger} onClick={() => setShowSearchOverlay(true)}>
                               <IoMdSearch size={20} color="#888" />
-                              <span style={{color:'#888', marginLeft:'10px'}}>Enter location</span>
+                              <span style={{color:'#888', marginLeft:'10px'}}>Search for a city...</span>
                           </div>
                           <div style={styles.savedList}>
                               {savedWeatherList.map((city, idx) => (
@@ -622,6 +674,7 @@ const Weather = () => {
   );
 };
 
+// --- UPDATED: PADDING FIX & TRANSPARENCY ADDED ONLY TO MODAL/SEARCH UI ---
 const styles = {
   container: { position:'fixed', top:0, left:0, width:'100%', height:'100%', color:'white', fontFamily:'"SF Pro Display", sans-serif', background:'#111' },
   videoBg: { position:'absolute', top:0, left:0, width:'100%', height:'100%', objectFit:'cover', zIndex:-2 },
@@ -706,20 +759,21 @@ const styles = {
   sunArc: { width:'80%', height:'70px', borderTop:'2px solid rgba(255,255,255,0.5)', borderLeft:'2px solid transparent', borderRight:'2px solid transparent', borderRadius:'50% 50% 0 0', position:'absolute', top:0 },
   sunTimes: { textAlign:'center', paddingTop:'15px', fontSize:'12px' },
 
-  modalOverlay: { position:'fixed', top:0, left:0, width:'100%', height:'100%', background:'#000', zIndex:100, display:'flex', flexDirection:'column' },
-  modalContent: { flex:1, padding:'20px', background:'#050505', overflowY:'auto' },
+  // --- FIXED: ADDED boxSizing & DECREASED BACKGROUND OPACITY ---
+  modalOverlay: { position:'fixed', top:0, left:0, width:'100%', height:'100%', background:'rgba(0,0,0,0.2)', backdropFilter:'blur(10px)', WebkitBackdropFilter:'blur(10px)', zIndex:100, display:'flex', flexDirection:'column', boxSizing: 'border-box' },
+  modalContent: { flex:1, padding:'20px', background:'rgba(10, 10, 10, 0.3)', backdropFilter:'blur(15px)', WebkitBackdropFilter:'blur(15px)', overflowY:'auto', boxSizing: 'border-box', overflowX: 'hidden' },
   modalHeader: { display:'flex', justifyContent:'center', alignItems:'center', marginBottom:'20px', position:'relative' },
   closeModal: { background:'none', border:'none', color:'#fff', cursor:'pointer', position:'absolute', right:0 },
   
   searchBarTrigger: { 
-      background:'#1a1a1a', padding:'14px 20px', borderRadius:'30px', display:'flex', alignItems:'center', marginBottom:'25px', cursor:'pointer',
-      border: '1px solid #333'
+      background:'rgba(255,255,255,0.05)', padding:'14px 20px', borderRadius:'30px', display:'flex', alignItems:'center', marginBottom:'25px', cursor:'pointer',
+      border: '1px solid rgba(255,255,255,0.15)', backdropFilter:'blur(10px)', boxSizing: 'border-box'
   },
   savedList: { display:'flex', flexDirection:'column', gap:'15px' },
   cityCard: { 
-      background:'linear-gradient(135deg, #2a2a2a 0%, #1f1f1f 100%)', borderRadius:'24px', padding:'25px', 
-      display:'flex', justifyContent:'space-between', alignItems:'center', cursor:'pointer', border:'1px solid #333',
-      boxShadow: '0 4px 15px rgba(0,0,0,0.5)'
+      background:'linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.02) 100%)', backdropFilter:'blur(15px)', borderRadius:'24px', padding:'25px', 
+      display:'flex', justifyContent:'space-between', alignItems:'center', cursor:'pointer', border:'1px solid rgba(255,255,255,0.15)',
+      boxShadow: '0 4px 15px rgba(0,0,0,0.2)', boxSizing: 'border-box'
   },
   cardLeft: { display:'flex', flexDirection: 'column', gap:'5px' },
   cardCityName: { fontSize:'20px', fontWeight:'700' },
@@ -728,22 +782,23 @@ const styles = {
   cardTemp: { fontSize:'32px', fontWeight:'600' },
   cardHighLow: { fontSize:'13px', opacity:0.6 },
 
-  searchOverlay: { position:'fixed', top:0, left:0, width:'100%', height:'100%', background:'#111', zIndex:200, padding:'20px' },
-  searchHeader: { display:'flex', alignItems:'center', gap:'15px', marginBottom:'25px' },
-  searchInputBig: { flex:1, background:'transparent', border:'none', borderBottom:'1px solid #444', color:'#fff', fontSize:'20px', padding:'10px', outline:'none' },
+  // --- FIXED: ADDED boxSizing & DECREASED BACKGROUND OPACITY ---
+  searchOverlay: { position:'fixed', top:0, left:0, width:'100%', height:'100%', background:'rgba(10, 10, 10, 0.3)', backdropFilter:'blur(15px)', WebkitBackdropFilter:'blur(15px)', zIndex:200, padding:'20px', boxSizing: 'border-box', overflowX: 'hidden' },
+  searchHeader: { display:'flex', alignItems:'center', gap:'15px', marginBottom:'25px', background: 'rgba(255,255,255,0.08)', padding: '12px 20px', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.1)', boxSizing: 'border-box' },
+  searchInputBig: { flex:1, background:'transparent', border:'none', color:'#fff', fontSize:'18px', outline:'none' },
   suggestionsList: { marginTop:'10px' },
-  suggestionItem: { padding:'18px', borderBottom:'1px solid #222', cursor:'pointer', display:'flex', justifyContent:'space-between', alignItems:'center', fontSize:'16px' },
+  suggestionItem: { padding:'18px', borderBottom:'1px solid rgba(255,255,255,0.05)', cursor:'pointer', display:'flex', justifyContent:'space-between', alignItems:'center', fontSize:'16px' },
   
-  gpsRow: { display:'flex', alignItems:'center', gap:'12px', padding:'15px', color:'#4CAF50', cursor:'pointer', borderBottom:'1px solid #222', fontSize:'16px', fontWeight:'500' },
-  gpsResultCard: {
-     marginTop: '15px', padding: '15px', background: 'rgba(76, 175, 80, 0.1)', borderRadius: '15px', border: '1px solid #4CAF50',
-     display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer'
-  },
+  gpsRow: { display:'flex', alignItems:'center', gap:'15px', padding:'15px 20px', background: 'rgba(76, 175, 80, 0.15)', color:'#4CAF50', cursor:'pointer', borderRadius: '16px', fontSize:'16px', fontWeight:'600', border: '1px solid rgba(76, 175, 80, 0.3)', boxSizing: 'border-box' },
+  gpsResultCard: { marginTop: '15px', padding: '15px', background: 'rgba(76, 175, 80, 0.1)', borderRadius: '15px', border: '1px solid #4CAF50', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', boxSizing: 'border-box' },
   spinner: { width:'20px', height:'20px', border:'2px solid #fff', borderTop:'2px solid transparent', borderRadius:'50%', animation:'spin 1s linear infinite' },
   
-  popularLabel: { fontSize:'12px', opacity:0.5, marginTop:'30px', marginBottom:'15px', letterSpacing:'1px' },
-  popularGrid: { display:'flex', flexWrap:'wrap', gap:'12px' },
-  popularChip: { background:'#222', padding:'10px 18px', borderRadius:'25px', fontSize:'14px', cursor:'pointer', border:'1px solid #333' }
+  historyRow: { display:'flex', alignItems:'center', gap:'12px', padding:'15px', color:'#ddd', cursor:'pointer', borderBottom:'1px solid rgba(255,255,255,0.05)', fontSize:'16px', boxSizing: 'border-box' },
+  clearBtn: { fontSize: '12px', color: '#ff6b6b', cursor: 'pointer', fontWeight: 'bold' },
+  
+  popularLabel: { fontSize:'12px', color: '#ddd', marginTop:'30px', marginBottom:'15px', letterSpacing:'1px', fontWeight: 'bold' },
+  popularGrid: { display:'flex', flexWrap:'wrap', gap:'10px' },
+  popularChip: { background:'rgba(255,255,255,0.1)', padding:'10px 18px', borderRadius:'25px', fontSize:'14px', cursor:'pointer', border:'1px solid rgba(255,255,255,0.2)', color: '#fff', backdropFilter: 'blur(10px)', boxSizing: 'border-box' }
 };
 
 export default Weather;
