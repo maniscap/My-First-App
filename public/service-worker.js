@@ -1,100 +1,152 @@
-const CACHE_NAME = 'farmcap-core-v4'; // Upgraded to v4 to force a fresh install!
-const DYNAMIC_CACHE = 'farmcap-dynamic-images-v4';
-const MAX_DYNAMIC_IMAGES = 100;
-const MAX_FILE_SIZE = 20971520; // 20MB in bytes
+// ============================================================================
+// FARMCAP PROGRESSIVE WEB APP (PWA) - SERVICE WORKER
+// ============================================================================
 
-// The bare minimum files needed to load the app structure offline
+// VERSION CONTROL: Increment these versions to force a complete cache reset.
+// This is the "Master Reset Switch" for the application.
+const CACHE_VERSION = 6;
+const CACHE_NAME = `farmcap-core-v${CACHE_VERSION}`; 
+const DYNAMIC_CACHE = `farmcap-dynamic-images-v${CACHE_VERSION}`;
+
+// CONFIGURATION LIMITS
+const MAX_DYNAMIC_IMAGES = 100; // Prevent the phone's storage from filling up
+const MAX_FILE_SIZE = 20971520; // 20MB limit in bytes
+
+// CORE ASSETS: The bare minimum files needed to load the app structure offline
 const CORE_ASSETS = [
   '/',
   '/index.html',
   '/manifest.json'
 ];
 
-// 1. INSTALL: Save the core assets and wake up immediately
+// ============================================================================
+// 1. INSTALL EVENT: The Initial Setup
+// ============================================================================
 self.addEventListener('install', (event) => {
-  self.skipWaiting(); // NEW: Forces the phone to use the new worker instantly!
+  // self.skipWaiting() forces the new service worker to take over immediately.
+  // This instantly applies updates without requiring the user to close all tabs.
+  self.skipWaiting(); 
+  
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      console.log('FARMCAP SW: Caching core assets');
+      console.log(`[FarmCap SW] Caching core assets for version ${CACHE_VERSION}`);
       return cache.addAll(CORE_ASSETS);
     })
   );
 });
 
-// 2. ACTIVATE: Clean up old caches and take control of the screen
+// ============================================================================
+// 2. ACTIVATE EVENT: The Garbage Collector
+// ============================================================================
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keys) => {
+      // Delete any cache that doesn't match our CURRENT version names
       return Promise.all(
         keys.filter(key => key !== CACHE_NAME && key !== DYNAMIC_CACHE)
-        .map(key => caches.delete(key)) // Destroys the old, broken files
+            .map(key => {
+              console.log(`[FarmCap SW] Deleting obsolete cache: ${key}`);
+              return caches.delete(key);
+            })
       );
-    }).then(() => self.clients.claim()) // NEW: Takes control of the browser immediately
+    }).then(() => {
+      // self.clients.claim() tells the active service worker to take control of 
+      // all open client pages immediately, preventing ghost files.
+      return self.clients.claim();
+    })
   );
 });
 
-// 3. HELPER: Enforce the 100 Image Limit (Brilliant logic, kept exactly as is!)
+// ============================================================================
+// 3. HELPER FUNCTION: Cache Size Management
+// ============================================================================
+// Recursively deletes the oldest items in a specific cache until it is under the limit.
 const limitCacheSize = (name, size) => {
   caches.open(name).then(cache => {
     cache.keys().then(keys => {
       if (keys.length > size) {
-        // Delete the oldest item and check again
+        // Delete the oldest item (index 0) and check again
         cache.delete(keys[0]).then(() => limitCacheSize(name, size));
       }
     });
   });
 };
 
-// 4. FETCH: The Smart Interceptor
+// ============================================================================
+// 4. FETCH EVENT: The Smart Interceptor (Traffic Cop)
+// ============================================================================
 self.addEventListener('fetch', (event) => {
-  // Only intercept normal GET requests
+  // Only intercept normal GET requests. Ignore POST, PUT, DELETE, etc.
   if (event.request.method !== 'GET') return;
 
-  // NEW: RULE A - If it's an HTML page (navigation), always ask Vercel first! (Fixes the blank screen)
+  // ------------------------------------------------------------------------
+  // RULE A: HTML / NAVIGATION LOGIC -> NETWORK FIRST
+  // ------------------------------------------------------------------------
+  // This completely prevents the "Blank Screen" SPA routing crash.
+  // We always ask Vercel for the freshest index.html first.
   if (event.request.mode === 'navigate') {
     event.respondWith(
-      fetch(event.request).catch(() => caches.match('/index.html'))
+      fetch(event.request).catch(() => {
+        // If the network completely fails (offline), serve the cached fallback
+        console.log('[FarmCap SW] Offline! Serving cached index.html fallback.');
+        return caches.match('/index.html');
+      })
     );
-    return; // Stop here, don't run the image logic below for HTML
+    return; // Halt execution. Do not let HTML fall into the image logic.
   }
 
-  // RULE B: Your exact original Cache-First logic for everything else (Images, CSS, etc.)
-  event.respondWith(
-    caches.match(event.request).then((cachedRes) => {
-      // If we already have it saved on the phone, return it instantly!
-      if (cachedRes) {
-        return cachedRes;
-      }
-
-      // If not, fetch it from the internet
-      return fetch(event.request).then((fetchRes) => {
-        // We only want to cache successful responses
-        if (!fetchRes || fetchRes.status !== 200 || (fetchRes.type !== 'basic' && fetchRes.type !== 'cors')) {
-          return fetchRes;
+  // ------------------------------------------------------------------------
+  // RULE B: IMAGE LOGIC -> CACHE FIRST (With CORS/Opaque Support)
+  // ------------------------------------------------------------------------
+  // Look at the destination, or check the URL string for image extensions
+  const isImage = event.request.destination === 'image' || 
+                  event.request.url.match(/\.(png|jpg|jpeg|gif|webp|svg)$/i);
+  
+  if (isImage) {
+    event.respondWith(
+      caches.match(event.request).then((cachedRes) => {
+        // 1. If we already have the image saved on the phone, return it instantly!
+        if (cachedRes) {
+          return cachedRes; 
         }
 
-        // Check if the response is an image
-        const contentType = fetchRes.headers.get('content-type');
-        if (contentType && contentType.includes('image')) {
+        // 2. If it is NOT in the cache, go fetch it from the internet.
+        return fetch(event.request).then((fetchRes) => {
+          // SECURITY CHECK: We only want to cache valid responses.
+          // fetchRes.type === 'opaque' is CRITICAL for caching external URLs 
+          // (like Cloudinary or Unsplash) that hide their CORS headers.
+          const isValidLocal = fetchRes.status === 200;
+          const isValidExternal = fetchRes.type === 'opaque';
           
-          // Check if it is under the 200MB limit
-          const contentLength = fetchRes.headers.get('content-length');
-          if (contentLength && parseInt(contentLength, 10) < MAX_FILE_SIZE) {
-            
-            // Clone it, save it to the dynamic cache, and enforce the limit
-            const resClone = fetchRes.clone();
-            caches.open(DYNAMIC_CACHE).then((cache) => {
-              cache.put(event.request, resClone);
-              limitCacheSize(DYNAMIC_CACHE, MAX_DYNAMIC_IMAGES);
-            });
+          if (!fetchRes || (!isValidLocal && !isValidExternal)) {
+            return fetchRes; // Return whatever we got, but don't cache it.
           }
-        }
 
-        return fetchRes;
-      }).catch(() => {
-        // If internet is completely down and it's not cached, it fails gracefully
-        console.log('FARMCAP: Offline and asset not found in cache.');
-      });
+          // Clone the image, save it to the dynamic cache vault, and enforce the limit.
+          const resClone = fetchRes.clone();
+          caches.open(DYNAMIC_CACHE).then((cache) => {
+            cache.put(event.request, resClone);
+            limitCacheSize(DYNAMIC_CACHE, MAX_DYNAMIC_IMAGES);
+          });
+
+          // Return the original image to the browser so the user can see it.
+          return fetchRes;
+        });
+      })
+    );
+    return; // Halt execution.
+  }
+
+  // ------------------------------------------------------------------------
+  // RULE C: EVERYTHING ELSE (API Calls, Scripts) -> PASS THROUGH
+  // ------------------------------------------------------------------------
+  // For all other requests, just try to fetch them normally without caching. 
+  event.respondWith(
+    fetch(event.request).catch(() => {
+      console.log(`[FarmCap SW] Network request failed for: ${event.request.url}`);
     })
   );
 });
+// ============================================================================
+// END OF SERVICE WORKER
+// ============================================================================
