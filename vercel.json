@@ -1,6 +1,10 @@
 {
   "rewrites": [
     {
+      "source": "/api/ceda/:path*",
+      "destination": "https://api.ceda.ashoka.edu.in/v1/:path*"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }
