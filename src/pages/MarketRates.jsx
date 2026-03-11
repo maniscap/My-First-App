@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { IoMdArrowBack, IoMdRefresh, IoMdSearch, IoMdCalendar, IoMdArrowDropdown, IoMdArrowDropup } from 'react-icons/io';
-import { FaMapMarkerAlt, FaStar, FaRegStar, FaLeaf } from 'react-icons/fa';
+import { IoMdArrowBack, IoMdSearch, IoMdCalendar, IoMdArrowDropdown, IoMdArrowDropup } from 'react-icons/io';
+import { FaMapMarkerAlt, FaLeaf, FaHistory } from 'react-icons/fa';
 
-// --- BANNERS & CONSTANTS ---
+// Pointing exactly to your rigorous data library
+import { CEDA_LIBRARY } from '../Data/marketData'; 
+
+// --- BANNERS ---
 const BANNERS = [
   "https://img.freepik.com/premium-photo/smart-farmer-holding-smartphone-with-ai-tech-interface-farm-background-future-smart-farming_1162141-40976.jpg",
   "https://cdn.siasat.com/wp-content/uploads/2020/10/2020_10img07_Oct_2020_PTI07-10-2020_000074B-1-scaled.jpg",
@@ -23,21 +26,21 @@ const MarketRates = () => {
   const [filterDate, setFilterDate] = useState(new Date().toISOString().split('T')[0]);
   const [loading, setLoading] = useState(false);
   const [dataSource, setDataSource] = useState('Awaiting Search...');
+  const [lookbackDays, setLookbackDays] = useState(0);
 
   // --- DATA STATES ---
   const [filteredData, setFilteredData] = useState([]); 
-  const [geographiesData, setGeographiesData] = useState([]);
 
   // --- FILTER STATES ---
   const [selectedState, setSelectedState] = useState('Select State');
   const [selectedDistrict, setSelectedDistrict] = useState('All');
-  const [selectedMarket, setSelectedMarket] = useState('All');
+  const [selectedGroup, setSelectedGroup] = useState('Select Category');
   const [selectedCommodity, setSelectedCommodity] = useState('All');
 
   // --- DYNAMIC DROPDOWN LISTS ---
   const [statesList, setStatesList] = useState([]);
   const [districtsList, setDistrictsList] = useState([]);
-  const [marketsList, setMarketsList] = useState([]);
+  const [groupsList, setGroupsList] = useState([]);
   const [commoditiesList, setCommoditiesList] = useState([]);
 
   const MANDI_KEY = import.meta.env.VITE_GOVT_MANDI_KEY;
@@ -50,185 +53,173 @@ const MarketRates = () => {
     return () => clearInterval(timer);
   }, []);
 
-  // --- PHASE 1: INITIALIZE STRUCTURAL DATA FROM CEDA ON LOAD ---
+  // ======================================================================
+  // --- PHASE 1: INITIALIZE TREES FROM LOCAL LIBRARY ---
+  // ======================================================================
   useEffect(() => {
-    const initializeDropdowns = async () => {
-      try {
-        // 1. Fetch Geographies (States & Districts)
-        const geoRes = await axios.get(`${CEDA_BASE}/geographies`);
-        const geoData = geoRes.data || [];
-        setGeographiesData(geoData);
-        
-        // Extract unique states
-        const uniqueStates = [...new Set(geoData.map(item => item.state))].filter(Boolean).sort();
-        setStatesList(uniqueStates);
-
-        // 2. Fetch Commodities List
-        const commRes = await axios.get(`${CEDA_BASE}/commodities`);
-        const commData = commRes.data || [];
-        // Assuming API returns array of strings or objects. Handling both securely:
-        const parsedCommodities = commData.map(c => typeof c === 'string' ? c : c.commodity).filter(Boolean).sort();
-        setCommoditiesList(['All', ...parsedCommodities]);
-
-      } catch (error) {
-        console.error("Failed to load CEDA structural data:", error);
+    try {
+      if (!CEDA_LIBRARY || !CEDA_LIBRARY.states || !CEDA_LIBRARY.commodityGroups) {
+        console.warn("CEDA_LIBRARY is missing or improperly formatted.");
+        return;
       }
-    };
-    initializeDropdowns();
+
+      // 1. Load States
+      const extractedStates = CEDA_LIBRARY.states.map(s => s.name).sort();
+      setStatesList(extractedStates);
+
+      // 2. Load Commodity Groups
+      const extractedGroups = CEDA_LIBRARY.commodityGroups.map(g => g.groupName).sort();
+      setGroupsList(['All', ...extractedGroups]);
+
+    } catch (error) {
+      console.error("Failed to parse CEDA_LIBRARY:", error);
+    }
   }, []);
 
+  // ======================================================================
   // --- PHASE 1.5: CASCADE DROPDOWNS ---
-  // When State changes -> Update Districts
+  // ======================================================================
+  
+  // When State changes -> Filter Districts
   useEffect(() => {
     if (selectedState !== 'Select State' && selectedState !== 'All') {
-      const stateDistricts = geographiesData
-        .filter(item => item.state === selectedState)
-        .map(item => item.district)
-        .filter(Boolean);
-      setDistrictsList(['All', ...new Set(stateDistricts)].sort());
-      setSelectedDistrict('All');
-      setSelectedMarket('All');
-      setMarketsList([]);
-    }
-  }, [selectedState, geographiesData]);
-
-  // When District changes -> Fetch Markets via CEDA POST
-  useEffect(() => {
-    const fetchMarkets = async () => {
-      if (selectedState !== 'Select State' && selectedDistrict !== 'All') {
-        try {
-          const res = await axios.post(`${CEDA_BASE}/markets`, {
-            state: selectedState,
-            district: selectedDistrict
-          });
-          const mktData = res.data || [];
-          const parsedMarkets = mktData.map(m => typeof m === 'string' ? m : m.market).filter(Boolean).sort();
-          setMarketsList(['All', ...parsedMarkets]);
-        } catch (error) {
-          console.error("Failed to fetch markets from CEDA:", error);
-        }
+      const stateObj = CEDA_LIBRARY.states.find(s => s.name === selectedState);
+      if (stateObj && stateObj.districts) {
+        setDistrictsList(['All', ...stateObj.districts.map(d => d.name).sort()]);
+      } else {
+        setDistrictsList(['All']); 
       }
-    };
-    fetchMarkets();
-  }, [selectedDistrict]);
+      setSelectedDistrict('All');
+    }
+  }, [selectedState]);
 
-  // --- PHASE 2: THE HYBRID FALLBACK ROUTER (THE ENGINE) ---
+  // When Commodity Group changes -> Filter Commodities
+  useEffect(() => {
+    if (selectedGroup !== 'Select Category' && selectedGroup !== 'All') {
+      const groupObj = CEDA_LIBRARY.commodityGroups.find(g => g.groupName === selectedGroup);
+      if (groupObj && groupObj.commodities) {
+        setCommoditiesList(['All', ...groupObj.commodities.sort()]);
+      } else {
+        setCommoditiesList(['All']);
+      }
+      setSelectedCommodity('All');
+    } else if (selectedGroup === 'All') {
+      // If "All" groups, flat map every single commodity
+      const allComms = CEDA_LIBRARY.commodityGroups.flatMap(g => g.commodities);
+      setCommoditiesList(['All', ...[...new Set(allComms)].sort()]);
+      setSelectedCommodity('All');
+    }
+  }, [selectedGroup]);
+
+
+  // ======================================================================
+  // --- PHASE 2: GOV API -> CEDA YESTERDAY FALLBACK ---
+  // ======================================================================
+  
+  // Helper to format raw data identically
+  const formatData = (rawArray, foundDate) => {
+    return rawArray.map(item => ({
+      commodity: item?.commodity || 'Unknown',
+      market: item?.market || 'Unknown',
+      district: item?.district || 'Unknown',
+      state: item?.state || 'Unknown',
+      modal_price: item?.modal_price || item?.price || "N/A",
+      min_price: item?.min_price || item?.min || "N/A",
+      max_price: item?.max_price || item?.max || "N/A",
+      arrival_date: item?.arrival_date || item?.date || foundDate
+    }));
+  };
+
+  // Helper to safely call CEDA without causing 500 Server Errors
+  const fetchFromCeda = async (searchDateStr) => {
+    try {
+      // 1. Build a strictly clean payload (NO undefined values allowed!)
+      const cedaPayload = { date: searchDateStr };
+      
+      if (selectedState !== 'Select State' && selectedState !== 'All') {
+          cedaPayload.state = selectedState;
+      }
+      if (selectedDistrict !== 'All') {
+          cedaPayload.district = selectedDistrict;
+      }
+      if (selectedCommodity !== 'All') {
+          cedaPayload.commodity = selectedCommodity;
+      }
+
+      // 2. Send safe request to server
+      const res = await axios.post(`${CEDA_BASE}/prices`, cedaPayload);
+      if (res.data && res.data.length > 0) {
+          return formatData(res.data, searchDateStr);
+      }
+    } catch (err) {
+      console.warn(`CEDA Backend Error for date ${searchDateStr}:`, err.message);
+    }
+    return []; // Return empty array if it fails
+  };
+
+  // The Main Engine
   const fetchLiveRates = async () => {
     setLoading(true);
     setFilteredData([]);
+    setLookbackDays(0);
     
+    const targetDateStr = filterDate;
     const todayStr = new Date().toISOString().split('T')[0];
-    const isToday = filterDate === todayStr;
+    const isToday = targetDateStr === todayStr;
 
-    // Helper Function to map API responses to UI format
-    const formatData = (rawArray) => {
-       return rawArray.map(item => ({
-          commodity: item.commodity,
-          market: item.market,
-          district: item.district,
-          state: item.state,
-          modal_price: item.modal_price || item.price || "N/A",
-          min_price: item.min_price || item.min || "N/A",
-          max_price: item.max_price || item.max || "N/A",
-          arrival_date: item.arrival_date || item.date || filterDate
-       }));
-    };
+    let finalData = [];
+    let foundDateStr = targetDateStr;
+    let daysBack = 0;
 
+    // --- ATTEMPT 1: Target Date ---
+    setDataSource(`Scanning ${targetDateStr}...`);
+    
     if (isToday) {
-      // PATH B: Attempt 1 - Gov API (Live Spot Prices)
+      // It's Today: Ask Gov API
       try {
-        setDataSource('Fetching Live Gov Data...');
         const govUrl = `https://api.data.gov.in/resource/9ef84268-d588-465a-a308-a864a43d0070?api-key=${MANDI_KEY}&format=json&limit=10000`;
         const govRes = await axios.get(govUrl);
+        let govData = govRes.data?.records || [];
         
-        let data = govRes.data.records || [];
-        
-        // Local Filter the massive Gov dump
-        if (selectedState !== 'Select State' && selectedState !== 'All') data = data.filter(i => i.state === selectedState);
-        if (selectedDistrict !== 'All') data = data.filter(i => i.district === selectedDistrict);
-        if (selectedMarket !== 'All') data = data.filter(i => i.market === selectedMarket);
-        if (selectedCommodity !== 'All') data = data.filter(i => i.commodity.toLowerCase().includes(selectedCommodity.toLowerCase()));
+        // Local "District Sweep" filtering
+        if (selectedState !== 'Select State' && selectedState !== 'All') govData = govData.filter(x => x.state === selectedState);
+        if (selectedDistrict !== 'All') govData = govData.filter(x => x.district === selectedDistrict);
+        if (selectedCommodity !== 'All') govData = govData.filter(x => x.commodity === selectedCommodity);
 
-        if (data.length > 0) {
-          setFilteredData(formatData(data));
-          setDataSource('🟢 Live Govt Data');
-          setLoading(false);
-          return; // Success! Exit the function.
-        }
-        throw new Error("Gov API returned empty for these filters.");
+        if (govData.length > 0) finalData = formatData(govData, targetDateStr);
       } catch (err) {
-        console.warn("Gov API Failed/Empty, cascading to CEDA Today...", err);
+        console.warn("Gov API skipped/failed for today.");
       }
-
-      // PATH B: Attempt 2 - CEDA Today Fallback
-      try {
-        setDataSource('Gov Offline. Fetching CEDA Backup...');
-        const cedaRes = await axios.post(`${CEDA_BASE}/prices`, {
-           state: selectedState !== 'All' ? selectedState : undefined,
-           district: selectedDistrict !== 'All' ? selectedDistrict : undefined,
-           market: selectedMarket !== 'All' ? selectedMarket : undefined,
-           commodity: selectedCommodity !== 'All' ? selectedCommodity : undefined,
-           date: todayStr
-        });
-
-        if (cedaRes.data && cedaRes.data.length > 0) {
-          setFilteredData(formatData(cedaRes.data));
-          setDataSource('🟡 CEDA Live Backup');
-          setLoading(false);
-          return;
-        }
-        throw new Error("CEDA Today returned empty.");
-      } catch (err) {
-        console.warn("CEDA Today Failed/Empty, cascading to CEDA Yesterday...", err);
-      }
-
-      // PATH B: Attempt 3 - CEDA Yesterday Fallback
-      try {
-        setDataSource('No Today Data. Fetching Yesterday...');
-        const yesterday = new Date();
-        yesterday.setDate(yesterday.getDate() - 1);
-        const yesterdayStr = yesterday.toISOString().split('T')[0];
-
-        const cedaRes = await axios.post(`${CEDA_BASE}/prices`, {
-           state: selectedState !== 'All' ? selectedState : undefined,
-           district: selectedDistrict !== 'All' ? selectedDistrict : undefined,
-           market: selectedMarket !== 'All' ? selectedMarket : undefined,
-           commodity: selectedCommodity !== 'All' ? selectedCommodity : undefined,
-           date: yesterdayStr
-        });
-
-        if (cedaRes.data && cedaRes.data.length > 0) {
-           setFilteredData(formatData(cedaRes.data));
-           setDataSource(`🟠 Last Updated: ${yesterdayStr}`);
-        } else {
-           setDataSource('🔴 No Data Available');
-        }
-      } catch (err) {
-         setDataSource('🔴 No Data Available');
-      }
-
     } else {
-      // PATH A: Past Date Selected -> Go straight to CEDA
-      try {
-        setDataSource('Fetching Historical Data...');
-        const cedaRes = await axios.post(`${CEDA_BASE}/prices`, {
-           state: selectedState !== 'All' ? selectedState : undefined,
-           district: selectedDistrict !== 'All' ? selectedDistrict : undefined,
-           market: selectedMarket !== 'All' ? selectedMarket : undefined,
-           commodity: selectedCommodity !== 'All' ? selectedCommodity : undefined,
-           date: filterDate
-        });
-
-        if (cedaRes.data && cedaRes.data.length > 0) {
-           setFilteredData(formatData(cedaRes.data));
-           setDataSource('🟣 Historical (CEDA)');
-        } else {
-           setDataSource('🔴 No Data Available');
-        }
-      } catch (err) {
-        setDataSource('🔴 Server Error');
-      }
+      // It's a past date: Ask CEDA directly
+      finalData = await fetchFromCeda(targetDateStr);
     }
+
+    // --- ATTEMPT 2: Fallback to Yesterday (CEDA) ---
+    if (finalData.length === 0) {
+      const yesterdayObj = new Date(targetDateStr);
+      yesterdayObj.setDate(yesterdayObj.getDate() - 1);
+      const yesterdayStr = yesterdayObj.toISOString().split('T')[0];
+      
+      setDataSource(`No arrivals. Fetching Yesterday's CEDA...`);
+      foundDateStr = yesterdayStr;
+      daysBack = 1;
+
+      finalData = await fetchFromCeda(yesterdayStr);
+    }
+
+    // --- RENDER RESULTS ---
+    if (finalData.length > 0) {
+      setFilteredData(finalData);
+      setLookbackDays(daysBack);
+      
+      if (daysBack === 0 && isToday) setDataSource('🟢 Live Gov Data');
+      else if (daysBack === 0) setDataSource('🟣 Historical Data');
+      else setDataSource(`🟠 Last Traded (CEDA)`);
+    } else {
+      setDataSource('🔴 No Trades Found (48 Hrs)');
+    }
+    
     setLoading(false);
   };
 
@@ -237,7 +228,7 @@ const MarketRates = () => {
   };
 
   const handleCardClick = (commodity) => {
-    console.log(`Phase 3: AI Analysis triggered for ${commodity}`);
+    console.log(`Phase 3: AI Trend Analysis triggered for ${commodity}`);
   };
 
   return (
@@ -251,7 +242,7 @@ const MarketRates = () => {
           <div style={{textAlign:'center'}}>
             <h1 style={styles.title}>Mandi Rates</h1>
             <div style={{display:'flex', alignItems:'center', justifyContent:'center', gap:'6px'}}>
-              <p style={styles.subtitle}>Hybrid Data Pipeline</p>
+              <p style={styles.subtitle}>District Sweep Engine</p>
               {dataSource && <span style={styles.sourceBadge}>{dataSource}</span>}
             </div>
           </div>
@@ -265,16 +256,11 @@ const MarketRates = () => {
         {/* CAROUSEL */}
         <div style={styles.carouselWrapper}>
             {BANNERS.map((src, i) => (
-                <img key={i} src={src} style={{...styles.bannerImg, opacity: currentBanner === i ? 1 : 0 }} />
+                <img key={i} src={src} style={{...styles.bannerImg, opacity: currentBanner === i ? 1 : 0 }} alt={`Banner ${i}`}/>
             ))}
             <div style={styles.bannerOverlay}>
                 <div style={styles.bannerTitle}>FarmCap</div>
-                <div style={styles.bannerSubtitle}>Intelligent Market Routing</div>
-            </div>
-            <div style={styles.dotsContainer}>
-                {BANNERS.map((_, i) => (
-                    <div key={i} style={{...styles.dot, background: i === currentBanner ? '#fff' : 'rgba(255,255,255,0.4)'}} />
-                ))}
+                <div style={styles.bannerSubtitle}>True Market Value Routing</div>
             </div>
         </div>
 
@@ -282,8 +268,8 @@ const MarketRates = () => {
         <div style={styles.filterStack}>
             
             {/* DATE SELECTOR */}
-            <div style={styles.dropdownContainer}>
-                <label style={styles.dropdownLabel}>Select Date</label>
+            <div style={{...styles.dropdownContainer, gridColumn: '1 / -1'}}>
+                <label style={styles.dropdownLabel}>Target Date</label>
                 <div style={styles.glassInputWrapper}>
                     <IoMdCalendar size={20} color="rgba(255,255,255,0.8)"/>
                     <input type="date" value={filterDate} onChange={(e) => setFilterDate(e.target.value)} style={styles.dateInput} />
@@ -291,7 +277,7 @@ const MarketRates = () => {
             </div>
 
             {/* STATE SELECTOR */}
-            <div style={styles.dropdownContainer}>
+            <div style={{...styles.dropdownContainer, zIndex: activeDropdown === 'state' ? 101 : 'auto'}}>
                 <label style={styles.dropdownLabel}>Select State</label>
                 <div style={styles.dropdownHeader} onClick={() => toggleDropdown('state')}>
                     <span style={{overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}}>{selectedState}</span>
@@ -300,9 +286,7 @@ const MarketRates = () => {
                 {activeDropdown === 'state' && (
                     <div style={styles.dropdownList}>
                         {statesList.map(state => (
-                            <div key={state} style={styles.dropdownItem} onClick={() => {
-                                setSelectedState(state); setActiveDropdown(null);
-                            }}>
+                            <div key={state} style={styles.dropdownItem} onClick={() => { setSelectedState(state); setActiveDropdown(null); }}>
                                 {state}
                             </div>
                         ))}
@@ -311,8 +295,8 @@ const MarketRates = () => {
             </div>
 
             {/* DISTRICT SELECTOR */}
-            <div style={styles.dropdownContainer}>
-                <label style={styles.dropdownLabel}>Select District</label>
+            <div style={{...styles.dropdownContainer, zIndex: activeDropdown === 'district' ? 101 : 'auto'}}>
+                <label style={styles.dropdownLabel}>District Sweep</label>
                 <div style={styles.dropdownHeader} onClick={() => toggleDropdown('district')}>
                     <span style={{overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}}>{selectedDistrict}</span>
                     {activeDropdown === 'district' ? <IoMdArrowDropup size={20}/> : <IoMdArrowDropdown size={20}/>}
@@ -320,9 +304,7 @@ const MarketRates = () => {
                 {activeDropdown === 'district' && (
                     <div style={styles.dropdownList}>
                         {districtsList.map(dist => (
-                            <div key={dist} style={styles.dropdownItem} onClick={() => {
-                                setSelectedDistrict(dist); setActiveDropdown(null);
-                            }}>
+                            <div key={dist} style={styles.dropdownItem} onClick={() => { setSelectedDistrict(dist); setActiveDropdown(null); }}>
                                 {dist}
                             </div>
                         ))}
@@ -330,20 +312,18 @@ const MarketRates = () => {
                 )}
             </div>
 
-            {/* MARKET SELECTOR */}
-            <div style={styles.dropdownContainer}>
-                <label style={styles.dropdownLabel}>Select Market</label>
-                <div style={styles.dropdownHeader} onClick={() => toggleDropdown('market')}>
-                    <span style={{overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}}>{selectedMarket}</span>
-                    {activeDropdown === 'market' ? <IoMdArrowDropup size={20}/> : <IoMdArrowDropdown size={20}/>}
+            {/* COMMODITY GROUP SELECTOR */}
+            <div style={{...styles.dropdownContainer, zIndex: activeDropdown === 'group' ? 101 : 'auto'}}>
+                <label style={styles.dropdownLabel}>Category</label>
+                <div style={styles.dropdownHeader} onClick={() => toggleDropdown('group')}>
+                    <span style={{overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}}>{selectedGroup}</span>
+                    {activeDropdown === 'group' ? <IoMdArrowDropup size={20}/> : <IoMdArrowDropdown size={20}/>}
                 </div>
-                {activeDropdown === 'market' && (
+                {activeDropdown === 'group' && (
                     <div style={styles.dropdownList}>
-                        {marketsList.map(mkt => (
-                            <div key={mkt} style={styles.dropdownItem} onClick={() => {
-                                setSelectedMarket(mkt); setActiveDropdown(null);
-                            }}>
-                                {mkt}
+                        {groupsList.map(grp => (
+                            <div key={grp} style={styles.dropdownItem} onClick={() => { setSelectedGroup(grp); setActiveDropdown(null); }}>
+                                {grp}
                             </div>
                         ))}
                     </div>
@@ -351,8 +331,8 @@ const MarketRates = () => {
             </div>
 
             {/* COMMODITY SELECTOR */}
-            <div style={styles.dropdownContainer}>
-                <label style={styles.dropdownLabel}>Commodity (Optional)</label>
+            <div style={{...styles.dropdownContainer, zIndex: activeDropdown === 'commodity' ? 101 : 'auto'}}>
+                <label style={styles.dropdownLabel}>Specific Crop</label>
                 <div style={styles.dropdownHeader} onClick={() => toggleDropdown('commodity')}>
                     <span style={{overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}}>{selectedCommodity}</span>
                     {activeDropdown === 'commodity' ? <IoMdArrowDropup size={20}/> : <IoMdArrowDropdown size={20}/>}
@@ -360,9 +340,7 @@ const MarketRates = () => {
                 {activeDropdown === 'commodity' && (
                     <div style={styles.dropdownList}>
                         {commoditiesList.map(item => (
-                            <div key={item} style={styles.dropdownItem} onClick={() => {
-                                setSelectedCommodity(item); setActiveDropdown(null);
-                            }}>
+                            <div key={item} style={styles.dropdownItem} onClick={() => { setSelectedCommodity(item); setActiveDropdown(null); }}>
                                 {item}
                             </div>
                         ))}
@@ -383,7 +361,7 @@ const MarketRates = () => {
                   }}
                   disabled={selectedState === 'Select State'}
                 >
-                  {loading ? 'Searching Data Nodes...' : 'Search Market Rates'}
+                  {loading ? 'Scanning API Nodes...' : 'Search True Value'}
                 </button>
             </div>
         </div>
@@ -392,15 +370,22 @@ const MarketRates = () => {
         <div style={{...styles.section, marginBottom: '40px'}}>
           <div style={styles.sectionHeader}>
             <span style={styles.sectionTitle}>
-                {selectedMarket !== 'All' ? `${selectedMarket} Rates` : 'Live Prices'}
+                {selectedDistrict !== 'All' ? `${selectedDistrict} Active Mandis` : 'Live Prices'}
             </span>
-            <span style={styles.sectionCount}>{filteredData.length} Items Found</span>
+            <span style={styles.sectionCount}>{filteredData.length} Trades Found</span>
           </div>
+
+          {lookbackDays > 0 && !loading && (
+             <div style={styles.lookbackWarning}>
+                 <FaHistory size={14} color="#facc15" />
+                 <span>Zero arrivals today. Showing yesterday's traded prices.</span>
+             </div>
+          )}
 
           {loading ? (
               <div style={styles.loaderContainer}>
                   <div className="loader"></div>
-                  <p style={{color:'white', marginTop:'10px'}}>Routing through API Nodes...</p>
+                  <p style={{color:'white', marginTop:'10px'}}>Executing District Sweep...</p>
               </div>
           ) : (
             <div style={styles.grid}>
@@ -414,21 +399,23 @@ const MarketRates = () => {
                   <div key={index} style={styles.glassCard} onClick={() => handleCardClick(item.commodity)}>
                       <div style={styles.cardHeader}>
                           <h3 style={styles.commodityName}>{item.commodity}</h3>
-                          <span style={styles.dateBadge}>{item.arrival_date}</span>
+                          <span style={{...styles.dateBadge, color: lookbackDays > 0 ? '#facc15' : 'rgba(255,255,255,0.5)'}}>
+                              {item.arrival_date}
+                          </span>
                       </div>
                       <div style={styles.locationRow}>
                           <FaMapMarkerAlt size={12} color="#4ade80"/> 
-                          <span>{item.market}, {item.district}</span>
+                          <span style={{fontWeight: '700', color: '#fff'}}>{item.market} Mandi</span>
                       </div>
                       <div style={styles.priceRow}>
-                          <div style={styles.priceLabel}>Modal Price</div>
+                          <div style={styles.priceLabel}>{lookbackDays > 0 ? 'Yesterday Modal' : 'Modal Price'}</div>
                           <div style={styles.priceValue}>₹{item.modal_price}<span>/qtl</span></div>
                       </div>
                       <div style={styles.minMaxRow}>
                           <span>Min: ₹{item.min_price}</span>
                           <span>Max: ₹{item.max_price}</span>
                       </div>
-                      <div style={styles.aiBadge}>Tap for AI Analysis ✨</div>
+                      <div style={styles.aiBadge}>Tap for Trend Analysis ✨</div>
                   </div>
               ))}
             </div>
@@ -445,7 +432,7 @@ const MarketRates = () => {
   );
 };
 
-// --- PREMIUM GLASSMORPHISM STYLES (Kept exactly as you had them) ---
+// --- PREMIUM GLASSMORPHISM STYLES ---
 const styles = {
   page: { 
       position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', 
@@ -471,8 +458,6 @@ const styles = {
   bannerOverlay: { position: 'absolute', bottom: 0, left: 0, width: '100%', background: 'linear-gradient(to top, rgba(0,0,0,0.9), transparent)', padding: '20px', boxSizing: 'border-box' },
   bannerTitle: { fontSize: '20px', fontWeight: '800', color: 'white', marginBottom: '4px' },
   bannerSubtitle: { fontSize: '12px', color: '#4ade80', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '1px' },
-  dotsContainer: { position: 'absolute', bottom: '15px', right: '20px', display: 'flex', gap: '6px', zIndex: 2 },
-  dot: { width: '6px', height: '6px', borderRadius: '50%', transition: 'background 0.3s' },
   filterStack: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginBottom: '30px' },
   dropdownContainer: { position: 'relative' },
   dropdownLabel: { display: 'block', color: 'rgba(255,255,255,0.6)', fontSize: '12px', marginBottom: '6px', marginLeft: '4px', fontWeight: '600', textTransform: 'uppercase' },
@@ -485,12 +470,13 @@ const styles = {
   sectionHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px', padding: '0 5px' },
   sectionTitle: { fontSize: '14px', fontWeight: '700', color: 'rgba(255,255,255,0.9)', textTransform: 'uppercase', letterSpacing: '1px' },
   sectionCount: { fontSize: '12px', color: 'rgba(255,255,255,0.5)' },
+  lookbackWarning: { display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(250, 204, 21, 0.1)', border: '1px solid rgba(250, 204, 21, 0.3)', padding: '10px 15px', borderRadius: '8px', marginBottom: '15px', fontSize: '12px', color: 'rgba(255,255,255,0.9)' },
   grid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: '15px' },
   glassCard: { background: 'rgba(255, 255, 255, 0.07)', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '16px', padding: '15px', display: 'flex', flexDirection: 'column', gap: '8px', cursor: 'pointer', transition: 'transform 0.2s', boxShadow: '0 4px 20px rgba(0,0,0,0.2)' },
   cardHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' },
   commodityName: { margin: 0, fontSize: '16px', fontWeight: '700', color: '#fff' },
-  dateBadge: { fontSize: '10px', color: 'rgba(255,255,255,0.5)' },
-  locationRow: { display: 'flex', alignItems: 'center', gap: '5px', fontSize: '11px', color: 'rgba(255,255,255,0.7)' },
+  dateBadge: { fontSize: '10px' },
+  locationRow: { display: 'flex', alignItems: 'center', gap: '5px', fontSize: '12px', color: 'rgba(255,255,255,0.8)', paddingBottom: '4px', borderBottom: '1px solid rgba(255,255,255,0.1)' },
   priceRow: { marginTop: '5px', background: 'rgba(0,0,0,0.2)', padding: '8px', borderRadius: '8px', textAlign: 'center' },
   priceLabel: { fontSize: '10px', color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase' },
   priceValue: { fontSize: '18px', fontWeight: '800', color: '#4ade80' },

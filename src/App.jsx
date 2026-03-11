@@ -6,9 +6,9 @@ import Home from './pages/Home';
 import Dashboard from './pages/Dashboard';
 import Service from './pages/Service';
 import AgriInsights from './pages/AgriInsights';
-import MarketRates from './pages/MarketRates'; // <--- NEW IMPORT
-import NewsUpdates from './pages/NewsUpdates';      // <--- NEW IMPORT
-import DigitalLibrary from './pages/DigitalLibrary'; // <--- NEW IMPORT
+import MarketRates from './pages/MarketRates'; 
+import NewsUpdates from './pages/NewsUpdates';      
+import DigitalLibrary from './pages/DigitalLibrary'; 
 import Business from './pages/Business';
 import Login from './pages/Login';
 import Profile from './pages/Profile';
@@ -20,6 +20,7 @@ import Expenditure from './pages/Expenditure';
 import CropExpenses from './pages/CropExpenses'; 
 import UserLocation from './pages/UserLocation'; 
 import ModernTech from './pages/ModernTech';
+import AiAdvisor from './pages/AiAdvisor'; 
 
 // --- NEW PAGES ---
 import Radio from './pages/Radio';
@@ -61,10 +62,11 @@ function App() {
         
         {/* --- AGRI INSIGHTS & SUB-PAGES --- */}
         <Route path="/agri-insights" element={<AgriInsights />} />
-        <Route path="/market-rates" element={<MarketRates />} /> {/* <--- NEW ROUTE */}
-        <Route path="/news" element={<NewsUpdates />} />         {/* <--- NEW ROUTE */}
-        <Route path="/library" element={<DigitalLibrary />} />   {/* <--- NEW ROUTE */}
+        <Route path="/market-rates" element={<MarketRates />} /> 
+        <Route path="/news" element={<NewsUpdates />} />         
+        <Route path="/library" element={<DigitalLibrary />} />   
         <Route path="/modern-tech" element={<ModernTech />} />
+        <Route path="/farmcap-ai" element={<AiAdvisor />} /> 
         
         <Route path="/service" element={<Service />} />
         <Route path="/business" element={<Business />} />
@@ -79,7 +81,7 @@ function App() {
         {/* GPS ROUTE */}
         <Route path="/gps-measurement" element={<GPSMeasurement />} />
         
-        {/* Utilities */}
+        {/* Utilities & Admin */}
         <Route path="/admin" element={<Admin />} />
         <Route path="/search" element={<SearchResults />} />
 
