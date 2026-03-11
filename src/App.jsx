@@ -2,12 +2,12 @@ import React from 'react';
 import { Routes, Route, Link, useLocation } from 'react-router-dom';
 
 // --- IMPORT PAGES ---
-import Home from './pages/Home';
+// Home import removed
 import Dashboard from './pages/Dashboard';
 import Service from './pages/Service';
 import AgriInsights from './pages/AgriInsights';
 import MarketRates from './pages/MarketRates'; 
-import NewsUpdates from './pages/NewsUpdates';      
+import NewsUpdates from './pages/NewsUpdates';       
 import DigitalLibrary from './pages/DigitalLibrary'; 
 import Business from './pages/Business';
 import Login from './pages/Login';
@@ -44,7 +44,8 @@ function App() {
 
       {/* --- MAIN PAGE CONTENT --- */}
       <Routes>
-        <Route path="/" element={<Home />} />
+        {/* Changed root path to Login since Home is removed */}
+        <Route path="/" element={<Login />} />
         <Route path="/login" element={<Login />} />
         
         {/* Main Dashboard */}
