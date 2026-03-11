@@ -3,6 +3,7 @@ import { useLocation } from 'react-router-dom';
 import { IoMdClose, IoMdCalendar, IoMdCalculator } from 'react-icons/io';
 import { FaBackspace, FaExpandAlt, FaCompressAlt, FaChevronLeft, FaChevronRight } from 'react-icons/fa';
 import { MdAspectRatio } from 'react-icons/md'; 
+import { evaluate } from 'mathjs';
 
 const FloatingCalculator = () => {
   const location = useLocation();
@@ -278,8 +279,9 @@ const CalculatorView = () => {
                 let evalString = input.replace(/x/g, '*').replace(/÷/g, '/').replace(/,/g, '');
                 evalString = evalString.replace(/(\d+)%/g, '($1/100)');
 
-                // eslint-disable-next-line no-eval
-                let rawRes = eval(evalString);
+                // Instead of this:
+                // const result = eval(calculationString);
+                let rawRes = evaluate(evalString);
                 
                 if (rawRes > 999999999999 || rawRes < -999999999999) {
                     rawRes = rawRes.toExponential(4);
