@@ -10,7 +10,7 @@ const weatherImages = {
   clearDay: 'https://images.pexels.com/photos/296234/pexels-photo-296234.jpeg',
   clearNight: 'https://images.pexels.com/photos/11752993/pexels-photo-11752993.jpeg',
   cloudyDay: 'https://images.pexels.com/photos/158163/clouds-cloudporn-weather-lookup-158163.jpeg',
-  cloudyNight: 'https://images.pexels.com/photos/29473893/pexels-photo-29473893.jpeg', // FIXED: Now points to actual image file!
+  cloudyNight: 'https://images.pexels.com/photos/29473893/pexels-photo-29473893.jpeg', 
   partlyCloudyDay: 'https://images.pexels.com/photos/13958707/pexels-photo-13958707.jpeg',
   partlyCloudyNight: 'https://images.pexels.com/photos/5489557/pexels-photo-5489557.jpeg',
   mistDay: 'https://images.pexels.com/photos/6745483/pexels-photo-6745483.jpeg',
@@ -22,7 +22,7 @@ const weatherImages = {
   sunrise: 'https://images.pexels.com/photos/10248028/pexels-photo-10248028.jpeg',
   sunset: 'https://images.pexels.com/photos/539282/pexels-photo-539282.jpeg',
   drizzle: 'https://images.pexels.com/photos/804474/pexels-photo-804474.jpeg',
-  defaultFallback: 'https://images.pexels.com/photos/1107717/pexels-photo-1107717.jpeg' // ADDED DEFAULT
+  defaultFallback: 'https://images.pexels.com/photos/1107717/pexels-photo-1107717.jpeg' 
 };
 
 // --- ADDED: SMART TEXT MATCHER AS SECONDARY FALLBACK ---
@@ -54,39 +54,54 @@ function Dashboard() {
   const [locationTitle, setLocationTitle] = useState('Home'); 
   const [showLocModal, setShowLocModal] = useState(false); 
 
-  // --- INITIALIZATION & LISTENER ---
+  // --- INITIALIZATION & LISTENER (ZOMATO STYLE FIX) ---
   useEffect(() => {
     const hour = new Date().getHours();
     setBgImage(hour >= 18 || hour < 6 
       ? 'https://images.unsplash.com/photo-1652454159675-11ead6275680?q=80&w=1170&auto=format&fit=crop' 
       : 'https://images.unsplash.com/photo-1625246333195-78d9c38ad449?q=80&w=2940&auto=format&fit=crop');
 
-    if ("geolocation" in navigator) {
-        navigator.geolocation.getCurrentPosition(
-            () => {}, 
-            (error) => {
-                console.warn("GPS is Off/Denied:", error.message);
-                setShowLocModal(true);
-            },
-            { timeout: 4000 }
-        );
-    } else {
-        setShowLocModal(true);
-    }
-
     const loadData = () => {
         const savedLoc = localStorage.getItem('userLocation'); 
         const savedTitle = localStorage.getItem('locationTitle');
-        const isValidLoc = savedLoc && savedLoc.replace(/, /g, '').trim().length > 0;
+        const isSessionActive = sessionStorage.getItem('app_session_active'); 
+        const hasValidSavedLoc = savedLoc && savedLoc.replace(/, /g, '').trim().length > 0;
 
-        if (!isValidLoc) {
-            setShowLocModal(true);
-            setUserLocation("Select Location");
-        } else {
+        // 1. ALWAYS DEFAULT TO THE LAST SAVED ADDRESS IMMEDIATELY
+        if (hasValidSavedLoc) {
             setUserLocation(savedLoc);
             if(savedTitle) setLocationTitle(savedTitle); 
+        } else {
+            setUserLocation("Select Location");
         }
 
+        // 2. MODAL DISPLAY LOGIC (Only runs on fresh app open)
+        if (!isSessionActive) {
+            // Mark session as active so it NEVER prompts again when returning from other pages
+            sessionStorage.setItem('app_session_active', 'true');
+
+            if ("geolocation" in navigator) {
+                navigator.geolocation.getCurrentPosition(
+                    () => {
+                        // GPS is ON, keep modal closed
+                        setShowLocModal(false);
+                    }, 
+                    (error) => {
+                        // GPS is OFF. Show the modal because it's a fresh app open!
+                        console.warn("GPS is Off/Denied:", error.message);
+                        setShowLocModal(true);
+                    },
+                    { timeout: 4000 }
+                );
+            } else {
+                setShowLocModal(true);
+            }
+        } else {
+            // User is just returning from Agri-Insights/Features. KEEP MODAL CLOSED.
+            setShowLocModal(false);
+        }
+
+        // 3. WEATHER FETCHING (Unchanged)
         const lastWeatherCity = localStorage.getItem('farmBuddy_lastCity');
         if (lastWeatherCity) {
             const cityData = JSON.parse(lastWeatherCity);
@@ -120,7 +135,6 @@ function Dashboard() {
           const response = await axios.get(url);
           setWeatherData(response.data);
           
-          // Tries your excellent code-logic first. If it fails, uses our new Smart Matcher fallback!
           const assetUrl = getAssetLogic(response.data) || getBackgroundImage(response.data.current.condition.text);
           setWeatherImage(assetUrl);
       } catch (err) { console.error("Weather Fetch Error:", err); }
@@ -292,7 +306,6 @@ function Dashboard() {
         <Link to="/weather" style={{...cardLink, gridColumn: 'span 2'}}>
            <div className="glass-card" style={{...wideCardStyle, position: 'relative', overflow: 'hidden'}}>
               
-              {/* FIXED IMAGE STYLE FOR DASHBOARD */}
               <img 
                  src={weatherImage} 
                  alt="Weather Background" 
