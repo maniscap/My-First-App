@@ -25,7 +25,6 @@ import AiAdvisor from './pages/AiAdvisor';
 
 // --- NEW PAGES ---
 import Radio from './pages/Radio';
-import GlobePage from './pages/GlobePage'; 
 import Freelancing from './pages/Freelancing';
 
 // --- FIXED IMPORT ---
@@ -34,6 +33,7 @@ import GPSMeasurement from './pages/GPSMeasurement';
 // --- IMPORT COMPONENTS ---
 import ChatBot from './components/ChatBot';
 import FloatingCalculator from './components/FloatingCalculator'; 
+import SplashScreen from './components/SplashScreen';
 
 function App() {
   const location = useLocation();
@@ -50,13 +50,9 @@ function App() {
     return () => unsubscribe();
   }, []);
 
-  // --- TEMPORARY LOADING SCREEN (Replaces old Splash Screen) ---
+  // --- TEMPORARY LOADING SCREEN ---
   if (isCheckingAuth) {
-    return (
-      <div className="flex flex-col bg-black h-screen items-center justify-center">
-        <h2 className="text-white mt-4 tracking-widest animate-pulse">GROWING YOUR DATA...</h2>
-      </div>
-    );
+    return <SplashScreen />; // Now it calls your new separate page!
   }
 
   return (
@@ -98,7 +94,6 @@ function App() {
 
         {/* --- NEW FEATURE ROUTES --- */}
         <Route path="/radio" element={<Radio />} />
-        <Route path="/globe" element={<GlobePage />} /> 
         <Route path="/freelancing" element={<Freelancing />} />
         
         {/* GPS ROUTE */}

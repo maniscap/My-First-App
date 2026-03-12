@@ -8,8 +8,8 @@ import 'react-toastify/dist/ReactToastify.css';
 import { 
   IoMdArrowBack, IoMdPause, IoMdPlay, IoMdSkipBackward, IoMdSkipForward, 
   IoMdSearch, IoMdFunnel, IoMdArrowDown, IoMdRefresh,
-  IoMdMusicalNote, IoMdHeart, IoMdHeartEmpty, IoMdVolumeHigh, IoMdVolumeOff,
-  IoMdTime, IoMdShare, IoMdClose, IoMdGlobe, IoMdList
+  IoMdMusicalNote, IoMdHeart, IoMdHeartEmpty, IoMdVolumeHigh, IoMdVolumeOff, IoMdTime,
+  IoMdShare, IoMdClose, IoMdList
 } from 'react-icons/io';
 
 // --- CONFIGURATION ---
@@ -324,16 +324,6 @@ const Radio = () => {
       }
   };
 
-  // --- PASSING STATE TO GLOBE ---
-  const goToGlobe = () => {
-      navigate('/globe', { 
-          state: { 
-              stations: allStations,
-              activeStation: selectedStation // Pass active station for focus
-          } 
-      });
-  };
-
   const uniqueStatesList = useMemo(() => ['All', ...new Set(allStations.map(s => s.normalizedState).filter(Boolean))].sort(), [allStations]);
   const uniqueLangList = useMemo(() => ['All', ...new Set(allStations.map(s => s.language ? s.language.split(',')[0].trim() : "").filter(Boolean))].sort(), [allStations]);
 
@@ -371,9 +361,6 @@ const Radio = () => {
             <div style={{display:'flex', gap:10}}>
                 <button onClick={() => setFilters({...filters, favoritesOnly: !filters.favoritesOnly})} style={{...styles.glassBtn, background: filters.favoritesOnly ? '#ef4444' : 'rgba(255,255,255,0.08)'}}>
                     {filters.favoritesOnly ? <IoMdHeart size={20} color="#fff"/> : <IoMdHeartEmpty size={20}/>}
-                </button>
-                <button onClick={goToGlobe} style={{...styles.glassBtn, background: '#4ade80', color: '#000'}}>
-                    <IoMdGlobe size={22}/>
                 </button>
             </div>
         </div>

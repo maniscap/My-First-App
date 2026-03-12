@@ -15,15 +15,13 @@ const BANNERS = [
   "https://olimpum.com/en/wp-content/uploads/WhatsApp-Image-2024-09-20-at-00.22.46.jpeg"
 ];
 
-const CEDA_BASE = '/api/ceda/agmarknet';
-
 const MarketRates = () => {
   const navigate = useNavigate();
   
   // --- UI STATE ---
   const [currentBanner, setCurrentBanner] = useState(0);
   const [activeDropdown, setActiveDropdown] = useState(null);
-  const [filterDate, setFilterDate] = useState(new Date().toISOString().split('T')[0]);
+  const [filterDate, setFilterDate] = useState(new Date().toISOString().split('T')[0]); // YYYY-MM-DD
   const [loading, setLoading] = useState(false);
   const [dataSource, setDataSource] = useState('Awaiting Search...');
   const [lookbackDays, setLookbackDays] = useState(0);
@@ -63,14 +61,11 @@ const MarketRates = () => {
         return;
       }
 
-      // 1. Load States
       const extractedStates = CEDA_LIBRARY.states.map(s => s.name).sort();
       setStatesList(extractedStates);
 
-      // 2. Load Commodity Groups
       const extractedGroups = CEDA_LIBRARY.commodityGroups.map(g => g.groupName).sort();
       setGroupsList(['All', ...extractedGroups]);
-
     } catch (error) {
       console.error("Failed to parse CEDA_LIBRARY:", error);
     }
@@ -80,7 +75,6 @@ const MarketRates = () => {
   // --- PHASE 1.5: CASCADE DROPDOWNS ---
   // ======================================================================
   
-  // When State changes -> Filter Districts
   useEffect(() => {
     if (selectedState !== 'Select State' && selectedState !== 'All') {
       const stateObj = CEDA_LIBRARY.states.find(s => s.name === selectedState);
@@ -93,7 +87,6 @@ const MarketRates = () => {
     }
   }, [selectedState]);
 
-  // When Commodity Group changes -> Filter Commodities
   useEffect(() => {
     if (selectedGroup !== 'Select Category' && selectedGroup !== 'All') {
       const groupObj = CEDA_LIBRARY.commodityGroups.find(g => g.groupName === selectedGroup);
@@ -104,7 +97,6 @@ const MarketRates = () => {
       }
       setSelectedCommodity('All');
     } else if (selectedGroup === 'All') {
-      // If "All" groups, flat map every single commodity
       const allComms = CEDA_LIBRARY.commodityGroups.flatMap(g => g.commodities);
       setCommoditiesList(['All', ...[...new Set(allComms)].sort()]);
       setSelectedCommodity('All');
@@ -113,113 +105,78 @@ const MarketRates = () => {
 
 
   // ======================================================================
-  // --- PHASE 2: GOV API -> CEDA YESTERDAY FALLBACK ---
+  // --- PHASE 2: 100% GOV API ENGINE WITH 7-DAY LOOKBACK ---
   // ======================================================================
-  
-  // Helper to format raw data identically
-  const formatData = (rawArray, foundDate) => {
-    return rawArray.map(item => ({
-      commodity: item?.commodity || 'Unknown',
-      market: item?.market || 'Unknown',
-      district: item?.district || 'Unknown',
-      state: item?.state || 'Unknown',
-      modal_price: item?.modal_price || item?.price || "N/A",
-      min_price: item?.min_price || item?.min || "N/A",
-      max_price: item?.max_price || item?.max || "N/A",
-      arrival_date: item?.arrival_date || item?.date || foundDate
-    }));
-  };
-
-  // Helper to safely call CEDA without causing 500 Server Errors
-  const fetchFromCeda = async (searchDateStr) => {
-    try {
-      // 1. Build a strictly clean payload (NO undefined values allowed!)
-      const cedaPayload = { date: searchDateStr };
-      
-      if (selectedState !== 'Select State' && selectedState !== 'All') {
-          cedaPayload.state = selectedState;
-      }
-      if (selectedDistrict !== 'All') {
-          cedaPayload.district = selectedDistrict;
-      }
-      if (selectedCommodity !== 'All') {
-          cedaPayload.commodity = selectedCommodity;
-      }
-
-      // 2. Send safe request to server
-      const res = await axios.post(`${CEDA_BASE}/prices`, cedaPayload);
-      if (res.data && res.data.length > 0) {
-          return formatData(res.data, searchDateStr);
-      }
-    } catch (err) {
-      console.warn(`CEDA Backend Error for date ${searchDateStr}:`, err.message);
-    }
-    return []; // Return empty array if it fails
-  };
-
-  // The Main Engine
   const fetchLiveRates = async () => {
     setLoading(true);
     setFilteredData([]);
     setLookbackDays(0);
     
-    const targetDateStr = filterDate;
-    const todayStr = new Date().toISOString().split('T')[0];
-    const isToday = targetDateStr === todayStr;
+    let dataFound = false;
+    let targetDateObj = new Date(filterDate);
+    let i = 0;
+    const MAX_LOOKBACK = 7; 
 
-    let finalData = [];
-    let foundDateStr = targetDateStr;
-    let daysBack = 0;
-
-    // --- ATTEMPT 1: Target Date ---
-    setDataSource(`Scanning ${targetDateStr}...`);
-    
-    if (isToday) {
-      // It's Today: Ask Gov API
-      try {
-        const govUrl = `https://api.data.gov.in/resource/9ef84268-d588-465a-a308-a864a43d0070?api-key=${MANDI_KEY}&format=json&limit=10000`;
-        const govRes = await axios.get(govUrl);
-        let govData = govRes.data?.records || [];
+    while (!dataFound && i < MAX_LOOKBACK) {
+        // Gov API requires DD/MM/YYYY format exactly
+        const y = targetDateObj.getFullYear();
+        const m = String(targetDateObj.getMonth() + 1).padStart(2, '0');
+        const d = String(targetDateObj.getDate()).padStart(2, '0');
+        const govDateStr = `${d}/${m}/${y}`;
         
-        // Local "District Sweep" filtering
-        if (selectedState !== 'Select State' && selectedState !== 'All') govData = govData.filter(x => x.state === selectedState);
-        if (selectedDistrict !== 'All') govData = govData.filter(x => x.district === selectedDistrict);
-        if (selectedCommodity !== 'All') govData = govData.filter(x => x.commodity === selectedCommodity);
+        setDataSource(`Scanning Gov API: ${govDateStr}...`);
 
-        if (govData.length > 0) finalData = formatData(govData, targetDateStr);
-      } catch (err) {
-        console.warn("Gov API skipped/failed for today.");
-      }
-    } else {
-      // It's a past date: Ask CEDA directly
-      finalData = await fetchFromCeda(targetDateStr);
+        try {
+            // Build the exact query URL to make the server do the heavy lifting
+            let govUrl = `https://api.data.gov.in/resource/9ef84268-d588-465a-a308-a864a43d0070?api-key=${MANDI_KEY}&format=json&limit=1000`;
+            govUrl += `&filters[arrival_date]=${govDateStr}`;
+            
+            if (selectedState !== 'Select State' && selectedState !== 'All') {
+                govUrl += `&filters[state]=${encodeURIComponent(selectedState)}`;
+            }
+            if (selectedDistrict !== 'All') {
+                govUrl += `&filters[district]=${encodeURIComponent(selectedDistrict)}`;
+            }
+            if (selectedCommodity !== 'All') {
+                govUrl += `&filters[commodity]=${encodeURIComponent(selectedCommodity)}`;
+            }
+
+            const govRes = await axios.get(govUrl);
+            const govData = govRes.data?.records || [];
+
+            if (govData.length > 0) {
+                // Map Gov data into our unified card format
+                const formattedData = govData.map(item => ({
+                    commodity: item.commodity || 'Unknown',
+                    market: item.market || 'Unknown',
+                    district: item.district || 'Unknown',
+                    state: item.state || 'Unknown',
+                    modal_price: item.modal_price || item.price || "N/A",
+                    min_price: item.min_price || item.min || "N/A",
+                    max_price: item.max_price || item.max || "N/A",
+                    arrival_date: item.arrival_date || govDateStr
+                }));
+
+                setFilteredData(formattedData);
+                dataFound = true;
+                setLookbackDays(i);
+                
+                if (i === 0) setDataSource('🟢 Gov Data (Live)');
+                else setDataSource(`🟠 Gov Data (${i} Days Ago)`);
+                break; // Exit the while loop!
+            }
+        } catch (error) {
+            console.warn(`Gov API Failed for ${govDateStr}`, error);
+        }
+
+        // If no data found, step back 1 day and loop again
+        targetDateObj.setDate(targetDateObj.getDate() - 1);
+        i++;
     }
 
-    // --- ATTEMPT 2: Fallback to Yesterday (CEDA) ---
-    if (finalData.length === 0) {
-      const yesterdayObj = new Date(targetDateStr);
-      yesterdayObj.setDate(yesterdayObj.getDate() - 1);
-      const yesterdayStr = yesterdayObj.toISOString().split('T')[0];
-      
-      setDataSource(`No arrivals. Fetching Yesterday's CEDA...`);
-      foundDateStr = yesterdayStr;
-      daysBack = 1;
-
-      finalData = await fetchFromCeda(yesterdayStr);
+    if (!dataFound) {
+        setDataSource('🔴 No Trades Found (7 Days)');
     }
-
-    // --- RENDER RESULTS ---
-    if (finalData.length > 0) {
-      setFilteredData(finalData);
-      setLookbackDays(daysBack);
-      
-      if (daysBack === 0 && isToday) setDataSource('🟢 Live Gov Data');
-      else if (daysBack === 0) setDataSource('🟣 Historical Data');
-      else setDataSource(`🟠 Last Traded (CEDA)`);
-    } else {
-      setDataSource('🔴 No Trades Found (48 Hrs)');
-    }
-    
     setLoading(false);
   };
 
@@ -242,7 +199,7 @@ const MarketRates = () => {
           <div style={{textAlign:'center'}}>
             <h1 style={styles.title}>Mandi Rates</h1>
             <div style={{display:'flex', alignItems:'center', justifyContent:'center', gap:'6px'}}>
-              <p style={styles.subtitle}>District Sweep Engine</p>
+              <p style={styles.subtitle}>Gov District Sweep</p>
               {dataSource && <span style={styles.sourceBadge}>{dataSource}</span>}
             </div>
           </div>
@@ -378,7 +335,7 @@ const MarketRates = () => {
           {lookbackDays > 0 && !loading && (
              <div style={styles.lookbackWarning}>
                  <FaHistory size={14} color="#facc15" />
-                 <span>Zero arrivals today. Showing yesterday's traded prices.</span>
+                 <span>Zero arrivals on selected date. Showing Last Traded Prices ({lookbackDays} days ago).</span>
              </div>
           )}
 
@@ -408,7 +365,7 @@ const MarketRates = () => {
                           <span style={{fontWeight: '700', color: '#fff'}}>{item.market} Mandi</span>
                       </div>
                       <div style={styles.priceRow}>
-                          <div style={styles.priceLabel}>{lookbackDays > 0 ? 'Yesterday Modal' : 'Modal Price'}</div>
+                          <div style={styles.priceLabel}>{lookbackDays > 0 ? 'Last Traded (Modal)' : 'Modal Price'}</div>
                           <div style={styles.priceValue}>₹{item.modal_price}<span>/qtl</span></div>
                       </div>
                       <div style={styles.minMaxRow}>
