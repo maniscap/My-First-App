@@ -1,5 +1,6 @@
-import React from 'react';
-import { Routes, Route, Link, useLocation } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Routes, Route, Link, useLocation, Navigate } from 'react-router-dom';
+import { getAuth, onAuthStateChanged } from 'firebase/auth';
 
 // --- IMPORT PAGES ---
 // Home import removed
@@ -36,6 +37,27 @@ import FloatingCalculator from './components/FloatingCalculator';
 
 function App() {
   const location = useLocation();
+  const [user, setUser] = useState(null);
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+
+  // --- FIREBASE AUTHENTICATION CHECKER ---
+  useEffect(() => {
+    const auth = getAuth();
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+      setIsCheckingAuth(false); // Done checking background storage
+    });
+    return () => unsubscribe();
+  }, []);
+
+  // --- TEMPORARY LOADING SCREEN (Replaces old Splash Screen) ---
+  if (isCheckingAuth) {
+    return (
+      <div className="flex flex-col bg-black h-screen items-center justify-center">
+        <h2 className="text-white mt-4 tracking-widest animate-pulse">GROWING YOUR DATA...</h2>
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -44,9 +66,9 @@ function App() {
 
       {/* --- MAIN PAGE CONTENT --- */}
       <Routes>
-        {/* Changed root path to Login since Home is removed */}
-        <Route path="/" element={<Login />} />
-        <Route path="/login" element={<Login />} />
+        {/* SMART ROUTING: Redirects instantly based on login status */}
+        <Route path="/" element={user ? <Navigate to="/dashboard" replace /> : <Navigate to="/login" replace />} />
+        <Route path="/login" element={user ? <Navigate to="/dashboard" replace /> : <Login />} />
         
         {/* Main Dashboard */}
         <Route path="/dashboard" element={<Dashboard />} />
