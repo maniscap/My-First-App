@@ -330,6 +330,47 @@ const UserLocation = () => {
       navigate('/dashboard');
   };
 
+  const deleteAddress = (idToDelete) => {
+    // 1. Filter out the address with the matching ID
+    const updatedList = savedAddresses.filter(addr => addr.id !== idToDelete);
+    
+    // 2. Update the state
+    setSavedAddresses(updatedList);
+    
+    // 3. Update local storage so the deletion persists
+    localStorage.setItem('my_saved_addresses', JSON.stringify(updatedList));
+    
+    // 4. Close the popup menu
+    setActiveMenuId(null);
+  };
+
+  const startEditAddress = (addressToEdit) => {
+    // 1. Close the popup menu
+    setActiveMenuId(null);
+    
+    // 2. Set the editing ID so the app knows we are updating, not creating new
+    setEditingId(addressToEdit.id);
+    
+    // 3. Populate the form data with the saved details
+    setFormData(addressToEdit.details || { 
+      houseNo: '', landmark: '', receiverName: '', phone: '', 
+      village: '', mandal: '', city: '', pincode: '' 
+    });
+    
+    // 4. Set the address type (Home, Work, Other)
+    setAddressType(addressToEdit.type || 'Home');
+    
+    // 5. Set the coordinates and trigger the map view
+    if (addressToEdit.lat && addressToEdit.lng) {
+      setCoords({ lat: addressToEdit.lat, lng: addressToEdit.lng });
+      setIsFlying(true);
+      setTimeout(() => setIsFlying(false), 1500);
+    }
+    
+    // 6. Switch to the map view to allow editing
+    setView('map');
+  };
+
   const getGoogleTileUrl = (type) => {
     return type === 'hybrid' 
       ? "https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}" 

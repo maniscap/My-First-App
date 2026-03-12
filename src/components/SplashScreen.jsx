@@ -1,6 +1,19 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 
 const SplashScreen = () => {
+  useEffect(() => {
+    // List your dashboard image paths here to "pre-warm" them
+    const imagesToPreload = [
+      '/path-to-your-dashboard-image1.jpg',
+      '/path-to-your-dashboard-image2.png'
+    ];
+    
+    imagesToPreload.forEach((src) => {
+      const img = new Image();
+      img.src = src;
+    });
+  }, []);
+
   return (
     <div 
       style={{ backgroundColor: '#000000' }} 

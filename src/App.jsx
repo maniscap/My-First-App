@@ -39,21 +39,32 @@ function App() {
   const location = useLocation();
   const [user, setUser] = useState(null);
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+  const [showSplash, setShowSplash] = useState(true); 
+  const SPLASH_DURATION = 3000; // 3000 = 3 seconds. Change this easily anytime.
 
   // --- FIREBASE AUTHENTICATION CHECKER ---
   useEffect(() => {
-    const auth = getAuth();
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      setUser(currentUser);
-      setIsCheckingAuth(false); // Done checking background storage
-    });
-    return () => unsubscribe();
-  }, []);
+    const auth = getAuth();
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+      setIsCheckingAuth(false);
+    });
+
+    // Forced Splash Timer
+    const timer = setTimeout(() => {
+      setShowSplash(false);
+    }, SPLASH_DURATION);
+
+    return () => {
+      unsubscribe();
+      clearTimeout(timer);
+    };
+  }, []);
 
   // --- TEMPORARY LOADING SCREEN ---
-  if (isCheckingAuth) {
-    return <SplashScreen />; // Now it calls your new separate page!
-  }
+  if (isCheckingAuth || showSplash) {
+    return <SplashScreen />; 
+  }
 
   return (
     <div>
