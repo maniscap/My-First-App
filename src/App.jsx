@@ -39,6 +39,9 @@ function App() {
   const location = useLocation();
   const [user, setUser] = useState(null);
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+  
+  // NEW: State to track if the 6-second animation is still playing
+  const [showSplash, setShowSplash] = useState(true);
 
   // --- FIREBASE AUTHENTICATION CHECKER ---
   useEffect(() => {
@@ -51,8 +54,9 @@ function App() {
   }, []);
 
   // --- TEMPORARY LOADING SCREEN ---
-  if (isCheckingAuth) {
-    return <SplashScreen />; // Now it calls your new separate page!
+  // Wait if Firebase is still checking OR if our 6-second timer is still running
+  if (isCheckingAuth || showSplash) {
+    return <SplashScreen onComplete={() => setShowSplash(false)} />;
   }
 
   return (
