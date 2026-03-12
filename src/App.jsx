@@ -8,7 +8,7 @@ import Dashboard from './pages/Dashboard';
 import Service from './pages/Service';
 import AgriInsights from './pages/AgriInsights';
 import MarketRates from './pages/MarketRates'; 
-import NewsUpdates from './pages/NewsUpdates';       
+import NewsUpdates from './pages/NewsUpdates';       
 import DigitalLibrary from './pages/DigitalLibrary'; 
 import Business from './pages/Business';
 import Login from './pages/Login';
@@ -36,95 +36,91 @@ import FloatingCalculator from './components/FloatingCalculator';
 import SplashScreen from './components/SplashScreen';
 
 function App() {
-  const location = useLocation();
-  const [user, setUser] = useState(null);
-  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
-  
-  // NEW: State to track if the 6-second animation is still playing
-  const [showSplash, setShowSplash] = useState(true);
+  const location = useLocation();
+  const [user, setUser] = useState(null);
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
 
-  // --- FIREBASE AUTHENTICATION CHECKER ---
-  useEffect(() => {
-    const auth = getAuth();
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      setUser(currentUser);
-      setIsCheckingAuth(false); // Done checking background storage
-    });
-    return () => unsubscribe();
-  }, []);
+  // --- FIREBASE AUTHENTICATION CHECKER ---
+  useEffect(() => {
+    const auth = getAuth();
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+      setIsCheckingAuth(false); // Done checking background storage
+    });
+    return () => unsubscribe();
+  }, []);
 
-  // --- TEMPORARY LOADING SCREEN ---
-  // Wait if Firebase is still checking OR if our 6-second timer is still running
-  if (isCheckingAuth || showSplash) {
-    return <SplashScreen onComplete={() => setShowSplash(false)} />;
-  }
+  // --- TEMPORARY LOADING SCREEN ---
+  if (isCheckingAuth) {
+    return <SplashScreen />; // Now it calls your new separate page!
+  }
 
-  return (
-    <div>
-      {/* --- GLOBAL COMPONENTS --- */}
-      <FloatingCalculator /> 
+  return (
+    <div>
+      {/* --- GLOBAL COMPONENTS --- */}
+      <FloatingCalculator /> 
 
-      {/* --- MAIN PAGE CONTENT --- */}
-      <Routes>
-        {/* SMART ROUTING: Redirects instantly based on login status */}
-        <Route path="/" element={user ? <Navigate to="/dashboard" replace /> : <Navigate to="/login" replace />} />
-        <Route path="/login" element={user ? <Navigate to="/dashboard" replace /> : <Login />} />
-        
-        {/* Main Dashboard */}
-        <Route path="/dashboard" element={<Dashboard />} />
-        
-        {/* Location Management Page */}
-        <Route path="/user-location" element={<UserLocation />} /> 
-        
-        {/* Expenditure Section */}
-        <Route path="/expenditure" element={<Expenditure />} />
-        <Route path="/expenditure/:folderId" element={<CropExpenses />} />
-        
-        {/* Feature Pages */}
-        <Route path="/profile" element={<Profile />} />
-        
-        {/* --- AGRI INSIGHTS & SUB-PAGES --- */}
-        <Route path="/agri-insights" element={<AgriInsights />} />
-        <Route path="/market-rates" element={<MarketRates />} /> 
-        <Route path="/news" element={<NewsUpdates />} />         
-        <Route path="/library" element={<DigitalLibrary />} />   
-        <Route path="/modern-tech" element={<ModernTech />} />
-        <Route path="/farmcap-ai" element={<AiAdvisor />} /> 
-        
-        <Route path="/service" element={<Service />} />
-        <Route path="/business" element={<Business />} />
-        <Route path="/farm-fresh" element={<FarmFresh />} />
-        <Route path="/weather" element={<Weather />} />
+      {/* --- MAIN PAGE CONTENT --- */}
+      <Routes>
+        {/* SMART ROUTING: Redirects instantly based on login status */}
+        <Route path="/" element={user ? <Navigate to="/dashboard" replace /> : <Navigate to="/login" replace />} />
+        <Route path="/login" element={user ? <Navigate to="/dashboard" replace /> : <Login />} />
+        
+        {/* Main Dashboard */}
+        <Route path="/dashboard" element={<Dashboard />} />
+        
+        {/* Location Management Page */}
+        <Route path="/user-location" element={<UserLocation />} /> 
+        
+        {/* Expenditure Section */}
+        <Route path="/expenditure" element={<Expenditure />} />
+        <Route path="/expenditure/:folderId" element={<CropExpenses />} />
+        
+        {/* Feature Pages */}
+        <Route path="/profile" element={<Profile />} />
+        
+        {/* --- AGRI INSIGHTS & SUB-PAGES --- */}
+        <Route path="/agri-insights" element={<AgriInsights />} />
+        <Route path="/market-rates" element={<MarketRates />} /> 
+        <Route path="/news" element={<NewsUpdates />} />         
+        <Route path="/library" element={<DigitalLibrary />} />   
+        <Route path="/modern-tech" element={<ModernTech />} />
+        <Route path="/farmcap-ai" element={<AiAdvisor />} /> 
+        
+        <Route path="/service" element={<Service />} />
+        <Route path="/business" element={<Business />} />
+        <Route path="/farm-fresh" element={<FarmFresh />} />
+        <Route path="/weather" element={<Weather />} />
 
-        {/* --- NEW FEATURE ROUTES --- */}
-        <Route path="/radio" element={<Radio />} />
-        <Route path="/freelancing" element={<Freelancing />} />
-        
-        {/* GPS ROUTE */}
-        <Route path="/gps-measurement" element={<GPSMeasurement />} />
-        
-        {/* Utilities & Admin */}
-        <Route path="/admin" element={<Admin />} />
-        <Route path="/search" element={<SearchResults />} />
+        {/* --- NEW FEATURE ROUTES --- */}
+        <Route path="/radio" element={<Radio />} />
+        <Route path="/freelancing" element={<Freelancing />} />
+        
+        {/* GPS ROUTE */}
+        <Route path="/gps-measurement" element={<GPSMeasurement />} />
+        
+        {/* Utilities & Admin */}
+        <Route path="/admin" element={<Admin />} />
+        <Route path="/search" element={<SearchResults />} />
 
-        {/* 404 Error Page */}
-        <Route path="*" element={
-          <div style={{textAlign: 'center', marginTop: '50px', color: 'black'}}> 
-              <h1>❌ 404: Page Not Found</h1>
-              <p>Check your URL or <Link to="/" style={{color: '#4CAF50'}}>go back home</Link>.</p>
-          </div>
-        } />
-      </Routes>
+        {/* 404 Error Page */}
+        <Route path="*" element={
+          <div style={{textAlign: 'center', marginTop: '50px', color: 'black'}}> 
+              <h1>❌ 404: Page Not Found</h1>
+              <p>Check your URL or <Link to="/" style={{color: '#4CAF50'}}>go back home</Link>.</p>
+          </div>
+        } />
+      </Routes>
 
-      {/* --- CHATBOT (Only Visible on Dashboard) --- */}
-      {location.pathname === '/dashboard' && (
-        <div style={{ position: 'fixed', bottom: '20px', right: '20px', zIndex: 1000 }}>
-          <ChatBot />
-        </div>
-      )}
-      
-    </div>
-  );
+      {/* --- CHATBOT (Only Visible on Dashboard) --- */}
+      {location.pathname === '/dashboard' && (
+        <div style={{ position: 'fixed', bottom: '20px', right: '20px', zIndex: 1000 }}>
+          <ChatBot />
+        </div>
+      )}
+      
+    </div>
+  );
 }
 
 export default App;
