@@ -48,10 +48,25 @@ function ChatBot() {
   // ===============================================================================================
   
   const MODEL_QUEUE = useMemo(() => [
+     // --- LATEST GEMINI 3 & 2.5 SERIES (2026) ---
+    { provider: 'gemini', id: 'gemini-3.1-pro-preview', vision: true, desc: "Gemini 3.1 Pro (Advanced Reasoning)" },
+    { provider: 'gemini', id: 'gemini-3-flash-preview', vision: true, desc: "Gemini 3 Flash (Fast Agentic)" },
+    { provider: 'gemini', id: 'gemini-2.5-pro', vision: true, desc: "Gemini 2.5 Pro" },
+    { provider: 'gemini', id: 'gemini-2.5-flash', vision: true, desc: "Gemini 2.5 Flash" },
     { provider: 'gemini', id: 'gemini-1.5-flash', vision: true, desc: "Gemini 1.5 Flash" },
     { provider: 'gemini', id: 'gemini-1.5-pro', vision: true, desc: "Gemini 1.5 Pro" },
+    // --- LATEST GROQ / DEEPSEEK / META SERIES (2026) ---
+    { provider: 'groq', id: 'deepseek-r1-distill-llama-70b', vision: false, desc: "DeepSeek R1 (Elite Reasoning)" },
+    { provider: 'groq', id: 'llama-3.3-70b-versatile', vision: false, desc: "Llama 3.3 70B" },
+    { provider: 'groq', id: 'qwen-2.5-32b', vision: false, desc: "Qwen 2.5 32B" },
     { provider: 'groq', id: 'llama-3.2-11b-vision-preview', vision: true, desc: "Llama 3.2 11B Vision" },
     { provider: 'groq', id: 'llama-3.2-90b-vision-preview', vision: true, desc: "Llama 3.2 90B Vision" },
+    { provider: 'groq', id: 'llama-3.2-11b-vision-preview', vision: true, desc: "Llama 3.2 11B Vision" },
+    { provider: 'groq', id: 'llama-3.2-90b-vision-preview', vision: true, desc: "Llama 3.2 90B Vision" },
+    // --- HUGGING FACE SPECIALTY MODELS ---
+    { provider: 'hf', id: 'linkan/plant-disease-classification-v2', vision: true, desc: "HF Plant Disease V2" },
+    { provider: 'hf', id: 'google/vit-base-patch16-224', vision: true, desc: "Google ViT" },
+    { provider: 'hf', id: 'microsoft/resnet-50', vision: true, desc: "ResNet-50" },
     { provider: 'hf', id: 'linkan/plant-disease-classification-v2', vision: true, desc: "HF Plant Disease V2" },
     { provider: 'hf', id: 'google/vit-base-patch16-224', vision: true, desc: "Google ViT" },
     { provider: 'hf', id: 'microsoft/resnet-50', vision: true, desc: "ResNet-50" },
@@ -76,6 +91,8 @@ function ChatBot() {
     { provider: 'gemini', id: 'chat-bison-001', vision: false },
     { provider: 'groq', id: 'llama3-groq-70b-8192-tool-use-preview', vision: false },
     { provider: 'groq', id: 'llama3-groq-8b-8192-tool-use-preview', vision: false },
+    { provider: 'groq', id: 'llama-3.1-8b-instant', vision: false, desc: "Llama 3.1 8B (Speed)" },
+    { provider: 'gemini', id: 'gemini-1.5-flash-8b', vision: true, desc: "Gemini 1.5 Flash 8B" }
   ], []);
 
 
