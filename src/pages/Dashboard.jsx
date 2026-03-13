@@ -41,15 +41,8 @@ const getBackgroundImage = (conditionText) => {
 };
 
 function Dashboard() {
-  const navigate = useNavigate();
-
-  // Calculate this OUTSIDE the useEffect so it loads instantly on frame 1
-  const currentHour = new Date().getHours();
-  const defaultBg = currentHour >= 18 || currentHour < 6
-    ? 'https://images.unsplash.com/photo-1652454159675-11ead6275680?q=80&w=1170&auto=format&fit=crop'
-    : 'https://images.unsplash.com/photo-1625246333195-78d9c38ad449?q=80&w=2940&auto=format&fit=crop';
-
-  const [bgImage, setBgImage] = useState(defaultBg);
+  const navigate = useNavigate(); 
+  const [bgImage, setBgImage] = useState('');
   
   // Weather & UI State
   const [weatherData, setWeatherData] = useState(null);
@@ -63,6 +56,11 @@ function Dashboard() {
 
   // --- INITIALIZATION & LISTENER (ZOMATO STYLE FIX) ---
   useEffect(() => {
+    const hour = new Date().getHours();
+    setBgImage(hour >= 18 || hour < 6 
+      ? 'https://images.unsplash.com/photo-1652454159675-11ead6275680?q=80&w=1170&auto=format&fit=crop' 
+      : 'https://images.unsplash.com/photo-1625246333195-78d9c38ad449?q=80&w=2940&auto=format&fit=crop');
+
     const loadData = () => {
         const savedLoc = localStorage.getItem('userLocation'); 
         const savedTitle = localStorage.getItem('locationTitle');
@@ -375,8 +373,8 @@ const heroSection = { padding: '0 20px', marginTop: '25px', marginBottom: '20px'
 const fadedHeroTitle = { fontSize: '1.4rem', margin: 0, fontWeight: '800', letterSpacing: '1px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', background: 'linear-gradient(to right, #ffffff 0%, #e0e0e0 50%, rgba(255,255,255,0.2) 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', display: 'inline-block', textTransform: 'uppercase' };
 const bentoGrid = { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', padding: '0 20px 100px 20px', maxWidth: '1000px', margin: '0 auto' };
 const cardLink = { textDecoration: 'none', color: 'white', display: 'block', width: '100%', height: '100%' };
-const cardStyle = { backgroundColor: '#1C1C1E', borderRadius: '18px', height: '185px', position: 'relative', overflow: 'hidden', backgroundSize: 'cover', backgroundPosition: 'center', border: '1px solid rgba(255,255,255,0.15)' };
-const wideCardStyle = { backgroundColor: '#1C1C1E', gridColumn: 'span 2', height: '180px', borderRadius: '18px', position: 'relative', overflow: 'hidden', backgroundSize: 'cover', backgroundPosition: 'center', border: '1px solid rgba(255,255,255,0.15)' };
+const cardStyle = { borderRadius: '18px', height: '185px', position: 'relative', overflow: 'hidden', backgroundSize: 'cover', backgroundPosition: 'center', border: '1px solid rgba(255,255,255,0.15)' };
+const wideCardStyle = { gridColumn: 'span 2', height: '180px', borderRadius: '18px', position: 'relative', overflow: 'hidden', backgroundSize: 'cover', backgroundPosition: 'center', border: '1px solid rgba(255,255,255,0.15)' };
 const cardTopOverlay = { position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', padding: '15px', background: 'linear-gradient(to bottom, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.2) 100%)', color: 'white', textAlign: 'left', boxSizing: 'border-box', zIndex: 1 };
 const whiteIconBox = { filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))' };
 const cardTitle = { margin: '0 0 4px 0', fontSize: '17px', fontWeight: '700', textShadow: '0 2px 4px rgba(0,0,0,0.5)' };
