@@ -40,7 +40,7 @@ function App() {
   const [user, setUser] = useState(null);
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const [showSplash, setShowSplash] = useState(true); 
-  const SPLASH_DURATION = 3000; // 3000 = 3 seconds. Change this easily anytime.
+  const SPLASH_DURATION = 4500; // 4500 = 4.5 seconds. Change this easily anytime.
 
   // --- FIREBASE AUTHENTICATION CHECKER ---
   useEffect(() => {
