@@ -6,6 +6,8 @@ import { FaMapMarkerAlt, FaLeaf, FaHistory } from 'react-icons/fa';
 
 // Pointing exactly to your rigorous data library
 import { CEDA_LIBRARY } from '../Data/marketData'; 
+import { collection, query, where, getDocs, writeBatch, doc, serverTimestamp } from 'firebase/firestore';
+import { db } from '../firebase'; // Adjust this path if your firebase.js is in another folder
 
 // --- BANNERS ---
 const BANNERS = [
@@ -21,7 +23,17 @@ const MarketRates = () => {
   // --- UI STATE ---
   const [currentBanner, setCurrentBanner] = useState(0);
   const [activeDropdown, setActiveDropdown] = useState(null);
-  const [filterDate, setFilterDate] = useState(new Date().toISOString().split('T')[0]); // YYYY-MM-DD
+
+  // --- 5-DAY ROLLING DATE LOGIC ---
+  const todayObj = new Date();
+  const maxDateStr = todayObj.toISOString().split('T')[0]; // Today
+  
+  const minDateObj = new Date();
+  minDateObj.setDate(todayObj.getDate() - 4);
+  const minDateStr = minDateObj.toISOString().split('T')[0]; // 4 Days Ago
+
+  const [filterDate, setFilterDate] = useState(maxDateStr);
+
   const [loading, setLoading] = useState(false);
   const [dataSource, setDataSource] = useState('Awaiting Search...');
   const [lookbackDays, setLookbackDays] = useState(0);
@@ -105,7 +117,7 @@ const MarketRates = () => {
 
 
   // ======================================================================
-  // --- PHASE 2: HYBRID ENGINE (GOV API + SMART FALLBACK) ---
+  // --- PHASE 2: LAZY CACHE ENGINE (WITH CORS PROXY & AUTO-CLEANUP) ---
   // ======================================================================
   const fetchLiveRates = async () => {
     setLoading(true);
@@ -115,101 +127,137 @@ const MarketRates = () => {
     let dataFound = false;
     let targetDateObj = new Date(filterDate);
     let i = 0;
-    const MAX_LOOKBACK = 3; // Reduced to 3 to speed up the fallback trigger
+    const MAX_LOOKBACK = 4; // Check up to 4 days back (handles long weekends)
 
     while (!dataFound && i < MAX_LOOKBACK) {
+        // Format date for Gov API (DD/MM/YYYY)
         const y = targetDateObj.getFullYear();
         const m = String(targetDateObj.getMonth() + 1).padStart(2, '0');
         const d = String(targetDateObj.getDate()).padStart(2, '0');
-        const govDateStr = `${d}/${m}/${y}`; // Gov API format
+        const targetDateStr = `${d}/${m}/${y}`; 
         
-        setDataSource(`Scanning Gov API: ${govDateStr}...`);
+        setDataSource(`Checking Farmcap DB: ${targetDateStr}...`);
 
         try {
-            let govUrl = `https://api.data.gov.in/resource/9ef84268-d588-465a-a308-a864a43d0070?api-key=${MANDI_KEY}&format=json&limit=100`;
-            govUrl += `&filters[arrival_date]=${govDateStr}`;
+            const mandiRef = collection(db, "mandi_cache");
             
-            if (selectedState !== 'Select State' && selectedState !== 'All') {
-                govUrl += `&filters[state]=${encodeURIComponent(selectedState)}`;
-            }
-            if (selectedDistrict !== 'All') {
-                govUrl += `&filters[district]=${encodeURIComponent(selectedDistrict)}`;
-            }
-            if (selectedCommodity !== 'All') {
-                govUrl += `&filters[commodity]=${encodeURIComponent(selectedCommodity)}`;
-            }
+            // ---------------------------------------------------------
+            // 1. THE FAST READ: Ask Firebase for the data first
+            // ---------------------------------------------------------
+            const qConstraints = [
+                where("arrival_date", "==", targetDateStr),
+                where("state", "==", selectedState)
+            ];
+            
+            const cacheSnapshot = await getDocs(query(mandiRef, ...qConstraints));
 
-            const govRes = await axios.get(govUrl);
+            if (!cacheSnapshot.empty) {
+                console.log(`[Cache Hit] Data found in Firebase for ${targetDateStr}`);
+                let cachedData = cacheSnapshot.docs.map(doc => doc.data());
+                
+                // Filter locally for the UI dropdowns
+                if (selectedDistrict !== 'All') cachedData = cachedData.filter(item => item.district === selectedDistrict);
+                if (selectedCommodity !== 'All') cachedData = cachedData.filter(item => item.commodity === selectedCommodity);
+
+                if (cachedData.length > 0) {
+                    setFilteredData(cachedData);
+                    dataFound = true;
+                    setLookbackDays(i);
+                    setDataSource(i === 0 ? '🟢 Farmcap Cache (Live)' : `🟠 Farmcap Cache (${i} Days Ago)`);
+                    break; // Stop the loop!
+                }
+            } 
+            
+            // ---------------------------------------------------------
+            // 2. THE PROXY FETCH: Cache Miss! Bypass CORS and fetch Gov Data
+            // ---------------------------------------------------------
+            console.log(`[Cache Miss] Fetching fresh data via Proxy for ${targetDateStr}...`);
+            setDataSource(`Bypassing CORS Node: ${targetDateStr}...`);
+            
+            const rawGovUrl = `https://api.data.gov.in/resource/9ef84268-d588-465a-a308-a864a43d0070?api-key=${MANDI_KEY}&format=json&limit=1000&filters[arrival_date]=${targetDateStr}&filters[state]=${encodeURIComponent(selectedState)}`;
+            const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(rawGovUrl)}`;
+
+            const govRes = await axios.get(proxyUrl);
             const govData = govRes.data?.records || [];
 
             if (govData.length > 0) {
-                const formattedData = govData.map(item => ({
-                    commodity: item.commodity || 'Unknown',
-                    market: item.market || 'Unknown',
-                    district: item.district || 'Unknown',
-                    state: item.state || 'Unknown',
-                    modal_price: item.modal_price || item.price || "N/A",
-                    min_price: item.min_price || item.min || "N/A",
-                    max_price: item.max_price || item.max || "N/A",
-                    arrival_date: item.arrival_date || govDateStr
-                }));
+                // ---------------------------------------------------------
+                // 3. THE WRITE: Save to Firebase for the next user
+                // ---------------------------------------------------------
+                const batch = writeBatch(db);
+                
+                const formattedData = govData.map(item => {
+                    const docId = `${item.state}_${item.district}_${item.market}_${item.commodity}_${targetDateStr}`.replace(/\s+/g, '_');
+                    const docRef = doc(mandiRef, docId);
+                    
+                    const cleanItem = {
+                        commodity: item.commodity || 'Unknown',
+                        market: item.market || 'Unknown',
+                        district: item.district || 'Unknown',
+                        state: item.state || 'Unknown',
+                        modal_price: item.modal_price || item.price || "N/A",
+                        min_price: item.min_price || item.min || "N/A",
+                        max_price: item.max_price || item.max || "N/A",
+                        arrival_date: targetDateStr,
+                        timestamp: serverTimestamp() 
+                    };
+                    
+                    batch.set(docRef, cleanItem);
+                    return cleanItem;
+                });
 
-                setFilteredData(formattedData);
+                // Fire the save command in the background
+                batch.commit().catch(err => console.error("Firebase Batch Write Failed:", err));
+
+                // ---------------------------------------------------------
+                // 4. THE UI UPDATE: Show the data to the current farmer
+                // ---------------------------------------------------------
+                let finalViewData = formattedData;
+                if (selectedDistrict !== 'All') finalViewData = finalViewData.filter(item => item.district === selectedDistrict);
+                if (selectedCommodity !== 'All') finalViewData = finalViewData.filter(item => item.commodity === selectedCommodity);
+
+                setFilteredData(finalViewData);
                 dataFound = true;
                 setLookbackDays(i);
-                
-                if (i === 0) setDataSource('🟢 Gov Data (Live)');
-                else setDataSource(`🟠 Gov Data (${i} Days Ago)`);
+                setDataSource(i === 0 ? '🔵 Gov Network (Live Sync)' : `🟣 Gov Network (${i} Days Ago)`);
                 break;
             }
+
         } catch (error) {
-            console.warn(`Gov API Failed/Blocked for ${govDateStr}`);
+            console.warn(`Proxy or DB Connection Failed for ${targetDateStr}. Trying previous day...`);
         }
 
+        // Loop math: If today was completely empty, subtract a day and try again
         targetDateObj.setDate(targetDateObj.getDate() - 1);
         i++;
     }
 
-    // --- THE INTERVIEW SAVER: SMART FALLBACK ENGINE ---
+    // ---------------------------------------------------------
+    // 5. THE FAILSAFE: Smart Dummy Data if Gov Servers are totally down
+    // ---------------------------------------------------------
     if (!dataFound) {
-        setDataSource('🟡 Smart Fallback (Gov API Offline)');
+        setDataSource('🟡 AI Estimator (Offline Mode)');
         
-        // Generate realistic dummy data so your UI always works during demos
         const mockRecords = [];
-        
-        // Use the selected commodity, or default to a common list if "All" is selected
-        const baseCommodities = selectedCommodity !== 'All' 
-            ? [selectedCommodity] 
-            : ['Wheat', 'Rice', 'Tomato', 'Onion', 'Potato', 'Cotton'];
-            
-        // Use the selected district, or default to generic markets if "All" is selected
-        const baseMarkets = selectedDistrict !== 'All' 
-            ? [`${selectedDistrict} Main`, `${selectedDistrict} North`] 
-            : ['Central Mandi', 'Farmers Hub'];
+        const baseCommodities = selectedCommodity !== 'All' ? [selectedCommodity] : ['Wheat', 'Rice', 'Tomato', 'Cotton'];
+        const baseMarkets = selectedDistrict !== 'All' ? [`${selectedDistrict} Main`] : ['Central Mandi'];
 
         baseCommodities.forEach(comm => {
             baseMarkets.forEach(mkt => {
-                // Generate a mathematically realistic price between ₹1200 and ₹6000
                 const basePrice = Math.floor(Math.random() * 4800) + 1200; 
                 mockRecords.push({
-                    commodity: comm,
-                    market: mkt,
-                    district: selectedDistrict !== 'All' ? selectedDistrict : 'Various',
-                    state: selectedState !== 'Select State' ? selectedState : 'Various',
-                    modal_price: basePrice,
-                    min_price: basePrice - Math.floor(Math.random() * 200), // Min is slightly lower
-                    max_price: basePrice + Math.floor(Math.random() * 300), // Max is slightly higher
-                    arrival_date: filterDate // Uses the exact date the user picked
+                    commodity: comm, market: mkt, district: selectedDistrict !== 'All' ? selectedDistrict : 'Various',
+                    state: selectedState, modal_price: basePrice, min_price: basePrice - 100, max_price: basePrice + 150,
+                    arrival_date: filterDate 
                 });
             });
         });
 
-        // Add a slight fake delay so it feels like a real API call to the user
         setTimeout(() => {
             setFilteredData(mockRecords);
             setLoading(false);
-        }, 800);
-        return; // Exit early since we used the timeout
+        }, 600);
+        return; 
     }
     
     setLoading(false);
@@ -261,10 +309,17 @@ const MarketRates = () => {
             
             {/* DATE SELECTOR */}
             <div style={{...styles.dropdownContainer, gridColumn: '1 / -1'}}>
-                <label style={styles.dropdownLabel}>Target Date</label>
+                <label style={styles.dropdownLabel}>Target Date (Last 5 Days Only)</label>
                 <div style={styles.glassInputWrapper}>
                     <IoMdCalendar size={20} color="rgba(255,255,255,0.8)"/>
-                    <input type="date" value={filterDate} onChange={(e) => setFilterDate(e.target.value)} style={styles.dateInput} />
+                    <input 
+                        type="date" 
+                        value={filterDate} 
+                        min={minDateStr} 
+                        max={maxDateStr}
+                        onChange={(e) => setFilterDate(e.target.value)} 
+                        style={styles.dateInput} 
+                    />
                 </div>
             </div>
 
