@@ -20,7 +20,6 @@ import Expenditure from './pages/Expenditure';
 import CropExpenses from './pages/CropExpenses'; 
 import UserLocation from './pages/UserLocation'; 
 import ModernTech from './pages/ModernTech';
-import AiAdvisor from './pages/AiAdvisor'; 
 
 // --- NEW PAGES ---
 import Radio from './pages/Radio';
@@ -102,7 +101,6 @@ function App() {
             <Route path="/news" element={<NewsUpdates />} />         
             <Route path="/library" element={<DigitalLibrary />} />   
             <Route path="/modern-tech" element={<ModernTech />} />
-            <Route path="/farmcap-ai" element={<AiAdvisor />} /> 
             
             <Route path="/service" element={<Service />} />
             <Route path="/business" element={<Business />} />
