@@ -1,536 +1,438 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
-import { IoMdArrowBack, IoMdSearch, IoMdCalendar, IoMdArrowDropdown, IoMdArrowDropup } from 'react-icons/io';
-import { FaMapMarkerAlt, FaLeaf, FaHistory } from 'react-icons/fa';
+import { motion, AnimatePresence } from 'framer-motion';
+import { IoMdArrowBack, IoMdArrowDropdown } from 'react-icons/io';
+import { FaFileInvoice, FaChartArea, FaMapMarkerAlt, FaShieldAlt, FaExternalLinkAlt, FaInfoCircle, FaChevronDown, FaRegFileAlt, FaChartLine } from 'react-icons/fa';
 
-// Pointing exactly to your rigorous data library
-import { CEDA_LIBRARY } from '../Data/marketData'; 
-import { collection, query, where, getDocs, writeBatch, doc, serverTimestamp } from 'firebase/firestore';
-import { db } from '../firebase'; // Adjust this path if your firebase.js is in another folder
-
-// --- BANNERS ---
-const BANNERS = [
-  "https://img.freepik.com/premium-photo/smart-farmer-holding-smartphone-with-ai-tech-interface-farm-background-future-smart-farming_1162141-40976.jpg",
-  "https://cdn.siasat.com/wp-content/uploads/2020/10/2020_10img07_Oct_2020_PTI07-10-2020_000074B-1-scaled.jpg",
-  "https://www.unite.ai/wp-content/uploads/2024/12/AI-for-Agriculture.webp",
-  "https://olimpum.com/en/wp-content/uploads/WhatsApp-Image-2024-09-20-at-00.22.46.jpeg"
+// --- DATA STRUCTURE: PASTE YOUR LINKS HERE ---
+const MARKET_REPORTS = [
+  {
+    title: "Prices & Arrival Reports",
+    icon: <FaFileInvoice size={24} color="#34d399" />,
+    items: [
+      { name: "Daily Price and Arrival", isNew: true, url: "https://agmarknet.gov.in/daily-price-and-arrival-report" },
+      { name: "All Type of Report (All Grades)", isNew: true, url: "" },
+      { name: "Commodity-Wise, Market-Wise Daily Report (Weighted Average)", url: "" },
+      { name: "Market-Wise, Commodity-wise Daily Report", url: "" },
+      { name: "Market-Wise Daily Report For Specific Commodity", url: "" },
+      { name: "Commodity Prices During Last Week", url: "" },
+      { name: "Market-Wise Prices During Last Week", url: "" },
+      { name: "Commodity Transactions Below MSP", url: "" },
+      { name: "Commodity Transactions Above MSP", url: "" },
+      { name: "Commodity-Wise, Market-Wise Daily Report For a State", url: "" },
+      { name: "Commodity-Wise, Market-Wise Daily Report For a State (Market Category Wise)", url: "" },
+      { name: "Date Wise Prices For Specified Commodity", url: "" },
+      { name: "Market-Wise, Commodity-Wise Daily Report For a State", url: "" }
+    ]
+  }
 ];
 
-const MarketRates = () => {
-  const navigate = useNavigate();
+const TREND_REPORTS = [
+  {
+    category: "State-wise Reports",
+    icon: <FaMapMarkerAlt color="#60a5fa" />,
+    items: [
+      { name: "State-wise Wholesale Prices Monthly Analysis", url: "" },
+      { name: "State-wise & Variety-wise Prices Monthly Analysis", url: "" },
+      { name: "State-wise Wholesale Prices Weekly Analysis", url: "" },
+      { name: "State-wise & Variety-wise Prices Weekly Analysis", url: "" }
+    ]
+  },
+  {
+    category: "District-wise Reports",
+    icon: <FaMapMarkerAlt color="#f472b6" />,
+    items: [
+      { name: "District-wise Wholesale Prices Monthly Analysis", url: "" },
+      { name: "District-wise & Variety-wise Prices Monthly Analysis", url: "" },
+      { name: "District-wise Wholesale Prices Weekly Analysis", url: "" },
+      { name: "District-wise & Variety-Wise Prices Weekly Analysis", url: "" }
+    ]
+  },
+  {
+    category: "Market-wise Reports",
+    icon: <FaMapMarkerAlt color="#fbbf24" />,
+    items: [
+      { name: "Market-wise Wholesale Arrivals Monthly Analysis", url: "" },
+      { name: "Market-wise Wholesale Prices Monthly Analysis", url: "" },
+      { name: "Market-wise & Variety-wise Prices Monthly Analysis", url: "" },
+      { name: "Market-wise Wholesale Arrivals Weekly Analysis", url: "" },
+      { name: "Market-wise Wholesale Prices Weekly Analysis", url: "" },
+      { name: "Market-wise & Variety-Wise Prices Weekly Analysis", url: "" }
+    ]
+  },
+  {
+    category: "Market-wise Reports (All Districts)",
+    icon: <FaMapMarkerAlt color="#a78bfa" />,
+    items: [
+      { name: "Market-wise Wholesale Arrivals Monthly Analysis (All Districts)", url: "" },
+      { name: "Market-wise Wholesale Prices Monthly Analysis (All Districts)", url: "" },
+      { name: "Market-wise Wholesale Arrivals Weekly Analysis (All Districts)", url: "" },
+      { name: "Market-wise Wholesale Prices Weekly Analysis (All Districts)", url: "" }
+    ]
+  }
+];
+
+// --- ANIMATION VARIANTS ---
+const containerVariants = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: { staggerChildren: 0.1 }
+  }
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 20 },
+  show: { opacity: 1, y: 0 }
+};
+
+const CollapsibleGroup = ({ title, icon, children, defaultOpen = false }) => {
+  const [isOpen, setIsOpen] = useState(defaultOpen);
   
-  // --- UI STATE ---
-  const [currentBanner, setCurrentBanner] = useState(0);
-  const [activeDropdown, setActiveDropdown] = useState(null);
-
-  // --- 5-DAY ROLLING DATE LOGIC ---
-  const todayObj = new Date();
-  const maxDateStr = todayObj.toISOString().split('T')[0]; // Today
-  
-  const minDateObj = new Date();
-  minDateObj.setDate(todayObj.getDate() - 4);
-  const minDateStr = minDateObj.toISOString().split('T')[0]; // 4 Days Ago
-
-  const [filterDate, setFilterDate] = useState(maxDateStr);
-
-  const [loading, setLoading] = useState(false);
-  const [dataSource, setDataSource] = useState('Awaiting Search...');
-  const [lookbackDays, setLookbackDays] = useState(0);
-
-  // --- DATA STATES ---
-  const [filteredData, setFilteredData] = useState([]); 
-
-  // --- FILTER STATES ---
-  const [selectedState, setSelectedState] = useState('Select State');
-  const [selectedDistrict, setSelectedDistrict] = useState('All');
-  const [selectedGroup, setSelectedGroup] = useState('Select Category');
-  const [selectedCommodity, setSelectedCommodity] = useState('All');
-
-  // --- DYNAMIC DROPDOWN LISTS ---
-  const [statesList, setStatesList] = useState([]);
-  const [districtsList, setDistrictsList] = useState([]);
-  const [groupsList, setGroupsList] = useState([]);
-  const [commoditiesList, setCommoditiesList] = useState([]);
-
-  const MANDI_KEY = import.meta.env.VITE_GOVT_MANDI_KEY;
-
-  // --- CAROUSEL EFFECT ---
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentBanner(prev => (prev + 1) % BANNERS.length);
-    }, 4000);
-    return () => clearInterval(timer);
-  }, []);
-
-  // ======================================================================
-  // --- PHASE 1: INITIALIZE TREES FROM LOCAL LIBRARY ---
-  // ======================================================================
-  useEffect(() => {
-    try {
-      if (!CEDA_LIBRARY || !CEDA_LIBRARY.states || !CEDA_LIBRARY.commodityGroups) {
-        console.warn("CEDA_LIBRARY is missing or improperly formatted.");
-        return;
-      }
-
-      const extractedStates = CEDA_LIBRARY.states.map(s => s.name).sort();
-      setStatesList(extractedStates);
-
-      const extractedGroups = CEDA_LIBRARY.commodityGroups.map(g => g.groupName).sort();
-      setGroupsList(['All', ...extractedGroups]);
-    } catch (error) {
-      console.error("Failed to parse CEDA_LIBRARY:", error);
-    }
-  }, []);
-
-  // ======================================================================
-  // --- PHASE 1.5: CASCADE DROPDOWNS ---
-  // ======================================================================
-  
-  useEffect(() => {
-    if (selectedState !== 'Select State' && selectedState !== 'All') {
-      const stateObj = CEDA_LIBRARY.states.find(s => s.name === selectedState);
-      if (stateObj && stateObj.districts) {
-        setDistrictsList(['All', ...stateObj.districts.map(d => d.name).sort()]);
-      } else {
-        setDistrictsList(['All']); 
-      }
-      setSelectedDistrict('All');
-    }
-  }, [selectedState]);
-
-  useEffect(() => {
-    if (selectedGroup !== 'Select Category' && selectedGroup !== 'All') {
-      const groupObj = CEDA_LIBRARY.commodityGroups.find(g => g.groupName === selectedGroup);
-      if (groupObj && groupObj.commodities) {
-        setCommoditiesList(['All', ...groupObj.commodities.sort()]);
-      } else {
-        setCommoditiesList(['All']);
-      }
-      setSelectedCommodity('All');
-    } else if (selectedGroup === 'All') {
-      const allComms = CEDA_LIBRARY.commodityGroups.flatMap(g => g.commodities);
-      setCommoditiesList(['All', ...[...new Set(allComms)].sort()]);
-      setSelectedCommodity('All');
-    }
-  }, [selectedGroup]);
-
-
-  // ======================================================================
-  // --- PHASE 2: LAZY CACHE ENGINE (WITH CORS PROXY & AUTO-CLEANUP) ---
-  // ======================================================================
-  const fetchLiveRates = async () => {
-    setLoading(true);
-    setFilteredData([]);
-    setLookbackDays(0);
-    
-    let dataFound = false;
-    let targetDateObj = new Date(filterDate);
-    let i = 0;
-    const MAX_LOOKBACK = 4; // Check up to 4 days back (handles long weekends)
-
-    while (!dataFound && i < MAX_LOOKBACK) {
-        // Format date for Gov API (DD/MM/YYYY)
-        const y = targetDateObj.getFullYear();
-        const m = String(targetDateObj.getMonth() + 1).padStart(2, '0');
-        const d = String(targetDateObj.getDate()).padStart(2, '0');
-        const targetDateStr = `${d}/${m}/${y}`; 
-        
-        setDataSource(`Checking Farmcap DB: ${targetDateStr}...`);
-
-        try {
-            const mandiRef = collection(db, "mandi_cache");
-            
-            // ---------------------------------------------------------
-            // 1. THE FAST READ: Ask Firebase for the data first
-            // ---------------------------------------------------------
-            const qConstraints = [
-                where("arrival_date", "==", targetDateStr),
-                where("state", "==", selectedState)
-            ];
-            
-            const cacheSnapshot = await getDocs(query(mandiRef, ...qConstraints));
-
-            if (!cacheSnapshot.empty) {
-                console.log(`[Cache Hit] Data found in Firebase for ${targetDateStr}`);
-                let cachedData = cacheSnapshot.docs.map(doc => doc.data());
-                
-                // Filter locally for the UI dropdowns
-                if (selectedDistrict !== 'All') cachedData = cachedData.filter(item => item.district === selectedDistrict);
-                if (selectedCommodity !== 'All') cachedData = cachedData.filter(item => item.commodity === selectedCommodity);
-
-                if (cachedData.length > 0) {
-                    setFilteredData(cachedData);
-                    dataFound = true;
-                    setLookbackDays(i);
-                    setDataSource(i === 0 ? '🟢 Farmcap Cache (Live)' : `🟠 Farmcap Cache (${i} Days Ago)`);
-                    break; // Stop the loop!
-                }
-            } 
-            
-            // ---------------------------------------------------------
-            // 2. THE PROXY FETCH: Cache Miss! Bypass CORS and fetch Gov Data
-            // ---------------------------------------------------------
-            console.log(`[Cache Miss] Fetching fresh data via Proxy for ${targetDateStr}...`);
-            setDataSource(`Bypassing CORS Node: ${targetDateStr}...`);
-            
-            const rawGovUrl = `https://api.data.gov.in/resource/9ef84268-d588-465a-a308-a864a43d0070?api-key=${MANDI_KEY}&format=json&limit=1000&filters[arrival_date]=${targetDateStr}&filters[state]=${encodeURIComponent(selectedState)}`;
-            const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(rawGovUrl)}`;
-
-            const govRes = await axios.get(proxyUrl);
-            const govData = govRes.data?.records || [];
-
-            if (govData.length > 0) {
-                // ---------------------------------------------------------
-                // 3. THE WRITE: Save to Firebase for the next user
-                // ---------------------------------------------------------
-                const batch = writeBatch(db);
-                
-                const formattedData = govData.map(item => {
-                    const docId = `${item.state}_${item.district}_${item.market}_${item.commodity}_${targetDateStr}`.replace(/\s+/g, '_');
-                    const docRef = doc(mandiRef, docId);
-                    
-                    const cleanItem = {
-                        commodity: item.commodity || 'Unknown',
-                        market: item.market || 'Unknown',
-                        district: item.district || 'Unknown',
-                        state: item.state || 'Unknown',
-                        modal_price: item.modal_price || item.price || "N/A",
-                        min_price: item.min_price || item.min || "N/A",
-                        max_price: item.max_price || item.max || "N/A",
-                        arrival_date: targetDateStr,
-                        timestamp: serverTimestamp() 
-                    };
-                    
-                    batch.set(docRef, cleanItem);
-                    return cleanItem;
-                });
-
-                // Fire the save command in the background
-                batch.commit().catch(err => console.error("Firebase Batch Write Failed:", err));
-
-                // ---------------------------------------------------------
-                // 4. THE UI UPDATE: Show the data to the current farmer
-                // ---------------------------------------------------------
-                let finalViewData = formattedData;
-                if (selectedDistrict !== 'All') finalViewData = finalViewData.filter(item => item.district === selectedDistrict);
-                if (selectedCommodity !== 'All') finalViewData = finalViewData.filter(item => item.commodity === selectedCommodity);
-
-                setFilteredData(finalViewData);
-                dataFound = true;
-                setLookbackDays(i);
-                setDataSource(i === 0 ? '🔵 Gov Network (Live Sync)' : `🟣 Gov Network (${i} Days Ago)`);
-                break;
-            }
-
-        } catch (error) {
-            console.warn(`Proxy or DB Connection Failed for ${targetDateStr}. Trying previous day...`);
-        }
-
-        // Loop math: If today was completely empty, subtract a day and try again
-        targetDateObj.setDate(targetDateObj.getDate() - 1);
-        i++;
-    }
-
-    // ---------------------------------------------------------
-    // 5. THE FAILSAFE: Smart Dummy Data if Gov Servers are totally down
-    // ---------------------------------------------------------
-    if (!dataFound) {
-        setDataSource('🟡 AI Estimator (Offline Mode)');
-        
-        const mockRecords = [];
-        const baseCommodities = selectedCommodity !== 'All' ? [selectedCommodity] : ['Wheat', 'Rice', 'Tomato', 'Cotton'];
-        const baseMarkets = selectedDistrict !== 'All' ? [`${selectedDistrict} Main`] : ['Central Mandi'];
-
-        baseCommodities.forEach(comm => {
-            baseMarkets.forEach(mkt => {
-                const basePrice = Math.floor(Math.random() * 4800) + 1200; 
-                mockRecords.push({
-                    commodity: comm, market: mkt, district: selectedDistrict !== 'All' ? selectedDistrict : 'Various',
-                    state: selectedState, modal_price: basePrice, min_price: basePrice - 100, max_price: basePrice + 150,
-                    arrival_date: filterDate 
-                });
-            });
-        });
-
-        setTimeout(() => {
-            setFilteredData(mockRecords);
-            setLoading(false);
-        }, 600);
-        return; 
-    }
-    
-    setLoading(false);
-  };
-
-  const toggleDropdown = (key) => {
-    setActiveDropdown(activeDropdown === key ? null : key);
-  };
-
-  const handleCardClick = (commodity) => {
-    console.log(`Phase 3: AI Trend Analysis triggered for ${commodity}`);
-  };
-
   return (
-    <div style={styles.page}>
-      {/* HEADER */}
-      <div style={styles.glassHeader}>
-        <div style={styles.headerTop}>
-          <button onClick={() => navigate('/agri-insights')} style={styles.iconBtn}>
-            <IoMdArrowBack size={28} color="#4ade80"/>
-          </button>
-          <div style={{textAlign:'center'}}>
-            <h1 style={styles.title}>Mandi Rates</h1>
-            <div style={{display:'flex', alignItems:'center', justifyContent:'center', gap:'6px'}}>
-              <p style={styles.subtitle}>Gov District Sweep</p>
-              {dataSource && <span style={styles.sourceBadge}>{dataSource}</span>}
-            </div>
-          </div>
-          <button onClick={fetchLiveRates} style={styles.iconBtn}>
-            <IoMdSearch size={28} color="#4ade80" className={loading ? "spin" : ""}/>
-          </button>
+    <div style={styles.subSection}>
+      <div 
+        style={{...styles.subSectionTitle, cursor: 'pointer', margin: 0, display: 'flex', justifyContent: 'space-between', alignItems: 'center', userSelect: 'none'}} 
+        onClick={() => setIsOpen(!isOpen)}
+      >
+        <div style={{display: 'flex', alignItems: 'center'}}>
+          {icon} <span style={{marginLeft: '8px'}}>{title}</span>
         </div>
+        <motion.div animate={{ rotate: isOpen ? 180 : 0 }} transition={{ duration: 0.3 }}>
+          <FaChevronDown color="#9ca3af" size={14} />
+        </motion.div>
       </div>
-
-      <div style={styles.scrollContent}>
-        {/* CAROUSEL */}
-        <div style={styles.carouselWrapper}>
-            {BANNERS.map((src, i) => (
-                <img key={i} src={src} style={{...styles.bannerImg, opacity: currentBanner === i ? 1 : 0 }} alt={`Banner ${i}`}/>
-            ))}
-            <div style={styles.bannerOverlay}>
-                <div style={styles.bannerTitle}>FarmCap</div>
-                <div style={styles.bannerSubtitle}>True Market Value Routing</div>
-            </div>
-        </div>
-
-        {/* DYNAMIC FILTER STACK */}
-        <div style={styles.filterStack}>
-            
-            {/* DATE SELECTOR */}
-            <div style={{...styles.dropdownContainer, gridColumn: '1 / -1'}}>
-                <label style={styles.dropdownLabel}>Target Date (Last 5 Days Only)</label>
-                <div style={styles.glassInputWrapper}>
-                    <IoMdCalendar size={20} color="rgba(255,255,255,0.8)"/>
-                    <input 
-                        type="date" 
-                        value={filterDate} 
-                        min={minDateStr} 
-                        max={maxDateStr}
-                        onChange={(e) => setFilterDate(e.target.value)} 
-                        style={styles.dateInput} 
-                    />
-                </div>
-            </div>
-
-            {/* STATE SELECTOR */}
-            <div style={{...styles.dropdownContainer, zIndex: activeDropdown === 'state' ? 101 : 'auto'}}>
-                <label style={styles.dropdownLabel}>Select State</label>
-                <div style={styles.dropdownHeader} onClick={() => toggleDropdown('state')}>
-                    <span style={{overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}}>{selectedState}</span>
-                    {activeDropdown === 'state' ? <IoMdArrowDropup size={20}/> : <IoMdArrowDropdown size={20}/>}
-                </div>
-                {activeDropdown === 'state' && (
-                    <div style={styles.dropdownList}>
-                        {statesList.map(state => (
-                            <div key={state} style={styles.dropdownItem} onClick={() => { setSelectedState(state); setActiveDropdown(null); }}>
-                                {state}
-                            </div>
-                        ))}
-                    </div>
-                )}
-            </div>
-
-            {/* DISTRICT SELECTOR */}
-            <div style={{...styles.dropdownContainer, zIndex: activeDropdown === 'district' ? 101 : 'auto'}}>
-                <label style={styles.dropdownLabel}>District Sweep</label>
-                <div style={styles.dropdownHeader} onClick={() => toggleDropdown('district')}>
-                    <span style={{overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}}>{selectedDistrict}</span>
-                    {activeDropdown === 'district' ? <IoMdArrowDropup size={20}/> : <IoMdArrowDropdown size={20}/>}
-                </div>
-                {activeDropdown === 'district' && (
-                    <div style={styles.dropdownList}>
-                        {districtsList.map(dist => (
-                            <div key={dist} style={styles.dropdownItem} onClick={() => { setSelectedDistrict(dist); setActiveDropdown(null); }}>
-                                {dist}
-                            </div>
-                        ))}
-                    </div>
-                )}
-            </div>
-
-            {/* COMMODITY GROUP SELECTOR */}
-            <div style={{...styles.dropdownContainer, zIndex: activeDropdown === 'group' ? 101 : 'auto'}}>
-                <label style={styles.dropdownLabel}>Category</label>
-                <div style={styles.dropdownHeader} onClick={() => toggleDropdown('group')}>
-                    <span style={{overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}}>{selectedGroup}</span>
-                    {activeDropdown === 'group' ? <IoMdArrowDropup size={20}/> : <IoMdArrowDropdown size={20}/>}
-                </div>
-                {activeDropdown === 'group' && (
-                    <div style={styles.dropdownList}>
-                        {groupsList.map(grp => (
-                            <div key={grp} style={styles.dropdownItem} onClick={() => { setSelectedGroup(grp); setActiveDropdown(null); }}>
-                                {grp}
-                            </div>
-                        ))}
-                    </div>
-                )}
-            </div>
-
-            {/* COMMODITY SELECTOR */}
-            <div style={{...styles.dropdownContainer, zIndex: activeDropdown === 'commodity' ? 101 : 'auto'}}>
-                <label style={styles.dropdownLabel}>Specific Crop</label>
-                <div style={styles.dropdownHeader} onClick={() => toggleDropdown('commodity')}>
-                    <span style={{overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}}>{selectedCommodity}</span>
-                    {activeDropdown === 'commodity' ? <IoMdArrowDropup size={20}/> : <IoMdArrowDropdown size={20}/>}
-                </div>
-                {activeDropdown === 'commodity' && (
-                    <div style={styles.dropdownList}>
-                        {commoditiesList.map(item => (
-                            <div key={item} style={styles.dropdownItem} onClick={() => { setSelectedCommodity(item); setActiveDropdown(null); }}>
-                                {item}
-                            </div>
-                        ))}
-                    </div>
-                )}
-            </div>
-
-            {/* GET PRICES BUTTON */}
-            <div style={{gridColumn: '1 / -1', marginTop: '10px'}}>
-                <button 
-                  onClick={fetchLiveRates} 
-                  style={{
-                    width: '100%', padding: '15px', borderRadius: '12px', border: 'none',
-                    background: selectedState !== 'Select State' ? '#4ade80' : 'rgba(255,255,255,0.1)',
-                    color: selectedState !== 'Select State' ? '#000' : 'rgba(255,255,255,0.3)',
-                    fontWeight: '800', fontSize: '16px', cursor: selectedState !== 'Select State' ? 'pointer' : 'not-allowed',
-                    textTransform: 'uppercase', letterSpacing: '1px', transition: 'all 0.3s'
-                  }}
-                  disabled={selectedState === 'Select State'}
-                >
-                  {loading ? 'Scanning API Nodes...' : 'Search True Value'}
-                </button>
-            </div>
-        </div>
-
-        {/* RESULTS GRID */}
-        <div style={{...styles.section, marginBottom: '40px'}}>
-          <div style={styles.sectionHeader}>
-            <span style={styles.sectionTitle}>
-                {selectedDistrict !== 'All' ? `${selectedDistrict} Active Mandis` : 'Live Prices'}
-            </span>
-            <span style={styles.sectionCount}>{filteredData.length} Trades Found</span>
-          </div>
-
-          {lookbackDays > 0 && !loading && (
-             <div style={styles.lookbackWarning}>
-                 <FaHistory size={14} color="#facc15" />
-                 <span>Zero arrivals on selected date. Showing Last Traded Prices ({lookbackDays} days ago).</span>
-             </div>
-          )}
-
-          {loading ? (
-              <div style={styles.loaderContainer}>
-                  <div className="loader"></div>
-                  <p style={{color:'white', marginTop:'10px'}}>Executing District Sweep...</p>
-              </div>
-          ) : (
-            <div style={styles.grid}>
-              {filteredData.length === 0 && !loading && (
-                  <div style={styles.emptyState}>
-                      <FaLeaf size={40} color="rgba(255,255,255,0.3)"/>
-                      <p>Select a State and tap Search to get started.</p>
-                  </div>
-              )}
-              {filteredData.map((item, index) => (
-                  <div key={index} style={styles.glassCard} onClick={() => handleCardClick(item.commodity)}>
-                      <div style={styles.cardHeader}>
-                          <h3 style={styles.commodityName}>{item.commodity}</h3>
-                          <span style={{...styles.dateBadge, color: lookbackDays > 0 ? '#facc15' : 'rgba(255,255,255,0.5)'}}>
-                              {item.arrival_date}
-                          </span>
-                      </div>
-                      <div style={styles.locationRow}>
-                          <FaMapMarkerAlt size={12} color="#4ade80"/> 
-                          <span style={{fontWeight: '700', color: '#fff'}}>{item.market} Mandi</span>
-                      </div>
-                      <div style={styles.priceRow}>
-                          <div style={styles.priceLabel}>{lookbackDays > 0 ? 'Last Traded (Modal)' : 'Modal Price'}</div>
-                          <div style={styles.priceValue}>₹{item.modal_price}<span>/qtl</span></div>
-                      </div>
-                      <div style={styles.minMaxRow}>
-                          <span>Min: ₹{item.min_price}</span>
-                          <span>Max: ₹{item.max_price}</span>
-                      </div>
-                      <div style={styles.aiBadge}>Tap for Trend Analysis ✨</div>
-                  </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-
-      <style>{`
-        .spin { animation: spin 1s linear infinite; }
-        @keyframes spin { 100% { transform: rotate(360deg); } }
-        .loader { border: 3px solid rgba(255,255,255,0.3); border-top: 3px solid #4ade80; border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; }
-      `}</style>
+      <AnimatePresence initial={false}>
+        {isOpen && (
+          <motion.div
+            initial={{ height: 0, opacity: 0, marginTop: 0 }}
+            animate={{ height: 'auto', opacity: 1, marginTop: '15px' }}
+            exit={{ height: 0, opacity: 0, marginTop: 0 }}
+            transition={{ duration: 0.3, ease: "easeInOut" }}
+            style={{ overflow: 'hidden' }}
+          >
+            {children}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
 
-// --- PREMIUM GLASSMORPHISM STYLES ---
+const MarketRates = () => {
+  const navigate = useNavigate();
+  const [transitionState, setTransitionState] = useState({ isActive: false, reportName: "" });
+  const [isFooterOpen, setIsFooterOpen] = useState(false);
+
+  const handleLinkClick = (report) => {
+    if (!report.url) {
+      alert("URL not yet configured for: " + report.name);
+      return;
+    }
+
+    // Trigger the 3-second intercept modal
+    setTransitionState({ isActive: true, reportName: report.name });
+
+    setTimeout(() => {
+      // Open the government site in a new tab
+      window.open(report.url, '_blank', 'noopener,noreferrer');
+      // Hide the modal so they are back in Farmcap when they close the new tab
+      setTransitionState({ isActive: false, reportName: "" });
+    }, 3000);
+  };
+
+  return (
+    <div style={styles.page}>
+      
+      {/* 3-SECOND INTERCEPT MODAL */}
+      <AnimatePresence>
+        {transitionState.isActive && (
+          <motion.div 
+            initial={{ opacity: 0 }} 
+            animate={{ opacity: 1 }} 
+            exit={{ opacity: 0 }} 
+            style={styles.modalOverlay}
+          >
+            <motion.div 
+              initial={{ scale: 0.8 }} 
+              animate={{ scale: 1 }} 
+              transition={{ type: 'spring', bounce: 0.5 }}
+              style={styles.modalContent}
+            >
+              <motion.div 
+                animate={{ scale: [1, 1.1, 1] }} 
+                transition={{ repeat: Infinity, duration: 1.5 }}
+              >
+                <FaShieldAlt size={50} color="#34d399" style={{ marginBottom: '15px' }}/>
+              </motion.div>
+              <h2 style={styles.modalTitle}>Securing Connection</h2>
+              <p style={styles.modalText}>Routing you to the official Directorate of Marketing & Inspection (DMI) portal for:</p>
+              <div style={styles.modalReportName}>{transitionState.reportName}</div>
+              <div style={styles.loaderLine}>
+                <motion.div 
+                  initial={{ width: "0%" }} 
+                  animate={{ width: "100%" }} 
+                  transition={{ duration: 3, ease: "linear" }}
+                  style={styles.loaderFill}
+                />
+              </div>
+              <p style={styles.modalFooterText}>Government of India Database</p>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* HEADER */}
+      <div style={styles.header}>
+        <div style={styles.headerTop}>
+          <button onClick={() => navigate('/agri-insights')} style={styles.iconBtn}>
+            <IoMdArrowBack size={28} color="#34d399"/>
+          </button>
+          <div style={{textAlign:'center'}}>
+            <h1 style={styles.title}>Mandi Navigator</h1>
+            <p style={styles.subtitle}>Direct Agmarknet Access</p>
+          </div>
+          <div style={{width: '28px'}}></div> {/* Spacer for alignment */}
+        </div>
+      </div>
+
+      <div style={styles.scrollContent}>
+        
+        {/* SECTION 1: PRICE & ARRIVAL REPORTS */}
+        <motion.div variants={containerVariants} initial="hidden" animate="show" style={styles.section}>
+          <div style={styles.sectionHeader}>
+            <FaFileInvoice size={20} color="#34d399" />
+            <h2 style={styles.sectionTitle}>Prices & Arrival Reports</h2>
+          </div>
+          {MARKET_REPORTS.map((group, idx) => (
+            <CollapsibleGroup key={`market-${idx}`} title={group.title} icon={group.icon} defaultOpen={true}>
+              <motion.div variants={containerVariants} initial="hidden" animate="show" style={styles.grid}>
+                {group.items.map((item, i) => (
+                  <motion.div 
+                    variants={itemVariants} 
+                    key={i} 
+                    style={styles.card}
+                    whileHover={{ scale: 1.02, borderColor: 'rgba(52, 211, 153, 0.6)', boxShadow: '0 10px 20px rgba(52, 211, 153, 0.15)' }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => handleLinkClick(item)}
+                  >
+                    <div style={styles.cardContent}>
+                      <div style={styles.iconBoxMarket}>
+                        <FaRegFileAlt size={16} />
+                      </div>
+                      <span style={styles.cardText}>{item.name}</span>
+                      {item.isNew && <span style={styles.newBadge}>NEW</span>}
+                    </div>
+                    <div style={styles.arrowIconBox}>
+                      <FaExternalLinkAlt size={12} color="rgba(255,255,255,0.5)" />
+                    </div>
+                  </motion.div>
+                ))}
+              </motion.div>
+            </CollapsibleGroup>
+          ))}
+        </motion.div>
+
+        {/* SECTION 2: PRICE TREND REPORTS */}
+        <motion.div variants={containerVariants} initial="hidden" animate="show" style={styles.section}>
+          <div style={styles.sectionHeader}>
+            <FaChartArea size={20} color="#60a5fa" />
+            <h2 style={styles.sectionTitle}>Price Trend Reports</h2>
+          </div>
+          
+          {TREND_REPORTS.map((group, idx) => (
+            <CollapsibleGroup key={`trend-${idx}`} title={group.category} icon={group.icon} defaultOpen={false}>
+              <motion.div variants={containerVariants} initial="hidden" animate="show" style={styles.grid}>
+                {group.items.map((item, i) => (
+                  <motion.div 
+                    variants={itemVariants} 
+                    key={i} 
+                    style={styles.card}
+                    whileHover={{ scale: 1.02, borderColor: 'rgba(96, 165, 250, 0.6)', boxShadow: '0 10px 20px rgba(96, 165, 250, 0.15)' }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => handleLinkClick(item)}
+                  >
+                    <div style={styles.cardContent}>
+                      <div style={styles.iconBoxTrend}>
+                        <FaChartLine size={16} />
+                      </div>
+                      <span style={styles.cardText}>{item.name}</span>
+                    </div>
+                    <div style={styles.arrowIconBox}>
+                      <FaExternalLinkAlt size={12} color="rgba(255,255,255,0.5)" />
+                    </div>
+                  </motion.div>
+                ))}
+              </motion.div>
+            </CollapsibleGroup>
+          ))}
+        </motion.div>
+
+        {/* SECTION 3: EXPANDABLE LEGAL FOOTER & ABOUT */}
+        <div style={styles.footer}>
+          <button 
+            onClick={() => setIsFooterOpen(!isFooterOpen)} 
+            style={styles.footerToggleBtn}
+          >
+            <div style={{display: 'flex', alignItems: 'center', gap: '8px'}}>
+              <FaInfoCircle size={16} color="#9ca3af" />
+              <span style={styles.footerTitle}>About Agmarknet & Farmcap</span>
+            </div>
+            <motion.div animate={{ rotate: isFooterOpen ? 180 : 0 }}>
+              <IoMdArrowDropdown size={20} color="#9ca3af" />
+            </motion.div>
+          </button>
+          
+          <AnimatePresence>
+            {isFooterOpen && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                style={{ overflow: 'hidden' }}
+              >
+                <div style={styles.footerContent}>
+                  
+                  {/* CARD 1: ABOUT AGMARKNET */}
+                  <div style={styles.infoCard}>
+                    <h4 style={styles.cardHeader}>About the Official Agmarknet Portal</h4>
+                    
+                    <div style={styles.textBlock}>
+                      <span style={styles.highlightText}>What is this website?</span>
+                      <p style={styles.paragraph}>It is the national web portal for agricultural commodity market data in India, providing real-time visibility into mandi operations.</p>
+                    </div>
+
+                    <div style={styles.textBlock}>
+                      <span style={styles.highlightText}>Who maintains the data?</span>
+                      <p style={styles.paragraph}>The portal is owned and operated by the Directorate of Marketing and Inspection (DMI), Ministry of Agriculture and Farmers Welfare, Government of India.</p>
+                    </div>
+
+                    <div style={styles.textBlock}>
+                      <span style={styles.highlightText}>How does it get data?</span>
+                      <p style={styles.paragraph}>Market price and arrival data are reported and uploaded daily by the respective Agricultural Produce Market Committees (APMCs) and authorized mandi officials.</p>
+                    </div>
+
+                    <div style={styles.textBlock}>
+                      <span style={styles.highlightText}>What information is in it?</span>
+                      <p style={styles.paragraph}>It tracks daily wholesale prices, market arrivals, historical trends, and Minimum Support Price (MSP) transactions for various commodities.</p>
+                    </div>
+
+                    <div style={styles.textBlock}>
+                      <span style={styles.highlightText}>Accuracy & Legal Use:</span>
+                      <p style={styles.paragraph}>While verified to the best of their ability, the DMI is not liable for errors or authenticity. The information is subject to change and <strong>must not be used for legal purposes</strong>.</p>
+                    </div>
+
+                    {/* PASTE YOUR AGMARKNET ABOUT US LINK IN THE EMPTY QUOTES BELOW */}
+                    <button onClick={() => window.open('https://agmarknet.gov.in/AboutUs.aspx', '_blank')} style={styles.primaryLinkBtn}>
+                      Official Agmarknet About Us ➔
+                    </button>
+                  </div>
+
+                  {/* CARD 2: ABOUT FARMCAP */}
+                  <div style={styles.infoCard}>
+                    <h4 style={styles.cardHeader}>About Farmcap</h4>
+                    
+                    <div style={styles.textBlock}>
+                      <span style={styles.highlightText}>Purpose of this App:</span>
+                      <p style={styles.paragraph}>Farmcap is an independent utility app designed for farmers. It simplifies complex agricultural data discovery and serves strictly for informational purposes.</p>
+                    </div>
+
+                    <div style={styles.textBlock}>
+                      <span style={styles.highlightText}>How it connects to the Gov Website:</span>
+                      <p style={styles.paragraph}>Farmcap acts as a guided directory. We use secure outbound hyperlinking to route you directly to the official government databases. We do not scrape, host, or alter the government's data.</p>
+                    </div>
+
+                    <div style={styles.textBlock}>
+                      <span style={styles.highlightText}>Legal Terms & Responsibility:</span>
+                      <p style={styles.paragraph}><strong>Neither Farmcap nor Agmarknet is responsible for any trading or business decisions made using this tool.</strong> This is purely informational. Users must independently inquire and verify all market conditions at their local Mandi before taking any financial action.</p>
+                    </div>
+
+                    <button style={styles.secondaryLinkBtn}>
+                      Farmcap Privacy Policy
+                    </button>
+                  </div>
+                  
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+
+      </div>
+    </div>
+  );
+};
+
 const styles = {
   page: { 
-      position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', 
-      background: 'radial-gradient(circle at 50% 0%, #111827 0%, #000000 100%)',
-      fontFamily: '"Inter", sans-serif', color: 'white', overflow: 'hidden',
-      display: 'flex', flexDirection: 'column'
+    height: '100vh', 
+    background: 'radial-gradient(circle at top right, #0f172a, #000000)', 
+    color: '#fff', 
+    fontFamily: '"Inter", sans-serif', 
+    overflow: 'hidden', 
+    display: 'flex', 
+    flexDirection: 'column' 
   },
-  glassHeader: { 
-      position: 'relative', zIndex: 10, 
-      background: 'rgba(255, 255, 255, 0.1)', 
-      backdropFilter: 'blur(15px)', WebkitBackdropFilter: 'blur(15px)',
-      borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
-      padding: '15px 20px', display: 'flex', flexDirection: 'column', gap: '15px'
+  header: { 
+    padding: '20px', 
+    background: 'rgba(15, 23, 42, 0.6)', 
+    backdropFilter: 'blur(12px)',
+    borderBottom: '1px solid rgba(255,255,255,0.05)' 
   },
   headerTop: { display: 'flex', justifyContent: 'space-between', alignItems: 'center' },
-  title: { fontSize: '22px', margin: 0, fontWeight: '800', letterSpacing: '0.5px' },
-  subtitle: { fontSize: '12px', opacity: 0.8, margin: 0 },
-  sourceBadge: { fontSize: '9px', background: 'rgba(74, 222, 128, 0.2)', color: '#4ade80', padding: '2px 6px', borderRadius: '4px', border: '1px solid rgba(74, 222, 128, 0.3)' },
-  iconBtn: { background: 'transparent', border: 'none', width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' },
-  scrollContent: { flex: 1, overflowY: 'auto', padding: '20px', position: 'relative', zIndex: 5 },
-  carouselWrapper: { position: 'relative', width: '100%', height: '220px', borderRadius: '16px', overflow: 'hidden', marginBottom: '20px', border: '1px solid rgba(74, 222, 128, 0.3)', boxShadow: '0 0 20px rgba(74, 222, 128, 0.1)' },
-  bannerImg: { position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover', transition: 'opacity 1s ease-in-out' },
-  bannerOverlay: { position: 'absolute', bottom: 0, left: 0, width: '100%', background: 'linear-gradient(to top, rgba(0,0,0,0.9), transparent)', padding: '20px', boxSizing: 'border-box' },
-  bannerTitle: { fontSize: '20px', fontWeight: '800', color: 'white', marginBottom: '4px' },
-  bannerSubtitle: { fontSize: '12px', color: '#4ade80', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '1px' },
-  filterStack: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginBottom: '30px' },
-  dropdownContainer: { position: 'relative' },
-  dropdownLabel: { display: 'block', color: 'rgba(255,255,255,0.6)', fontSize: '12px', marginBottom: '6px', marginLeft: '4px', fontWeight: '600', textTransform: 'uppercase' },
-  dropdownHeader: { background: 'rgba(255, 255, 255, 0.1)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255, 255, 255, 0.15)', borderRadius: '12px', padding: '14px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: 'white', cursor: 'pointer', fontSize: '14px', fontWeight: '500', transition: 'background 0.2s' },
-  dropdownList: { position: 'absolute', top: '100%', left: 0, right: 0, background: '#1e1e1e', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', marginTop: '5px', maxHeight: '250px', overflowY: 'auto', zIndex: 100, boxShadow: '0 10px 40px rgba(0,0,0,0.5)' },
-  dropdownItem: { padding: '12px 16px', borderBottom: '1px solid rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.9)', cursor: 'pointer', fontSize: '14px' },
-  glassInputWrapper: { background: 'rgba(255, 255, 255, 0.1)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255, 255, 255, 0.15)', borderRadius: '12px', padding: '12px 16px', display: 'flex', alignItems: 'center', gap: '10px' },
-  dateInput: { background: 'transparent', border: 'none', color: 'white', fontSize: '15px', width: '100%', outline: 'none', fontFamily: 'inherit', colorScheme: 'dark' },
-  section: { marginBottom: '25px' },
-  sectionHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px', padding: '0 5px' },
-  sectionTitle: { fontSize: '14px', fontWeight: '700', color: 'rgba(255,255,255,0.9)', textTransform: 'uppercase', letterSpacing: '1px' },
-  sectionCount: { fontSize: '12px', color: 'rgba(255,255,255,0.5)' },
-  lookbackWarning: { display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(250, 204, 21, 0.1)', border: '1px solid rgba(250, 204, 21, 0.3)', padding: '10px 15px', borderRadius: '8px', marginBottom: '15px', fontSize: '12px', color: 'rgba(255,255,255,0.9)' },
-  grid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: '15px' },
-  glassCard: { background: 'rgba(255, 255, 255, 0.07)', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '16px', padding: '15px', display: 'flex', flexDirection: 'column', gap: '8px', cursor: 'pointer', transition: 'transform 0.2s', boxShadow: '0 4px 20px rgba(0,0,0,0.2)' },
-  cardHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' },
-  commodityName: { margin: 0, fontSize: '16px', fontWeight: '700', color: '#fff' },
-  dateBadge: { fontSize: '10px' },
-  locationRow: { display: 'flex', alignItems: 'center', gap: '5px', fontSize: '12px', color: 'rgba(255,255,255,0.8)', paddingBottom: '4px', borderBottom: '1px solid rgba(255,255,255,0.1)' },
-  priceRow: { marginTop: '5px', background: 'rgba(0,0,0,0.2)', padding: '8px', borderRadius: '8px', textAlign: 'center' },
-  priceLabel: { fontSize: '10px', color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase' },
-  priceValue: { fontSize: '18px', fontWeight: '800', color: '#4ade80' },
-  minMaxRow: { display: 'flex', justifyContent: 'space-between', fontSize: '10px', color: 'rgba(255,255,255,0.5)', marginTop: '2px' },
-  aiBadge: { marginTop: '5px', fontSize: '10px', textAlign: 'center', color: '#60a5fa', fontWeight: '600', letterSpacing: '0.5px', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '8px' },
-  loaderContainer: { display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px' },
-  emptyState: { gridColumn: '1 / -1', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px', color: 'rgba(255,255,255,0.5)', gap: '10px' }
+  title: { fontSize: '20px', margin: 0, fontWeight: '800', letterSpacing: '0.5px' },
+  subtitle: { fontSize: '12px', color: '#34d399', margin: '4px 0 0 0', fontWeight: '600', textTransform: 'uppercase' },
+  iconBtn: { background: 'none', border: 'none', cursor: 'pointer', padding: 0 },
+  scrollContent: { flex: 1, overflowY: 'auto', padding: '20px' },
+  
+  section: { marginBottom: '40px' },
+  sectionHeader: { display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '15px', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '10px' },
+  sectionTitle: { fontSize: '18px', fontWeight: '700', margin: 0 },
+  
+  subSection: { marginBottom: '25px', background: 'rgba(255,255,255,0.02)', padding: '15px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)' },
+  subSectionTitle: { fontSize: '14px', fontWeight: '600', color: '#e5e7eb', margin: '0 0 15px 0', display: 'flex', alignItems: 'center' },
+  
+  grid: { display: 'grid', gridTemplateColumns: '1fr', gap: '12px' },
+  card: { 
+    background: 'linear-gradient(145deg, rgba(30, 41, 59, 0.7) 0%, rgba(15, 23, 42, 0.7) 100%)', 
+    backdropFilter: 'blur(10px)',
+    border: '1px solid rgba(255, 255, 255, 0.05)', 
+    borderRadius: '16px', 
+    padding: '16px', 
+    display: 'flex', 
+    justifyContent: 'space-between', 
+    alignItems: 'center', 
+    cursor: 'pointer',
+    boxShadow: '0 8px 20px rgba(0,0,0,0.2)',
+    transition: 'border-color 0.2s ease'
+  },
+  cardContent: { display: 'flex', alignItems: 'center', gap: '15px', flex: 1, paddingRight: '15px' },
+  cardText: { fontSize: '14px', fontWeight: '500', color: '#f8fafc', lineHeight: '1.4', letterSpacing: '0.3px' },
+  newBadge: { background: 'linear-gradient(135deg, #ef4444 0%, #b91c1c 100%)', color: '#fff', fontSize: '9px', fontWeight: '800', padding: '3px 8px', borderRadius: '6px', letterSpacing: '0.5px', boxShadow: '0 2px 4px rgba(239, 68, 68, 0.4)' },
+  iconBoxMarket: { width: '38px', height: '38px', borderRadius: '10px', background: 'rgba(52, 211, 153, 0.15)', color: '#34d399', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, border: '1px solid rgba(52, 211, 153, 0.2)' },
+  iconBoxTrend: { width: '38px', height: '38px', borderRadius: '10px', background: 'rgba(96, 165, 250, 0.15)', color: '#60a5fa', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, border: '1px solid rgba(96, 165, 250, 0.2)' },
+  arrowIconBox: { width: '28px', height: '28px', borderRadius: '50%', background: 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center' },
+  
+  footer: { marginTop: '20px', background: 'rgba(0,0,0,0.4)', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)' },
+  footerToggleBtn: { width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '15px 20px', background: 'none', border: 'none', cursor: 'pointer' },
+  footerTitle: { margin: 0, fontSize: '14px', fontWeight: '700', color: '#d1d5db' },
+  footerContent: { padding: '0 20px 20px 20px' },
+  infoCard: { background: 'rgba(255,255,255,0.03)', padding: '16px', borderRadius: '12px', marginBottom: '15px' },
+  cardHeader: { margin: '0 0 15px 0', fontSize: '14px', color: '#34d399', fontWeight: '700', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '8px' },
+  textBlock: { marginBottom: '12px' },
+  highlightText: { fontSize: '12px', color: '#60a5fa', fontWeight: '600', display: 'block', marginBottom: '4px' },
+  paragraph: { fontSize: '11px', color: '#9ca3af', lineHeight: '1.6', margin: 0 },
+  primaryLinkBtn: { background: 'rgba(52, 211, 153, 0.1)', border: '1px solid rgba(52, 211, 153, 0.3)', color: '#34d399', padding: '10px', borderRadius: '8px', fontSize: '12px', fontWeight: '600', cursor: 'pointer', width: '100%', marginTop: '10px' },
+  secondaryLinkBtn: { background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', color: '#9ca3af', padding: '10px', borderRadius: '8px', fontSize: '12px', fontWeight: '600', cursor: 'pointer', width: '100%', marginTop: '10px' },
+
+  modalOverlay: { position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(8px)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' },
+  modalContent: { background: '#0f172a', border: '1px solid rgba(52, 211, 153, 0.3)', borderRadius: '24px', padding: '30px', width: '100%', maxWidth: '400px', textAlign: 'center', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)' },
+  modalTitle: { fontSize: '20px', fontWeight: '800', color: '#fff', margin: '0 0 10px 0' },
+  modalText: { fontSize: '13px', color: '#9ca3af', margin: '0 0 15px 0', lineHeight: '1.5' },
+  modalReportName: { background: 'rgba(255,255,255,0.05)', padding: '12px', borderRadius: '8px', fontSize: '14px', fontWeight: '600', color: '#34d399', marginBottom: '25px', border: '1px solid rgba(52, 211, 153, 0.2)' },
+  loaderLine: { width: '100%', height: '4px', background: 'rgba(255,255,255,0.1)', borderRadius: '2px', overflow: 'hidden', marginBottom: '15px' },
+  loaderFill: { height: '100%', background: '#34d399' },
+  modalFooterText: { fontSize: '10px', color: '#64748b', textTransform: 'uppercase', letterSpacing: '1px', fontWeight: '700', margin: 0 }
 };
 
 export default MarketRates;
