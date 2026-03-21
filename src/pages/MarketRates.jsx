@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { IoMdArrowBack, IoMdArrowDropdown } from 'react-icons/io';
+import { IoMdArrowBack, IoMdClose } from 'react-icons/io';
 import { FaFileInvoice, FaChartArea, FaMapMarkerAlt, FaShieldAlt, FaExternalLinkAlt, FaInfoCircle, FaChevronDown, FaRegFileAlt, FaChartLine } from 'react-icons/fa';
 
 // --- DATA STRUCTURE: PASTE YOUR LINKS HERE ---
@@ -11,18 +11,18 @@ const MARKET_REPORTS = [
     icon: <FaFileInvoice size={24} color="#34d399" />,
     items: [
       { name: "Daily Price and Arrival", isNew: true, url: "https://agmarknet.gov.in/daily-price-and-arrival-report" },
-      { name: "All Type of Report (All Grades)", isNew: true, url: "" },
-      { name: "Commodity-Wise, Market-Wise Daily Report (Weighted Average)", url: "" },
-      { name: "Market-Wise, Commodity-wise Daily Report", url: "" },
-      { name: "Market-Wise Daily Report For Specific Commodity", url: "" },
-      { name: "Commodity Prices During Last Week", url: "" },
-      { name: "Market-Wise Prices During Last Week", url: "" },
-      { name: "Commodity Transactions Below MSP", url: "" },
-      { name: "Commodity Transactions Above MSP", url: "" },
-      { name: "Commodity-Wise, Market-Wise Daily Report For a State", url: "" },
-      { name: "Commodity-Wise, Market-Wise Daily Report For a State (Market Category Wise)", url: "" },
-      { name: "Date Wise Prices For Specified Commodity", url: "" },
-      { name: "Market-Wise, Commodity-Wise Daily Report For a State", url: "" }
+      { name: "All Type of Report (All Grades)", isNew: true, url: "https://agmarknet.gov.in/alltypeofreports" },
+      { name: "Commodity-Wise, Market-Wise Daily Report (Weighted Average)", url: "https://agmarknet.gov.in/commoditydailyreportweightedinput" },
+      { name: "Market-Wise, Commodity-wise Daily Report", url: "https://agmarknet.gov.in/marketwisedailyreportinput" },
+      { name: "Market-Wise Daily Report For Specific Commodity", url: "https://agmarknet.gov.in/marketwisespecificcommodityinput" },
+      { name: "Commodity Prices During Last Week", url: "https://agmarknet.gov.in/commoditypricelastweekinput" },
+      { name: "Market-Wise Prices During Last Week", url: "https://agmarknet.gov.in/marketwisepricelastweekinput" },
+      { name: "Commodity Transactions Below MSP", url: "https://agmarknet.gov.in/commoditybelowmspinput" },
+      { name: "Commodity Transactions Above MSP", url: "https://agmarknet.gov.in/commodityabovemspinput" },
+      { name: "Commodity-Wise, Market-Wise Daily Report For a State", url: "https://agmarknet.gov.in/commoditywisedailystatereportinput" },
+      { name: "Commodity-Wise, Market-Wise Daily Report For a State (Market Category Wise)", url: "https://agmarknet.gov.in/commoditywisedailystatemktinput" },
+      { name: "Date Wise Prices For Specified Commodity", url: "https://agmarknet.gov.in/datewisespeccommdodityinput" },
+      { name: "Market-Wise, Commodity-Wise Daily Report For a State", url: "https://agmarknet.gov.in/marketwisedailystatereportinput" }
     ]
   }
 ];
@@ -32,42 +32,42 @@ const TREND_REPORTS = [
     category: "State-wise Reports",
     icon: <FaMapMarkerAlt color="#60a5fa" />,
     items: [
-      { name: "State-wise Wholesale Prices Monthly Analysis", url: "" },
-      { name: "State-wise & Variety-wise Prices Monthly Analysis", url: "" },
-      { name: "State-wise Wholesale Prices Weekly Analysis", url: "" },
-      { name: "State-wise & Variety-wise Prices Weekly Analysis", url: "" }
+      { name: "State-wise Wholesale Prices Monthly Analysis", url: "https://agmarknet.gov.in/statewholesalemonthanalysis" },
+      { name: "State-wise & Variety-wise Prices Monthly Analysis", url: "https://agmarknet.gov.in/statevarietymonthlyanalysis" },
+      { name: "State-wise Wholesale Prices Weekly Analysis", url: "https://agmarknet.gov.in/statewholesaleweekanalysis" },
+      { name: "State-wise & Variety-wise Prices Weekly Analysis", url: "https://agmarknet.gov.in/statevarietyweeklyanalysis" }
     ]
   },
   {
     category: "District-wise Reports",
     icon: <FaMapMarkerAlt color="#f472b6" />,
     items: [
-      { name: "District-wise Wholesale Prices Monthly Analysis", url: "" },
-      { name: "District-wise & Variety-wise Prices Monthly Analysis", url: "" },
-      { name: "District-wise Wholesale Prices Weekly Analysis", url: "" },
-      { name: "District-wise & Variety-Wise Prices Weekly Analysis", url: "" }
+      { name: "District-wise Wholesale Prices Monthly Analysis", url: "https://agmarknet.gov.in/districtwholesalemonthanalysis" },
+      { name: "District-wise & Variety-wise Prices Monthly Analysis", url: "https://agmarknet.gov.in/districtvarietymonthlyanalysis" },
+      { name: "District-wise Wholesale Prices Weekly Analysis", url: "https://agmarknet.gov.in/districtwholesaleweekanalysis" },
+      { name: "District-wise & Variety-Wise Prices Weekly Analysis", url: "https://agmarknet.gov.in/districtvarietyweeklyanalysis" }
     ]
   },
   {
     category: "Market-wise Reports",
     icon: <FaMapMarkerAlt color="#fbbf24" />,
     items: [
-      { name: "Market-wise Wholesale Arrivals Monthly Analysis", url: "" },
-      { name: "Market-wise Wholesale Prices Monthly Analysis", url: "" },
-      { name: "Market-wise & Variety-wise Prices Monthly Analysis", url: "" },
-      { name: "Market-wise Wholesale Arrivals Weekly Analysis", url: "" },
-      { name: "Market-wise Wholesale Prices Weekly Analysis", url: "" },
-      { name: "Market-wise & Variety-Wise Prices Weekly Analysis", url: "" }
+      { name: "Market-wise Wholesale Arrivals Monthly Analysis", url: "https://agmarknet.gov.in/marketarrivalsmonthanalysis" },
+      { name: "Market-wise Wholesale Prices Monthly Analysis", url: "https://agmarknet.gov.in/marketwholesalemonthanalysis" },
+      { name: "Market-wise & Variety-wise Prices Monthly Analysis", url: "https://agmarknet.gov.in/marketvarietymonthlyanalysis" },
+      { name: "Market-wise Wholesale Arrivals Weekly Analysis", url: "https://agmarknet.gov.in/marketarrivalsweekanalysis" },
+      { name: "Market-wise Wholesale Prices Weekly Analysis", url: "https://agmarknet.gov.in/marketwholesaleweekanalysis" },
+      { name: "Market-wise & Variety-Wise Prices Weekly Analysis", url: "https://agmarknet.gov.in/marketvarietyweeklyanalysis" }
     ]
   },
   {
     category: "Market-wise Reports (All Districts)",
     icon: <FaMapMarkerAlt color="#a78bfa" />,
     items: [
-      { name: "Market-wise Wholesale Arrivals Monthly Analysis (All Districts)", url: "" },
-      { name: "Market-wise Wholesale Prices Monthly Analysis (All Districts)", url: "" },
-      { name: "Market-wise Wholesale Arrivals Weekly Analysis (All Districts)", url: "" },
-      { name: "Market-wise Wholesale Prices Weekly Analysis (All Districts)", url: "" }
+      { name: "Market-wise Wholesale Arrivals Monthly Analysis (All Districts)", url: "https://agmarknet.gov.in/marketallarrivalmonthanalysis" },
+      { name: "Market-wise Wholesale Prices Monthly Analysis (All Districts)", url: "https://agmarknet.gov.in/marketallwholesalemonthanalysis" },
+      { name: "Market-wise Wholesale Arrivals Weekly Analysis (All Districts)", url: "https://agmarknet.gov.in/marketallarrivalweekanalysis" },
+      { name: "Market-wise Wholesale Prices Weekly Analysis (All Districts)", url: "https://agmarknet.gov.in/marketallwholesaleweekanalysis" }
     ]
   }
 ];
@@ -122,7 +122,7 @@ const CollapsibleGroup = ({ title, icon, children, defaultOpen = false }) => {
 const MarketRates = () => {
   const navigate = useNavigate();
   const [transitionState, setTransitionState] = useState({ isActive: false, reportName: "" });
-  const [isFooterOpen, setIsFooterOpen] = useState(false);
+  const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
 
   const handleLinkClick = (report) => {
     if (!report.url) {
@@ -205,7 +205,7 @@ const MarketRates = () => {
             <h2 style={styles.sectionTitle}>Prices & Arrival Reports</h2>
           </div>
           {MARKET_REPORTS.map((group, idx) => (
-            <CollapsibleGroup key={`market-${idx}`} title={group.title} icon={group.icon} defaultOpen={true}>
+            <CollapsibleGroup key={`market-${idx}`} title={group.title} icon={group.icon} defaultOpen={false}>
               <motion.div variants={containerVariants} initial="hidden" animate="show" style={styles.grid}>
                 {group.items.map((item, i) => (
                   <motion.div 
@@ -268,97 +268,115 @@ const MarketRates = () => {
           ))}
         </motion.div>
 
-        {/* SECTION 3: EXPANDABLE LEGAL FOOTER & ABOUT */}
-        <div style={styles.footer}>
-          <button 
-            onClick={() => setIsFooterOpen(!isFooterOpen)} 
-            style={styles.footerToggleBtn}
-          >
-            <div style={{display: 'flex', alignItems: 'center', gap: '8px'}}>
-              <FaInfoCircle size={16} color="#9ca3af" />
-              <span style={styles.footerTitle}>About Agmarknet & Farmcap</span>
-            </div>
-            <motion.div animate={{ rotate: isFooterOpen ? 180 : 0 }}>
-              <IoMdArrowDropdown size={20} color="#9ca3af" />
-            </motion.div>
-          </button>
-          
-          <AnimatePresence>
-            {isFooterOpen && (
-              <motion.div
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: 'auto', opacity: 1 }}
-                exit={{ height: 0, opacity: 0 }}
-                style={{ overflow: 'hidden' }}
-              >
-                <div style={styles.footerContent}>
-                  
-                  {/* CARD 1: ABOUT AGMARKNET */}
-                  <div style={styles.infoCard}>
-                    <h4 style={styles.cardHeader}>About the Official Agmarknet Portal</h4>
-                    
-                    <div style={styles.textBlock}>
-                      <span style={styles.highlightText}>What is this website?</span>
-                      <p style={styles.paragraph}>It is the national web portal for agricultural commodity market data in India, providing real-time visibility into mandi operations.</p>
-                    </div>
-
-                    <div style={styles.textBlock}>
-                      <span style={styles.highlightText}>Who maintains the data?</span>
-                      <p style={styles.paragraph}>The portal is owned and operated by the Directorate of Marketing and Inspection (DMI), Ministry of Agriculture and Farmers Welfare, Government of India.</p>
-                    </div>
-
-                    <div style={styles.textBlock}>
-                      <span style={styles.highlightText}>How does it get data?</span>
-                      <p style={styles.paragraph}>Market price and arrival data are reported and uploaded daily by the respective Agricultural Produce Market Committees (APMCs) and authorized mandi officials.</p>
-                    </div>
-
-                    <div style={styles.textBlock}>
-                      <span style={styles.highlightText}>What information is in it?</span>
-                      <p style={styles.paragraph}>It tracks daily wholesale prices, market arrivals, historical trends, and Minimum Support Price (MSP) transactions for various commodities.</p>
-                    </div>
-
-                    <div style={styles.textBlock}>
-                      <span style={styles.highlightText}>Accuracy & Legal Use:</span>
-                      <p style={styles.paragraph}>While verified to the best of their ability, the DMI is not liable for errors or authenticity. The information is subject to change and <strong>must not be used for legal purposes</strong>.</p>
-                    </div>
-
-                    {/* PASTE YOUR AGMARKNET ABOUT US LINK IN THE EMPTY QUOTES BELOW */}
-                    <button onClick={() => window.open('https://agmarknet.gov.in/AboutUs.aspx', '_blank')} style={styles.primaryLinkBtn}>
-                      Official Agmarknet About Us ➔
-                    </button>
-                  </div>
-
-                  {/* CARD 2: ABOUT FARMCAP */}
-                  <div style={styles.infoCard}>
-                    <h4 style={styles.cardHeader}>About Farmcap</h4>
-                    
-                    <div style={styles.textBlock}>
-                      <span style={styles.highlightText}>Purpose of this App:</span>
-                      <p style={styles.paragraph}>Farmcap is an independent utility app designed for farmers. It simplifies complex agricultural data discovery and serves strictly for informational purposes.</p>
-                    </div>
-
-                    <div style={styles.textBlock}>
-                      <span style={styles.highlightText}>How it connects to the Gov Website:</span>
-                      <p style={styles.paragraph}>Farmcap acts as a guided directory. We use secure outbound hyperlinking to route you directly to the official government databases. We do not scrape, host, or alter the government's data.</p>
-                    </div>
-
-                    <div style={styles.textBlock}>
-                      <span style={styles.highlightText}>Legal Terms & Responsibility:</span>
-                      <p style={styles.paragraph}><strong>Neither Farmcap nor Agmarknet is responsible for any trading or business decisions made using this tool.</strong> This is purely informational. Users must independently inquire and verify all market conditions at their local Mandi before taking any financial action.</p>
-                    </div>
-
-                    <button style={styles.secondaryLinkBtn}>
-                      Farmcap Privacy Policy
-                    </button>
-                  </div>
-                  
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
+        {/* SECTION 3: INFO TRIGGER BUTTON */}
+        <motion.button 
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
+          onClick={() => setIsInfoModalOpen(true)} 
+          style={styles.infoTriggerBtn}
+        >
+          <FaInfoCircle size={18} />
+          <span>About Agmarknet & Farmcap</span>
+        </motion.button>
 
       </div>
+
+      {/* INFO FULL VIEW */}
+      <AnimatePresence>
+        {isInfoModalOpen && (
+          <motion.div 
+            initial={{ opacity: 0 }} 
+            animate={{ opacity: 1 }} 
+            exit={{ opacity: 0 }} 
+            style={styles.infoModalOverlay}
+          >
+            <motion.div 
+              initial={{ x: "100%" }} 
+              animate={{ x: 0 }} 
+              exit={{ x: "100%" }}
+              transition={{ type: 'tween', duration: 0.3 }}
+              style={styles.infoModalContent}
+            >
+              <div style={styles.infoModalHeader}>
+                <button onClick={() => setIsInfoModalOpen(false)} style={styles.backBtnModal}>
+                  <IoMdArrowBack size={24} color="#34d399" />
+                </button>
+                <h2 style={styles.infoModalTitle}>About & Legal</h2>
+                <div style={{width: '40px'}}></div>
+              </div>
+              <div style={styles.infoModalScroll}>
+                
+                {/* CARD 1: ABOUT AGMARKNET & SERVICES */}
+                <div style={styles.infoCard}>
+                  <h4 style={styles.cardHeader}>About the Official Agmarknet Portal</h4>
+                  
+                  <div style={styles.textBlock}>
+                    <span style={styles.highlightText}>National Infrastructure:</span>
+                    <p style={styles.paragraph}>Agmarknet is a flagship G2C (Government to Citizen) e-governance portal. It acts as the central digital repository for agricultural commodity market data across India, providing transparency into nationwide mandi operations.</p>
+                  </div>
+
+                  <div style={styles.textBlock}>
+                    <span style={styles.highlightText}>Data Origin & Methodology:</span>
+                    <p style={styles.paragraph}>The database is maintained by the Directorate of Marketing and Inspection (DMI), Ministry of Agriculture and Farmers Welfare. Data is not automatically generated; it is physically captured and uploaded daily by authorized officials at respective Agricultural Produce Market Committees (APMCs) across thousands of local market yards.</p>
+                  </div>
+
+                  <div style={styles.textBlock}>
+                    <span style={styles.highlightText}>Overview of Provided Services:</span>
+                    <p style={styles.paragraph}>The links provided in this application route you to specific, highly detailed government databases, which include:</p>
+                    <ul style={styles.bulletList}>
+                      <li style={styles.bulletItem}><strong>Live Prices & Arrivals:</strong> Daily, real-time tracking of what commodities are arriving at mandis and their current modal, minimum, and maximum trading prices.</li>
+                      <li style={styles.bulletItem}><strong>Analytical Trends:</strong> Historical time-series data (weekly and monthly) allowing farmers to forecast market trajectories based on past state, district, and market-level performance.</li>
+                      <li style={styles.bulletItem}><strong>MSP Protection Data:</strong> Critical reports highlighting commodity transactions occurring both below and above the Government's mandated Minimum Support Price (MSP), protecting farmers from exploitation.</li>
+                    </ul>
+                  </div>
+
+                  <div style={styles.textBlock}>
+                    <span style={styles.highlightText}>Government Accuracy & Legal Disclaimer:</span>
+                    <p style={styles.paragraph}>While the DMI verifies this data to the best of their ability, the information is subject to rapid market changes. The Government of India explicitly states that this data is for informational transparency and <strong>must not be used for legal purposes or litigation</strong>. The DMI is not liable for errors, omissions, or authenticity of the APMC-reported data.</p>
+                  </div>
+
+                  <button 
+                    onClick={() => window.open('https://agmarknet.gov.in/AboutUs.aspx', '_blank', 'noopener,noreferrer')} 
+                    style={styles.primaryLinkBtn}
+                  >
+                    Official Agmarknet About Us ➔
+                  </button>
+                </div>
+
+                {/* CARD 2: ABOUT FARMCAP & CONNECTION */}
+                <div style={styles.infoCard}>
+                  <h4 style={styles.cardHeader}>About Farmcap's Integration</h4>
+                  
+                  <div style={styles.textBlock}>
+                    <span style={styles.highlightText}>Our Utility & Purpose:</span>
+                    <p style={styles.paragraph}>Farmcap is an independent, private agricultural utility application. Our mission is to remove digital friction for rural users by organizing complex, hard-to-find government data into an accessible, mobile-friendly directory.</p>
+                  </div>
+
+                  <div style={styles.textBlock}>
+                    <span style={styles.highlightText}>Connection Architecture (How it works):</span>
+                    <p style={styles.paragraph}>Farmcap employs a <strong>Secure Outbound Routing</strong> architecture. We do not scrape, download, host, or alter any data from the Indian Government. When you click a service link in Farmcap, our app securely hands off your session directly to the official <code>agmarknet.gov.in</code> servers via a new browser window. You are viewing the raw, direct source.</p>
+                  </div>
+
+                  <div style={styles.textBlock}>
+                    <span style={styles.highlightText}>Absolute Liability Shield:</span>
+                    <p style={styles.paragraph}><strong>Farmcap makes no warranties regarding market prices.</strong> This application serves strictly as an educational and navigational bridge. Neither Farmcap, its developers, nor the Directorate of Marketing and Inspection are responsible for any financial losses, trading outcomes, crop sales, or business decisions made as a result of using this portal.</p>
+                  </div>
+                  
+                  <div style={styles.textBlock}>
+                    <span style={styles.highlightText}>User Responsibility:</span>
+                    <p style={styles.paragraph}>By using these links, you acknowledge that agricultural markets are highly volatile. Users must perform independent physical due diligence and inquire directly with local Mandi officials or buyers before executing any financial transactions.</p>
+                  </div>
+
+                  <button style={styles.secondaryLinkBtn}>
+                    Farmcap Privacy Policy
+                  </button>
+                </div>
+                
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
@@ -413,15 +431,21 @@ const styles = {
   iconBoxTrend: { width: '38px', height: '38px', borderRadius: '10px', background: 'rgba(96, 165, 250, 0.15)', color: '#60a5fa', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, border: '1px solid rgba(96, 165, 250, 0.2)' },
   arrowIconBox: { width: '28px', height: '28px', borderRadius: '50%', background: 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center' },
   
-  footer: { marginTop: '20px', background: 'rgba(0,0,0,0.4)', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)' },
-  footerToggleBtn: { width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '15px 20px', background: 'none', border: 'none', cursor: 'pointer' },
-  footerTitle: { margin: 0, fontSize: '14px', fontWeight: '700', color: '#d1d5db' },
-  footerContent: { padding: '0 20px 20px 20px' },
+  infoTriggerBtn: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', width: '100%', padding: '16px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '16px', color: '#e5e7eb', fontSize: '15px', fontWeight: '600', cursor: 'pointer', marginTop: '10px' },
+  infoModalOverlay: { position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: '#0f172a', zIndex: 2000, display: 'flex', justifyContent: 'center' },
+  infoModalContent: { background: '#0f172a', padding: '20px', width: '100%', maxWidth: '800px', height: '100%', display: 'flex', flexDirection: 'column', boxSizing: 'border-box' },
+  infoModalHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px', paddingBottom: '15px', borderBottom: '1px solid rgba(255,255,255,0.05)' },
+  infoModalTitle: { fontSize: '18px', fontWeight: '700', margin: 0, color: '#f8fafc' },
+  backBtnModal: { background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '50%', width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' },
+  infoModalScroll: { flex: 1, overflowY: 'auto', paddingRight: '5px' },
+
   infoCard: { background: 'rgba(255,255,255,0.03)', padding: '16px', borderRadius: '12px', marginBottom: '15px' },
   cardHeader: { margin: '0 0 15px 0', fontSize: '14px', color: '#34d399', fontWeight: '700', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '8px' },
   textBlock: { marginBottom: '12px' },
   highlightText: { fontSize: '12px', color: '#60a5fa', fontWeight: '600', display: 'block', marginBottom: '4px' },
   paragraph: { fontSize: '11px', color: '#9ca3af', lineHeight: '1.6', margin: 0 },
+  bulletList: { margin: '8px 0 0 0', paddingLeft: '20px', color: '#9ca3af', fontSize: '12px' },
+  bulletItem: { marginBottom: '6px', lineHeight: '1.5' },
   primaryLinkBtn: { background: 'rgba(52, 211, 153, 0.1)', border: '1px solid rgba(52, 211, 153, 0.3)', color: '#34d399', padding: '10px', borderRadius: '8px', fontSize: '12px', fontWeight: '600', cursor: 'pointer', width: '100%', marginTop: '10px' },
   secondaryLinkBtn: { background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', color: '#9ca3af', padding: '10px', borderRadius: '8px', fontSize: '12px', fontWeight: '600', cursor: 'pointer', width: '100%', marginTop: '10px' },
 

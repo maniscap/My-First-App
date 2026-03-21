@@ -51,6 +51,7 @@ function ChatBot() {
      // --- LATEST GEMINI 3 & 2.5 SERIES (2026) ---
     { provider: 'gemini', id: 'gemini-3.1-pro-preview', vision: true, desc: "Gemini 3.1 Pro (Advanced Reasoning)" },
     { provider: 'gemini', id: 'gemini-3-flash-preview', vision: true, desc: "Gemini 3 Flash (Fast Agentic)" },
+    { provider: 'gemini', id: 'gemini-3.1-flash-lite-preview', vision: true, desc: "Gemini 3.1 Flash Lite" },
     { provider: 'gemini', id: 'gemini-2.5-pro', vision: true, desc: "Gemini 2.5 Pro" },
     { provider: 'gemini', id: 'gemini-2.5-flash', vision: true, desc: "Gemini 2.5 Flash" },
     { provider: 'gemini', id: 'gemini-1.5-flash', vision: true, desc: "Gemini 1.5 Flash" },
@@ -160,6 +161,7 @@ function ChatBot() {
   const [isLoading, setIsLoading] = useState(false);
   const [isTyping, setIsTyping] = useState(false); 
   const [isListening, setIsListening] = useState(false);
+  const [isClearing, setIsClearing] = useState(false);
   const [speaking, setSpeaking] = useState(false);
   
   // 3.8 Retry Cache
@@ -234,12 +236,16 @@ function ChatBot() {
   const handleClearChat = (e) => {
       if(e && e.stopPropagation) e.stopPropagation();
       if(window.confirm("Clear this active conversation?")) {
-          setSessions(prev => prev.map(s => {
-              if(s.id === currentSessionId) {
-                  return { ...s, messages: [getGreeting()] };
-              }
-              return s;
-          }));
+          setIsClearing(true);
+          setTimeout(() => {
+              setSessions(prev => prev.map(s => {
+                  if(s.id === currentSessionId) {
+                      return { ...s, messages: [getGreeting()] };
+                  }
+                  return s;
+              }));
+              setIsClearing(false);
+          }, 400); // Wait for the fade-out animation to finish
       }
   };
 
@@ -367,15 +373,24 @@ function ChatBot() {
   };
 
   const handleRetry = () => {
-    if (!lastRequest.text && !lastRequest.dataUrl) return;
+    if (!lastRequest.text && !lastRequest.dataUrl) return; // Nothing to retry
+    
     setIsLoading(true);
+    setIsTyping(true); // Show typing indicator immediately
+
+    // Remove the previous failed bot response from the chat history
     setSessions(prev => prev.map(s => {
         if(s.id === currentSessionId && s.messages.length > 0 && s.messages[s.messages.length - 1].sender === 'bot') {
             return { ...s, messages: s.messages.slice(0, -1) };
         }
         return s;
     }));
-    executeAILoop(lastRequest.text, lastRequest.rawBase64, lastRequest.dataUrl, lastRequest.mimeType);
+
+    // By deferring the execution, we ensure React processes the state update above before the new AI call begins.
+    // This prevents a race condition where the old error message might not be removed before the new one is added.
+    setTimeout(() => {
+      executeAILoop(lastRequest.text, lastRequest.rawBase64, lastRequest.dataUrl, lastRequest.mimeType);
+    }, 0);
   };
 
   // ===============================================================================================
@@ -646,10 +661,62 @@ function ChatBot() {
           const parts = hasImage 
             ? [{ text: `SYSTEM: ${systemInstruction} \nUSER REQUEST: ${text}` }, { inline_data: { mime_type: mType || "image/jpeg", data: rBase64 } }] 
             : [{ text: `SYSTEM: ${systemInstruction}\nUSER REQUEST: ${text}` }];
-          const res = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ contents: [{ parts: parts }] }) });
-          if (!res.ok) { const err = await res.json(); throw new Error(`Gemini ${res.status}`); }
+          
+          const payload = { contents: [{ parts: parts }] };
+          
+          // ✨ ENABLE GOOGLE SEARCH GROUNDING for modern Gemini models without disturbing old ones
+          if (model.id.match(/1\.5|2\.0|2\.5|3\./)) {
+              payload.tools = [{ googleSearch: {} }];
+          }
+
+          const res = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+          if (!res.ok) { 
+              const err = await res.json(); 
+              throw new Error(`${res.status}: ${err.error?.message || 'Unknown Error'}`); 
+          }
           const data = await res.json();
           finalResponse = data.candidates?.[0]?.content?.parts?.[0]?.text;
+          
+          // ✨ EXTRACT & DISPLAY SEARCH GROUNDING METADATA
+          const metadata = data.candidates?.[0]?.groundingMetadata;
+          if (metadata?.webSearchQueries?.length > 0) {
+              // Log the queries to the console as requested
+              console.log("Search Queries Used by Gemini:", metadata.webSearchQueries);
+              
+              // Append the queries and source URLs to the chat response visually
+              finalResponse += "\n\n---\n**🔍 Google Search Grounding:**\n";
+              metadata.webSearchQueries.forEach(query => {
+                  finalResponse += `- *Searched: "${query}"*\n`;
+              });
+              
+              if (metadata.groundingChunks) {
+                  const sources = [];
+                  metadata.groundingChunks.forEach(chunk => {
+                      if (chunk.web?.uri) {
+                          sources.push({ title: chunk.web.title || chunk.web.uri, url: chunk.web.uri });
+                      }
+                  });
+                  
+                  const uniqueSources = Array.from(new Map(sources.map(s => [s.url, s])).values());
+                  
+                  if (uniqueSources.length > 0) {
+                      console.log("\nSources used:");
+                      finalResponse += "\n**Sources:**\n";
+                      uniqueSources.forEach((source, i) => {
+                          console.log(`- ${source.title}: ${source.url}`);
+                          let secureUrl = source.url;
+                          try { 
+                              const urlObj = new URL(source.url);
+                              if (urlObj.protocol === 'http:') urlObj.protocol = 'https:';
+                              secureUrl = urlObj.toString();
+                          } catch(e){}
+                          // Format as a markdown link so ReactMarkdown makes it clickable
+                          finalResponse += `${i + 1}. ${source.title}\n`;
+                      });
+                  }
+              }
+          }
+
           if (finalResponse) success = true;
 
         } else if (model.provider === 'groq') {
@@ -685,8 +752,19 @@ function ChatBot() {
                  return; 
             } else { finalResponse = `🔍 **Diagnosis:** ${disease}\n\n${text}`; success = true; }
           }
-        } 
-      } catch (e) { debugLog += `${model.id} err; `; }
+        }
+      } catch (e) { 
+          const isRateLimit = e.message && (e.message.includes("429") || e.message.includes("quota"));
+          if (isRateLimit) {
+              console.warn(`Rate limit hit for ${model.id}. Moving to next fallback...`);
+              debugLog += `${model.id} (429 Rate Limit); `;
+              continue;
+          } else {
+              console.error(`Unexpected error with ${model.id}:`, e);
+              debugLog += `${model.id} (Err); `;
+              continue;
+          }
+      }
     }
 
     if (!success) {
@@ -864,22 +942,30 @@ function ChatBot() {
 
           {/* HEADER */}
           <div style={styles.header}>
-            <div style={{display:'flex', alignItems:'center', gap:'10px'}}>
-                {/* ❌ UNIFIED CLOSE BUTTON */}
-                <button onClick={() => setIsOpen(false)} style={styles.backBtn} title="Close">✖</button>
-                <button onClick={() => setShowSidebar(true)} style={styles.hamburgerBtn} title="History">☰</button>
+            <div style={{display:'flex', alignItems:'center', gap:'12px'}}>
+                <button onClick={() => setShowSidebar(true)} style={styles.iconBtnInner} title="History">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="#C4C7C5"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg>
+                </button>
             </div>
             
-            <div style={{ textAlign: 'center' }}>
-                <div style={{ color: 'white', fontWeight: 'bold', fontSize: '18px' }}>Farm Buddy 🌾</div>
-                <div style={{ fontSize: '12px', color: '#81C784' }}>Genesis Edition v107.0</div>
+            <div style={styles.headerTitleContainer} onClick={() => setShowSidebar(true)}>
+                <span style={styles.headerTitle}>Farm Buddy</span>
+                <span style={styles.headerBadge}>Advanced</span>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="#C4C7C5"><path d="M7 10l5 5 5-5z"/></svg>
             </div>
             
-            <button onClick={(e) => handleClearChat(e)} style={styles.backBtn} title="Clear">🗑️</button>
+            <div style={{display:'flex', alignItems:'center', gap:'8px'}}>
+                <button onClick={(e) => handleClearChat(e)} style={{...styles.iconBtnInner, ...(isClearing ? { animation: 'spin 0.4s linear' } : {})}} title="Clear Conversation">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="#C4C7C5"><path d="M19 8l-4 4h3c0 3.31-2.69 6-6 6-1.01 0-1.97-.25-2.8-.7l-1.46 1.46C8.97 19.54 10.43 20 12 20c4.42 0 8-3.58 8-8h3l-4-4zM6 12c0-3.31 2.69-6 6-6 1.01 0 1.97.25 2.8.7l1.46-1.46C15.03 4.46 13.57 4 12 4c-4.42 0-8 3.58-8 8H1l4 4 4-4H6z"/></svg>
+                </button>
+                <button onClick={() => setIsOpen(false)} style={styles.iconBtnInner} title="Close">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="#C4C7C5"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+                </button>
+            </div>
           </div>
 
           {/* CHAT BODY */}
-          <div style={styles.chatBody} ref={chatBodyRef}>
+          <div style={{...styles.chatBody, ...(isClearing ? styles.chatBodyClearing : {})}} ref={chatBodyRef}>
             {messages.map((msg, i) => (
               <div key={i} style={{ textAlign: msg.sender === 'bot' ? 'left' : 'right', marginBottom: '20px', display: 'flex', flexDirection: 'column', alignItems: msg.sender === 'bot' ? 'flex-start' : 'flex-end', animation: 'fadeIn 0.3s ease-in' }}>
                 {msg.image && (
@@ -901,7 +987,24 @@ function ChatBot() {
                     </div>
                 ) : (
                     <div style={msg.sender === 'bot' ? styles.botBubble : styles.userBubble}>
-                      <ReactMarkdown children={msg.text} remarkPlugins={[remarkGfm]} components={{ code({node, inline, className, children, ...props}) { const match = /language-(\w+)/.exec(className || ''); return !inline && match ? (<div style={styles.codeBlock}><div style={styles.codeHeader}><span>{match[1]}</span><button onClick={() => handleCopy(String(children))} style={styles.codeCopyBtnSmall}>Copy</button></div><pre style={{margin:0, padding:'10px', overflowX:'auto'}}><code className={className} style={{fontFamily:'monospace', fontSize:'13px'}} {...props}>{children}</code></pre></div>) : (<code className={className} style={styles.inlineCode} {...props}>{children}</code>) } }} />
+                      <ReactMarkdown 
+                        children={msg.text} 
+                        remarkPlugins={[remarkGfm]} 
+                        components={{ 
+                            code({node, inline, className, children, ...props}) { 
+                                const match = /language-(\w+)/.exec(className || ''); 
+                                return !inline && match ? (<div style={styles.codeBlock}><div style={styles.codeHeader}><span>{match[1]}</span><button onClick={() => handleCopy(String(children))} style={styles.codeCopyBtnSmall}>Copy</button></div><pre style={{margin:0, padding:'10px', overflowX:'auto'}}><code className={className} style={{fontFamily:'monospace', fontSize:'13px'}} {...props}>{children}</code></pre></div>) : (<code className={className} style={styles.inlineCode} {...props}>{children}</code>) 
+                            },
+                            // ✨ CLICKABLE URLS
+                            a({node, href, children, ...props}) {
+                                return (
+                                    <a href={href} target="_blank" rel="noopener noreferrer" style={{ color: '#81C784', textDecoration: 'underline', fontWeight: 'bold' }} {...props}>
+                                        {children}
+                                    </a>
+                                );
+                            }
+                        }} 
+                      />
                     </div>
                 )}
                 
@@ -917,7 +1020,7 @@ function ChatBot() {
                   <div style={styles.actionRow}>
                     <button onClick={() => handleSpeak(msg.text)} style={styles.outlineBtn}>{speaking ? '🔇 Stop' : '🔊 Read'}</button>
                     <button onClick={() => handleCopy(msg.text)} style={styles.outlineBtn}>📋 Copy</button>
-                    <button onClick={handleRetry} style={styles.outlineBtn}>🔄 Retry</button>
+                    <button onClick={() => handleRetry(i)} style={styles.outlineBtn}>🔄 Retry</button>
                   </div>
                 )}
               </div>
@@ -931,24 +1034,39 @@ function ChatBot() {
 
           {/* FOOTER */}
           <div style={styles.footer}>
+            {uploadedFile && (
+              <div style={styles.uploadPreviewRow}>
+                <div style={styles.imgBadge}>
+                  <div style={styles.previewThumb}>🖼️</div>
+                  <div style={styles.previewInfo}>
+                    <span style={styles.previewName}>{uploadedFile.name || 'Uploaded Image'}</span>
+                    <span style={styles.previewSize}>{(uploadedFile.size / 1024).toFixed(1)} KB</span>
+                  </div>
+                  <button onClick={removeUploadedImage} style={styles.delBadge}>✖</button>
+                </div>
+              </div>
+            )}
             <div style={styles.inputRow}>
               <div style={styles.inputWrapper}>
                 <input type="file" accept="image/*,.pdf,.txt" onChange={handleFileChange} style={{ display: 'none' }} id="cam-input" />
-                <label htmlFor="cam-input" style={styles.camIcon} title="Upload Image">📸</label>
-                <input type="text" placeholder={isOnline ? "Ask about crops..." : "Offline"} disabled={!isOnline} style={styles.inputField} value={input} onChange={(e) => setInput(e.target.value)} onKeyPress={(e) => e.key === 'Enter' && handleSend()} />
+                <label htmlFor="cam-input" style={styles.iconBtnInner} title="Upload Image">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="#C4C7C5"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14zm-5.04-6.71l-2.75 3.54-1.96-2.36L6.5 17h11l-3.54-4.71z"/></svg>
+                </label>
                 
-                {/* 🎙️ PRO WHITE MIC ICON */}
-                <button onClick={startListening} style={styles.micIcon} title="Voice Input">
-                    <svg viewBox="0 0 24 24" width="24" height="24" fill="white">
-                        <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/>
-                        <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/>
-                    </svg>
+                <input type="text" placeholder={isOnline ? "Ask Farm Buddy..." : "Offline"} disabled={!isOnline} style={styles.inputField} value={input} onChange={(e) => setInput(e.target.value)} onKeyPress={(e) => e.key === 'Enter' && handleSend()} />
+                
+                <button onClick={startListening} style={styles.iconBtnInner} title="Voice Input">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="#C4C7C5"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm-1-9c0-.55.45-1 1-1s1 .45 1 1v6c0 .55-.45 1-1 1s-1-.45-1-1V5zm6 6c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg>
                 </button>
+                
+                {(input.trim() || uploadedFile) && (
+                    <button onClick={handleSend} style={{...styles.iconBtnInner, opacity: isOnline ? 1 : 0.5, cursor: isOnline ? 'pointer' : 'default'}} disabled={!isOnline}>
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="#A8C7FA"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+                    </button>
+                )}
               </div>
-              <button onClick={handleSend} style={{...styles.sendOutlineBtn, opacity: isOnline ? 1 : 0.5}} disabled={!isOnline}>➤</button>
             </div>
-            {uploadedFile && (<div style={styles.imgBadge}>🖼️ Image Ready: {(uploadedFile.size / 1024).toFixed(1)} KB <button onClick={removeUploadedImage} style={styles.delBadge}>✖</button></div>)}
-            <div style={styles.legalLinks}>AI can make mistakes. {isOnline ? "🟢 Online" : "🔴 Offline"} <span onClick={() => setShowFullTerms(true)} style={styles.readTerms}>Terms</span></div>
+            <div style={styles.legalLinks}>Farm Buddy can make mistakes. Check important info. {isOnline ? "" : " (Offline)"} <span onClick={() => setShowFullTerms(true)} style={styles.readTerms}>Terms</span></div>
           </div>
         </div>
       )}
@@ -962,7 +1080,7 @@ function ChatBot() {
         </div>
       )}
       
-      <style>{` @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } } @keyframes slideIn { from { transform: translateX(-100%); } to { transform: translateX(0); } } .typing-dot { width: 8px; height: 8px; background-color: #aaa; border-radius: 50%; display: inline-block; margin: 0 2px; animation: typingAnimation 1.4s infinite ease-in-out both; } .typing-dot:nth-child(1) { animation-delay: -0.32s; } .typing-dot:nth-child(2) { animation-delay: -0.16s; } @keyframes typingAnimation { 0%, 80%, 100% { transform: scale(0); } 40% { transform: scale(1.0); } } `}</style>
+      <style>{` @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } } @keyframes slideIn { from { transform: translateX(-100%); } to { transform: translateX(0); } } .typing-dot { width: 8px; height: 8px; background-color: #aaa; border-radius: 50%; display: inline-block; margin: 0 2px; animation: typingAnimation 1.4s infinite ease-in-out both; } .typing-dot:nth-child(1) { animation-delay: -0.32s; } .typing-dot:nth-child(2) { animation-delay: -0.16s; } @keyframes typingAnimation { 0%, 80%, 100% { transform: scale(0); } 40% { transform: scale(1.0); } } @keyframes spin { 100% { transform: rotate(-360deg); } } @keyframes fadeOutUp { to { opacity: 0; transform: translateY(-20px); } } `}</style>
     </div>
   );
 }
@@ -1031,22 +1149,24 @@ const styles = {
     cancelEditBtn: { background:'transparent', color:'#aaa', border:'1px solid #555', padding:'5px 10px', borderRadius:'4px', cursor:'pointer', fontSize:'12px' },
     editMsgBtn: { background:'transparent', border:'none', color:'#555', cursor:'pointer', fontSize:'12px', opacity:0.5 },
 
-    sidebarOverlay: { position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', backgroundColor: 'rgba(0,0,0,0.8)', zIndex: 10001, display: 'flex', alignItems: 'flex-start', backdropFilter: 'blur(5px)' },
-    sidebar: { width: '85%', maxWidth: '320px', height: '100%', backgroundColor: '#1a1a1a', borderRight: '1px solid #333', display: 'flex', flexDirection: 'column', animation: 'slideIn 0.25s ease-out', boxShadow: '4px 0 15px rgba(0,0,0,0.5)' },
+    sidebarOverlay: { position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', backgroundColor: 'rgba(0,0,0,0.6)', zIndex: 10001, display: 'flex', alignItems: 'flex-start' },
+    sidebar: { width: '85%', maxWidth: '320px', height: '100%', backgroundColor: 'rgba(28, 28, 30, 0.75)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', borderRight: '1px solid rgba(255, 255, 255, 0.1)', display: 'flex', flexDirection: 'column', animation: 'slideIn 0.25s ease-out', boxShadow: '4px 0 25px rgba(0,0,0,0.5)' },
     sidebarHeader: { padding: '20px', borderBottom: '1px solid #333', display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: 'white', backgroundColor: '#111' },
-    sidebarCloseBtn: { background:'none', border:'none', color:'white', fontSize:'24px', cursor:'pointer', padding: '0 5px' },
+    sidebarCloseBtn: { background:'none', border:'none', color:'white', fontSize:'24px', cursor:'pointer', padding: '0 5px', opacity: 0.8 },
     newChatBtn: { margin: '15px', padding: '14px', backgroundColor: '#2E7D32', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', fontSize: '14px', boxShadow: '0 2px 5px rgba(0,0,0,0.2)', transition: 'background 0.2s' },
     sessionList: { flex: 1, overflowY: 'auto', padding: '0 10px 20px 10px' },
     sessionItem: { padding: '14px 15px', color: '#e0e0e0', cursor: 'pointer', borderRadius: '6px', marginBottom: '6px', fontSize: '14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', transition: 'background 0.1s' },
     deleteChatBtn: { background:'none', border:'none', color:'#888', fontSize:'14px', cursor:'pointer', opacity: 0.7 },
     
-    header: { backgroundColor: '#1E1E1E', padding: '15px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #333', height: '70px' },
-    backBtn: { background: 'none', border: 'none', color: 'white', fontSize: '24px', cursor: 'pointer', padding: '5px' },
-    hamburgerBtn: { background: 'none', border: 'none', color: 'white', fontSize: '24px', cursor: 'pointer', marginLeft: '10px' },
+    header: { backgroundColor: 'transparent', padding: '12px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', height: '64px', flexShrink: 0 },
+    headerTitleContainer: { display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', padding: '8px 12px', borderRadius: '8px', transition: 'background-color 0.2s' },
+    headerTitle: { color: '#E3E3E3', fontSize: '18px', fontWeight: '500', fontFamily: '"Google Sans", "Inter", sans-serif', letterSpacing: '-0.03em' },
+    headerBadge: { background: 'linear-gradient(90deg, #2E7D32, #81C784)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', fontSize: '14px', fontWeight: '600' },
     
-    chatBody: { flex: 1, padding: '20px', overflowY: 'auto', scrollBehavior: 'smooth', position:'relative', backgroundColor: 'transparent' },
-    botBubble: { backgroundColor: '#1E1E1E', color: '#E0E0E0', padding: '16px 20px', borderRadius: '4px 20px 20px 20px', maxWidth: '80%', border: '1px solid #333', fontSize: '16px', lineHeight: '1.6', wordWrap: 'break-word', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' },
-    userBubble: { backgroundColor: '#2E7D32', color: 'white', padding: '16px 20px', borderRadius: '20px 4px 20px 20px', maxWidth: '80%', fontSize: '16px', lineHeight: '1.6', boxShadow: '0 4px 6px rgba(0,0,0,0.2)', wordWrap: 'break-word' },
+    chatBody: { flex: 1, padding: '20px', overflowY: 'auto', scrollBehavior: 'smooth', position:'relative', backgroundColor: 'transparent', minHeight: 0 },
+    chatBodyClearing: { animation: 'fadeOutUp 0.4s ease-out forwards' },
+    botBubble: { backgroundColor: 'rgba(44, 44, 46, 0.6)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', color: '#F0F0F0', padding: '16px 20px', borderRadius: '20px', maxWidth: '90%', border: '1px solid rgba(255, 255, 255, 0.1)', fontSize: '16px', lineHeight: '1.6', wordWrap: 'break-word', boxShadow: '0 4px 20px rgba(0,0,0,0.2)' },
+    userBubble: { backgroundColor: 'rgba(46, 125, 50, 0.5)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', color: 'white', padding: '12px 20px', borderRadius: '20px', maxWidth: '80%', fontSize: '16px', lineHeight: '1.6', boxShadow: '0 4px 15px rgba(0,0,0,0.25)', wordWrap: 'break-word', border: '1px solid rgba(255, 255, 255, 0.15)' },
     
     codeBlock: { backgroundColor: '#0d0d0d', border: '1px solid #333', borderRadius: '8px', margin: '12px 0', overflow: 'hidden' },
     codeHeader: { backgroundColor: '#222', padding: '6px 12px', fontSize: '12px', color: '#888', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #333', fontFamily: 'monospace' },
@@ -1056,20 +1176,26 @@ const styles = {
     msgImg: { maxWidth: '300px', borderRadius: '12px', marginBottom: '10px', border: '1px solid #444', cursor: 'pointer', boxShadow: '0 4px 12px rgba(0,0,0,0.3)' },
     timestamp: { fontSize: '11px', color: '#888', marginTop: '6px', marginLeft: '4px', marginRight: '4px' },
     
-    typingIndicatorBubble: { backgroundColor: '#1E1E1E', padding: '12px 18px', borderRadius: '4px 18px 18px 18px', border: '1px solid #333', display:'inline-block', marginBottom:'15px' },
+    typingIndicatorBubble: { backgroundColor: 'rgba(44, 44, 46, 0.6)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', padding: '12px 18px', borderRadius: '20px', border: '1px solid rgba(255, 255, 255, 0.1)', display:'inline-block', marginBottom:'15px' },
     loadingTxt: { color: '#888', fontSize: '13px', textAlign: 'center', marginTop: '10px', fontStyle: 'italic' },
     
     actionRow: { display: 'flex', gap: '10px', marginTop: '10px' },
     outlineBtn: { backgroundColor: 'transparent', color: 'white', border: '1px solid rgba(255,255,255,0.4)', borderRadius: '20px', padding: '6px 14px', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', transition: 'all 0.2s ease', fontFamily: 'sans-serif' },
     scrollBtn: { position: 'absolute', bottom: '120px', right: '30px', background: '#2E7D32', color:'white', border:'none', borderRadius:'50%', width:'50px', height:'50px', fontSize:'24px', cursor:'pointer', boxShadow:'0 4px 10px rgba(0,0,0,0.3)', zIndex:2001, display: 'flex', alignItems: 'center', justifyContent: 'center' },
     
-    footer: { backgroundColor: '#1E1E1E', padding: '20px 20px 30px 20px', borderTop: '1px solid #333' },
-    inputRow: { display: 'flex', alignItems: 'center', gap: '12px', maxWidth: '900px', margin: '0 auto', width: '100%' },
-    inputWrapper: { flex: 1, display: 'flex', alignItems: 'center', backgroundColor: '#2C2C2C', borderRadius: '30px', padding: '10px 20px', border: '1px solid #444', overflow: 'hidden' },
-    camIcon: { fontSize: '24px', cursor: 'pointer', marginRight: '15px', filter: 'grayscale(0.2)', transition: 'filter 0.2s' },
-    inputField: { flex: 1, background: 'none', border: 'none', color: 'white', outline: 'none', fontSize: '16px', minWidth: '50px' },
-    micIcon: { background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: '5px', marginLeft: '8px', fontSize:'22px' },
-    sendOutlineBtn: { width: '50px', height: '50px', borderRadius: '50%', backgroundColor: 'transparent', border: '2px solid white', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22px', cursor: 'pointer', flexShrink: 0, boxShadow: '0 0 15px rgba(255,255,255,0.05)', transition: 'all 0.2s ease' },
+    footer: { backgroundColor: 'transparent', padding: '16px 20px 24px 20px', display: 'flex', flexDirection: 'column', alignItems: 'center' },
+    inputRow: { display: 'flex', alignItems: 'center', width: '100%', maxWidth: '830px' },
+    inputWrapper: { flex: 1, display: 'flex', alignItems: 'center', backgroundColor: '#1E1F22', borderRadius: '32px', padding: '8px 16px', minHeight: '56px', gap: '8px' },
+    iconBtnInner: { background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '8px', borderRadius: '50%', transition: 'background-color 0.2s', flexShrink: 0 },
+    inputField: { flex: 1, background: 'transparent', border: 'none', color: '#E3E3E3', outline: 'none', fontSize: '16px', padding: '0 8px', minWidth: '50px', fontFamily: '"Inter", sans-serif' },
+    
+    uploadPreviewRow: { width: '100%', maxWidth: '830px', marginBottom: '12px', display: 'flex' },
+    imgBadge: { display: 'flex', alignItems: 'center', gap: '12px', backgroundColor: '#1E1F22', padding: '8px 16px 8px 8px', borderRadius: '16px', width: 'fit-content', border: '1px solid #444746' },
+    previewThumb: { width: '40px', height: '40px', backgroundColor: '#282A2C', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px' },
+    previewInfo: { display: 'flex', flexDirection: 'column', gap: '2px' },
+    previewName: { color: '#E3E3E3', fontSize: '13px', fontWeight: '500', maxWidth: '150px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
+    previewSize: { color: '#C4C7C5', fontSize: '11px' },
+    delBadge: { background: 'transparent', color: '#C4C7C5', border: 'none', fontSize: '16px', cursor: 'pointer', padding: '4px', marginLeft: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center' },
     
     modalOverlay: { position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', backgroundColor: 'rgba(0,0,0,0.85)', zIndex: 10002, display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'auto', backdropFilter: 'blur(4px)' },
     modalContent: { width: '90%', maxWidth: '600px', backgroundColor: 'white', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)', display: 'flex', flexDirection: 'column', maxHeight: '85vh', animation: 'fadeIn 0.2s ease-out' },
@@ -1079,10 +1205,8 @@ const styles = {
     acceptBtn: { width: '100%', padding: '20px', backgroundColor: '#2E7D32', color: 'white', border: 'none', fontWeight: 'bold', fontSize: '15px', cursor: 'pointer', textTransform: 'uppercase', letterSpacing: '1px' },
     warnText: { color: '#DC2626', fontWeight: 'bold', borderBottom:'2px solid #F3F4F6', paddingBottom:'12px', marginBottom:'16px', textAlign:'center', fontSize: '15px' },
     langBlock: { marginBottom: '25px', borderBottom: '1px solid #eee', paddingBottom: '15px' },
-    legalLinks: { textAlign: 'center', marginTop: '12px', fontSize: '12px', color: '#666' },
-    readTerms: { color: '#81C784', textDecoration: 'underline', cursor: 'pointer', fontWeight: 'bold', marginLeft: '5px' },
-    imgBadge: { color: '#81C784', fontSize: '12px', marginTop: '10px', display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'center', backgroundColor: 'rgba(46, 125, 50, 0.1)', padding: '4px 10px', borderRadius: '12px', width: 'fit-content', margin: '10px auto 0 auto' },
-    delBadge: { background: '#EF4444', color: 'white', border: 'none', borderRadius: '50%', width: '18px', height: '18px', fontSize: '10px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }
+    legalLinks: { textAlign: 'center', marginTop: '16px', fontSize: '12px', color: '#C4C7C5' },
+    readTerms: { color: '#A8C7FA', textDecoration: 'underline', cursor: 'pointer', marginLeft: '6px' }
 };
 
 export default ChatBot; 

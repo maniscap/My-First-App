@@ -1,14 +1,13 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import LivingFarm from '../components/LivingFarm'; // Keep the cool background!
+
 
 const ModernTech = () => {
   const navigate = useNavigate();
 
   return (
     <>
-      {/* Background Video muted by default on this page */}
-      <LivingFarm isMuted={true} />
+  
       
       <div style={styles.page}>
         <div style={styles.header}>
