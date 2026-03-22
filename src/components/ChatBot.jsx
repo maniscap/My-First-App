@@ -340,10 +340,17 @@ function ChatBot() {
       const utterance = new SpeechSynthesisUtterance(cleanText);
       const voices = window.speechSynthesis.getVoices();
       
-      let targetVoice = voices.find(v => 
-          (v.name.includes("Natural") || v.name.includes("Neural")) && 
-          v.lang.includes(detected.code.split('-')[0])
-      );
+      const preferredNames = ["Google UK English Female", "Google US English", "Samantha", "Karen", "Victoria", "Daniel", "Natural", "Neural", "Google UK English Male"];
+      let targetVoice = null;
+      
+      for (let i = 0; i < preferredNames.length; i++) {
+          targetVoice = voices.find(v => v.name.includes(preferredNames[i]) && v.lang.includes(detected.code.split('-')[0]));
+          if (targetVoice) break;
+      }
+
+      if (!targetVoice) {
+          targetVoice = voices.find(v => v.lang.includes(detected.code.split('-')[0]) && (v.name.toLowerCase().includes("female") || v.name.toLowerCase().includes("woman")));
+      }
 
       if (!targetVoice) targetVoice = voices.find(v => v.lang.includes(detected.code.split('-')[0]));
 
@@ -1183,11 +1190,11 @@ const styles = {
     outlineBtn: { backgroundColor: 'transparent', color: 'white', border: '1px solid rgba(255,255,255,0.4)', borderRadius: '20px', padding: '6px 14px', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', transition: 'all 0.2s ease', fontFamily: 'sans-serif' },
     scrollBtn: { position: 'absolute', bottom: '120px', right: '30px', background: '#2E7D32', color:'white', border:'none', borderRadius:'50%', width:'50px', height:'50px', fontSize:'24px', cursor:'pointer', boxShadow:'0 4px 10px rgba(0,0,0,0.3)', zIndex:2001, display: 'flex', alignItems: 'center', justifyContent: 'center' },
     
-    footer: { backgroundColor: 'transparent', padding: '16px 20px 24px 20px', display: 'flex', flexDirection: 'column', alignItems: 'center' },
-    inputRow: { display: 'flex', alignItems: 'center', width: '100%', maxWidth: '830px' },
-    inputWrapper: { flex: 1, display: 'flex', alignItems: 'center', backgroundColor: '#1E1F22', borderRadius: '32px', padding: '8px 16px', minHeight: '56px', gap: '8px' },
+    footer: { backgroundColor: 'transparent', padding: '16px 20px 24px 20px', display: 'flex', flexDirection: 'column', alignItems: 'center', boxSizing: 'border-box', width: '100%' },
+    inputRow: { display: 'flex', alignItems: 'center', width: '100%', maxWidth: '830px', boxSizing: 'border-box' },
+    inputWrapper: { flex: 1, display: 'flex', alignItems: 'center', backgroundColor: '#1E1F22', borderRadius: '32px', padding: '8px 16px', minHeight: '56px', gap: '8px', boxSizing: 'border-box', width: '100%' },
     iconBtnInner: { background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '8px', borderRadius: '50%', transition: 'background-color 0.2s', flexShrink: 0 },
-    inputField: { flex: 1, background: 'transparent', border: 'none', color: '#E3E3E3', outline: 'none', fontSize: '16px', padding: '0 8px', minWidth: '50px', fontFamily: '"Inter", sans-serif' },
+    inputField: { flex: 1, background: 'transparent', border: 'none', color: '#E3E3E3', outline: 'none', fontSize: '16px', padding: '0 8px', minWidth: 0, width: '100%', fontFamily: '"Inter", sans-serif', boxSizing: 'border-box' },
     
     uploadPreviewRow: { width: '100%', maxWidth: '830px', marginBottom: '12px', display: 'flex' },
     imgBadge: { display: 'flex', alignItems: 'center', gap: '12px', backgroundColor: '#1E1F22', padding: '8px 16px 8px 8px', borderRadius: '16px', width: 'fit-content', border: '1px solid #444746' },

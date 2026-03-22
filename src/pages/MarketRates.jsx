@@ -10,6 +10,7 @@ const MARKET_REPORTS = [
     title: "Prices & Arrival Reports",
     icon: <FaFileInvoice size={24} color="#34d399" />,
     items: [
+      { name: "Home Page", url: "https://agmarknet.gov.in/home" },
       { name: "Daily Price and Arrival", isNew: true, url: "https://agmarknet.gov.in/daily-price-and-arrival-report" },
       { name: "All Type of Report (All Grades)", isNew: true, url: "https://agmarknet.gov.in/alltypeofreports" },
       { name: "Commodity-Wise, Market-Wise Daily Report (Weighted Average)", url: "https://agmarknet.gov.in/commoditydailyreportweightedinput" },
@@ -336,7 +337,7 @@ const MarketRates = () => {
                   </div>
 
                   <button 
-                    onClick={() => window.open('https://agmarknet.gov.in/AboutUs.aspx', '_blank', 'noopener,noreferrer')} 
+                    onClick={() => window.open('https://agmarknet.gov.in/aboutus', '_blank', 'noopener,noreferrer')} 
                     style={styles.primaryLinkBtn}
                   >
                     Official Agmarknet About Us ➔

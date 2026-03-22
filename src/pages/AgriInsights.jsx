@@ -134,7 +134,7 @@ const AgriInsights = () => {
   const [isExplored, setIsExplored] = useState(false);
   const [activeNode, setActiveNode] = useState(null); 
   
-  const [signalState, setSignalState] = useState({ active: false, node: null, step: 0 });
+  const [signalState, setSignalState] = useState({ active: false, node: null });
   const [isMuted, setIsMuted] = useState(false);
   const [greeting, setGreeting] = useState('');
   const [currentDate, setCurrentDate] = useState('');
@@ -169,34 +169,36 @@ const AgriInsights = () => {
   }, [isMuted]);
 
   const nodes = [
-    { id: 1, title: 'Market Pulse', icon: '📈', desc: 'Live Mandi Rates & Trends', route: '/market-rates', angle: -35 },
-    { id: 2, title: 'Agri News', icon: '📰', desc: 'Global Farming Updates', route: '/news', angle: -145 },
-    { id: 3, title: 'Library', icon: '📚', desc: 'Expert Guides & Manuals', route: '/library', angle: 145 },
-    { id: 4, title: 'Modern Tech', icon: '🚀', desc: 'Drones & AI Precision', route: '/modern-tech', angle: 35 }
+    { id: 1, title: 'Market Pulse', icon: '📈', desc: 'Live Mandi Rates & Trends', route: '/market-rates', angle: -45, color: '#00E676' }, // GREEN
+    { id: 2, title: 'Agri News', icon: '📰', desc: 'Global Farming Updates', route: '/news', angle: -135, color: '#00BFFF' }, // SKY BLUE
+    { id: 3, title: 'Library', icon: '📚', desc: 'Expert Guides & Manuals', route: '/library', angle: 135, color: '#9D00FF' }, // VIOLET
+    { id: 4, title: 'Modern Tech', icon: '🚀', desc: 'Drones & AI Precision', route: '/modern-tech', angle: 45, color: '#FF9800' } // ORANGE
   ];
 
   const handleNodeClick = (node) => {
     if (signalState.active) return; // Prevent double clicks
     setActiveNode(null); // Hide current display
-    setSignalState({ active: true, node: node, step: 1 });
+    setSignalState({ active: true, node: node });
     
     setTimeout(() => {
-      setSignalState({ active: true, node: node, step: 2 });
-      setTimeout(() => {
-        setSignalState({ active: false, node: null, step: 0 });
-        setActiveNode(node); // Show data display
-      }, 500);
-    }, 500);
+      setSignalState({ active: false, node: null });
+      setActiveNode(node); // Show data display
+    }, 600);
   };
 
   const closeMenu = () => {
     setIsExplored(false);
     setActiveNode(null);
-    setSignalState({ active: false, node: null, step: 0 });
+    setSignalState({ active: false, node: null });
   };
 
   return (
     <>
+      <style>{`
+        @keyframes orbit-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        @keyframes orbit-spin-reverse { from { transform: rotate(0deg); } to { transform: rotate(-360deg); } }
+        @keyframes border-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+      `}</style>
       <div style={styles.bg}>
         <video ref={videoRef} autoPlay loop muted={isMuted} playsInline crossOrigin="anonymous" style={styles.vid}>
           <source src={farmBg} type="video/mp4" />
@@ -234,35 +236,6 @@ const AgriInsights = () => {
                 </feMerge>
               </filter>
             </defs>
-          </svg>
-
-          <svg style={{ position: 'absolute', top: '50%', left: '50%', width: 1, height: 1, overflow: 'visible', zIndex: 1, pointerEvents: 'none' }}>
-            <AnimatePresence>
-              {isExplored && (
-                <motion.g key="main-pipeline" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.5 }}>
-                  {/* Holographic Vertical Data Link */}
-                  <line x1="0" y1="-80" x2="0" y2="145" stroke="rgba(255,255,255,0.1)" strokeWidth="1" strokeDasharray="4 4" />
-                  
-                  {/* HUD Brackets / Tech Accents */}
-                  <path d="M -10 145 L 0 155 L 10 145" fill="none" stroke="rgba(0,255,119,0.5)" strokeWidth="2" />
-                  <circle cx="0" cy="-80" r="15" fill="none" stroke="rgba(0,255,119,0.3)" strokeWidth="1" strokeDasharray="2 4" />
-
-                  {(activeNode || signalState.active) && (
-                    <line x1="0" y1="-80" x2="0" y2="145" stroke="#00ff77" strokeWidth="2" filter="url(#glow)" />
-                  )}
-
-                  {signalState.active && signalState.step === 2 && (
-                     <motion.line 
-                       x1="0" x2="0"
-                       stroke="#00ff77" strokeWidth="4" strokeLinecap="round" filter="url(#glow)"
-                       initial={{ y1: -80, y2: -80 }}
-                       animate={{ y1: [-80, -80, 145], y2: [-80, 145, 145] }}
-                       transition={{ duration: 0.5, ease: "easeInOut" }}
-                     />
-                  )}
-                </motion.g>
-              )}
-            </AnimatePresence>
           </svg>
 
           <motion.div 
@@ -315,7 +288,60 @@ const AgriInsights = () => {
                 whileHover={{ scale: 1.15 }}
                 whileTap={{ scale: 0.9 }}
               >
-                <svg viewBox="0 0 100 100" style={{ width: '100%', height: '100%', filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.6))', padding: '2px' }}>
+                {/* Spinning Border Gradient */}
+                <div
+                  style={{
+                    position: 'absolute', top: '50%', left: '50%',
+                    width: '150px', height: '150px', marginLeft: '-75px', marginTop: '-75px',
+                    background: 'conic-gradient(from 0deg, transparent 40%, #00E676 55%, #00BFFF 70%, #9D00FF 85%, #FF9800 100%)',
+                    zIndex: 0,
+                    animation: 'border-spin 2.5s linear infinite',
+                  }}
+                />
+
+                {/* Inner Container */}
+                <div style={{
+                  position: 'relative', zIndex: 1,
+                  width: '100%', height: '100%',
+                  background: 'rgba(15,15,20,0.95)',
+                  backdropFilter: 'blur(20px)',
+                  WebkitBackdropFilter: 'blur(20px)',
+                  boxShadow: 'inset 0 0 10px rgba(255,255,255,0.05)',
+                  borderRadius: '14px',
+                  overflow: 'hidden',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center'
+                }}>
+                {/* COLORFUL PARTICLES EFFECT */}
+                <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', borderRadius: '14px', pointerEvents: 'none', zIndex: 0 }}>
+                  {[...Array(20)].map((_, i) => {
+                    const colors = ['#FF5252', '#4CAF50', '#FFEB3B', '#E040FB', '#2196F3', '#FF9800'];
+                    const color = colors[Math.floor(Math.random() * colors.length)];
+                    return (
+                      <motion.div
+                        key={`particle-${i}`}
+                        style={{
+                          position: 'absolute',
+                          width: `${Math.random() * 3 + 2}px`,
+                          height: `${Math.random() * 3 + 2}px`,
+                          borderRadius: '50%',
+                          backgroundColor: color,
+                          boxShadow: `0 0 4px ${color}`,
+                          left: `${Math.random() * 80 + 10}%`,
+                          bottom: '-10px',
+                        }}
+                        animate={{
+                          y: [0, -120],
+                          x: [0, (Math.random() - 0.5) * 40, (Math.random() - 0.5) * 40],
+                          opacity: [0, 1, 0],
+                          scale: [0, 1, 0.5]
+                        }}
+                        transition={{ duration: Math.random() * 2 + 1.5, repeat: Infinity, ease: 'linear', delay: Math.random() * 2 }}
+                      />
+                    );
+                  })}
+                </div>
+
+                <svg viewBox="0 0 100 100" style={{ width: '100%', height: '100%', filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.6))', padding: '2px', position: 'relative', zIndex: 1 }}>
                   <defs>
                     <linearGradient id="coneGrad" x1="0%" y1="0%" x2="100%" y2="0%">
                       <stop offset="0%" stopColor="#D84315" />
@@ -408,6 +434,7 @@ const AgriInsights = () => {
                     <ellipse cx="55" cy="1" rx="2.5" ry="1.5" fill="#64B5F6" opacity="0.8" />
                   </g>
                 </svg>
+                </div>
               </motion.div>
             )}
           </AnimatePresence>
@@ -428,69 +455,27 @@ const AgriInsights = () => {
                   opacity: { duration: 0.3 }
                 }}
               >
-                <motion.div
-                  style={{ width: 0, height: 0, position: 'absolute' }}
-                  animate={{ scale: [1, 1.03, 1] }}
-                  transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
+                <div
+                  style={{ width: 0, height: 0, position: 'absolute', animation: 'orbit-spin 40s linear infinite' }}
                 >
                   <svg style={{ position: 'absolute', overflow: 'visible', width: 1, height: 1, left: 0, top: 0 }}>
                     {/* Futuristic HUD Orbital Rings */}
-                    <motion.g
-                      animate={{ rotate: 360 }}
-                      transition={{ duration: 40, repeat: Infinity, ease: "linear" }}
+                    <g
+                      style={{ transformOrigin: 'center', animation: 'orbit-spin 40s linear infinite' }}
                     >
                       <circle cx="0" cy="0" r="85" fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="1" strokeDasharray="4 8" />
                       <circle cx="0" cy="0" r="100" fill="none" stroke="rgba(0,255,119,0.1)" strokeWidth="1" strokeDasharray="20 10 5 10" />
-                    </motion.g>
-                    <motion.g
-                      animate={{ rotate: -360 }}
-                      transition={{ duration: 60, repeat: Infinity, ease: "linear" }}
+                    </g>
+                    <g
+                      style={{ transformOrigin: 'center', animation: 'orbit-spin-reverse 60s linear infinite' }}
                     >
                       <circle cx="0" cy="0" r="120" fill="none" stroke="rgba(255,255,255,0.03)" strokeWidth="1" />
-                    </motion.g>
-
-                    {nodes.map(node => {
-                      const isActiveNode = activeNode?.id === node.id || signalState.node?.id === node.id;
-
-                      return (
-                        <g key={`pipe-${node.id}`} transform={`rotate(${node.angle})`}>
-                          {/* Holographic Fiber Optic Link */}
-                          <line x1="135" y1="0" x2="0" y2="0" stroke="rgba(255,255,255,0.1)" strokeWidth="1" />
-                          
-                          {/* Laser Data Stream */}
-                          <motion.line 
-                            x1="135" y1="0" x2="0" y2="0" 
-                            stroke="rgba(0,255,119,0.6)" strokeWidth="1.5" strokeDasharray="3 10"
-                            animate={{ strokeDashoffset: [0, -26] }}
-                            transition={{ duration: 1.5, repeat: Infinity, ease: 'linear' }}
-                          />
-
-                          {/* Node Connector Ring */}
-                          <circle cx="135" cy="0" r="10" fill="none" stroke="rgba(0,255,119,0.2)" strokeWidth="1" />
-
-                          {isActiveNode && (
-                            <>
-                              <line x1="135" y1="0" x2="0" y2="0" stroke="#00ff77" strokeWidth="2" filter="url(#glow)" />
-                              <circle cx="135" cy="0" r="12" fill="none" stroke="#00ff77" strokeWidth="2" filter="url(#glow)" />
-                            </>
-                          )}
-                          {signalState.active && signalState.step === 1 && signalState.node.id === node.id && (
-                            <motion.line 
-                              y1="0" y2="0"
-                              stroke="#00ff77" strokeWidth="4" strokeLinecap="round" filter="url(#glow)"
-                              initial={{ x1: 135, x2: 135 }}
-                              animate={{ x1: [135, 135, 0], x2: [135, 0, 0] }}
-                              transition={{ duration: 0.5, ease: "easeInOut" }}
-                            />
-                          )}
-                        </g>
-                      );
-                    })}
+                    </g>
                   </svg>
 
                   {nodes.map((node, index) => {
                     const rad = (node.angle * Math.PI) / 180;
-                    const radius = 135;
+                    const radius = 145;
                     const xPos = Math.cos(rad) * radius;
                     const yPos = Math.sin(rad) * radius;
                     const isActiveNode = activeNode?.id === node.id || signalState.node?.id === node.id;
@@ -500,27 +485,143 @@ const AgriInsights = () => {
                         key={node.id}
                         style={{
                           position: 'absolute', left: -33, top: -33,
-                          x: xPos, y: yPos, width: 66, height: 66
+                          width: 66, height: 66
                         }}
-                        animate={{ y: [yPos - 4, yPos + 4, yPos - 4] }}
-                        transition={{ duration: 3 + index * 0.5, repeat: Infinity, ease: 'easeInOut' }}
+                        initial={{ x: 0, y: 0, scale: 0, opacity: 0 }}
+                        animate={{ x: xPos, y: yPos, scale: 1, opacity: 1 }}
+                        transition={{ type: 'spring', stiffness: 200, damping: 15, delay: index * 0.15 }}
                       >
-                        <motion.div
-                          style={{
-                            ...styles.smallNode, width: '100%', height: '100%',
-                            boxShadow: isActiveNode ? "0px 0px 25px rgba(0,255,119,0.8)" : "0 8px 32px 0 rgba(0, 0, 0, 0.3)",
-                            border: isActiveNode ? "2px solid #00ff77" : "1px solid rgba(255,255,255,0.2)"
-                          }}
-                          onClick={(e) => { e.stopPropagation(); handleNodeClick(node); }}
-                          whileHover={{ scale: 1.15, rotateX: 25, rotateY: -25, zIndex: 50, backgroundColor: "rgba(0,255,119,0.15)", boxShadow: "0 15px 35px rgba(0,255,119,0.4)" }} 
-                          whileTap={{ scale: 0.95, rotateX: 0, rotateY: 0 }}
+                        <div
+                          style={{ width: '100%', height: '100%', perspective: '500px', animation: 'orbit-spin-reverse 40s linear infinite' }}
                         >
-                          <div style={styles.nodeIconSmall}>{node.icon}</div>
-                        </motion.div>
+                          <motion.div
+                            style={{
+                              ...styles.smallNode, width: '100%', height: '100%',
+                              position: 'relative',
+                              overflow: 'hidden',
+                              boxSizing: 'border-box'
+                            }}
+                            onClick={(e) => { e.stopPropagation(); handleNodeClick(node); }}
+                            whileHover="hover"
+                            whileTap="tap"
+                            animate={isActiveNode ? "active" : "inactive"}
+                            variants={{
+                              hover: { 
+                                scale: 1, rotateX: 0, rotateY: 0, zIndex: 50, 
+                                backgroundColor: "rgba(15,15,20,0.95)", 
+                                boxShadow: `0 15px 35px ${node.color}99`,
+                                border: `0px solid transparent`,
+                                padding: '2px'
+                              },
+                              tap: { scale: 1, rotateX: 0, rotateY: 0 },
+                              active: {
+                                scale: 1, rotateX: 0, rotateY: 0, zIndex: 50,
+                                backgroundColor: "rgba(15,15,20,0.95)",
+                                boxShadow: `0 0 30px ${node.color}aa`,
+                                border: `0px solid transparent`,
+                                padding: '2px',
+                                transition: { duration: 0.3 }
+                              },
+                              inactive: {
+                                scale: 1, rotateX: 0, rotateY: 0,
+                                backgroundColor: "rgba(15,15,20,0.95)",
+                                boxShadow: "0 10px 20px rgba(0,0,0,0.8)",
+                                border: "0px solid transparent",
+                                padding: '2px',
+                                transition: { duration: 0.3 }
+                              }
+                            }}
+                          >
+
+                            {/* Google AI Studio Rotating Border (Active Only) */}
+                            <AnimatePresence>
+                              {isActiveNode && (
+                                <motion.div
+                                  style={{
+                                    position: 'absolute', top: '50%', left: '50%',
+                                    width: '150px', height: '150px', marginLeft: '-75px', marginTop: '-75px',
+                                    background: 'conic-gradient(from 0deg, transparent 40%, #00E676 55%, #00BFFF 70%, #9D00FF 85%, #FF9800 100%)',
+                                    zIndex: 0,
+                                    animation: 'border-spin 2.5s linear infinite',
+                                  }}
+                                  initial={{ opacity: 0 }}
+                                  animate={{ opacity: 1 }}
+                                  exit={{ opacity: 0 }}
+                                  transition={{ duration: 0.2 }}
+                                />
+                              )}
+                            </AnimatePresence>
+
+                            {/* Inner Card Screen (Masks the center of the gradient) */}
+                            <div style={{
+                              position: 'relative', zIndex: 1,
+                              width: '100%', height: '100%',
+                              backgroundColor: 'rgba(15,15,20,0.95)',
+                              backdropFilter: 'blur(20px)',
+                              WebkitBackdropFilter: 'blur(20px)',
+                              borderRadius: isActiveNode ? '13px' : '15px',
+                              overflow: 'hidden',
+                              display: 'flex', alignItems: 'center', justifyContent: 'center',
+                              transition: 'border-radius 0.3s'
+                            }}>
+                              {/* Light Glassmorphism Color Fill */}
+                              <motion.div
+                                variants={{ hover: { opacity: 1 }, active: { opacity: 1 }, inactive: { opacity: 0 } }}
+                                style={{ position: 'absolute', inset: 0, overflow: 'hidden', zIndex: 0 }}
+                              >
+                              <motion.div
+                                style={{
+                                  position: 'absolute', top: '-50%', left: '-50%', width: '200%', height: '200%',
+                                  background: `conic-gradient(from 0deg, transparent, ${node.color}55, transparent, ${node.color}55, transparent)`,
+                                  filter: 'blur(10px)'
+                                }}
+                                animate={{ rotate: [0, 360] }}
+                                transition={{ duration: 4, repeat: Infinity, ease: 'linear' }}
+                              />
+                              <div style={{
+                                position: 'absolute', inset: 0,
+                                background: 'rgba(255, 255, 255, 0.05)',
+                                backdropFilter: 'blur(8px)',
+                                WebkitBackdropFilter: 'blur(8px)'
+                              }} />
+                            </motion.div>
+
+                            <div style={{ ...styles.nodeIconSmall, position: 'relative', zIndex: 2 }}>{node.icon}</div>
+                            </div>
+                          </motion.div>
+
+                          {/* Node Title Below */}
+                          <motion.div
+                            initial={{ opacity: 0, y: -10, x: "-50%" }}
+                            animate={isActiveNode ? { opacity: 1, y: 0, x: "-50%" } : { opacity: 0, y: -10, x: "-50%" }}
+                            transition={{ duration: 0.3 }}
+                            style={{
+                              position: 'absolute',
+                              top: '100%',
+                              left: '50%',
+                              marginTop: '12px',
+                              color: node.color,
+                              fontSize: '11px',
+                              fontWeight: 'bold',
+                              whiteSpace: 'nowrap',
+                              textShadow: `0 0 10px ${node.color}`,
+                              pointerEvents: 'none',
+                              zIndex: 10,
+                              background: 'rgba(0,0,0,0.6)',
+                              padding: '4px 8px',
+                              borderRadius: '8px',
+                              border: `1px solid ${node.color}`,
+                              backdropFilter: 'blur(5px)',
+                              WebkitBackdropFilter: 'blur(5px)'
+                            }}
+                          >
+                            {node.title}
+                          </motion.div>
+                        </div>
                       </motion.div>
                     );
                   })}
-                </motion.div>
+                </div>
               </motion.div>
             )}
           </AnimatePresence>
@@ -529,49 +630,176 @@ const AgriInsights = () => {
             {isExplored && (
               <motion.div
                 style={{
-                  ...styles.displayScreen, 
+                  width: '320px', height: '125px',
                   position: 'absolute', top: '50%', left: '50%', marginLeft: '-160px', marginTop: '145px',
-                  boxShadow: activeNode ? '0 15px 35px rgba(0,255,119,0.15)' : '0 20px 40px rgba(0,0,0,0.4)',
-                  borderColor: activeNode ? 'rgba(0,255,119,0.4)' : 'rgba(255,255,255,0.1)'
+                  zIndex: 10,
+                  transformOrigin: 'top center',
+                  perspective: '800px'
                 }}
-                initial={{ y: 50, opacity: 0, scale: 0.9 }} 
-                animate={{ y: 0, opacity: 1, scale: 1 }} 
-                exit={{ y: 20, opacity: 0, scale: 0.9 }}
-                transition={{ type: 'spring', bounce: 0.4, duration: 0.6 }}
+                initial={{ opacity: 0, rotateX: 20, y: 20, scale: 0.9 }} 
+                animate={{ opacity: 1, rotateX: 5, y: 0, scale: 1 }} 
+                exit={{ opacity: 0, rotateX: 20, y: 20, scale: 0.9 }}
+                transition={{ duration: 0.4, type: 'spring', bounce: 0.3 }}
               >
-                <AnimatePresence mode="wait">
-                  {activeNode ? (
-                    <motion.div 
-                      key={activeNode.id} 
-                      initial={{ opacity: 0, rotateX: -90, y: 20 }} 
-                      animate={{ opacity: 1, rotateX: 0, y: 0 }} 
-                      exit={{ opacity: 0, rotateX: 90, y: -20 }} 
-                      transition={{ type: 'spring', damping: 15, stiffness: 200 }} 
-                      style={styles.activeContent}
-                    >
-                      <div style={{display: 'flex', alignItems: 'center', gap: '15px'}}>
-                        <span style={{fontSize: '32px'}}>{activeNode.icon}</span>
-                        <div>
-                          <h3 style={{margin: '0 0 5px 0', fontSize: '18px', color: 'white'}}>{activeNode.title}</h3>
-                          <p style={{margin: 0, fontSize: '12px', color: '#ccc'}}>{activeNode.desc}</p>
-                        </div>
-                      </div>
-                      <button style={styles.launchBtn} onClick={() => navigate(activeNode.route)}>Launch Module ➔</button>
-                    </motion.div>
-                  ) : (
-                    <motion.div 
-                      key="waiting" 
-                      initial={{ opacity: 0, scale: 0.8 }} 
-                      animate={{ opacity: 1, scale: 1 }} 
-                      exit={{ opacity: 0, scale: 0.8 }} 
-                      transition={{ duration: 0.2 }}
-                      style={styles.waitingState}
-                    >
-                      <div style={styles.blinkingDot} />
-                      <p style={{ color: '#00ff77', fontSize: '14px', margin: 0, fontWeight: '500', letterSpacing: '1px' }}>SYSTEM READY. SELECT A MODULE.</p>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
+                {/* 2. Border Masking Container */}
+                <div style={{
+                  position: 'absolute', inset: 0,
+                  borderRadius: '24px', padding: '2px', overflow: 'hidden',
+                  background: 'rgba(255,255,255,0.05)',
+                  zIndex: 1,
+                  boxShadow: '0 20px 40px rgba(0,0,0,0.9)',
+                  boxSizing: 'border-box'
+                }}>
+                  {/* 3. Core Sharp Border Snake */}
+                  <motion.div
+                    style={{
+                      position: 'absolute', top: '50%', left: '50%', 
+                      width: '500px', height: '500px', marginLeft: '-250px', marginTop: '-250px',
+                      background: 'conic-gradient(from 0deg, transparent 40%, #00E676 55%, #00BFFF 70%, #9D00FF 85%, #FF9800 100%)',
+                      zIndex: 0
+                    }}
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 2.5, repeat: Infinity, ease: 'linear' }}
+                  />
+
+                  {/* 4. Inner Black Terminal Screen */}
+                  <div style={{
+                    background: 'linear-gradient(145deg, rgba(15,15,20,0.95), rgba(5,5,5,0.95))',
+                    width: '100%', height: '100%',
+                    borderRadius: '22px',
+                    position: 'relative',
+                    zIndex: 1,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'center',
+                    padding: '15px 20px',
+                    boxSizing: 'border-box',
+                    boxShadow: 'inset 0 5px 20px rgba(0,0,0,0.8), inset 0 0 10px rgba(255,255,255,0.05)',
+                    backdropFilter: 'blur(20px)',
+                    WebkitBackdropFilter: 'blur(20px)',
+                    overflow: 'hidden'
+                  }}>
+                    
+                    {/* Smoke & Snow Atmospheric Effect */}
+                    <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 0 }}>
+                      {/* Gentle Smoke / Fog */}
+                      {[...Array(4)].map((_, i) => (
+                        <motion.div
+                          key={`smoke-${i}`}
+                          style={{
+                            position: 'absolute',
+                            width: '80px', height: '80px',
+                            background: 'radial-gradient(circle, rgba(255,255,255,0.08) 0%, transparent 70%)',
+                            filter: 'blur(10px)',
+                            left: `${Math.random() * 100 - 10}%`,
+                            bottom: '-40px'
+                          }}
+                          animate={{
+                            y: [0, -160],
+                            x: [0, (Math.random() - 0.5) * 60],
+                            opacity: [0, 1, 0],
+                            scale: [1, 2.5]
+                          }}
+                          transition={{ duration: Math.random() * 5 + 5, repeat: Infinity, ease: 'linear', delay: Math.random() * 3 }}
+                        />
+                      ))}
+                      {/* Digital Snow */}
+                      {[...Array(25)].map((_, i) => (
+                        <motion.div
+                          key={`snow-${i}`}
+                          style={{
+                            position: 'absolute',
+                            width: `${Math.random() * 2 + 1}px`, height: `${Math.random() * 2 + 1}px`,
+                            backgroundColor: 'rgba(255,255,255,0.8)',
+                            borderRadius: '50%',
+                            boxShadow: '0 0 5px #fff',
+                            left: `${Math.random() * 100}%`,
+                            top: '-10px',
+                          }}
+                          animate={{
+                            y: [0, 150],
+                            x: [0, (Math.random() - 0.5) * 40],
+                            opacity: [0, 1, 0]
+                          }}
+                          transition={{ duration: Math.random() * 3 + 2, repeat: Infinity, ease: 'linear', delay: Math.random() * 3 }}
+                        />
+                      ))}
+                    </div>
+
+                    <AnimatePresence mode="wait">
+                      {activeNode ? (
+                        <motion.div 
+                          key={activeNode.id} 
+                          initial={{ opacity: 1 }} 
+                          animate={{ opacity: 1 }} 
+                          exit={{ opacity: 0 }} 
+                          transition={{ duration: 0.2 }} 
+                          style={{ ...styles.activeContent, position: 'relative', zIndex: 2 }}
+                        >
+                          <div style={{display: 'flex', alignItems: 'center', gap: '15px'}}>
+                            <motion.span 
+                              initial={{ opacity: 0 }} 
+                              animate={{ opacity: 1 }} 
+                              style={{fontSize: '32px', filter: `drop-shadow(0 0 8px ${activeNode.color})`}}
+                            >
+                              {activeNode.icon}
+                            </motion.span>
+                            <div>
+                              <h3 style={{margin: '0 0 4px 0', fontSize: '14px', color: '#fff', fontFamily: "'SFMono-Regular', Consolas, monospace", fontWeight: '600', letterSpacing: '1px', textTransform: 'uppercase'}}>
+                                {activeNode.title.split('').map((char, i) => (
+                                  <motion.span key={i} initial={{opacity: 0}} animate={{opacity: 1}} transition={{delay: i * 0.05}}>{char === ' ' ? '\u00A0' : char}</motion.span>
+                                ))}
+                              </h3>
+                              <p style={{margin: 0, fontSize: '11px', color: '#a1a1aa', fontFamily: 'system-ui, -apple-system, sans-serif', lineHeight: '1.4', letterSpacing: '0.5px'}}>
+                                {activeNode.desc.split('').map((char, i) => (
+                                  <motion.span key={i} initial={{opacity: 0}} animate={{opacity: 1}} transition={{delay: (activeNode.title.length * 0.05) + (i * 0.03)}}>{char === ' ' ? '\u00A0' : char}</motion.span>
+                                ))}
+                              </p>
+                            </div>
+                          </div>
+                          <motion.button 
+                            style={{
+                              ...styles.launchBtn, 
+                              fontFamily: "'SFMono-Regular', Consolas, monospace", 
+                              background: `${activeNode.color}1a`, 
+                              border: `1px solid ${activeNode.color}4d`, 
+                              color: activeNode.color, 
+                              borderRadius: '6px', 
+                              letterSpacing: '2px', 
+                              fontSize: '11px',
+                              textTransform: 'uppercase',
+                              padding: '10px',
+                              boxShadow: `inset 0 0 10px ${activeNode.color}1a`,
+                              textShadow: 'none'
+                            }}
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            transition={{ delay: (activeNode.title.length * 0.05) + (activeNode.desc.length * 0.03) + 0.1 }}
+                            whileHover={{ scale: 1.02, backgroundColor: `${activeNode.color}26`, borderColor: activeNode.color, boxShadow: `0 0 15px ${activeNode.color}33` }}
+                            whileTap={{ scale: 0.98 }}
+                            onClick={() => navigate(activeNode.route)}
+                          >{">"} LAUNCH_MODULE</motion.button>
+                        </motion.div>
+                      ) : (
+                        <motion.div
+                          key="idle"
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          exit={{ opacity: 0 }}
+                          style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'flex-start', position: 'relative', zIndex: 2 }}
+                        >
+                          <motion.span
+                            animate={{ opacity: [1, 0, 1] }}
+                            transition={{ duration: 0.8, repeat: Infinity, ease: 'linear' }}
+                            style={{ color: '#00ff77', fontFamily: "'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace", fontSize: '20px', fontWeight: 'bold' }}
+                          >
+                            _
+                          </motion.span>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                </div>
               </motion.div>
             )}
           </AnimatePresence>
@@ -601,11 +829,11 @@ const styles = {
   centerBox: {
     position: 'absolute', top: '50%', left: '50%',
     width: '72px', height: '72px', marginLeft: '-36px', marginTop: '-116px', 
-    background: 'linear-gradient(135deg, rgba(40,40,40,0.9), rgba(10,10,10,0.95))', 
     borderRadius: '16px',
-    boxShadow: '0 15px 35px rgba(0,0,0,0.6), inset 0 2px 4px rgba(255,255,255,0.3), inset 0 -2px 4px rgba(0,0,0,0.5)',
-    border: '1px solid rgba(255,255,255,0.15)', cursor: 'pointer', zIndex: 20,
-    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center'
+    boxShadow: '0 15px 35px rgba(0,0,0,0.6)',
+    cursor: 'pointer', zIndex: 20,
+    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+    overflow: 'hidden', padding: '2px', boxSizing: 'border-box'
   },
 
   smallNode: { 
@@ -618,15 +846,11 @@ const styles = {
   },
   nodeIconSmall: { fontSize: '28px', filter: 'drop-shadow(0 2px 5px rgba(0,0,0,0.5))' },
 
-  displayScreen: { width: '320px', height: '125px', background: 'rgba(15, 15, 20, 0.75)', backdropFilter: 'blur(30px)', border: '1px solid rgba(255,255,255,0.1)', borderTop: '1px solid rgba(255,255,255,0.3)', borderRadius: '24px', padding: '15px 20px', display: 'flex', flexDirection: 'column', justifyContent: 'center', zIndex: 10, boxShadow: '0 20px 40px rgba(0,0,0,0.4)', boxSizing: 'border-box' },
+  displayScreen: { width: '320px', height: '125px', backdropFilter: 'blur(30px)', WebkitBackdropFilter: 'blur(30px)', borderRadius: '24px', padding: '15px 20px', display: 'flex', flexDirection: 'column', justifyContent: 'center', zIndex: 10, boxSizing: 'border-box' },
   
-  waitingState: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', height: '100%' },
-  blinkingDot: { width: '8px', height: '8px', background: '#00ff77', borderRadius: '50%', animation: 'blink 1.5s infinite', boxShadow: '0 0 10px #00ff77' },
-
   activeContent: { display: 'flex', flexDirection: 'column', justifyContent: 'space-between', height: '100%' },
-  launchBtn: { background: 'rgba(0, 255, 119, 0.15)', border: '1px solid rgba(0, 255, 119, 0.5)', color: '#00ff77', padding: '8px', borderRadius: '12px', fontSize: '13px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', transition: '0.2s', marginTop: '10px' },
+  launchBtn: { background: 'linear-gradient(90deg, rgba(255,255,255,0.1), rgba(255,255,255,0.05))', border: '1px solid rgba(255, 255, 255, 0.2)', color: '#fff', textShadow: '0 0 8px rgba(255,255,255,0.5)', padding: '8px', borderRadius: '12px', fontSize: '13px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', transition: 'all 0.3s ease', marginTop: '10px', boxShadow: '0 4px 15px rgba(0,0,0,0.3)' },
 
-  '@keyframes blink': { '0%': { opacity: 0.2 }, '50%': { opacity: 1 }, '100%': { opacity: 0.2 } }
 };
 
 export default AgriInsights;
