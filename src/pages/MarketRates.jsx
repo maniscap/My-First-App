@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { IoMdArrowBack, IoMdClose } from 'react-icons/io';
-import { FaFileInvoice, FaChartArea, FaMapMarkerAlt, FaShieldAlt, FaExternalLinkAlt, FaInfoCircle, FaChevronDown, FaRegFileAlt, FaChartLine } from 'react-icons/fa';
+import { FaFileInvoice, FaChartArea, FaMapMarkerAlt, FaShieldAlt, FaExternalLinkAlt, FaInfoCircle, FaChevronRight } from 'react-icons/fa';
 
 // --- DATA STRUCTURE: PASTE YOUR LINKS HERE ---
 const MARKET_REPORTS = [
@@ -87,35 +87,100 @@ const itemVariants = {
   show: { opacity: 1, y: 0 }
 };
 
-const CollapsibleGroup = ({ title, icon, children, defaultOpen = false }) => {
-  const [isOpen, setIsOpen] = useState(defaultOpen);
-  
+// Shared images to be used for both the top banner and the bookshelf
+const BOOK_COVERS = [
+  "https://img.freepik.com/premium-photo/illustration-indian-agriculture-wheat-field-india-generative-ai_756405-75186.jpg",
+  "https://img.freepik.com/premium-photo/farmer-using-laptop-scenic-rice-field-sunset_38013-38674.jpg",
+  "https://static.vecteezy.com/system/resources/thumbnails/041/760/565/small_2x/ai-generated-tractor-spraying-pesticide-on-wheat-field-free-photo.jpeg",
+  "https://img.freepik.com/premium-photo/concept-growing-crops-using-ai-farming-system-uses-artificial-intelligence-optimize-work_1006821-4087.jpg?w=2000",
+  "https://img.freepik.com/premium-photo/young-indian-farmer-using-laptop-agriculture-field_75648-8622.jpg",
+  "https://peachbot.in/storage/blogs/V1FRLmrDjxKeMWNUyWA7Vkyh6tHoJaoo3k0sIR5V.jpg",
+  "https://img.freepik.com/premium-photo/concept-growing-crops-using-ai-farming-system-uses-artificial-intelligence-optimize-work_1006821-4087.jpg?w=2000"
+];
+
+// --- NEW: GLASS BOOKSHELF COMPONENT ---
+const Bookshelf = ({ items, onLinkClick, isFullView }) => {
+  const [activeIndex, setActiveIndex] = useState(0);
+
+  // Adjusted Sizing: Open book flush to the left, 2 closed spines on the right
+  const W_INACTIVE = isFullView ? 45 : 35;
+  const W_ACTIVE = isFullView ? 270 : 250;
+  const GAP = isFullView ? 15 : 12;
+  const ACTIVE_X_OFFSET = 0; // Anchors the active book to the absolute left edge to save space
+
+  const handleNext = () => setActiveIndex((prev) => Math.min(prev + 1, items.length - 1));
+  const handlePrev = () => setActiveIndex((prev) => Math.max(prev - 1, 0));
+
+  // Smooth Swipe Gestures
+  const handlePanEnd = (e, info) => {
+    const swipeThreshold = 30;
+    const velocityThreshold = 400;
+    if (info.offset.x < -swipeThreshold || info.velocity.x < -velocityThreshold) {
+      setActiveIndex((prev) => Math.min(prev + 1, items.length - 1)); // Swipe Left
+    } else if (info.offset.x > swipeThreshold || info.velocity.x > velocityThreshold) {
+      setActiveIndex((prev) => Math.max(prev - 1, 0)); // Swipe Right
+    }
+  };
+
   return (
-    <div style={styles.subSection}>
-      <div 
-        style={{...styles.subSectionTitle, cursor: 'pointer', margin: 0, display: 'flex', justifyContent: 'space-between', alignItems: 'center', userSelect: 'none'}} 
-        onClick={() => setIsOpen(!isOpen)}
-      >
-        <div style={{display: 'flex', alignItems: 'center'}}>
-          {icon} <span style={{marginLeft: '8px'}}>{title}</span>
-        </div>
-        <motion.div animate={{ rotate: isOpen ? 180 : 0 }} transition={{ duration: 0.3 }}>
-          <FaChevronDown color="#9ca3af" size={14} />
-        </motion.div>
-      </div>
-      <AnimatePresence initial={false}>
-        {isOpen && (
+    <div style={styles.bookshelfWrapper}>
+      <div style={{ ...styles.bookshelf, height: isFullView ? '55vh' : '260px', minHeight: isFullView ? '400px' : 'auto' }}>
+        {/* Absolute left-aligned track wrapper */}
+        <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, display: 'flex', alignItems: 'center' }}>
           <motion.div
-            initial={{ height: 0, opacity: 0, marginTop: 0 }}
-            animate={{ height: 'auto', opacity: 1, marginTop: '15px' }}
-            exit={{ height: 0, opacity: 0, marginTop: 0 }}
-            transition={{ duration: 0.3, ease: "easeInOut" }}
-            style={{ overflow: 'hidden' }}
+            onPanEnd={handlePanEnd}
+            animate={{ x: ACTIVE_X_OFFSET - (activeIndex * (W_INACTIVE + GAP)) }}
+            transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+            style={{ display: 'flex', gap: `${GAP}px`, alignItems: 'center', width: 'max-content', touchAction: 'pan-y', height: '100%' }}
           >
-            {children}
+            {items.map((item, idx) => {
+              const isActive = activeIndex === idx;
+              const bgUrl = BOOK_COVERS[idx % BOOK_COVERS.length];
+
+              return (
+                <motion.div
+                  key={idx}
+                  onClick={() => setActiveIndex(idx)}
+                  style={{ ...styles.book, backgroundImage: `url(${bgUrl})` }}
+                  animate={{ 
+                    width: isActive ? W_ACTIVE : W_INACTIVE,
+                    height: '100%', // Keeps all books flat on the same visual plane
+                    opacity: isActive ? 1 : 0.85, // Slightly lower opacity so the 3D white edge pops out
+                    boxShadow: isActive 
+                      ? '0 15px 30px -5px rgba(0, 0, 0, 0.6), inset 0 0 10px rgba(255, 255, 255, 0.2), inset 1px 1px 2px rgba(255, 255, 255, 0.5)' 
+                      : '0 10px 20px -5px rgba(0, 0, 0, 0.5), inset 6px 0 12px rgba(255, 255, 255, 0.5), inset -2px 0 5px rgba(0, 0, 0, 0.4)' // 3D glass spine facing left
+                  }}
+                  transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                >
+                  <div style={styles.bookGlassOverlay}>
+                    {isActive ? (
+                      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.15 }} style={styles.openBookContent}>
+                        {item.isNew && <span style={styles.newBadge}>NEW</span>}
+                        <h3 style={styles.openBookTitle}>{item.name}</h3>
+                        <button style={styles.launchBtn} onClick={(e) => { e.stopPropagation(); onLinkClick(item); }}> Access Report <FaExternalLinkAlt size={12} style={{marginLeft: '8px'}} /> </button>
+                      </motion.div>
+                    ) : (
+                      <div style={styles.closedBookSpine}><span style={styles.spineText}>{item.name}</span></div>
+                    )}
+                  </div>
+                </motion.div>
+              );
+            })}
           </motion.div>
-        )}
-      </AnimatePresence>
+        </div>
+      </div>
+      <div style={styles.shelfBase}></div>
+      
+      {/* NAVIGATION INDICATOR & CONTROLS */}
+      <div style={styles.navControls}>
+        <button onClick={handlePrev} disabled={activeIndex === 0} style={{...styles.navBtn, opacity: activeIndex === 0 ? 0.3 : 1}}>
+          <IoMdArrowBack size={20} color="#fff" />
+        </button>
+        <span style={styles.navIndicator}>Report {activeIndex + 1} of {items.length}</span>
+        <button onClick={handleNext} disabled={activeIndex === items.length - 1} style={{...styles.navBtn, opacity: activeIndex === items.length - 1 ? 0.3 : 1, transform: 'rotate(180deg)'}}>
+          <IoMdArrowBack size={20} color="#fff" />
+        </button>
+      </div>
     </div>
   );
 };
@@ -124,6 +189,16 @@ const MarketRates = () => {
   const navigate = useNavigate();
   const [transitionState, setTransitionState] = useState({ isActive: false, reportName: "" });
   const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
+  const [currentBannerIndex, setCurrentBannerIndex] = useState(0);
+  const [activeCategory, setActiveCategory] = useState(null);
+
+  // Auto-rotating banner interval
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentBannerIndex((prev) => (prev + 1) % BOOK_COVERS.length);
+    }, 4500);
+    return () => clearInterval(interval);
+  }, []);
 
   const handleLinkClick = (report) => {
     if (!report.url) {
@@ -144,6 +219,9 @@ const MarketRates = () => {
 
   return (
     <div style={styles.page}>
+
+      {/* THICK BACKGROUND OVERLAY */}
+      <div style={styles.pageOverlay}></div>
       
       {/* 3-SECOND INTERCEPT MODAL */}
       <AnimatePresence>
@@ -164,7 +242,7 @@ const MarketRates = () => {
                 animate={{ scale: [1, 1.1, 1] }} 
                 transition={{ repeat: Infinity, duration: 1.5 }}
               >
-                <FaShieldAlt size={50} color="#34d399" style={{ marginBottom: '15px' }}/>
+                <FaShieldAlt size={50} color="#10b981" style={{ marginBottom: '15px' }}/>
               </motion.div>
               <h2 style={styles.modalTitle}>Securing Connection</h2>
               <p style={styles.modalText}>Routing you to the official Directorate of Marketing & Inspection (DMI) portal for:</p>
@@ -183,89 +261,116 @@ const MarketRates = () => {
         )}
       </AnimatePresence>
 
+      {/* FULL PAGE CATEGORY VIEW FOR BOOKSHELF */}
+      <AnimatePresence>
+        {activeCategory && (
+          <motion.div 
+            initial={{ opacity: 0, x: "100%" }} 
+            animate={{ opacity: 1, x: 0 }} 
+            exit={{ opacity: 0, x: "100%" }}
+            transition={{ type: 'tween', duration: 0.3 }}
+            style={styles.fullPageOverlay}
+          >
+            <div style={styles.fullPageHeader}>
+              <button onClick={() => setActiveCategory(null)} style={styles.backBtnModal}>
+                <IoMdArrowBack size={24} color="#10b981" />
+              </button>
+              <h2 style={styles.fullPageTitle}>{activeCategory.title || activeCategory.category}</h2>
+            </div>
+            <div style={styles.fullPageContent}>
+              <p style={{color: '#94a3b8', marginBottom: '20px', fontSize: '14px', textAlign: 'center', lineHeight: '1.5'}}>
+                Swipe the books, tap the closed spines, or use the arrows below<br/>to explore all <strong style={{color: '#fff'}}>{activeCategory.items.length}</strong> reports in this category.
+              </p>
+              <Bookshelf items={activeCategory.items} onLinkClick={handleLinkClick} isFullView={true} />
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* HEADER */}
       <div style={styles.header}>
         <div style={styles.headerTop}>
           <button onClick={() => navigate('/agri-insights')} style={styles.iconBtn}>
-            <IoMdArrowBack size={28} color="#34d399"/>
+            <IoMdArrowBack size={20} color="#10b981"/>
           </button>
           <div style={{textAlign:'center'}}>
             <h1 style={styles.title}>Mandi Navigator</h1>
             <p style={styles.subtitle}>Direct Agmarknet Access</p>
           </div>
-          <div style={{width: '28px'}}></div> {/* Spacer for alignment */}
+          <div style={{width: '40px'}}></div>
         </div>
       </div>
 
       <div style={styles.scrollContent}>
         
+        {/* HOARDING / BANNER SECTION */}
+        <motion.div variants={containerVariants} initial="hidden" animate="show" style={styles.hoardingContainer}>
+          <AnimatePresence>
+            <motion.img 
+              key={currentBannerIndex}
+              src={BOOK_COVERS[currentBannerIndex]} 
+              alt="Market Hoarding" 
+              initial={{ opacity: 0, scale: 1.15 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ duration: 1.2, ease: "easeInOut" }}
+              style={{...styles.hoardingImage, position: 'absolute', top: 0, left: 0}} 
+            />
+          </AnimatePresence>
+          <div style={{...styles.hoardingOverlay, zIndex: 1}}>
+            <div>
+              <p style={{color: '#10b981', margin: '0 0 5px 0', fontSize: '12px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '1px'}}>Live Updates</p>
+              <h2 style={styles.hoardingText}>National Mandi Database</h2>
+            </div>
+          </div>
+        </motion.div>
+        
         {/* SECTION 1: PRICE & ARRIVAL REPORTS */}
         <motion.div variants={containerVariants} initial="hidden" animate="show" style={styles.section}>
           <div style={styles.sectionHeader}>
-            <FaFileInvoice size={20} color="#34d399" />
+            <FaFileInvoice size={20} color="#10b981" />
             <h2 style={styles.sectionTitle}>Prices & Arrival Reports</h2>
           </div>
           {MARKET_REPORTS.map((group, idx) => (
-            <CollapsibleGroup key={`market-${idx}`} title={group.title} icon={group.icon} defaultOpen={false}>
-              <motion.div variants={containerVariants} initial="hidden" animate="show" style={styles.grid}>
-                {group.items.map((item, i) => (
-                  <motion.div 
-                    variants={itemVariants} 
-                    key={i} 
-                    style={styles.card}
-                    whileHover={{ scale: 1.02, borderColor: 'rgba(52, 211, 153, 0.6)', boxShadow: '0 10px 20px rgba(52, 211, 153, 0.15)' }}
-                    whileTap={{ scale: 0.98 }}
-                    onClick={() => handleLinkClick(item)}
-                  >
-                    <div style={styles.cardContent}>
-                      <div style={styles.iconBoxMarket}>
-                        <FaRegFileAlt size={16} />
-                      </div>
-                      <span style={styles.cardText}>{item.name}</span>
-                      {item.isNew && <span style={styles.newBadge}>NEW</span>}
-                    </div>
-                    <div style={styles.arrowIconBox}>
-                      <FaExternalLinkAlt size={12} color="rgba(255,255,255,0.5)" />
-                    </div>
-                  </motion.div>
-                ))}
-              </motion.div>
-            </CollapsibleGroup>
+            <motion.div
+              key={`market-${idx}`}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              style={{...styles.categoryCard, backgroundImage: `url(${BOOK_COVERS[idx % BOOK_COVERS.length]})`}}
+              onClick={() => setActiveCategory(group)}
+            >
+              <div style={styles.cardOverlay}></div>
+              <div style={styles.cardContent}>
+                <div style={styles.cardIconBox}>{group.icon}</div>
+                <h3 style={styles.cardTitleText}>{group.title}</h3>
+                <FaChevronRight style={{marginLeft: 'auto'}} color="#a1a1aa" size={14} />
+              </div>
+            </motion.div>
           ))}
         </motion.div>
 
         {/* SECTION 2: PRICE TREND REPORTS */}
         <motion.div variants={containerVariants} initial="hidden" animate="show" style={styles.section}>
           <div style={styles.sectionHeader}>
-            <FaChartArea size={20} color="#60a5fa" />
+            <FaChartArea size={20} color="#3b82f6" />
             <h2 style={styles.sectionTitle}>Price Trend Reports</h2>
           </div>
           
           {TREND_REPORTS.map((group, idx) => (
-            <CollapsibleGroup key={`trend-${idx}`} title={group.category} icon={group.icon} defaultOpen={false}>
-              <motion.div variants={containerVariants} initial="hidden" animate="show" style={styles.grid}>
-                {group.items.map((item, i) => (
-                  <motion.div 
-                    variants={itemVariants} 
-                    key={i} 
-                    style={styles.card}
-                    whileHover={{ scale: 1.02, borderColor: 'rgba(96, 165, 250, 0.6)', boxShadow: '0 10px 20px rgba(96, 165, 250, 0.15)' }}
-                    whileTap={{ scale: 0.98 }}
-                    onClick={() => handleLinkClick(item)}
-                  >
-                    <div style={styles.cardContent}>
-                      <div style={styles.iconBoxTrend}>
-                        <FaChartLine size={16} />
-                      </div>
-                      <span style={styles.cardText}>{item.name}</span>
-                    </div>
-                    <div style={styles.arrowIconBox}>
-                      <FaExternalLinkAlt size={12} color="rgba(255,255,255,0.5)" />
-                    </div>
-                  </motion.div>
-                ))}
-              </motion.div>
-            </CollapsibleGroup>
+            <motion.div
+              key={`trend-${idx}`}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              style={{...styles.categoryCard, backgroundImage: `url(${BOOK_COVERS[(idx + MARKET_REPORTS.length) % BOOK_COVERS.length]})`}}
+              onClick={() => setActiveCategory(group)}
+            >
+              <div style={styles.cardOverlay}></div>
+              <div style={styles.cardContent}>
+                <div style={styles.cardIconBox}>{group.icon}</div>
+                <h3 style={styles.cardTitleText}>{group.category}</h3>
+                <FaChevronRight style={{marginLeft: 'auto'}} color="#a1a1aa" size={14} />
+              </div>
+            </motion.div>
           ))}
         </motion.div>
 
@@ -300,7 +405,7 @@ const MarketRates = () => {
             >
               <div style={styles.infoModalHeader}>
                 <button onClick={() => setIsInfoModalOpen(false)} style={styles.backBtnModal}>
-                  <IoMdArrowBack size={24} color="#34d399" />
+                  <IoMdArrowBack size={24} color="#10b981" />
                 </button>
                 <h2 style={styles.infoModalTitle}>About & Legal</h2>
                 <div style={{width: '40px'}}></div>
@@ -385,79 +490,101 @@ const MarketRates = () => {
 const styles = {
   page: { 
     height: '100vh', 
-    background: 'radial-gradient(circle at top right, #0f172a, #000000)', 
-    color: '#fff', 
-    fontFamily: '"Inter", sans-serif', 
+    background: 'url("https://images.unsplash.com/photo-1504333638930-c8787321eee0?q=80&w=2070&auto=format&fit=crop") center/cover no-repeat', 
+    color: '#e2e8f0', 
+    fontFamily: '"Inter", -apple-system, sans-serif', 
     overflow: 'hidden', 
     display: 'flex', 
-    flexDirection: 'column' 
+    flexDirection: 'column',
+    position: 'relative'
+  },
+  pageOverlay: {
+    position: 'absolute',
+    top: 0, left: 0, right: 0, bottom: 0,
+    background: 'rgba(9, 9, 11, 0.85)', // Thick dark tint
+    backdropFilter: 'blur(20px)',
+    WebkitBackdropFilter: 'blur(20px)',
+    zIndex: 0
   },
   header: { 
     padding: '20px', 
-    background: 'rgba(15, 23, 42, 0.6)', 
-    backdropFilter: 'blur(12px)',
-    borderBottom: '1px solid rgba(255,255,255,0.05)' 
+    background: 'rgba(9, 9, 11, 0.5)', 
+    backdropFilter: 'blur(10px)',
+    borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+    position: 'relative',
+    zIndex: 1
   },
   headerTop: { display: 'flex', justifyContent: 'space-between', alignItems: 'center' },
-  title: { fontSize: '20px', margin: 0, fontWeight: '800', letterSpacing: '0.5px' },
-  subtitle: { fontSize: '12px', color: '#34d399', margin: '4px 0 0 0', fontWeight: '600', textTransform: 'uppercase' },
-  iconBtn: { background: 'none', border: 'none', cursor: 'pointer', padding: 0 },
-  scrollContent: { flex: 1, overflowY: 'auto', padding: '20px' },
+  title: { fontSize: '18px', margin: 0, fontWeight: '700', letterSpacing: '0.2px', color: '#ffffff' },
+  subtitle: { fontSize: '12px', color: '#10b981', margin: '4px 0 0 0', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px' },
+  iconBtn: { background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', cursor: 'pointer', width: '40px', height: '40px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0, color: '#f8fafc' },
+  scrollContent: { flex: 1, overflowY: 'auto', padding: '20px', position: 'relative', zIndex: 1 },
   
-  section: { marginBottom: '40px' },
-  sectionHeader: { display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '15px', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '10px' },
-  sectionTitle: { fontSize: '18px', fontWeight: '700', margin: 0 },
+  section: { marginBottom: '35px' },
+  sectionHeader: { display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' },
+  sectionTitle: { fontSize: '13px', fontWeight: '700', margin: 0, color: '#a1a1aa', textTransform: 'uppercase', letterSpacing: '1px' },
   
-  subSection: { marginBottom: '25px', background: 'rgba(255,255,255,0.02)', padding: '15px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)' },
-  subSectionTitle: { fontSize: '14px', fontWeight: '600', color: '#e5e7eb', margin: '0 0 15px 0', display: 'flex', alignItems: 'center' },
+  categoryCard: { position: 'relative', padding: '20px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.15)', cursor: 'pointer', marginBottom: '15px', overflow: 'hidden', boxShadow: '0 8px 24px rgba(0,0,0,0.3)', backgroundSize: 'cover', backgroundPosition: 'center' },
+  cardOverlay: { position: 'absolute', inset: 0, background: 'linear-gradient(to right, rgba(9,9,11,0.95) 0%, rgba(9,9,11,0.6) 100%)', zIndex: 0 },
+  cardContent: { position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', gap: '15px', width: '100%' },
+  cardIconBox: { width: '44px', height: '44px', borderRadius: '10px', background: 'rgba(255,255,255,0.1)', backdropFilter: 'blur(10px)', display: 'flex', alignItems: 'center', justifyContent: 'center' },
+  cardTitleText: { fontSize: '15px', fontWeight: '700', color: '#ffffff', margin: 0 },
   
-  grid: { display: 'grid', gridTemplateColumns: '1fr', gap: '12px' },
-  card: { 
-    background: 'linear-gradient(145deg, rgba(30, 41, 59, 0.7) 0%, rgba(15, 23, 42, 0.7) 100%)', 
-    backdropFilter: 'blur(10px)',
-    border: '1px solid rgba(255, 255, 255, 0.05)', 
-    borderRadius: '16px', 
-    padding: '16px', 
-    display: 'flex', 
-    justifyContent: 'space-between', 
-    alignItems: 'center', 
-    cursor: 'pointer',
-    boxShadow: '0 8px 20px rgba(0,0,0,0.2)',
-    transition: 'border-color 0.2s ease'
-  },
-  cardContent: { display: 'flex', alignItems: 'center', gap: '15px', flex: 1, paddingRight: '15px' },
-  cardText: { fontSize: '14px', fontWeight: '500', color: '#f8fafc', lineHeight: '1.4', letterSpacing: '0.3px' },
-  newBadge: { background: 'linear-gradient(135deg, #ef4444 0%, #b91c1c 100%)', color: '#fff', fontSize: '9px', fontWeight: '800', padding: '3px 8px', borderRadius: '6px', letterSpacing: '0.5px', boxShadow: '0 2px 4px rgba(239, 68, 68, 0.4)' },
-  iconBoxMarket: { width: '38px', height: '38px', borderRadius: '10px', background: 'rgba(52, 211, 153, 0.15)', color: '#34d399', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, border: '1px solid rgba(52, 211, 153, 0.2)' },
-  iconBoxTrend: { width: '38px', height: '38px', borderRadius: '10px', background: 'rgba(96, 165, 250, 0.15)', color: '#60a5fa', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, border: '1px solid rgba(96, 165, 250, 0.2)' },
-  arrowIconBox: { width: '28px', height: '28px', borderRadius: '50%', background: 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center' },
+  // HOARDING STYLES
+  hoardingContainer: { width: '100%', height: '180px', borderRadius: '16px', overflow: 'hidden', position: 'relative', marginBottom: '35px', border: '1px solid rgba(255,255,255,0.15)', boxShadow: '0 8px 32px rgba(0,0,0,0.3)' },
+  hoardingImage: { width: '100%', height: '100%', objectFit: 'cover' },
+  hoardingOverlay: { position: 'absolute', inset: 0, background: 'linear-gradient(to right, rgba(9,9,11,0.9) 0%, rgba(9,9,11,0.1) 100%)', display: 'flex', alignItems: 'center', padding: '20px' },
+  hoardingText: { color: 'white', fontSize: '24px', fontWeight: '800', lineHeight: '1.2' },
+
+  // BOOKSHELF STYLES
+  bookshelfWrapper: { width: '100%', display: 'flex', flexDirection: 'column' },
+  bookshelf: { width: '100%', overflow: 'hidden', position: 'relative', display: 'flex', alignItems: 'center', paddingBottom: '10px' },
+  shelfBase: { height: '6px', width: '100%', background: '#27272a', borderRadius: '3px', marginTop: '5px' },
+  book: { borderRadius: '12px', backgroundSize: 'cover', backgroundPosition: 'center', cursor: 'pointer', overflow: 'hidden', border: '1px solid rgba(255, 255, 255, 0.35)' },
+  bookGlassOverlay: { width: '100%', height: '100%', background: 'linear-gradient(to top, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.05) 45%, transparent 100%)', transition: 'background 0.3s' }, // Increased image brightness drastically
+  navControls: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', marginTop: '25px', padding: '0 10px' },
+  navBtn: { background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.2)', width: '45px', height: '45px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 4px 10px rgba(0,0,0,0.3)' },
+  navIndicator: { color: '#cbd5e1', fontSize: '14px', fontWeight: '700', letterSpacing: '1px', textTransform: 'uppercase' },
+  closedBookSpine: { width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '10px', writingMode: 'vertical-rl', transform: 'rotate(180deg)' },
+  spineText: { color: '#ffffff', fontWeight: '700', fontSize: '14px', letterSpacing: '1px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', textShadow: '0 2px 6px rgba(0,0,0,0.8)' },
+  openBookContent: { width: '100%', height: '100%', padding: '20px', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', boxSizing: 'border-box' },
+  openBookTitle: { margin: '0 0 15px 0', color: 'white', fontSize: '18px', fontWeight: '700', lineHeight: '1.3', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' },
+  launchBtn: { background: '#10b981', color: '#09090b', border: 'none', padding: '12px', borderRadius: '8px', fontWeight: '700', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' },
   
-  infoTriggerBtn: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', width: '100%', padding: '16px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '16px', color: '#e5e7eb', fontSize: '15px', fontWeight: '600', cursor: 'pointer', marginTop: '10px' },
-  infoModalOverlay: { position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: '#0f172a', zIndex: 2000, display: 'flex', justifyContent: 'center' },
-  infoModalContent: { background: '#0f172a', padding: '20px', width: '100%', maxWidth: '800px', height: '100%', display: 'flex', flexDirection: 'column', boxSizing: 'border-box' },
-  infoModalHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px', paddingBottom: '15px', borderBottom: '1px solid rgba(255,255,255,0.05)' },
-  infoModalTitle: { fontSize: '18px', fontWeight: '700', margin: 0, color: '#f8fafc' },
-  backBtnModal: { background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '50%', width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' },
+  newBadge: { position: 'absolute', top: '15px', right: '15px', background: '#ef4444', color: '#fff', fontSize: '9px', fontWeight: '800', padding: '4px 8px', borderRadius: '4px', letterSpacing: '0.5px' },
+  
+  infoTriggerBtn: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', width: '100%', padding: '16px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', color: '#a1a1aa', fontSize: '14px', fontWeight: '600', cursor: 'pointer', marginTop: '10px' },
+  infoModalOverlay: { position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', zIndex: 2000, display: 'flex', justifyContent: 'flex-end' },
+  infoModalContent: { background: 'rgba(15, 15, 20, 0.9)', backdropFilter: 'blur(20px)', borderLeft: '1px solid rgba(255,255,255,0.1)', padding: '20px', width: '100%', maxWidth: '400px', height: '100%', display: 'flex', flexDirection: 'column', boxSizing: 'border-box', boxShadow: '-10px 0 30px rgba(0,0,0,0.5)' },
+  infoModalHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', paddingBottom: '20px', borderBottom: '1px solid rgba(255,255,255,0.1)' },
+  infoModalTitle: { fontSize: '18px', fontWeight: '700', margin: 0, color: '#ffffff' },
+  backBtnModal: { background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '10px', width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#f8fafc' },
   infoModalScroll: { flex: 1, overflowY: 'auto', paddingRight: '5px' },
 
-  infoCard: { background: 'rgba(255,255,255,0.03)', padding: '16px', borderRadius: '12px', marginBottom: '15px' },
-  cardHeader: { margin: '0 0 15px 0', fontSize: '14px', color: '#34d399', fontWeight: '700', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '8px' },
-  textBlock: { marginBottom: '12px' },
-  highlightText: { fontSize: '12px', color: '#60a5fa', fontWeight: '600', display: 'block', marginBottom: '4px' },
-  paragraph: { fontSize: '11px', color: '#9ca3af', lineHeight: '1.6', margin: 0 },
-  bulletList: { margin: '8px 0 0 0', paddingLeft: '20px', color: '#9ca3af', fontSize: '12px' },
+  infoCard: { background: 'rgba(255,255,255,0.05)', padding: '20px', borderRadius: '12px', marginBottom: '20px', border: '1px solid rgba(255,255,255,0.1)' },
+  cardHeader: { margin: '0 0 15px 0', fontSize: '14px', color: '#10b981', fontWeight: '700' },
+  textBlock: { marginBottom: '15px' },
+  highlightText: { fontSize: '12px', color: '#38bdf8', fontWeight: '600', display: 'block', marginBottom: '4px' },
+  paragraph: { fontSize: '13px', color: '#a1a1aa', lineHeight: '1.6', margin: 0 },
+  bulletList: { margin: '8px 0 0 0', paddingLeft: '20px', color: '#a1a1aa', fontSize: '13px' },
   bulletItem: { marginBottom: '6px', lineHeight: '1.5' },
-  primaryLinkBtn: { background: 'rgba(52, 211, 153, 0.1)', border: '1px solid rgba(52, 211, 153, 0.3)', color: '#34d399', padding: '10px', borderRadius: '8px', fontSize: '12px', fontWeight: '600', cursor: 'pointer', width: '100%', marginTop: '10px' },
-  secondaryLinkBtn: { background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', color: '#9ca3af', padding: '10px', borderRadius: '8px', fontSize: '12px', fontWeight: '600', cursor: 'pointer', width: '100%', marginTop: '10px' },
+  primaryLinkBtn: { background: '#10b981', color: '#09090b', border: 'none', padding: '12px', borderRadius: '8px', fontSize: '13px', fontWeight: '700', cursor: 'pointer', width: '100%', marginTop: '10px' },
+  secondaryLinkBtn: { background: 'rgba(255,255,255,0.1)', border: 'none', color: '#f8fafc', padding: '12px', borderRadius: '8px', fontSize: '13px', fontWeight: '600', cursor: 'pointer', width: '100%', marginTop: '10px' },
 
-  modalOverlay: { position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(8px)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' },
-  modalContent: { background: '#0f172a', border: '1px solid rgba(52, 211, 153, 0.3)', borderRadius: '24px', padding: '30px', width: '100%', maxWidth: '400px', textAlign: 'center', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)' },
-  modalTitle: { fontSize: '20px', fontWeight: '800', color: '#fff', margin: '0 0 10px 0' },
-  modalText: { fontSize: '13px', color: '#9ca3af', margin: '0 0 15px 0', lineHeight: '1.5' },
-  modalReportName: { background: 'rgba(255,255,255,0.05)', padding: '12px', borderRadius: '8px', fontSize: '14px', fontWeight: '600', color: '#34d399', marginBottom: '25px', border: '1px solid rgba(52, 211, 153, 0.2)' },
-  loaderLine: { width: '100%', height: '4px', background: 'rgba(255,255,255,0.1)', borderRadius: '2px', overflow: 'hidden', marginBottom: '15px' },
-  loaderFill: { height: '100%', background: '#34d399' },
-  modalFooterText: { fontSize: '10px', color: '#64748b', textTransform: 'uppercase', letterSpacing: '1px', fontWeight: '700', margin: 0 }
+  modalOverlay: { position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(9,9,11,0.9)', backdropFilter: 'blur(4px)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' },
+  modalContent: { background: '#18181b', border: '1px solid #27272a', borderRadius: '20px', padding: '30px', width: '100%', maxWidth: '400px', textAlign: 'center', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.5)' },
+  modalTitle: { fontSize: '20px', fontWeight: '700', color: '#ffffff', margin: '0 0 10px 0' },
+  modalText: { fontSize: '14px', color: '#a1a1aa', margin: '0 0 20px 0', lineHeight: '1.5' },
+  modalReportName: { background: '#09090b', padding: '16px', borderRadius: '12px', fontSize: '14px', fontWeight: '600', color: '#10b981', marginBottom: '25px', border: '1px solid #27272a' },
+  loaderLine: { width: '100%', height: '4px', background: '#27272a', borderRadius: '2px', overflow: 'hidden', marginBottom: '15px' },
+  loaderFill: { height: '100%', background: '#10b981' },
+  modalFooterText: { fontSize: '11px', color: '#71717a', textTransform: 'uppercase', letterSpacing: '1px', fontWeight: '600', margin: 0 },
+
+  // NEW FULL PAGE OVERLAY STYLES
+  fullPageOverlay: { position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(9,9,11,0.95)', backdropFilter: 'blur(20px)', zIndex: 500, display: 'flex', flexDirection: 'column', boxSizing: 'border-box' },
+  fullPageHeader: { display: 'flex', alignItems: 'center', gap: '15px', padding: '20px', borderBottom: '1px solid rgba(255,255,255,0.1)' },
+  fullPageTitle: { fontSize: '18px', fontWeight: '700', color: '#fff', margin: 0 },
+  fullPageContent: { flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', padding: '20px' }
 };
 
 export default MarketRates;
