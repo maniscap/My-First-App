@@ -340,7 +340,14 @@ function ChatBot() {
       const utterance = new SpeechSynthesisUtterance(cleanText);
       const voices = window.speechSynthesis.getVoices();
       
-      const preferredNames = ["Google UK English Female", "Google US English", "Samantha", "Karen", "Victoria", "Daniel", "Natural", "Neural", "Google UK English Male"];
+      // Expanded list of the highest-quality FREE voices built into Chrome, Edge, and Apple devices
+      const preferredNames = [
+        "Google US English", "Google UK English Male", 
+        "Microsoft Mark", "Microsoft Guy Online", "Microsoft Aria Online",
+        "Samantha", "Alex", "Rishi", "Daniel", 
+        "Google हिन्दी", "Microsoft Hemant", 
+        "Natural", "Neural", "Online", "Premium"
+      ];
       let targetVoice = null;
       
       for (let i = 0; i < preferredNames.length; i++) {
@@ -349,7 +356,7 @@ function ChatBot() {
       }
 
       if (!targetVoice) {
-          targetVoice = voices.find(v => v.lang.includes(detected.code.split('-')[0]) && (v.name.toLowerCase().includes("female") || v.name.toLowerCase().includes("woman")));
+          targetVoice = voices.find(v => v.lang.includes(detected.code.split('-')[0]) && (v.name.toLowerCase().includes("male") || v.name.toLowerCase().includes("man") || v.name.toLowerCase().includes("boy")));
       }
 
       if (!targetVoice) targetVoice = voices.find(v => v.lang.includes(detected.code.split('-')[0]));
@@ -359,8 +366,8 @@ function ChatBot() {
           utterance.lang = targetVoice.lang;
       } 
       
-      utterance.rate = 0.95; 
-      utterance.pitch = 1.0; 
+      utterance.rate = 1.0; // Normal speed sounds much more natural
+      utterance.pitch = 1.0; // Normal pitch prevents the voice from sounding distorted
       
       utterance.onend = () => setSpeaking(false);
       utterance.onerror = () => setSpeaking(false);
