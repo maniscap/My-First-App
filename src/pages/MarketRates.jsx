@@ -102,37 +102,15 @@ const BOOK_COVERS = [
 const Bookshelf = ({ items, onLinkClick, isFullView }) => {
   const [activeIndex, setActiveIndex] = useState(0);
 
-  // Adjusted Sizing: Open book flush to the left, 2 closed spines on the right
-  const W_INACTIVE = isFullView ? 45 : 35;
-  const W_ACTIVE = isFullView ? 270 : 250;
-  const GAP = isFullView ? 15 : 12;
-  const ACTIVE_X_OFFSET = 0; // Anchors the active book to the absolute left edge to save space
-
-  const handleNext = () => setActiveIndex((prev) => Math.min(prev + 1, items.length - 1));
-  const handlePrev = () => setActiveIndex((prev) => Math.max(prev - 1, 0));
-
-  // Smooth Swipe Gestures
-  const handlePanEnd = (e, info) => {
-    const swipeThreshold = 30;
-    const velocityThreshold = 400;
-    if (info.offset.x < -swipeThreshold || info.velocity.x < -velocityThreshold) {
-      setActiveIndex((prev) => Math.min(prev + 1, items.length - 1)); // Swipe Left
-    } else if (info.offset.x > swipeThreshold || info.velocity.x > velocityThreshold) {
-      setActiveIndex((prev) => Math.max(prev - 1, 0)); // Swipe Right
-    }
-  };
+  // Adjusted Sizing: Open book flush to the top, closed spines below it
+  const H_INACTIVE = isFullView ? 40 : 35;
+  const H_ACTIVE = isFullView ? 180 : 150;
+  const GAP = isFullView ? 10 : 8;
 
   return (
     <div style={styles.bookshelfWrapper}>
-      <div style={{ ...styles.bookshelf, height: isFullView ? '55vh' : '260px', minHeight: isFullView ? '400px' : 'auto' }}>
-        {/* Absolute left-aligned track wrapper */}
-        <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, display: 'flex', alignItems: 'center' }}>
-          <motion.div
-            onPanEnd={handlePanEnd}
-            animate={{ x: ACTIVE_X_OFFSET - (activeIndex * (W_INACTIVE + GAP)) }}
-            transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-            style={{ display: 'flex', gap: `${GAP}px`, alignItems: 'center', width: 'max-content', touchAction: 'pan-y', height: '100%' }}
-          >
+      <div className="hide-scrollbar" style={{ ...styles.bookshelf, height: isFullView ? '65vh' : '320px', minHeight: isFullView ? '480px' : 'auto', flexDirection: 'column', overflowY: 'auto', overflowX: 'hidden', alignItems: 'center' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: `${GAP}px`, width: '100%', height: 'max-content', paddingBottom: '20px' }}>
             {items.map((item, idx) => {
               const isActive = activeIndex === idx;
               const bgUrl = BOOK_COVERS[idx % BOOK_COVERS.length];
@@ -141,17 +119,17 @@ const Bookshelf = ({ items, onLinkClick, isFullView }) => {
                 <motion.div
                   key={idx}
                   onClick={() => setActiveIndex(idx)}
-                  style={{ ...styles.book, backgroundImage: `url(${bgUrl})` }}
+                  style={{ ...styles.book, width: '100%', flexShrink: 0 }}
                   animate={{ 
-                    width: isActive ? W_ACTIVE : W_INACTIVE,
-                    height: '100%', // Keeps all books flat on the same visual plane
-                    opacity: isActive ? 1 : 0.85, // Slightly lower opacity so the 3D white edge pops out
+                    height: isActive ? H_ACTIVE : H_INACTIVE,
+                    opacity: isActive ? 1 : 0.85, 
                     boxShadow: isActive 
                       ? '0 15px 30px -5px rgba(0, 0, 0, 0.6), inset 0 0 10px rgba(255, 255, 255, 0.2), inset 1px 1px 2px rgba(255, 255, 255, 0.5)' 
-                      : '0 10px 20px -5px rgba(0, 0, 0, 0.5), inset 6px 0 12px rgba(255, 255, 255, 0.5), inset -2px 0 5px rgba(0, 0, 0, 0.4)' // 3D glass spine facing left
+                      : '0 10px 20px -5px rgba(0, 0, 0, 0.5), inset 0 6px 12px rgba(255, 255, 255, 0.5), inset 0 -2px 5px rgba(0, 0, 0, 0.4)' 
                   }}
                   transition={{ type: "spring", stiffness: 300, damping: 30 }}
                 >
+                  <div style={{ position: 'absolute', inset: 0, backgroundImage: `url(${bgUrl})`, backgroundSize: 'cover', backgroundPosition: 'center', filter: 'brightness(1.5)' }} />
                   <div style={styles.bookGlassOverlay}>
                     {isActive ? (
                       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.15 }} style={styles.openBookContent}>
@@ -160,26 +138,13 @@ const Bookshelf = ({ items, onLinkClick, isFullView }) => {
                         <button style={styles.launchBtn} onClick={(e) => { e.stopPropagation(); onLinkClick(item); }}> Access Report <FaExternalLinkAlt size={12} style={{marginLeft: '8px'}} /> </button>
                       </motion.div>
                     ) : (
-                      <div style={styles.closedBookSpine}><span style={styles.spineText}>{item.name}</span></div>
+                      <div style={styles.closedBookSpineHorizontal}><span style={styles.spineTextHorizontal}>{item.name}</span></div>
                     )}
                   </div>
                 </motion.div>
               );
             })}
-          </motion.div>
-        </div>
-      </div>
-      <div style={styles.shelfBase}></div>
-      
-      {/* NAVIGATION INDICATOR & CONTROLS */}
-      <div style={styles.navControls}>
-        <button onClick={handlePrev} disabled={activeIndex === 0} style={{...styles.navBtn, opacity: activeIndex === 0 ? 0.3 : 1}}>
-          <IoMdArrowBack size={20} color="#fff" />
-        </button>
-        <span style={styles.navIndicator}>Report {activeIndex + 1} of {items.length}</span>
-        <button onClick={handleNext} disabled={activeIndex === items.length - 1} style={{...styles.navBtn, opacity: activeIndex === items.length - 1 ? 0.3 : 1, transform: 'rotate(180deg)'}}>
-          <IoMdArrowBack size={20} color="#fff" />
-        </button>
+          </div>
       </div>
     </div>
   );
@@ -191,6 +156,13 @@ const MarketRates = () => {
   const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
   const [currentBannerIndex, setCurrentBannerIndex] = useState(0);
   const [activeCategory, setActiveCategory] = useState(null);
+
+  useEffect(() => {
+    const style = document.createElement('style');
+    style.innerHTML = `.hide-scrollbar::-webkit-scrollbar { display: none; } .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }`;
+    document.head.appendChild(style);
+    return () => document.head.removeChild(style);
+  }, []);
 
   // Auto-rotating banner interval
   useEffect(() => {
@@ -238,11 +210,15 @@ const MarketRates = () => {
               transition={{ type: 'spring', bounce: 0.5 }}
               style={styles.modalContent}
             >
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginBottom: '20px' }}>
+                <span style={{ fontSize: '28px' }}>🧢</span>
+                <span style={{ fontSize: '20px', fontWeight: '800', color: '#fff', letterSpacing: '0.5px' }}>Farmcap</span>
+              </div>
               <motion.div 
                 animate={{ scale: [1, 1.1, 1] }} 
                 transition={{ repeat: Infinity, duration: 1.5 }}
               >
-                <FaShieldAlt size={50} color="#10b981" style={{ marginBottom: '15px' }}/>
+                <FaShieldAlt size={45} color="#10b981" style={{ marginBottom: '15px' }}/>
               </motion.div>
               <h2 style={styles.modalTitle}>Securing Connection</h2>
               <p style={styles.modalText}>Routing you to the official Directorate of Marketing & Inspection (DMI) portal for:</p>
@@ -271,15 +247,18 @@ const MarketRates = () => {
             transition={{ type: 'tween', duration: 0.3 }}
             style={styles.fullPageOverlay}
           >
-            <div style={styles.fullPageHeader}>
-              <button onClick={() => setActiveCategory(null)} style={styles.backBtnModal}>
-                <IoMdArrowBack size={24} color="#10b981" />
-              </button>
-              <h2 style={styles.fullPageTitle}>{activeCategory.title || activeCategory.category}</h2>
+            <div style={styles.headerContainer}>
+              <div style={styles.glassCapsuleHeader}>
+                <button onClick={() => setActiveCategory(null)} style={styles.iconBtn}>
+                  <IoMdArrowBack size={20} color="#10b981" />
+                </button>
+                <h2 style={styles.fullPageTitle}>{activeCategory.title || activeCategory.category}</h2>
+                <div style={{width: '40px'}}></div>
+              </div>
             </div>
             <div style={styles.fullPageContent}>
               <p style={{color: '#94a3b8', marginBottom: '20px', fontSize: '14px', textAlign: 'center', lineHeight: '1.5'}}>
-                Swipe the books, tap the closed spines, or use the arrows below<br/>to explore all <strong style={{color: '#fff'}}>{activeCategory.items.length}</strong> reports in this category.
+                Scroll up and down to explore all <strong style={{color: '#fff'}}>{activeCategory.items.length}</strong> reports.<br/>Tap an item to expand it.
               </p>
               <Bookshelf items={activeCategory.items} onLinkClick={handleLinkClick} isFullView={true} />
             </div>
@@ -288,8 +267,8 @@ const MarketRates = () => {
       </AnimatePresence>
 
       {/* HEADER */}
-      <div style={styles.header}>
-        <div style={styles.headerTop}>
+      <div style={styles.headerContainer}>
+        <div style={styles.glassCapsuleHeader}>
           <button onClick={() => navigate('/agri-insights')} style={styles.iconBtn}>
             <IoMdArrowBack size={20} color="#10b981"/>
           </button>
@@ -314,7 +293,7 @@ const MarketRates = () => {
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
               transition={{ duration: 1.2, ease: "easeInOut" }}
-              style={{...styles.hoardingImage, position: 'absolute', top: 0, left: 0}} 
+              style={{...styles.hoardingImage, position: 'absolute', top: 0, left: 0, filter: 'brightness(1.5)'}} 
             />
           </AnimatePresence>
           <div style={{...styles.hoardingOverlay, zIndex: 1}}>
@@ -331,22 +310,26 @@ const MarketRates = () => {
             <FaFileInvoice size={20} color="#10b981" />
             <h2 style={styles.sectionTitle}>Prices & Arrival Reports</h2>
           </div>
-          {MARKET_REPORTS.map((group, idx) => (
-            <motion.div
-              key={`market-${idx}`}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              style={{...styles.categoryCard, backgroundImage: `url(${BOOK_COVERS[idx % BOOK_COVERS.length]})`}}
-              onClick={() => setActiveCategory(group)}
-            >
+          {MARKET_REPORTS.map((group, idx) => {
+            const bgUrl = BOOK_COVERS[idx % BOOK_COVERS.length];
+            return (
+              <motion.div
+                key={`market-${idx}`}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                style={styles.categoryCard}
+                onClick={() => setActiveCategory(group)}
+              >
+              <div style={{ position: 'absolute', inset: 0, backgroundImage: `url(${bgUrl})`, backgroundSize: 'cover', backgroundPosition: 'center', filter: 'brightness(1.5)' }} />
               <div style={styles.cardOverlay}></div>
               <div style={styles.cardContent}>
                 <div style={styles.cardIconBox}>{group.icon}</div>
                 <h3 style={styles.cardTitleText}>{group.title}</h3>
                 <FaChevronRight style={{marginLeft: 'auto'}} color="#a1a1aa" size={14} />
               </div>
-            </motion.div>
-          ))}
+              </motion.div>
+            );
+          })}
         </motion.div>
 
         {/* SECTION 2: PRICE TREND REPORTS */}
@@ -356,22 +339,26 @@ const MarketRates = () => {
             <h2 style={styles.sectionTitle}>Price Trend Reports</h2>
           </div>
           
-          {TREND_REPORTS.map((group, idx) => (
-            <motion.div
-              key={`trend-${idx}`}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              style={{...styles.categoryCard, backgroundImage: `url(${BOOK_COVERS[(idx + MARKET_REPORTS.length) % BOOK_COVERS.length]})`}}
-              onClick={() => setActiveCategory(group)}
-            >
+          {TREND_REPORTS.map((group, idx) => {
+            const bgUrl = BOOK_COVERS[(idx + MARKET_REPORTS.length) % BOOK_COVERS.length];
+            return (
+              <motion.div
+                key={`trend-${idx}`}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                style={styles.categoryCard}
+                onClick={() => setActiveCategory(group)}
+              >
+              <div style={{ position: 'absolute', inset: 0, backgroundImage: `url(${bgUrl})`, backgroundSize: 'cover', backgroundPosition: 'center', filter: 'brightness(1.5)' }} />
               <div style={styles.cardOverlay}></div>
               <div style={styles.cardContent}>
                 <div style={styles.cardIconBox}>{group.icon}</div>
                 <h3 style={styles.cardTitleText}>{group.category}</h3>
                 <FaChevronRight style={{marginLeft: 'auto'}} color="#a1a1aa" size={14} />
               </div>
-            </motion.div>
-          ))}
+              </motion.div>
+            );
+          })}
         </motion.div>
 
         {/* SECTION 3: INFO TRIGGER BUTTON */}
@@ -403,12 +390,14 @@ const MarketRates = () => {
               transition={{ type: 'tween', duration: 0.3 }}
               style={styles.infoModalContent}
             >
-              <div style={styles.infoModalHeader}>
-                <button onClick={() => setIsInfoModalOpen(false)} style={styles.backBtnModal}>
-                  <IoMdArrowBack size={24} color="#10b981" />
-                </button>
-                <h2 style={styles.infoModalTitle}>About & Legal</h2>
-                <div style={{width: '40px'}}></div>
+              <div style={styles.headerContainer}>
+                <div style={styles.glassCapsuleHeader}>
+                  <button onClick={() => setIsInfoModalOpen(false)} style={styles.iconBtn}>
+                    <IoMdArrowBack size={20} color="#10b981" />
+                  </button>
+                  <h2 style={styles.infoModalTitle}>About & Legal</h2>
+                  <div style={{width: '40px'}}></div>
+                </div>
               </div>
               <div style={styles.infoModalScroll}>
                 
@@ -490,7 +479,7 @@ const MarketRates = () => {
 const styles = {
   page: { 
     height: '100vh', 
-    background: 'url("https://images.unsplash.com/photo-1504333638930-c8787321eee0?q=80&w=2070&auto=format&fit=crop") center/cover no-repeat', 
+    background: 'url("https://img.freepik.com/premium-photo/concept-growing-crops-using-ai-farming-system-uses-artificial-intelligence-optimize-work_1006821-4087.jpg?w=2000") center/cover no-repeat fixed', 
     color: '#e2e8f0', 
     fontFamily: '"Inter", -apple-system, sans-serif', 
     overflow: 'hidden', 
@@ -501,31 +490,39 @@ const styles = {
   pageOverlay: {
     position: 'absolute',
     top: 0, left: 0, right: 0, bottom: 0,
-    background: 'rgba(9, 9, 11, 0.85)', // Thick dark tint
+    background: 'rgba(0, 0, 0, 0.45)',
     backdropFilter: 'blur(20px)',
     WebkitBackdropFilter: 'blur(20px)',
     zIndex: 0
   },
-  header: { 
-    padding: '20px', 
-    background: 'rgba(9, 9, 11, 0.5)', 
-    backdropFilter: 'blur(10px)',
-    borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+  headerContainer: { 
+    padding: '20px 20px 10px 20px', 
     position: 'relative',
     zIndex: 1
   },
-  headerTop: { display: 'flex', justifyContent: 'space-between', alignItems: 'center' },
+  glassCapsuleHeader: { 
+    display: 'flex', 
+    justifyContent: 'space-between', 
+    alignItems: 'center',
+    background: 'rgba(255, 255, 255, 0.05)',
+    backdropFilter: 'blur(20px)',
+    WebkitBackdropFilter: 'blur(20px)',
+    border: '1px solid rgba(255, 255, 255, 0.15)',
+    borderRadius: '40px',
+    padding: '8px 15px',
+    boxShadow: '0 8px 32px rgba(0,0,0,0.3)'
+  },
   title: { fontSize: '18px', margin: 0, fontWeight: '700', letterSpacing: '0.2px', color: '#ffffff' },
   subtitle: { fontSize: '12px', color: '#10b981', margin: '4px 0 0 0', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px' },
-  iconBtn: { background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', cursor: 'pointer', width: '40px', height: '40px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0, color: '#f8fafc' },
+  iconBtn: { background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', cursor: 'pointer', width: '40px', height: '40px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0, color: '#f8fafc' },
   scrollContent: { flex: 1, overflowY: 'auto', padding: '20px', position: 'relative', zIndex: 1 },
   
   section: { marginBottom: '35px' },
   sectionHeader: { display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' },
   sectionTitle: { fontSize: '13px', fontWeight: '700', margin: 0, color: '#a1a1aa', textTransform: 'uppercase', letterSpacing: '1px' },
   
-  categoryCard: { position: 'relative', padding: '20px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.15)', cursor: 'pointer', marginBottom: '15px', overflow: 'hidden', boxShadow: '0 8px 24px rgba(0,0,0,0.3)', backgroundSize: 'cover', backgroundPosition: 'center' },
-  cardOverlay: { position: 'absolute', inset: 0, background: 'linear-gradient(to right, rgba(9,9,11,0.95) 0%, rgba(9,9,11,0.6) 100%)', zIndex: 0 },
+  categoryCard: { position: 'relative', padding: '20px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.15)', cursor: 'pointer', marginBottom: '15px', overflow: 'hidden', boxShadow: '0 8px 32px rgba(0,0,0,0.2)', background: 'rgba(255, 255, 255, 0.05)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)' },
+  cardOverlay: { position: 'absolute', inset: 0, background: 'linear-gradient(to right, rgba(9,9,11,0.85) 0%, rgba(9,9,11,0.2) 100%)', zIndex: 0 },
   cardContent: { position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', gap: '15px', width: '100%' },
   cardIconBox: { width: '44px', height: '44px', borderRadius: '10px', background: 'rgba(255,255,255,0.1)', backdropFilter: 'blur(10px)', display: 'flex', alignItems: 'center', justifyContent: 'center' },
   cardTitleText: { fontSize: '15px', fontWeight: '700', color: '#ffffff', margin: 0 },
@@ -533,35 +530,32 @@ const styles = {
   // HOARDING STYLES
   hoardingContainer: { width: '100%', height: '180px', borderRadius: '16px', overflow: 'hidden', position: 'relative', marginBottom: '35px', border: '1px solid rgba(255,255,255,0.15)', boxShadow: '0 8px 32px rgba(0,0,0,0.3)' },
   hoardingImage: { width: '100%', height: '100%', objectFit: 'cover' },
-  hoardingOverlay: { position: 'absolute', inset: 0, background: 'linear-gradient(to right, rgba(9,9,11,0.9) 0%, rgba(9,9,11,0.1) 100%)', display: 'flex', alignItems: 'center', padding: '20px' },
+  hoardingOverlay: { position: 'absolute', inset: 0, background: 'linear-gradient(to right, rgba(9,9,11,0.8) 0%, rgba(9,9,11,0.1) 100%)', display: 'flex', alignItems: 'center', padding: '20px' },
   hoardingText: { color: 'white', fontSize: '24px', fontWeight: '800', lineHeight: '1.2' },
 
   // BOOKSHELF STYLES
   bookshelfWrapper: { width: '100%', display: 'flex', flexDirection: 'column' },
   bookshelf: { width: '100%', overflow: 'hidden', position: 'relative', display: 'flex', alignItems: 'center', paddingBottom: '10px' },
-  shelfBase: { height: '6px', width: '100%', background: '#27272a', borderRadius: '3px', marginTop: '5px' },
-  book: { borderRadius: '12px', backgroundSize: 'cover', backgroundPosition: 'center', cursor: 'pointer', overflow: 'hidden', border: '1px solid rgba(255, 255, 255, 0.35)' },
-  bookGlassOverlay: { width: '100%', height: '100%', background: 'linear-gradient(to top, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.05) 45%, transparent 100%)', transition: 'background 0.3s' }, // Increased image brightness drastically
+  book: { position: 'relative', borderRadius: '12px', cursor: 'pointer', overflow: 'hidden', border: '1px solid rgba(255, 255, 255, 0.35)', flexShrink: 0 },
+  bookGlassOverlay: { position: 'relative', zIndex: 1, width: '100%', height: '100%', background: 'linear-gradient(to top, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.05) 45%, transparent 100%)', transition: 'background 0.3s' }, // Increased image brightness drastically
   navControls: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', marginTop: '25px', padding: '0 10px' },
   navBtn: { background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.2)', width: '45px', height: '45px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 4px 10px rgba(0,0,0,0.3)' },
   navIndicator: { color: '#cbd5e1', fontSize: '14px', fontWeight: '700', letterSpacing: '1px', textTransform: 'uppercase' },
-  closedBookSpine: { width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '10px', writingMode: 'vertical-rl', transform: 'rotate(180deg)' },
-  spineText: { color: '#ffffff', fontWeight: '700', fontSize: '14px', letterSpacing: '1px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', textShadow: '0 2px 6px rgba(0,0,0,0.8)' },
-  openBookContent: { width: '100%', height: '100%', padding: '20px', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', boxSizing: 'border-box' },
-  openBookTitle: { margin: '0 0 15px 0', color: 'white', fontSize: '18px', fontWeight: '700', lineHeight: '1.3', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' },
-  launchBtn: { background: '#10b981', color: '#09090b', border: 'none', padding: '12px', borderRadius: '8px', fontWeight: '700', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' },
+  closedBookSpineHorizontal: { width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 15px' },
+  spineTextHorizontal: { color: '#ffffff', fontWeight: '700', fontSize: '13px', letterSpacing: '0.5px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', textShadow: '0 2px 6px rgba(0,0,0,0.8)' },
+  openBookContent: { width: '100%', height: '100%', padding: '15px', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', boxSizing: 'border-box' },
+  openBookTitle: { margin: '0 0 10px 0', color: 'white', fontSize: '16px', fontWeight: '700', lineHeight: '1.2', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' },
+  launchBtn: { background: '#10b981', color: '#09090b', border: 'none', padding: '10px', borderRadius: '8px', fontSize: '13px', fontWeight: '700', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' },
   
   newBadge: { position: 'absolute', top: '15px', right: '15px', background: '#ef4444', color: '#fff', fontSize: '9px', fontWeight: '800', padding: '4px 8px', borderRadius: '4px', letterSpacing: '0.5px' },
   
   infoTriggerBtn: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', width: '100%', padding: '16px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', color: '#a1a1aa', fontSize: '14px', fontWeight: '600', cursor: 'pointer', marginTop: '10px' },
-  infoModalOverlay: { position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', zIndex: 2000, display: 'flex', justifyContent: 'flex-end' },
-  infoModalContent: { background: 'rgba(15, 15, 20, 0.9)', backdropFilter: 'blur(20px)', borderLeft: '1px solid rgba(255,255,255,0.1)', padding: '20px', width: '100%', maxWidth: '400px', height: '100%', display: 'flex', flexDirection: 'column', boxSizing: 'border-box', boxShadow: '-10px 0 30px rgba(0,0,0,0.5)' },
-  infoModalHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', paddingBottom: '20px', borderBottom: '1px solid rgba(255,255,255,0.1)' },
-  infoModalTitle: { fontSize: '18px', fontWeight: '700', margin: 0, color: '#ffffff' },
-  backBtnModal: { background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '10px', width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#f8fafc' },
+  infoModalOverlay: { position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)', zIndex: 2000, display: 'flex', justifyContent: 'flex-end' },
+  infoModalContent: { background: 'rgba(20, 20, 25, 0.65)', backdropFilter: 'blur(25px)', WebkitBackdropFilter: 'blur(25px)', borderLeft: '1px solid rgba(255,255,255,0.1)', padding: '20px', width: '100%', maxWidth: '400px', height: '100%', display: 'flex', flexDirection: 'column', boxSizing: 'border-box', boxShadow: '-10px 0 30px rgba(0,0,0,0.5)' },
+  infoModalTitle: { fontSize: '17px', fontWeight: '700', margin: 0, color: '#ffffff' },
   infoModalScroll: { flex: 1, overflowY: 'auto', paddingRight: '5px' },
 
-  infoCard: { background: 'rgba(255,255,255,0.05)', padding: '20px', borderRadius: '12px', marginBottom: '20px', border: '1px solid rgba(255,255,255,0.1)' },
+  infoCard: { background: 'rgba(255,255,255,0.05)', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)', padding: '20px', borderRadius: '12px', marginBottom: '20px', border: '1px solid rgba(255,255,255,0.1)' },
   cardHeader: { margin: '0 0 15px 0', fontSize: '14px', color: '#10b981', fontWeight: '700' },
   textBlock: { marginBottom: '15px' },
   highlightText: { fontSize: '12px', color: '#38bdf8', fontWeight: '600', display: 'block', marginBottom: '4px' },
@@ -571,8 +565,8 @@ const styles = {
   primaryLinkBtn: { background: '#10b981', color: '#09090b', border: 'none', padding: '12px', borderRadius: '8px', fontSize: '13px', fontWeight: '700', cursor: 'pointer', width: '100%', marginTop: '10px' },
   secondaryLinkBtn: { background: 'rgba(255,255,255,0.1)', border: 'none', color: '#f8fafc', padding: '12px', borderRadius: '8px', fontSize: '13px', fontWeight: '600', cursor: 'pointer', width: '100%', marginTop: '10px' },
 
-  modalOverlay: { position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(9,9,11,0.9)', backdropFilter: 'blur(4px)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' },
-  modalContent: { background: '#18181b', border: '1px solid #27272a', borderRadius: '20px', padding: '30px', width: '100%', maxWidth: '400px', textAlign: 'center', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.5)' },
+  modalOverlay: { position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(9,9,11,0.9)', backdropFilter: 'blur(4px)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px', boxSizing: 'border-box' },
+  modalContent: { background: '#18181b', border: '1px solid #27272a', borderRadius: '20px', padding: '30px', width: '100%', maxWidth: '400px', textAlign: 'center', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.5)', boxSizing: 'border-box' },
   modalTitle: { fontSize: '20px', fontWeight: '700', color: '#ffffff', margin: '0 0 10px 0' },
   modalText: { fontSize: '14px', color: '#a1a1aa', margin: '0 0 20px 0', lineHeight: '1.5' },
   modalReportName: { background: '#09090b', padding: '16px', borderRadius: '12px', fontSize: '14px', fontWeight: '600', color: '#10b981', marginBottom: '25px', border: '1px solid #27272a' },
@@ -581,9 +575,8 @@ const styles = {
   modalFooterText: { fontSize: '11px', color: '#71717a', textTransform: 'uppercase', letterSpacing: '1px', fontWeight: '600', margin: 0 },
 
   // NEW FULL PAGE OVERLAY STYLES
-  fullPageOverlay: { position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(9,9,11,0.95)', backdropFilter: 'blur(20px)', zIndex: 500, display: 'flex', flexDirection: 'column', boxSizing: 'border-box' },
-  fullPageHeader: { display: 'flex', alignItems: 'center', gap: '15px', padding: '20px', borderBottom: '1px solid rgba(255,255,255,0.1)' },
-  fullPageTitle: { fontSize: '18px', fontWeight: '700', color: '#fff', margin: 0 },
+  fullPageOverlay: { position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(25px)', WebkitBackdropFilter: 'blur(25px)', zIndex: 500, display: 'flex', flexDirection: 'column', boxSizing: 'border-box' },
+  fullPageTitle: { fontSize: '17px', fontWeight: '700', color: '#fff', margin: 0 },
   fullPageContent: { flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', padding: '20px' }
 };
 
