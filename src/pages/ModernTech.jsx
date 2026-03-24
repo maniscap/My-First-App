@@ -11,7 +11,7 @@ const ModernTech = () => {
       
       <div style={styles.page}>
         <div style={styles.header}>
-          <button style={styles.iconBtn} onClick={() => navigate(-1)}>
+          <button style={styles.iconBtn} onClick={() => navigate('/agri-insights', { state: { explored: true } })}>
              ← 
           </button>
           <h2 style={styles.title}>Modern Technology</h2>

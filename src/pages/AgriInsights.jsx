@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, Suspense } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { useGLTF, Float, PresentationControls, Environment } from '@react-three/drei';
@@ -131,7 +131,8 @@ const Motor3D = ({ isExplored }) => {
 useGLTF.preload('/models/motor.glb');
 
 const AgriInsights = () => {
-  const [isExplored, setIsExplored] = useState(false);
+  const location = useLocation();
+  const [isExplored, setIsExplored] = useState(location.state?.explored || false);
   const [activeNode, setActiveNode] = useState(null); 
   
   const [signalState, setSignalState] = useState({ active: false, node: null });
