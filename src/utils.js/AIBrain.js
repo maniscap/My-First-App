@@ -1,4 +1,4 @@
-// src/utils/AIBrain.js
+// src/Utilities/AIBrain.js
 
 // 1. API Keys mapped exactly to your environment variables
 const GROQ_KEY = import.meta.env.VITE_GROQ_KEY;
@@ -99,7 +99,7 @@ export const processWithFarmBrain = async (systemPrompt, userText = "", imageBas
                         role: "user",
                         content: [
                             { type: "text", text: userText || "Analyze this image." },
-                            { type: "image_url", image_url: { url: imageBase64 } } // Groq expects full data URL
+                            { type: "image_url", image_url: { url: imageBase64 } }
                         ]
                     });
                 } else {
@@ -124,7 +124,6 @@ export const processWithFarmBrain = async (systemPrompt, userText = "", imageBas
             // PROVIDER 3: HUGGING FACE ROUTING
             // ==========================================
             else if (model.provider === 'hf') {
-                // Hugging face expects raw base64 or binary depending on the pipeline
                 const payload = requiresVision ? cleanBase64(imageBase64) : { inputs: `${systemPrompt}\n${userText}` };
                 
                 const response = await fetch(`https://api-inference.huggingface.co/models/${model.id}`, {
@@ -138,11 +137,9 @@ export const processWithFarmBrain = async (systemPrompt, userText = "", imageBas
 
                 if (!response.ok) throw new Error(`HF API Error: ${response.status}`);
                 const data = await response.json();
-                // HF responses vary wildly by model (classification array vs text generation)
                 resultText = Array.isArray(data) ? JSON.stringify(data[0]) : data.generated_text;
             }
 
-            // If we successfully get here, return the text immediately!
             console.log(`[FarmBrain] Success! Answered by ${model.id}`);
             return {
                 success: true,
@@ -152,12 +149,10 @@ export const processWithFarmBrain = async (systemPrompt, userText = "", imageBas
 
         } catch (error) {
             console.warn(`[FarmBrain] Model ${model.id} failed. Error: ${error.message}. Switching to next backup...`);
-            // Continue the loop to try the next model
             continue; 
         }
     }
 
-    // If the loop finishes and all 42 models failed
     return {
         success: false,
         error: "All AI analysis servers are currently busy or offline. Please try again in a few moments."

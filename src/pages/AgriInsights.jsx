@@ -1,134 +1,6 @@
-import React, { useState, useEffect, useRef, Suspense } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Canvas, useFrame } from '@react-three/fiber';
-import { useGLTF, Float, PresentationControls, Environment } from '@react-three/drei';
-import * as THREE from 'three';
-import farmBg from '../assets/farm-bg.mp4';
-
-// --- THE FIXED MOTOR (No Gyro Rings, Restored Falling Assembly Physics) ---
-const Motor3D = ({ isExplored }) => {
-  const { nodes } = useGLTF('/models/motor.glb');
-  
-  const groupRef = useRef();
-  const topRef = useRef();
-  const bottomRef = useRef();
-  const glassRef = useRef();
-  const hologramRef = useRef();
-  const lightRef = useRef();
-  
-  const particlesRef = useRef();
-
-  const particleData = React.useMemo(() => Array.from({ length: 400 }, () => ({
-    x: (Math.random() - 0.5) * 4,
-    y: (Math.random() - 0.5) * 6,
-    z: (Math.random() - 0.5) * 4,
-    speed: Math.random() * 2.0 + 0.5,
-    factor: Math.random() * 100
-  })), []);
-
-  const [isAssembled, setIsAssembled] = useState(false);
-  useEffect(() => {
-    const timer = setTimeout(() => setIsAssembled(true), 400);
-    return () => clearTimeout(timer);
-  }, []);
-
-  const materials = React.useMemo(() => ({
-    iron: new THREE.MeshPhysicalMaterial({ color: '#b0b0c0', metalness: 0.9, roughness: 0.15, clearcoat: 0.8 }),
-    copper: new THREE.MeshPhysicalMaterial({ color: '#ff5500', metalness: 0.7, roughness: 0.2, emissive: new THREE.Color('#ff2200'), emissiveIntensity: 0 }),
-    plastic: new THREE.MeshPhysicalMaterial({ color: '#0a0a0a', metalness: 0.9, roughness: 0.2, clearcoat: 1.0 })
-  }), []);
-
-  useFrame((state, delta) => {
-    const time = state.clock.elapsedTime;
-
-    groupRef.current.rotation.y += delta * 0.1; 
-    groupRef.current.rotation.x = 0.15; 
-
-    // 🚨 THE FIX: When explored, pieces fly to 150. When closing, they fall back to 0.
-    const topTargetY = (!isAssembled || isExplored) ? 150 : 0; 
-    const bottomTargetY = (!isAssembled || isExplored) ? -150 : 0;
-    const glassTargetY = (!isAssembled || isExplored) ? 250 : 20; 
-
-    topRef.current.position.y = THREE.MathUtils.lerp(topRef.current.position.y, topTargetY, delta * 2.5);
-    bottomRef.current.position.y = THREE.MathUtils.lerp(bottomRef.current.position.y, bottomTargetY, delta * 2.5);
-    glassRef.current.position.y = THREE.MathUtils.lerp(glassRef.current.position.y, glassTargetY, delta * 2.5);
-
-    const hue = (time * 0.2) % 1; 
-    
-    materials.copper.emissive.setHSL(hue, 1, 0.5);
-    materials.copper.emissiveIntensity = 1.5 + Math.sin(time * 5) * 0.5;
-
-    if (hologramRef.current) {
-      hologramRef.current.children[0].material.color.setHSL(hue, 1, 0.5);
-      hologramRef.current.children[1].material.emissive.setHSL(hue, 1, 0.8);
-      hologramRef.current.scale.setScalar(0.5);
-      hologramRef.current.rotation.x += delta * 1;
-      hologramRef.current.rotation.z += delta * 1;
-    }
-
-    if (particlesRef.current) {
-      particlesRef.current.children.forEach((p, i) => {
-        p.position.y += delta * particleData[i].speed * 0.5;
-        p.position.x += Math.sin(time * 2 + particleData[i].factor) * 0.002;
-        p.position.z += Math.cos(time * 2 + particleData[i].factor) * 0.002;
-        if (p.position.y > 3) p.position.y = -3; 
-        
-        p.material.color.setHSL((hue + particleData[i].factor) % 1, 1, 0.6);
-        p.material.opacity = THREE.MathUtils.lerp(p.material.opacity, 0.8, delta * 2);
-      });
-    }
-
-    if (lightRef.current) {
-      lightRef.current.color.setHSL(hue, 1, 0.5);
-      lightRef.current.intensity = 8 + Math.sin(time * 5) * 2;
-    }
-  });
-
-  return (
-    <group ref={groupRef} dispose={null} scale={40}> 
-      <group scale={0.01}>
-        <group ref={topRef}>
-          <mesh geometry={nodes.Rotor_Iron_MAT001_0.geometry} material={materials.iron} scale={100} />
-          <mesh geometry={nodes.Hub_BlackPlast_MAT001_0.geometry} material={materials.plastic} scale={100} />
-        </group>
-        <group ref={bottomRef}>
-          <mesh geometry={nodes.Coils_Coil_MAT001_0.geometry} material={materials.copper} scale={100} />
-          <mesh geometry={nodes.Cores_Iron_MAT001_0.geometry} material={materials.iron} scale={100} />
-          <mesh geometry={nodes.Spools_BlackPlast_MAT001_0.geometry} material={materials.plastic} scale={100} />
-        </group>
-        <mesh ref={glassRef} scale={100}>
-          <cylinderGeometry args={[1.4, 1.4, 0.05, 64]} />
-          <meshPhysicalMaterial color="#ffffff" transmission={0.9} opacity={1} metalness={0.1} roughness={0.1} ior={1.5} thickness={0.5} />
-        </mesh>
-        <group ref={hologramRef} position={[0, 0, 0]} scale={100}>
-          <mesh>
-            <icosahedronGeometry args={[0.5, 1]} />
-            <meshBasicMaterial wireframe={true} />
-          </mesh>
-          <mesh>
-            <octahedronGeometry args={[0.2, 0]} />
-            <meshStandardMaterial color="#ffffff" emissive="#ffffff" emissiveIntensity={2} />
-          </mesh>
-          <pointLight ref={lightRef} distance={200} decay={2} />
-        </group>
-        
-        {/* GYRO RINGS COMPLETELY REMOVED */}
-
-        <group ref={particlesRef} scale={100}>
-          {particleData.map((p, i) => (
-            <mesh key={i} position={[p.x, p.y, p.z]}>
-              <sphereGeometry args={[0.015, 8, 8]} />
-              <meshBasicMaterial color="#00ff77" transparent opacity={0} />
-            </mesh>
-          ))}
-        </group>
-      </group>
-    </group>
-  );
-};
-
-useGLTF.preload('/models/motor.glb');
 
 const AgriInsights = () => {
   const location = useLocation();
@@ -136,11 +8,9 @@ const AgriInsights = () => {
   const [activeNode, setActiveNode] = useState(null); 
   
   const [signalState, setSignalState] = useState({ active: false, node: null });
-  const [isMuted, setIsMuted] = useState(false);
   const [greeting, setGreeting] = useState('');
   const [currentDate, setCurrentDate] = useState('');
   const navigate = useNavigate();
-  const videoRef = useRef(null);
 
   useEffect(() => {
     const hour = new Date().getHours();
@@ -151,23 +21,7 @@ const AgriInsights = () => {
 
     const options = { weekday: 'long', month: 'short', day: 'numeric' };
     setCurrentDate(new Date().toLocaleDateString('en-IN', options));
-
-    if (videoRef.current) {
-      videoRef.current.muted = isMuted;
-      videoRef.current.play().catch(err => {
-        console.log("Autoplay with sound blocked, falling back to muted:", err);
-        setIsMuted(true); // Update the UI toggle to reflect it's muted
-        videoRef.current.muted = true; // Instantly mute the DOM element
-        videoRef.current.play().catch(e => console.log("Muted autoplay also blocked:", e));
-      });
-    }
   }, []);
-
-  useEffect(() => {
-    if (videoRef.current) {
-      videoRef.current.muted = isMuted;
-    }
-  }, [isMuted]);
 
   const nodes = [
     { id: 1, title: 'Market Pulse', icon: '📈', desc: 'Live Mandi Rates & Trends', route: '/market-rates', angle: -45, color: '#00E676' }, // GREEN
@@ -201,9 +55,6 @@ const AgriInsights = () => {
         @keyframes border-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
       `}</style>
       <div style={styles.bg}>
-        <video ref={videoRef} autoPlay loop muted={isMuted} playsInline crossOrigin="anonymous" style={styles.vid}>
-          <source src={farmBg} type="video/mp4" />
-        </video>
         <div style={styles.overlay} />
       </div>
 
@@ -216,13 +67,7 @@ const AgriInsights = () => {
             <h2 style={styles.title}>Agri Insights</h2>
             <p style={styles.dateText}>{greeting} • {currentDate}</p>
           </div>
-          <button style={styles.iconBtn} onClick={() => setIsMuted(!isMuted)}>
-            {isMuted ? (
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><line x1="23" y1="9" x2="17" y2="15"></line><line x1="17" y1="9" x2="23" y2="15"></line></svg>
-            ) : (
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path><path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path></svg>
-            )}
-          </button>
+          <div style={{ width: '40px' }} />
         </div>
 
         <div style={styles.stage}>
@@ -257,23 +102,9 @@ const AgriInsights = () => {
             }}
             transition={{ duration: 0.6, ease: "easeInOut" }} 
           >
-            <div style={{ width: '100%', height: '100%', position: 'absolute', top: 0, left: 0 }}>
-              <Canvas camera={{ position: [0, 4, 12], fov: 45 }}>
-                <ambientLight intensity={1.5} />
-                <directionalLight position={[10, 10, 10]} intensity={3} color="#ffffff" />
-                <directionalLight position={[-10, -10, -10]} intensity={1} color="#00ff77" />
-                <Environment preset="city" />
-                
-                <Float speed={1} rotationIntensity={0.5} floatIntensity={1}>
-                  <PresentationControls global polar={[-0.4, 0.2]} azimuth={[-0.4, 0.2]}>
-                    <Suspense fallback={null}>
-                      {/* Passing isExplored so the parts know when to fall */}
-                      <Motor3D isExplored={isExplored} /> 
-                    </Suspense>
-                  </PresentationControls>
-                </Float>
-              </Canvas>
-            </div>
+            {!isExplored && (
+              <div style={{ fontSize: '60px', filter: 'drop-shadow(0 0 20px rgba(0,255,119,0.3))' }}>🌾</div>
+            )}
             {!isExplored && <p style={styles.tapText}>TAP TO EXPLORE</p>}
           </motion.div>
 
@@ -814,7 +645,6 @@ const AgriInsights = () => {
 // --- STYLES ---
 const styles = {
   bg: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 0, backgroundColor: '#000', overflow: 'hidden' },
-  vid: { position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: '55% center', filter: 'brightness(1.15)' },
   overlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0, 0, 0, 0.15)', zIndex: 1 },
   page: { position: 'relative', zIndex: 10, padding: '20px', height: '100dvh', overflow: 'hidden', display: 'flex', flexDirection: 'column', alignItems: 'center', fontFamily: 'system-ui, sans-serif', boxSizing: 'border-box' },
   header: { background: 'rgba(20,20,20,0.6)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', width: '100%', maxWidth: '400px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 20px', borderRadius: '24px', marginBottom: '10px', color: 'white', boxSizing: 'border-box', border: '1px solid rgba(255,255,255,0.1)', zIndex: 50 },
