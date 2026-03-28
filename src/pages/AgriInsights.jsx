@@ -99,6 +99,7 @@ const AgriInsights = () => {
                     background: 'conic-gradient(from 0deg, transparent 40%, #00E676 55%, #00BFFF 70%, #9D00FF 85%, #FF9800 100%)',
                     zIndex: 0,
                     animation: 'border-spin 2.5s linear infinite',
+                    willChange: 'transform'
                   }}
                 />
 
@@ -116,7 +117,7 @@ const AgriInsights = () => {
                 }}>
                 {/* COLORFUL PARTICLES EFFECT */}
                 <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', borderRadius: '14px', pointerEvents: 'none', zIndex: 0 }}>
-                  {[...Array(20)].map((_, i) => {
+                  {[...Array(6)].map((_, i) => {
                     const colors = ['#FF5252', '#4CAF50', '#FFEB3B', '#E040FB', '#2196F3', '#FF9800'];
                     const color = colors[Math.floor(Math.random() * colors.length)];
                     return (
@@ -131,6 +132,7 @@ const AgriInsights = () => {
                           boxShadow: `0 0 4px ${color}`,
                           left: `${Math.random() * 80 + 10}%`,
                           bottom: '-10px',
+                          willChange: 'transform, opacity'
                         }}
                         animate={{
                           y: [0, -120],
@@ -254,7 +256,7 @@ const AgriInsights = () => {
                 }}
               >
                 <div
-                  style={{ width: 0, height: 0, position: 'absolute', animation: 'orbit-spin 40s linear infinite' }}
+                  style={{ width: 0, height: 0, position: 'absolute', animation: 'orbit-spin 40s linear infinite', willChange: 'transform' }}
                 >
                   <svg style={{ position: 'absolute', overflow: 'visible', width: 1, height: 1, left: 0, top: 0 }}>
                     {/* Futuristic HUD Orbital Rings */}
@@ -297,7 +299,8 @@ const AgriInsights = () => {
                               ...styles.smallNode, width: '100%', height: '100%',
                               position: 'relative',
                               overflow: 'hidden',
-                              boxSizing: 'border-box'
+                              boxSizing: 'border-box',
+                              willChange: 'transform, box-shadow'
                             }}
                             onClick={(e) => { e.stopPropagation(); handleNodeClick(node); }}
                             whileHover="hover"
@@ -341,6 +344,7 @@ const AgriInsights = () => {
                                     background: 'conic-gradient(from 0deg, transparent 40%, #00E676 55%, #00BFFF 70%, #9D00FF 85%, #FF9800 100%)',
                                     zIndex: 0,
                                     animation: 'border-spin 2.5s linear infinite',
+                                    willChange: 'transform'
                                   }}
                                   initial={{ opacity: 0 }}
                                   animate={{ opacity: 1 }}
@@ -409,8 +413,8 @@ const AgriInsights = () => {
                               padding: '4px 8px',
                               borderRadius: '8px',
                               border: `1px solid ${node.color}`,
-                              backdropFilter: 'blur(5px)',
-                              WebkitBackdropFilter: 'blur(5px)'
+                              backdropFilter: 'blur(4px)',
+                              WebkitBackdropFilter: 'blur(4px)'
                             }}
                           >
                             {node.title}
@@ -476,7 +480,7 @@ const AgriInsights = () => {
                     {/* Smoke & Snow Atmospheric Effect */}
                     <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 0 }}>
                       {/* Gentle Smoke / Fog */}
-                      {[...Array(4)].map((_, i) => (
+                      {[...Array(2)].map((_, i) => (
                         <motion.div
                           key={`smoke-${i}`}
                           style={{
@@ -485,7 +489,8 @@ const AgriInsights = () => {
                             background: 'radial-gradient(circle, rgba(255,255,255,0.08) 0%, transparent 70%)',
                             filter: 'blur(10px)',
                             left: `${Math.random() * 100 - 10}%`,
-                            bottom: '-40px'
+                            bottom: '-40px',
+                            willChange: 'transform, opacity'
                           }}
                           animate={{
                             y: [0, -160],
@@ -497,7 +502,7 @@ const AgriInsights = () => {
                         />
                       ))}
                       {/* Digital Snow */}
-                      {[...Array(25)].map((_, i) => (
+                      {[...Array(8)].map((_, i) => (
                         <motion.div
                           key={`snow-${i}`}
                           style={{
@@ -508,6 +513,7 @@ const AgriInsights = () => {
                             boxShadow: '0 0 5px #fff',
                             left: `${Math.random() * 100}%`,
                             top: '-10px',
+                            willChange: 'transform, opacity'
                           }}
                           animate={{
                             y: [0, 150],
@@ -602,7 +608,7 @@ const AgriInsights = () => {
 
 // --- STYLES ---
 const styles = {
-  bg: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 0, backgroundColor: '#000', overflow: 'hidden' },
+  bg: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 0, background: 'linear-gradient(135deg, #1b2e23 0%, #0a120c 100%)', overflow: 'hidden' },
   overlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0, 0, 0, 0.15)', zIndex: 1 },
   page: { position: 'relative', zIndex: 10, padding: '20px', height: '100dvh', overflow: 'hidden', display: 'flex', flexDirection: 'column', alignItems: 'center', fontFamily: 'system-ui, sans-serif', boxSizing: 'border-box' },
   header: { background: 'rgba(20,20,20,0.6)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', width: '100%', maxWidth: '400px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 20px', borderRadius: '24px', marginBottom: '10px', color: 'white', boxSizing: 'border-box', border: '1px solid rgba(255,255,255,0.1)', zIndex: 50 },
