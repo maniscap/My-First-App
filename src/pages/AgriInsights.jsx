@@ -4,7 +4,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 const AgriInsights = () => {
   const location = useLocation();
-  const [isExplored, setIsExplored] = useState(location.state?.explored || false);
   const [activeNode, setActiveNode] = useState(null); 
   
   const [signalState, setSignalState] = useState({ active: false, node: null });
@@ -42,7 +41,6 @@ const AgriInsights = () => {
   };
 
   const closeMenu = () => {
-    setIsExplored(false);
     setActiveNode(null);
     setSignalState({ active: false, node: null });
   };
@@ -84,38 +82,11 @@ const AgriInsights = () => {
             </defs>
           </svg>
 
-          <motion.div 
-            style={{
-              width: '250px', height: '250px', position: 'absolute', top: '50%', left: '50%', 
-              marginLeft: '-125px', marginTop: '-125px', cursor: 'pointer', zIndex: 10,
-              display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-              pointerEvents: isExplored ? 'none' : 'auto' 
-            }}
-            onClick={() => {
-              if (!isExplored) setIsExplored(true);
-            }}
-            initial={{ scale: 1, opacity: 1, y: 40 }}
-            animate={{ 
-              scale: 1, 
-              opacity: isExplored ? 0 : 1, // Smoothly fades out while the motor parts fly away
-              y: isExplored ? -80 : 40 // Glides upward to perfectly match the menu's position
-            }}
-            transition={{ duration: 0.6, ease: "easeInOut" }} 
-          >
-            {!isExplored && (
-              <div style={{ fontSize: '60px', filter: 'drop-shadow(0 0 20px rgba(0,255,119,0.3))' }}>🌾</div>
-            )}
-            {!isExplored && <p style={styles.tapText}>TAP TO EXPLORE</p>}
-          </motion.div>
-
-          <AnimatePresence>
-            {isExplored && (
               <motion.div
                 style={styles.centerBox}
-                initial={{ scale: 0, opacity: 0, rotate: 90 }}
+                initial={{ scale: 0.5, opacity: 0, rotate: 90 }}
                 animate={{ scale: 1, opacity: 1, rotate: 0 }}
-                exit={{ scale: 0, opacity: 0, rotate: -90 }}
-                transition={{ type: 'spring', bounce: 0.5, delay: 0.1 }}
+                transition={{ type: 'spring', bounce: 0.4, duration: 0.8 }}
                 onClick={closeMenu}
                 whileHover={{ scale: 1.15 }}
                 whileTap={{ scale: 0.9 }}
@@ -268,19 +239,14 @@ const AgriInsights = () => {
                 </svg>
                 </div>
               </motion.div>
-            )}
-          </AnimatePresence>
 
-          <AnimatePresence>
-            {isExplored && (
               <motion.div
                 style={{
                   position: 'absolute', top: '50%', left: '50%',
                   x: 0, width: 0, height: 0, zIndex: 15
                 }}
-                initial={{ y: -80, scale: 0, opacity: 0 }}
+                initial={{ y: -80, scale: 0.5, opacity: 0 }}
                 animate={{ y: -80, scale: 1, opacity: 1 }}
-                exit={{ y: -80, scale: 0, opacity: 0 }}
                 transition={{
                   y: { type: 'spring', stiffness: 300, damping: 25 },
                   scale: { type: 'spring', stiffness: 260, damping: 20 },
@@ -455,11 +421,7 @@ const AgriInsights = () => {
                   })}
                 </div>
               </motion.div>
-            )}
-          </AnimatePresence>
 
-          <AnimatePresence>
-            {isExplored && (
               <motion.div
                 style={{
                   width: '320px', height: '125px',
@@ -468,10 +430,9 @@ const AgriInsights = () => {
                   transformOrigin: 'top center',
                   perspective: '800px'
                 }}
-                initial={{ opacity: 0, rotateX: 20, y: 20, scale: 0.9 }} 
+                initial={{ opacity: 0, rotateX: 20, y: 40, scale: 0.9 }} 
                 animate={{ opacity: 1, rotateX: 5, y: 0, scale: 1 }} 
-                exit={{ opacity: 0, rotateX: 20, y: 20, scale: 0.9 }}
-                transition={{ duration: 0.4, type: 'spring', bounce: 0.3 }}
+                transition={{ duration: 0.6, type: 'spring', bounce: 0.4, delay: 0.2 }}
               >
                 {/* 2. Border Masking Container */}
                 <div style={{
@@ -633,9 +594,6 @@ const AgriInsights = () => {
                   </div>
                 </div>
               </motion.div>
-            )}
-          </AnimatePresence>
-
         </div>
       </div>
     </>
@@ -655,8 +613,6 @@ const styles = {
   
   stage: { position: 'relative', flex: 1, width: '100%', maxWidth: '400px', overflow: 'visible', display: 'flex', alignItems: 'center', justifyContent: 'center' },
 
-  tapText: { position: 'absolute', bottom: '-30px', zIndex: 20, color: '#00ff77', fontSize: '11px', fontWeight: 'bold', letterSpacing: '2px', margin: 0, textShadow: '0 0 10px rgba(0,255,119,0.8)', background: 'rgba(0,0,0,0.6)', padding: '4px 10px', borderRadius: '10px' },
-
   centerBox: {
     position: 'absolute', top: '50%', left: '50%',
     width: '72px', height: '72px', marginLeft: '-36px', marginTop: '-116px', 
@@ -669,15 +625,17 @@ const styles = {
 
   smallNode: { 
     width: '66px', height: '66px', 
-    background: 'rgba(255, 255, 255, 0.05)', 
-    backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)', 
-    borderTop: '1px solid rgba(255,255,255,0.4)', borderLeft: '1px solid rgba(255,255,255,0.4)', 
-    borderRadius: '15px', 
-    display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', zIndex: 10 
+    background: 'rgba(20, 20, 25, 0.65)', 
+    backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', 
+    borderTop: '1px solid rgba(255,255,255,0.3)', borderLeft: '1px solid rgba(255,255,255,0.3)', 
+    borderBottom: '1px solid rgba(255,255,255,0.05)', borderRight: '1px solid rgba(255,255,255,0.05)',
+    borderRadius: '16px', 
+    display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', zIndex: 10,
+    boxShadow: '0 8px 32px rgba(0,0,0,0.3)'
   },
   nodeIconSmall: { fontSize: '28px', filter: 'drop-shadow(0 2px 5px rgba(0,0,0,0.5))' },
 
-  displayScreen: { width: '320px', height: '125px', backdropFilter: 'blur(30px)', WebkitBackdropFilter: 'blur(30px)', borderRadius: '24px', padding: '15px 20px', display: 'flex', flexDirection: 'column', justifyContent: 'center', zIndex: 10, boxSizing: 'border-box' },
+  displayScreen: { width: '320px', height: '125px', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', borderRadius: '24px', padding: '15px 20px', display: 'flex', flexDirection: 'column', justifyContent: 'center', zIndex: 10, boxSizing: 'border-box' },
   
   activeContent: { display: 'flex', flexDirection: 'column', justifyContent: 'space-between', height: '100%' },
   launchBtn: { background: 'linear-gradient(90deg, rgba(255,255,255,0.1), rgba(255,255,255,0.05))', border: '1px solid rgba(255, 255, 255, 0.2)', color: '#fff', textShadow: '0 0 8px rgba(255,255,255,0.5)', padding: '8px', borderRadius: '12px', fontSize: '13px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', transition: 'all 0.3s ease', marginTop: '10px', boxShadow: '0 4px 15px rgba(0,0,0,0.3)' },
