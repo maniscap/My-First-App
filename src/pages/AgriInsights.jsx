@@ -30,14 +30,8 @@ const AgriInsights = () => {
   ];
 
   const handleNodeClick = (node) => {
-    if (signalState.active) return; // Prevent double clicks
-    setActiveNode(null); // Hide current display
-    setSignalState({ active: true, node: node });
-    
-    setTimeout(() => {
-      setSignalState({ active: false, node: null });
-      setActiveNode(node); // Show data display
-    }, 600);
+    setActiveNode(node); // Show data display immediately
+    setSignalState({ active: false, node: null });
   };
 
   const closeMenu = () => {
@@ -447,17 +441,25 @@ const AgriInsights = () => {
                   boxShadow: '0 20px 40px rgba(0,0,0,0.9)',
                   boxSizing: 'border-box'
                 }}>
-                  {/* 3. Core Sharp Border Snake */}
-                  <motion.div
-                    style={{
-                      position: 'absolute', top: '50%', left: '50%', 
-                      width: '500px', height: '500px', marginLeft: '-250px', marginTop: '-250px',
-                      background: 'conic-gradient(from 0deg, transparent 40%, #00E676 55%, #00BFFF 70%, #9D00FF 85%, #FF9800 100%)',
-                      zIndex: 0
-                    }}
-                    animate={{ rotate: 360 }}
-                    transition={{ duration: 2.5, repeat: Infinity, ease: 'linear' }}
-                  />
+                  {/* 3. Core Sharp Border Snake (Visible only when Active) */}
+                  <AnimatePresence>
+                    {activeNode && (
+                      <motion.div
+                        style={{
+                          position: 'absolute', top: '50%', left: '50%', 
+                          width: '500px', height: '500px', marginLeft: '-250px', marginTop: '-250px',
+                          background: 'conic-gradient(from 0deg, transparent 40%, #00E676 55%, #00BFFF 70%, #9D00FF 85%, #FF9800 100%)',
+                          zIndex: 0,
+                          animation: 'border-spin 2.5s linear infinite',
+                          willChange: 'transform, opacity'
+                        }}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.8, ease: 'easeInOut' }}
+                      />
+                    )}
+                  </AnimatePresence>
 
                   {/* 4. Inner Black Terminal Screen */}
                   <div style={{
@@ -546,12 +548,12 @@ const AgriInsights = () => {
                             <div>
                               <h3 style={{margin: '0 0 4px 0', fontSize: '14px', color: '#fff', fontFamily: "'SFMono-Regular', Consolas, monospace", fontWeight: '600', letterSpacing: '1px', textTransform: 'uppercase'}}>
                                 {activeNode.title.split('').map((char, i) => (
-                                  <motion.span key={i} initial={{opacity: 0}} animate={{opacity: 1}} transition={{delay: i * 0.05}}>{char === ' ' ? '\u00A0' : char}</motion.span>
+                                  <motion.span key={i} initial={{opacity: 0}} animate={{opacity: 1}} transition={{delay: i * 0.02}}>{char === ' ' ? '\u00A0' : char}</motion.span>
                                 ))}
                               </h3>
                               <p style={{margin: 0, fontSize: '11px', color: '#a1a1aa', fontFamily: 'system-ui, -apple-system, sans-serif', lineHeight: '1.4', letterSpacing: '0.5px'}}>
                                 {activeNode.desc.split('').map((char, i) => (
-                                  <motion.span key={i} initial={{opacity: 0}} animate={{opacity: 1}} transition={{delay: (activeNode.title.length * 0.05) + (i * 0.03)}}>{char === ' ' ? '\u00A0' : char}</motion.span>
+                                  <motion.span key={i} initial={{opacity: 0}} animate={{opacity: 1}} transition={{delay: (activeNode.title.length * 0.02) + (i * 0.01)}}>{char === ' ' ? '\u00A0' : char}</motion.span>
                                 ))}
                               </p>
                             </div>
@@ -573,7 +575,7 @@ const AgriInsights = () => {
                             }}
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
-                            transition={{ delay: (activeNode.title.length * 0.05) + (activeNode.desc.length * 0.03) + 0.1 }}
+                            transition={{ delay: (activeNode.title.length * 0.02) + (activeNode.desc.length * 0.01) + 0.1 }}
                             whileHover={{ scale: 1.02, backgroundColor: `${activeNode.color}26`, borderColor: activeNode.color, boxShadow: `0 0 15px ${activeNode.color}33` }}
                             whileTap={{ scale: 0.98 }}
                             onClick={() => navigate(activeNode.route)}
@@ -608,8 +610,20 @@ const AgriInsights = () => {
 
 // --- STYLES ---
 const styles = {
-  bg: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 0, background: 'linear-gradient(135deg, #1b2e23 0%, #0a120c 100%)', overflow: 'hidden' },
-  overlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0, 0, 0, 0.15)', zIndex: 1 },
+  bg: { 
+    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 0,
+    backgroundImage: 'url("https://images.unsplash.com/photo-1625246333195-78d9c38ad449?q=80&w=2940&auto=format&fit=crop")',
+    backgroundSize: 'cover',
+    backgroundPosition: 'center',
+    filter: 'blur(10px) brightness(0.35)',
+    transform: 'scale(1.1)', // Scales up slightly to hide the blurred white edges
+    overflow: 'hidden' 
+  },
+  overlay: { 
+    position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 1, 
+    backgroundImage: 'linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px)',
+    backgroundSize: '35px 35px'
+  },
   page: { position: 'relative', zIndex: 10, padding: '20px', height: '100dvh', overflow: 'hidden', display: 'flex', flexDirection: 'column', alignItems: 'center', fontFamily: 'system-ui, sans-serif', boxSizing: 'border-box' },
   header: { background: 'rgba(20,20,20,0.6)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', width: '100%', maxWidth: '400px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 20px', borderRadius: '24px', marginBottom: '10px', color: 'white', boxSizing: 'border-box', border: '1px solid rgba(255,255,255,0.1)', zIndex: 50 },
   headerTextContainer: { display: 'flex', flexDirection: 'column', alignItems: 'center' },

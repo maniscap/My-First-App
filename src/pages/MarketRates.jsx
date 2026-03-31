@@ -93,57 +93,44 @@ const BOOK_COVERS = [
   "https://img.freepik.com/premium-photo/farmer-using-laptop-scenic-rice-field-sunset_38013-38674.jpg",
   "https://static.vecteezy.com/system/resources/thumbnails/041/760/565/small_2x/ai-generated-tractor-spraying-pesticide-on-wheat-field-free-photo.jpeg",
   "https://img.freepik.com/premium-photo/concept-growing-crops-using-ai-farming-system-uses-artificial-intelligence-optimize-work_1006821-4087.jpg?w=2000",
-  "https://img.freepik.com/premium-photo/young-indian-farmer-using-laptop-agriculture-field_75648-8622.jpg",
-  "https://peachbot.in/storage/blogs/V1FRLmrDjxKeMWNUyWA7Vkyh6tHoJaoo3k0sIR5V.jpg",
-  "https://img.freepik.com/premium-photo/concept-growing-crops-using-ai-farming-system-uses-artificial-intelligence-optimize-work_1006821-4087.jpg?w=2000"
 ];
 
 // --- NEW: GLASS BOOKSHELF COMPONENT ---
-const Bookshelf = ({ items, onLinkClick, isFullView }) => {
-  const [activeIndex, setActiveIndex] = useState(0);
-
-  // Adjusted Sizing: Open book flush to the top, closed spines below it
-  const H_INACTIVE = isFullView ? 40 : 35;
-  const H_ACTIVE = isFullView ? 180 : 150;
-  const GAP = isFullView ? 10 : 8;
+const Bookshelf = ({ items, onLinkClick }) => {
+  const GAP = 12;
 
   return (
-    <div style={styles.bookshelfWrapper}>
-      <div className="hide-scrollbar" style={{ ...styles.bookshelf, height: isFullView ? '65vh' : '320px', minHeight: isFullView ? '480px' : 'auto', flexDirection: 'column', overflowY: 'auto', overflowX: 'hidden', alignItems: 'center' }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: `${GAP}px`, width: '100%', height: 'max-content', paddingBottom: '20px' }}>
-            {items.map((item, idx) => {
-              const isActive = activeIndex === idx;
-              const bgUrl = BOOK_COVERS[idx % BOOK_COVERS.length];
-
-              return (
-                <motion.div
-                  key={idx}
-                  onClick={() => setActiveIndex(idx)}
-                  style={{ ...styles.book, width: '100%', flexShrink: 0 }}
-                  animate={{ 
-                    height: isActive ? H_ACTIVE : H_INACTIVE,
-                    opacity: isActive ? 1 : 0.85, 
-                    boxShadow: isActive 
-                      ? '0 15px 30px -5px rgba(0, 0, 0, 0.6), inset 0 0 10px rgba(255, 255, 255, 0.2), inset 1px 1px 2px rgba(255, 255, 255, 0.5)' 
-                      : '0 10px 20px -5px rgba(0, 0, 0, 0.5), inset 0 6px 12px rgba(255, 255, 255, 0.5), inset 0 -2px 5px rgba(0, 0, 0, 0.4)' 
-                  }}
-                  transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                >
-                  <div style={{ position: 'absolute', inset: 0, backgroundImage: `url(${bgUrl})`, backgroundSize: 'cover', backgroundPosition: 'center', filter: 'brightness(1.5)' }} />
-                  <div style={styles.bookGlassOverlay}>
-                    {isActive ? (
-                      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.15 }} style={styles.openBookContent}>
-                        {item.isNew && <span style={styles.newBadge}>NEW</span>}
-                        <h3 style={styles.openBookTitle}>{item.name}</h3>
-                        <button style={styles.launchBtn} onClick={(e) => { e.stopPropagation(); onLinkClick(item); }}> Access Report <FaExternalLinkAlt size={12} style={{marginLeft: '8px'}} /> </button>
-                      </motion.div>
-                    ) : (
-                      <div style={styles.closedBookSpineHorizontal}><span style={styles.spineTextHorizontal}>{item.name}</span></div>
-                    )}
-                  </div>
-                </motion.div>
-              );
-            })}
+    <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column' }}>
+      <div className="hide-scrollbar" style={{ width: '100%', height: '100%', overflowY: 'auto', overflowX: 'hidden' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: `${GAP}px`, width: '100%', paddingBottom: '120px' }}>
+            {items.map((item, idx) => (
+              <motion.div
+                key={idx}
+                onClick={() => onLinkClick(item)}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                style={{ 
+                  ...styles.book, 
+                  width: '100%', 
+                  flexShrink: 0, 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'space-between',
+                  padding: '20px 15px',
+                  background: 'linear-gradient(135deg, rgba(30, 30, 35, 0.8) 0%, rgba(15, 15, 20, 0.6) 100%)',
+                  boxShadow: '0 8px 20px -5px rgba(0, 0, 0, 0.3)',
+                  boxSizing: 'border-box'
+                }}
+              >
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', flex: 1, paddingRight: '15px' }}>
+                  {item.isNew && <span style={{...styles.newBadge, position: 'static', marginBottom: '8px'}}>NEW</span>}
+                  <h3 style={{...styles.openBookTitle, WebkitLineClamp: 3, margin: 0, fontSize: '15px'}}>{item.name}</h3>
+                </div>
+                <div style={{ background: 'rgba(16, 185, 129, 0.1)', padding: '12px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <FaExternalLinkAlt size={16} color="#10b981" />
+                </div>
+              </motion.div>
+            ))}
           </div>
       </div>
     </div>
@@ -260,7 +247,7 @@ const MarketRates = () => {
               <p style={{color: '#94a3b8', marginBottom: '20px', fontSize: '14px', textAlign: 'center', lineHeight: '1.5'}}>
                 Scroll up and down to explore all <strong style={{color: '#fff'}}>{activeCategory.items.length}</strong> reports.<br/>Tap an item to expand it.
               </p>
-              <Bookshelf items={activeCategory.items} onLinkClick={handleLinkClick} isFullView={true} />
+              <Bookshelf items={activeCategory.items} onLinkClick={handleLinkClick} />
             </div>
           </motion.div>
         )}
@@ -311,7 +298,6 @@ const MarketRates = () => {
             <h2 style={styles.sectionTitle}>Prices & Arrival Reports</h2>
           </div>
           {MARKET_REPORTS.map((group, idx) => {
-            const bgUrl = BOOK_COVERS[idx % BOOK_COVERS.length];
             return (
               <motion.div
                 key={`market-${idx}`}
@@ -320,8 +306,6 @@ const MarketRates = () => {
                 style={styles.categoryCard}
                 onClick={() => setActiveCategory(group)}
               >
-              <div style={{ position: 'absolute', inset: 0, backgroundImage: `url(${bgUrl})`, backgroundSize: 'cover', backgroundPosition: 'center', filter: 'brightness(1.5)' }} />
-              <div style={styles.cardOverlay}></div>
               <div style={styles.cardContent}>
                 <div style={styles.cardIconBox}>{group.icon}</div>
                 <h3 style={styles.cardTitleText}>{group.title}</h3>
@@ -340,7 +324,6 @@ const MarketRates = () => {
           </div>
           
           {TREND_REPORTS.map((group, idx) => {
-            const bgUrl = BOOK_COVERS[(idx + MARKET_REPORTS.length) % BOOK_COVERS.length];
             return (
               <motion.div
                 key={`trend-${idx}`}
@@ -349,8 +332,6 @@ const MarketRates = () => {
                 style={styles.categoryCard}
                 onClick={() => setActiveCategory(group)}
               >
-              <div style={{ position: 'absolute', inset: 0, backgroundImage: `url(${bgUrl})`, backgroundSize: 'cover', backgroundPosition: 'center', filter: 'brightness(1.5)' }} />
-              <div style={styles.cardOverlay}></div>
               <div style={styles.cardContent}>
                 <div style={styles.cardIconBox}>{group.icon}</div>
                 <h3 style={styles.cardTitleText}>{group.category}</h3>
@@ -485,7 +466,8 @@ const styles = {
     overflow: 'hidden', 
     display: 'flex', 
     flexDirection: 'column',
-    position: 'relative'
+    position: 'relative',
+    boxSizing: 'border-box'
   },
   pageOverlay: {
     position: 'absolute',
@@ -498,7 +480,9 @@ const styles = {
   headerContainer: { 
     padding: '20px 20px 10px 20px', 
     position: 'relative',
-    zIndex: 1
+    zIndex: 1,
+    width: '100%',
+    boxSizing: 'border-box'
   },
   glassCapsuleHeader: { 
     display: 'flex', 
@@ -513,39 +497,28 @@ const styles = {
     boxShadow: '0 8px 32px rgba(0,0,0,0.3)'
   },
   title: { fontSize: '18px', margin: 0, fontWeight: '700', letterSpacing: '0.2px', color: '#ffffff' },
-  subtitle: { fontSize: '12px', color: '#10b981', margin: '4px 0 0 0', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px' },
+  subtitle: { fontSize: '12px', color: '#a7f3d0', margin: '4px 0 0 0', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px', textShadow: '0 1px 4px rgba(0,0,0,0.6)' },
   iconBtn: { background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', cursor: 'pointer', width: '40px', height: '40px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0, color: '#f8fafc' },
-  scrollContent: { flex: 1, overflowY: 'auto', padding: '20px', position: 'relative', zIndex: 1 },
+  scrollContent: { flex: 1, overflowY: 'auto', padding: '20px', position: 'relative', zIndex: 1, width: '100%', boxSizing: 'border-box' },
   
   section: { marginBottom: '35px' },
   sectionHeader: { display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' },
   sectionTitle: { fontSize: '13px', fontWeight: '700', margin: 0, color: '#a1a1aa', textTransform: 'uppercase', letterSpacing: '1px' },
   
-  categoryCard: { position: 'relative', padding: '20px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.15)', cursor: 'pointer', marginBottom: '15px', overflow: 'hidden', boxShadow: '0 8px 32px rgba(0,0,0,0.2)', background: 'rgba(255, 255, 255, 0.05)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)' },
-  cardOverlay: { position: 'absolute', inset: 0, background: 'linear-gradient(to right, rgba(9,9,11,0.85) 0%, rgba(9,9,11,0.2) 100%)', zIndex: 0 },
+  categoryCard: { position: 'relative', padding: '20px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.1)', borderTop: '1px solid rgba(255,255,255,0.2)', borderLeft: '1px solid rgba(255,255,255,0.2)', cursor: 'pointer', marginBottom: '15px', overflow: 'hidden', boxShadow: '0 8px 32px rgba(0,0,0,0.3)', background: 'linear-gradient(135deg, rgba(30, 30, 35, 0.8) 0%, rgba(15, 15, 20, 0.6) 100%)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', width: '100%', boxSizing: 'border-box' },
   cardContent: { position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', gap: '15px', width: '100%' },
   cardIconBox: { width: '44px', height: '44px', borderRadius: '10px', background: 'rgba(255,255,255,0.1)', backdropFilter: 'blur(10px)', display: 'flex', alignItems: 'center', justifyContent: 'center' },
   cardTitleText: { fontSize: '15px', fontWeight: '700', color: '#ffffff', margin: 0 },
   
   // HOARDING STYLES
-  hoardingContainer: { width: '100%', height: '180px', borderRadius: '16px', overflow: 'hidden', position: 'relative', marginBottom: '35px', border: '1px solid rgba(255,255,255,0.15)', boxShadow: '0 8px 32px rgba(0,0,0,0.3)' },
+  hoardingContainer: { width: '100%', height: '180px', borderRadius: '16px', overflow: 'hidden', position: 'relative', marginBottom: '35px', border: '1px solid rgba(255,255,255,0.15)', boxShadow: '0 8px 32px rgba(0,0,0,0.3)', boxSizing: 'border-box' },
   hoardingImage: { width: '100%', height: '100%', objectFit: 'cover' },
-  hoardingOverlay: { position: 'absolute', inset: 0, background: 'linear-gradient(to right, rgba(9,9,11,0.8) 0%, rgba(9,9,11,0.1) 100%)', display: 'flex', alignItems: 'center', padding: '20px' },
+  hoardingOverlay: { position: 'absolute', inset: 0, background: 'linear-gradient(to right, rgba(9,9,11,0.8) 0%, rgba(9,9,11,0.1) 100%)', display: 'flex', alignItems: 'center', padding: '20px', boxSizing: 'border-box' },
   hoardingText: { color: 'white', fontSize: '24px', fontWeight: '800', lineHeight: '1.2' },
 
   // BOOKSHELF STYLES
-  bookshelfWrapper: { width: '100%', display: 'flex', flexDirection: 'column' },
-  bookshelf: { width: '100%', overflow: 'hidden', position: 'relative', display: 'flex', alignItems: 'center', paddingBottom: '10px' },
-  book: { position: 'relative', borderRadius: '12px', cursor: 'pointer', overflow: 'hidden', border: '1px solid rgba(255, 255, 255, 0.35)', flexShrink: 0 },
-  bookGlassOverlay: { position: 'relative', zIndex: 1, width: '100%', height: '100%', background: 'linear-gradient(to top, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.05) 45%, transparent 100%)', transition: 'background 0.3s' }, // Increased image brightness drastically
-  navControls: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', marginTop: '25px', padding: '0 10px' },
-  navBtn: { background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.2)', width: '45px', height: '45px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 4px 10px rgba(0,0,0,0.3)' },
-  navIndicator: { color: '#cbd5e1', fontSize: '14px', fontWeight: '700', letterSpacing: '1px', textTransform: 'uppercase' },
-  closedBookSpineHorizontal: { width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 15px' },
-  spineTextHorizontal: { color: '#ffffff', fontWeight: '700', fontSize: '13px', letterSpacing: '0.5px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', textShadow: '0 2px 6px rgba(0,0,0,0.8)' },
-  openBookContent: { width: '100%', height: '100%', padding: '15px', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', boxSizing: 'border-box' },
+  book: { position: 'relative', borderRadius: '16px', cursor: 'pointer', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.1)', borderTop: '1px solid rgba(255,255,255,0.2)', borderLeft: '1px solid rgba(255,255,255,0.2)', flexShrink: 0, backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', boxSizing: 'border-box' },
   openBookTitle: { margin: '0 0 10px 0', color: 'white', fontSize: '16px', fontWeight: '700', lineHeight: '1.2', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' },
-  launchBtn: { background: '#10b981', color: '#09090b', border: 'none', padding: '10px', borderRadius: '8px', fontSize: '13px', fontWeight: '700', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' },
   
   newBadge: { position: 'absolute', top: '15px', right: '15px', background: '#ef4444', color: '#fff', fontSize: '9px', fontWeight: '800', padding: '4px 8px', borderRadius: '4px', letterSpacing: '0.5px' },
   
@@ -577,7 +550,7 @@ const styles = {
   // NEW FULL PAGE OVERLAY STYLES
   fullPageOverlay: { position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(25px)', WebkitBackdropFilter: 'blur(25px)', zIndex: 500, display: 'flex', flexDirection: 'column', boxSizing: 'border-box' },
   fullPageTitle: { fontSize: '17px', fontWeight: '700', color: '#fff', margin: 0 },
-  fullPageContent: { flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', padding: '20px' }
+  fullPageContent: { flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'flex-start', alignItems: 'center', padding: '20px', paddingTop: '10px', overflow: 'hidden', width: '100%', boxSizing: 'border-box' }
 };
 
 export default MarketRates;
