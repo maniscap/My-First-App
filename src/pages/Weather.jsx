@@ -5,7 +5,7 @@ import {
   WiHumidity, WiThermometer, WiRain, WiBarometer, WiTime3 
 } from 'react-icons/wi';
 import { 
-  IoMdAdd, IoMdSearch, IoMdClose, IoMdNavigate, IoMdArrowBack 
+  IoMdAdd, IoMdSearch, IoMdClose, IoMdNavigate, IoMdArrowBack, IoMdRefresh
 } from 'react-icons/io';
 import { MdLocationOn, MdDelete, MdGpsFixed } from 'react-icons/md';
 import { FaMaskFace } from 'react-icons/fa6'; 
@@ -32,15 +32,15 @@ const weatherImages = {
 };
 
 // --- SMART TEXT MATCHER AS SECONDARY FALLBACK ---
-const getBackgroundImage = (conditionText) => {
+const getBackgroundImage = (conditionText, isDay) => {
   if (!conditionText) return weatherImages.defaultFallback;
   const text = conditionText.toLowerCase();
   
-  if (text.includes('overcast') || text.includes('cloud')) return weatherImages.cloudyDay; 
-  if (text.includes('rain') || text.includes('shower')) return weatherImages.rainDay;
-  if (text.includes('drizzle')) return weatherImages.drizzle;
-  if (text.includes('clear') || text.includes('sun')) return weatherImages.clearDay;
-  if (text.includes('mist') || text.includes('fog')) return weatherImages.mistDay;
+  if (text.includes('overcast') || text.includes('cloud')) return isDay ? weatherImages.cloudyDay : weatherImages.cloudyNight; 
+  if (text.includes('rain') || text.includes('shower')) return isDay ? weatherImages.rainDay : weatherImages.rainNight;
+  if (text.includes('drizzle')) return isDay ? weatherImages.drizzle : weatherImages.rainNight;
+  if (text.includes('clear') || text.includes('sun')) return isDay ? weatherImages.clearDay : weatherImages.clearNight;
+  if (text.includes('mist') || text.includes('fog')) return isDay ? weatherImages.mistDay : weatherImages.mistNight;
   if (text.includes('thunder') || text.includes('storm')) return weatherImages.storm;
   
   return weatherImages.defaultFallback;
@@ -131,12 +131,26 @@ const Weather = () => {
 
   const getTemp = (celsius) => unit === 'C' ? Math.round(celsius) : Math.round((celsius * 9/5) + 32);
 
-  const getAqiColor = (pm10) => {
-      if (!pm10) return 'rgba(255,255,255,0.2)';
-      if (pm10 <= 50) return 'rgba(76, 175, 80, 0.4)'; 
-      if (pm10 <= 100) return 'rgba(255, 235, 59, 0.4)'; 
-      if (pm10 <= 200) return 'rgba(255, 152, 0, 0.4)'; 
-      return 'rgba(244, 67, 54, 0.4)'; 
+  const getAqiInfo = (airQuality) => {
+      if (!airQuality || !airQuality['us-epa-index']) return { text: 'Unknown', color: 'rgba(255,255,255,0.2)' };
+      const index = airQuality['us-epa-index'];
+      switch(index) {
+          case 1: return { text: 'Good', color: 'rgba(76, 175, 80, 0.4)' };
+          case 2: return { text: 'Moderate', color: 'rgba(255, 235, 59, 0.4)' };
+          case 3: return { text: 'Sensitive', color: 'rgba(255, 152, 0, 0.4)' };
+          case 4: return { text: 'Unhealthy', color: 'rgba(244, 67, 54, 0.4)' };
+          case 5: return { text: 'Very Unhealthy', color: 'rgba(156, 39, 176, 0.4)' };
+          case 6: return { text: 'Hazardous', color: 'rgba(183, 28, 28, 0.4)' };
+          default: return { text: 'Unknown', color: 'rgba(255,255,255,0.2)' };
+      }
+  };
+
+  const getUvText = (uv) => {
+      if (uv <= 2) return 'Low';
+      if (uv <= 5) return 'Moderate';
+      if (uv <= 7) return 'High';
+      if (uv <= 10) return 'Very High';
+      return 'Extreme';
   };
 
   const formatCityTime = (timeString) => {
@@ -150,18 +164,17 @@ const Weather = () => {
       return `${hr}:${min} ${ampm}`;
   };
 
-  const getSunPosition = (sunriseStr, sunsetStr) => {
+  const getSunPosition = (sunriseStr, sunsetStr, localTimeStr) => {
       try {
-          const now = new Date();
+          const localDateStr = localTimeStr.split(' ')[0];
           const parseTime = (str) => {
              const [time, modifier] = str.split(' ');
              let [hours, minutes] = time.split(':');
              if (hours === '12') hours = '00';
              if (modifier === 'PM') hours = parseInt(hours, 10) + 12;
-             const d = new Date();
-             d.setHours(hours, minutes, 0);
-             return d;
+             return new Date(`${localDateStr.replace(/-/g, '/')} ${hours}:${minutes}:00`);
           };
+          const now = new Date(localTimeStr.replace(/-/g, '/'));
           const sunrise = parseTime(sunriseStr);
           const sunset = parseTime(sunsetStr);
           if (now < sunrise) return 0;
@@ -395,41 +408,44 @@ const Weather = () => {
   const { current, location, forecast } = weather;
   const image = getAssetLogic(weather);
   const visibleDays = showFullForecast ? forecast.forecastday : forecast.forecastday.slice(0, 3);
-  const sunPosition = getSunPosition(forecast.forecastday[0].astro.sunrise, forecast.forecastday[0].astro.sunset);
-  const aqiColor = getAqiColor(current.air_quality?.pm10);
+  const sunPosition = getSunPosition(forecast.forecastday[0].astro.sunrise, forecast.forecastday[0].astro.sunset, location.localtime);
+  const aqiInfo = getAqiInfo(current.air_quality);
+
+  // STITCH 24-HOUR FORECAST USING THE CITY'S EXACT LOCAL TIME
+  const allHours = forecast.forecastday.flatMap(day => day.hour);
+  const currentCityEpoch = location.localtime_epoch;
+  // Get the next 24 hours of data starting from roughly the current local hour
+  const next24Hours = allHours.filter(h => h.time_epoch >= currentCityEpoch - 3600).slice(0, 24);
 
   return (
     <div style={styles.container} onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd}>
       <img src={image} alt="Weather Background" style={styles.videoBg} />
       <div style={styles.overlay}></div>
       
+      <div style={styles.appWrapper}>
       {isRefreshing && <div style={styles.refreshIndicator}><div style={styles.spinner}></div></div>}
       <Toast message={toastMsg} show={showToast} />
 
       {/* HEADER */}
       <div style={styles.topBar}>
-         <div style={styles.topLeft}>
-           <button onClick={() => setShowCityManager(true)} style={styles.iconBtn}><IoMdAdd size={30}/></button>
-           <div style={styles.locationText}>
-             <span style={styles.cityTitle}>{location.name}</span>
-             <span style={styles.regionTitle}>
-                {location.region}
-                <span style={{marginLeft:'8px', opacity:0.8, fontSize:'11px', fontWeight:'600'}}>
-                   {formatCityTime(location.localtime)}
-                </span>
-             </span>
-           </div>
+         <button onClick={() => navigate('/dashboard')} style={styles.iconBtn}><IoMdArrowBack size={24}/></button>
+         <div style={styles.locationText}>
+           <span style={styles.cityTitle}>{location.name}</span>
+           <span style={styles.regionTitle}>
+              {location.region} • {formatCityTime(location.localtime)}
+           </span>
          </div>
          <div style={styles.topRight}>
+            <button onClick={handleRefresh} style={styles.iconBtn}><IoMdRefresh size={22}/></button>
             <button onClick={() => setUnit(unit === 'C' ? 'F' : 'C')} style={styles.unitBtn}>°{unit}</button>
-            <button onClick={() => navigate('/dashboard')} style={styles.iconBtn}><IoMdClose size={26}/></button>
+            <button onClick={() => setShowCityManager(true)} style={styles.iconBtn}><IoMdAdd size={24}/></button>
          </div>
       </div>
       
       {savedWeatherList.length > 1 && (
           <div style={styles.dotsContainer}>
               {savedWeatherList.map((_, idx) => (
-                  <div key={idx} style={{...styles.dot, opacity: idx === currentIndex ? 1 : 0.4, background: idx === currentIndex ? '#fff' : '#aaa'}}></div>
+                  <div key={idx} style={{...styles.dot, width: idx === currentIndex ? '18px' : '6px', opacity: idx === currentIndex ? 1 : 0.4, background: idx === currentIndex ? '#fff' : '#aaa'}}></div>
               ))}
           </div>
       )}
@@ -522,8 +538,8 @@ const Weather = () => {
                                   <div key={idx} style={styles.cityCard} onClick={() => { setCurrentIndex(idx); setShowCityManager(false); }}>
                                       <div style={styles.cardLeft}>
                                           <span style={styles.cardCityName}>{city.location.name}</span>
-                                          <span style={{...styles.cardAqi, color: getAqiColor(city.current.air_quality?.pm10).replace('0.4','1')}}>
-                                              AQI {city.current.air_quality?.pm10 ? Math.round(city.current.air_quality.pm10) : 'N/A'}
+                                          <span style={{...styles.cardAqi, color: getAqiInfo(city.current.air_quality).color.replace('0.4','1')}}>
+                                              AQI: {getAqiInfo(city.current.air_quality).text}
                                           </span>
                                       </div>
                                       <div style={styles.cardRight}>
@@ -550,15 +566,15 @@ const Weather = () => {
                   <span style={styles.celcius}>°{unit}</span>
               </div>
               <p style={styles.condition}>{current.condition.text}</p>
-          <div style={{...styles.aqiPill, background: `linear-gradient(135deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0) 35%), ${aqiColor}` }}>
-                  <FaMaskFace /> AQI {Math.round(current.air_quality?.pm10 || 0)}
+          <div style={{...styles.aqiPill, background: 'transparent' }}>
+                  <FaMaskFace /> Air Quality: {aqiInfo.text}
               </div>
           </div>
 
           <div style={styles.glassSection}>
               <div style={styles.sectionHeader}>
                   <span>Forecast</span>
-                  <button onClick={() => setShowFullForecast(!showFullForecast)} style={styles.capsuleBtn}>{showFullForecast ? 'Show Less' : '5-Day Forecast'}</button>
+                  <button onClick={() => setShowFullForecast(!showFullForecast)} style={styles.capsuleBtn}>{showFullForecast ? 'Show Less' : `${forecast.forecastday.length}-Day Forecast`}</button>
               </div>
               {visibleDays.map((day, i) => (
                   <div key={i} style={styles.dailyRow}>
@@ -580,16 +596,14 @@ const Weather = () => {
                   <WiTime3 size={18}/> 24-HOUR FORECAST
               </p>
               <div style={styles.hourlyScroll}>
-                  {forecast.forecastday[0].hour.map((h, i) => {
-                      if (new Date(h.time).getHours() < new Date().getHours()) return null;
-                      return (
-                          <div key={i} style={styles.hourItem}>
-                              <span>{new Date(h.time).getHours()}:00</span>
-                              <img src={h.condition.icon} style={{width:'32px'}} alt=""/>
-                              <span style={{fontWeight:'bold'}}>{getTemp(h.temp_c)}°</span>
-                          </div>
-                      )
-                  })}
+                  {next24Hours.map((h, i) => (
+                      <div key={i} style={styles.hourItem}>
+                          {/* Extracts just the "HH:mm" from "YYYY-MM-DD HH:mm" safely! */}
+                          <span>{i === 0 ? 'Now' : h.time.split(' ')[1]}</span>
+                          <img src={h.condition.icon} style={{width:'32px'}} alt=""/>
+                          <span style={{fontWeight:'bold'}}>{getTemp(h.temp_c)}°</span>
+                      </div>
+                  ))}
               </div>
           </div>
 
@@ -604,6 +618,7 @@ const Weather = () => {
                               </div>
                           </div>
                           <div style={styles.windSpeed}>{current.wind_kph} <span style={{fontSize:'12px'}}>km/h</span></div>
+                          <div style={{fontSize:'11px', opacity:0.7, marginTop:'4px', fontWeight:'600'}}>{current.wind_dir} Wind</div>
                       </div>
                   </div>
                   <div style={styles.modernCard}>
@@ -626,7 +641,7 @@ const Weather = () => {
                           </div>
                       </div>
                       <div style={{textAlign:'center', fontSize:'11px', marginTop:'8px', opacity:0.7}}>
-                          Sunset: {forecast.forecastday[0].astro.sunset}
+                          Sunset: {forecast.forecastday[0].astro.sunset} <br/> Moon: {forecast.forecastday[0].astro.moon_phase}
                       </div>
                   </div>
               </div>
@@ -636,18 +651,22 @@ const Weather = () => {
                       <div style={styles.detailItem}>
                           <div style={styles.cardLabel}><WiHumidity size={22}/> Humidity</div>
                           <div style={styles.cardValue}>{current.humidity}%</div>
+                          <div style={{fontSize:'12px', opacity:0.7, marginTop:'2px'}}>Dew point {getTemp(current.dewpoint_c || current.temp_c - 2)}°</div>
                       </div>
                       <div style={styles.detailItem}>
                            <div style={styles.cardLabel}><WiThermometer size={22}/> Real Feel</div>
                            <div style={styles.cardValue}>{getTemp(current.feelslike_c)}°</div>
+                           <div style={{fontSize:'12px', opacity:0.7, marginTop:'2px'}}>{current.feelslike_c > current.temp_c ? 'Feels warmer' : 'Similar to actual'}</div>
                       </div>
                       <div style={styles.detailItem}>
                            <div style={styles.cardLabel}>UV Index</div>
                            <div style={styles.cardValue}>{current.uv}</div>
+                           <div style={{fontSize:'12px', opacity:0.7, marginTop:'2px'}}>{getUvText(current.uv)}</div>
                       </div>
                       <div style={styles.detailItem}>
                            <div style={styles.cardLabel}><WiBarometer size={22}/> Pressure</div>
                            <div style={styles.cardValue}>{current.pressure_mb}</div>
+                           <div style={{fontSize:'12px', opacity:0.7, marginTop:'2px'}}>hPa</div>
                       </div>
                   </div>
               </div>
@@ -655,8 +674,15 @@ const Weather = () => {
               <div style={styles.fullWidthCard}>
                     <div style={{display:'flex', alignItems:'center', gap:'10px'}}>
                         <div style={styles.cardLabel}><WiRain size={24}/> Chance of Rain</div>
-                        <div style={{fontSize:'24px', fontWeight:'bold', marginLeft:'auto'}}>
-                            {forecast.forecastday[0].day.daily_chance_of_rain}%
+                        <div style={{textAlign:'right', marginLeft:'auto'}}>
+                            <div style={{fontSize:'24px', fontWeight:'bold'}}>
+                                {forecast.forecastday[0].day.daily_chance_of_rain}%
+                            </div>
+                            {forecast.forecastday[0].day.totalprecip_mm > 0 && (
+                                <div style={{fontSize:'12px', color:'#63c5da', fontWeight:'bold', marginTop:'-2px'}}>
+                                    {forecast.forecastday[0].day.totalprecip_mm} mm expected
+                                </div>
+                            )}
                         </div>
                     </div>
                     <div style={{fontSize:'11px', opacity:0.6, marginTop:'5px'}}>
@@ -670,48 +696,49 @@ const Weather = () => {
 
           <div style={{height:'100px'}}></div>
       </div>
+      </div>
     </div>
   );
 };
 
 // --- UPDATED: PADDING FIX & TRANSPARENCY ADDED ONLY TO MODAL/SEARCH UI ---
 const styles = {
-  container: { position:'fixed', top:0, left:0, width:'100%', height:'100%', color:'white', fontFamily:'"SF Pro Display", sans-serif', background:'#111', textShadow: '0 2px 8px rgba(0,0,0,0.3)' },
+  container: { position:'fixed', top:0, left:0, width:'100%', height:'100%', color:'white', fontFamily:'"SF Pro Display", sans-serif', background:'#111', textShadow: '0 2px 8px rgba(0,0,0,0.3)', display: 'flex', justifyContent: 'center' },
   videoBg: { position:'absolute', top:0, left:0, width:'100%', height:'100%', objectFit:'cover', zIndex:-2 },
   overlay: { position:'absolute', top:0, left:0, width:'100%', height:'100%', background:'rgba(0,0,0,0.1)', zIndex:-1 },
+  appWrapper: { position: 'relative', width: '100%', maxWidth: '500px', height: '100%', display: 'flex', flexDirection: 'column' },
   loadingContainer: { height:'100vh', display:'flex', alignItems:'center', justifyContent:'center', background:'#111' },
   skeletonContainer: { width: '80%', display: 'flex', flexDirection: 'column', alignItems: 'center' },
   skeletonBox: { background: '#333', borderRadius: '12px', animation: 'shimmer 1.5s infinite linear', backgroundSize: '400px 100%', backgroundImage: 'linear-gradient(to right, #333 0%, #444 20%, #333 40%, #333 100%)' },
 
   refreshIndicator: { position: 'absolute', top: '20px', left: '50%', transform: 'translateX(-50%)', zIndex: 99, background: 'rgba(0,0,0,0.7)', borderRadius: '50%', padding: '10px' },
-  toast: { position: 'fixed', bottom: '80px', left: '50%', background: '#333', color: '#fff', padding: '10px 20px', borderRadius: '25px', boxShadow: '0 4px 12px rgba(0,0,0,0.3)', transition: 'all 0.3s ease', zIndex: 1000, whiteSpace: 'nowrap', fontSize: '14px', fontWeight: '500' },
+  toast: { position: 'absolute', bottom: '80px', left: '50%', background: '#333', color: '#fff', padding: '10px 20px', borderRadius: '25px', boxShadow: '0 4px 12px rgba(0,0,0,0.3)', transition: 'all 0.3s ease', zIndex: 1000, whiteSpace: 'nowrap', fontSize: '14px', fontWeight: '500' },
   
-  topBar: { display:'flex', justifyContent:'space-between', padding:'15px 20px', alignItems:'flex-start' },
-  topLeft: { display:'flex', gap:'10px', alignItems:'center' },
-  locationText: { display:'flex', flexDirection:'column' },
-  cityTitle: { fontSize:'22px', fontWeight:'700', textShadow:'0 2px 5px rgba(0,0,0,0.5)', letterSpacing:'0.5px' },
-  regionTitle: { fontSize:'12px', opacity:0.9, display:'flex', alignItems:'center' },
+  topBar: { display:'flex', justifyContent:'space-between', alignItems:'center', background: 'transparent', backdropFilter: 'blur(12px) saturate(120%) brightness(110%)', WebkitBackdropFilter: 'blur(12px) saturate(120%) brightness(110%)', border: '1px solid rgba(255, 255, 255, 0.1)', borderTop: '1px solid rgba(255, 255, 255, 0.3)', borderLeft: '1px solid rgba(255, 255, 255, 0.2)', borderRadius: '40px', padding: '8px 15px', margin: '15px 20px', boxShadow: 'inset 0 1px 1px rgba(255, 255, 255, 0.3), 0 8px 32px rgba(0,0,0,0.15)', zIndex: 10 },
+  locationText: { display:'flex', flexDirection:'column', alignItems:'center', flex: 1, overflow: 'hidden', padding: '0 10px', textAlign: 'center' },
+  cityTitle: { fontSize:'18px', fontWeight:'700', textShadow:'0 2px 5px rgba(0,0,0,0.5)', letterSpacing:'0.5px', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis', width:'100%' },
+  regionTitle: { fontSize:'11px', opacity:0.9, marginTop:'2px', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis', width:'100%' },
   iconBtn: { background:'transparent', border:'none', color:'white', cursor:'pointer', padding:'5px', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))' },
   unitBtn: { background:'rgba(255,255,255,0.2)', border:'1px solid rgba(255,255,255,0.3)', borderRadius:'50%', width:'30px', height:'30px', color:'white', cursor:'pointer', fontSize:'14px', fontWeight:'bold', backdropFilter:'blur(5px)' },
   topRight: { display:'flex', gap:'10px', alignItems: 'center' },
-  dotsContainer: { display: 'flex', justifyContent: 'center', gap: '8px', position: 'absolute', top: '70px', width: '100%', zIndex: 5 },
-  dot: { width: '6px', height: '6px', borderRadius: '50%', transition: '0.3s' },
+  dotsContainer: { display: 'flex', justifyContent: 'center', gap: '6px', width: '100%', zIndex: 5, marginTop: '-5px', marginBottom: '10px' },
+  dot: { height: '6px', borderRadius: '3px', transition: 'all 0.3s ease' },
 
   hero: { textAlign:'center', marginTop:'20px', marginBottom:'30px' },
   tempWrapper: { display:'flex', justifyContent:'center', alignItems:'flex-start', marginLeft:'15px' },
   bigTemp: { fontSize:'96px', fontWeight:'200', lineHeight:'1', margin:0, letterSpacing: '-2px', textShadow:'0 10px 30px rgba(0,0,0,0.35)' },
   celcius: { fontSize:'30px', fontWeight:'400', marginTop:'15px' },
   condition: { fontSize:'24px', textTransform:'capitalize', margin:'5px 0 15px', fontWeight:'500' },
-  aqiPill: { display:'inline-flex', alignItems:'center', gap:'8px', padding:'6px 16px', borderRadius:'30px', fontSize:'14px', backdropFilter:'blur(16px) saturate(150%) brightness(110%)', WebkitBackdropFilter:'blur(16px) saturate(150%) brightness(110%)', border: '1px solid rgba(255, 255, 255, 0.3)', borderTop: '1.5px solid rgba(255, 255, 255, 0.8)', borderLeft: '1.5px solid rgba(255, 255, 255, 0.5)', boxShadow: 'inset 0px 2px 8px rgba(255, 255, 255, 0.5), 0 0 10px rgba(255, 255, 255, 0.2), 0 4px 15px rgba(0,0,0,0.2)', transition: 'background 0.5s' },
+  aqiPill: { display:'inline-flex', alignItems:'center', gap:'8px', padding:'6px 16px', borderRadius:'30px', fontSize:'14px', backdropFilter:'blur(12px) saturate(120%) brightness(110%)', WebkitBackdropFilter:'blur(12px) saturate(120%) brightness(110%)', border: '1px solid rgba(255, 255, 255, 0.1)', borderTop: '1px solid rgba(255, 255, 255, 0.3)', borderLeft: '1px solid rgba(255, 255, 255, 0.2)', boxShadow: 'inset 0 1px 1px rgba(255, 255, 255, 0.3), 0 4px 15px rgba(0,0,0,0.1)', transition: 'background 0.5s' },
 
-  scrollContent: { height:'100%', overflowY:'auto', padding:'0 20px', scrollbarWidth:'none' },
+  scrollContent: { flex: 1, overflowY:'auto', padding:'0 20px', scrollbarWidth:'none' },
   
   glassSection: { 
-      background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.02) 100%)', 
+      background: 'transparent', 
       borderRadius:'36px', padding:'20px', marginBottom:'15px', 
-      backdropFilter:'blur(16px) saturate(150%) brightness(110%)', WebkitBackdropFilter:'blur(16px) saturate(150%) brightness(110%)', 
-      border: '1px solid rgba(255, 255, 255, 0.2)', borderTop: '1.5px solid rgba(255, 255, 255, 0.8)', borderLeft: '1.5px solid rgba(255, 255, 255, 0.5)',
-      boxShadow: 'inset 0px 4px 15px rgba(255, 255, 255, 0.5), inset 0px -4px 10px rgba(0, 0, 0, 0.1), 0 0 20px rgba(255, 255, 255, 0.2), 0 10px 35px rgba(0, 0, 0, 0.2)'
+      backdropFilter:'blur(12px) saturate(120%) brightness(110%)', WebkitBackdropFilter:'blur(12px) saturate(120%) brightness(110%)', 
+      border: '1px solid rgba(255, 255, 255, 0.1)', borderTop: '1px solid rgba(255, 255, 255, 0.3)', borderLeft: '1px solid rgba(255, 255, 255, 0.2)',
+      boxShadow: 'inset 0 1px 1px rgba(255, 255, 255, 0.3), 0 8px 32px rgba(0, 0, 0, 0.15)'
   },
   sectionHeader: { display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'10px' },
   capsuleBtn: { background:'rgba(255,255,255,0.15)', border:'none', borderRadius:'20px', padding:'6px 14px', color:'#fff', fontSize:'11px', cursor:'pointer', fontWeight:'600' },
@@ -730,28 +757,28 @@ const styles = {
   rightColumn: { display:'flex' },
   
   modernCard: { 
-      background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.02) 100%)', 
-      backdropFilter:'blur(16px) saturate(150%) brightness(110%)', WebkitBackdropFilter:'blur(16px) saturate(150%) brightness(110%)', borderRadius:'36px', 
+      background: 'transparent', 
+      backdropFilter:'blur(12px) saturate(120%) brightness(110%)', WebkitBackdropFilter:'blur(12px) saturate(120%) brightness(110%)', borderRadius:'36px', 
       padding:'18px', aspectRatio:'1/1', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'space-between',
-      border: '1px solid rgba(255, 255, 255, 0.2)', borderTop: '1.5px solid rgba(255, 255, 255, 0.8)', borderLeft: '1.5px solid rgba(255, 255, 255, 0.5)',
-      boxShadow: 'inset 0px 4px 15px rgba(255, 255, 255, 0.5), inset 0px -4px 10px rgba(0, 0, 0, 0.1), 0 0 20px rgba(255, 255, 255, 0.2), 0 10px 35px rgba(0, 0, 0, 0.2)', position: 'relative'
+      border: '1px solid rgba(255, 255, 255, 0.1)', borderTop: '1px solid rgba(255, 255, 255, 0.3)', borderLeft: '1px solid rgba(255, 255, 255, 0.2)',
+      boxShadow: 'inset 0 1px 1px rgba(255, 255, 255, 0.3), 0 8px 32px rgba(0, 0, 0, 0.15)', position: 'relative'
   },
   
   modernBigCard: {
-      background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.02) 100%)',
-      backdropFilter:'blur(16px) saturate(150%) brightness(110%)', WebkitBackdropFilter:'blur(16px) saturate(150%) brightness(110%)', borderRadius:'36px', 
+      background: 'transparent',
+      backdropFilter:'blur(12px) saturate(120%) brightness(110%)', WebkitBackdropFilter:'blur(12px) saturate(120%) brightness(110%)', borderRadius:'36px', 
       padding:'20px', width:'100%', display:'grid', gridTemplateColumns:'1fr 1fr', gridTemplateRows:'1fr 1fr', gap:'20px',
-      border: '1px solid rgba(255, 255, 255, 0.2)', borderTop: '1.5px solid rgba(255, 255, 255, 0.8)', borderLeft: '1.5px solid rgba(255, 255, 255, 0.5)',
-      boxShadow: 'inset 0px 4px 15px rgba(255, 255, 255, 0.5), inset 0px -4px 10px rgba(0, 0, 0, 0.1), 0 0 20px rgba(255, 255, 255, 0.2), 0 10px 35px rgba(0, 0, 0, 0.2)'
+      border: '1px solid rgba(255, 255, 255, 0.1)', borderTop: '1px solid rgba(255, 255, 255, 0.3)', borderLeft: '1px solid rgba(255, 255, 255, 0.2)',
+      boxShadow: 'inset 0 1px 1px rgba(255, 255, 255, 0.3), 0 8px 32px rgba(0, 0, 0, 0.15)'
   },
   
   detailItem: { display:'flex', flexDirection:'column', justifyContent:'center' },
   
   fullWidthCard: {
-      gridColumn: '1 / -1', background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.02) 100%)',
-      backdropFilter:'blur(16px) saturate(150%) brightness(110%)', WebkitBackdropFilter:'blur(16px) saturate(150%) brightness(110%)', borderRadius:'36px', padding:'20px', 
-      border: '1px solid rgba(255, 255, 255, 0.2)', borderTop: '1.5px solid rgba(255, 255, 255, 0.8)', borderLeft: '1.5px solid rgba(255, 255, 255, 0.5)',
-      marginBottom:'10px', boxShadow: 'inset 0px 4px 15px rgba(255, 255, 255, 0.5), inset 0px -4px 10px rgba(0, 0, 0, 0.1), 0 0 20px rgba(255, 255, 255, 0.2), 0 10px 35px rgba(0, 0, 0, 0.2)'
+      gridColumn: '1 / -1', background: 'transparent',
+      backdropFilter:'blur(12px) saturate(120%) brightness(110%)', WebkitBackdropFilter:'blur(12px) saturate(120%) brightness(110%)', borderRadius:'36px', padding:'20px', 
+      border: '1px solid rgba(255, 255, 255, 0.1)', borderTop: '1px solid rgba(255, 255, 255, 0.3)', borderLeft: '1px solid rgba(255, 255, 255, 0.2)',
+      marginBottom:'10px', boxShadow: 'inset 0 1px 1px rgba(255, 255, 255, 0.3), 0 8px 32px rgba(0, 0, 0, 0.15)'
   },
 
   cardLabel: { fontSize:'13px', opacity:0.7, display:'flex', gap:'6px', alignItems:'center', width:'100%', fontWeight:'500' },
@@ -766,21 +793,21 @@ const styles = {
 
   // --- FIXED: ADDED boxSizing & DECREASED BACKGROUND OPACITY ---
   modalOverlay: { position:'fixed', top:0, left:0, width:'100%', height:'100%', background:'rgba(0,0,0,0.2)', backdropFilter:'blur(10px)', WebkitBackdropFilter:'blur(10px)', zIndex:100, display:'flex', flexDirection:'column', boxSizing: 'border-box' },
-  modalContent: { flex:1, padding:'20px', background:'rgba(0, 0, 0, 0.25)', backdropFilter:'blur(20px) saturate(150%) brightness(110%)', WebkitBackdropFilter:'blur(20px) saturate(150%) brightness(110%)', overflowY:'auto', boxSizing: 'border-box', overflowX: 'hidden' },
+  modalContent: { flex:1, padding:'20px', background:'rgba(0, 0, 0, 0.2)', backdropFilter:'blur(30px) saturate(150%) brightness(115%)', WebkitBackdropFilter:'blur(30px) saturate(150%) brightness(115%)', overflowY:'auto', boxSizing: 'border-box', overflowX: 'hidden' },
   modalHeader: { display:'flex', justifyContent:'center', alignItems:'center', marginBottom:'20px', position:'relative' },
   closeModal: { background:'none', border:'none', color:'#fff', cursor:'pointer', position:'absolute', right:0 },
   
   searchBarTrigger: { 
-      background:'linear-gradient(135deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.02) 100%)', padding:'14px 20px', borderRadius:'30px', display:'flex', alignItems:'center', marginBottom:'25px', cursor:'pointer',
-      border: '1px solid rgba(255, 255, 255, 0.2)', borderTop: '1.5px solid rgba(255, 255, 255, 0.8)', borderLeft: '1.5px solid rgba(255, 255, 255, 0.5)',
-      boxShadow: 'inset 0px 2px 8px rgba(255, 255, 255, 0.5), 0 0 15px rgba(255, 255, 255, 0.2), 0 10px 25px rgba(0, 0, 0, 0.15)', backdropFilter:'blur(16px) saturate(150%) brightness(110%)', WebkitBackdropFilter:'blur(16px) saturate(150%) brightness(110%)', boxSizing: 'border-box'
+      background: 'transparent', padding:'14px 20px', borderRadius:'30px', display:'flex', alignItems:'center', marginBottom:'25px', cursor:'pointer',
+      border: '1px solid rgba(255, 255, 255, 0.1)', borderTop: '1px solid rgba(255, 255, 255, 0.3)', borderLeft: '1px solid rgba(255, 255, 255, 0.2)',
+      boxShadow: 'inset 0 1px 1px rgba(255, 255, 255, 0.3), 0 4px 15px rgba(0, 0, 0, 0.1)', backdropFilter:'blur(12px) saturate(120%) brightness(110%)', WebkitBackdropFilter:'blur(12px) saturate(120%) brightness(110%)', boxSizing: 'border-box'
   },
   savedList: { display:'flex', flexDirection:'column', gap:'15px' },
   cityCard: { 
-      background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.02) 100%)', backdropFilter:'blur(16px) saturate(150%) brightness(110%)', WebkitBackdropFilter:'blur(16px) saturate(150%) brightness(110%)', borderRadius:'36px', padding:'25px', 
+      background: 'transparent', backdropFilter:'blur(12px) saturate(120%) brightness(110%)', WebkitBackdropFilter:'blur(12px) saturate(120%) brightness(110%)', borderRadius:'36px', padding:'25px', 
       display:'flex', justifyContent:'space-between', alignItems:'center', cursor:'pointer', 
-      border: '1px solid rgba(255, 255, 255, 0.2)', borderTop: '1.5px solid rgba(255, 255, 255, 0.8)', borderLeft: '1.5px solid rgba(255, 255, 255, 0.5)',
-      boxShadow: 'inset 0px 4px 15px rgba(255, 255, 255, 0.5), inset 0px -4px 10px rgba(0, 0, 0, 0.1), 0 0 20px rgba(255, 255, 255, 0.2), 0 10px 35px rgba(0, 0, 0, 0.2)', boxSizing: 'border-box'
+      border: '1px solid rgba(255, 255, 255, 0.1)', borderTop: '1px solid rgba(255, 255, 255, 0.3)', borderLeft: '1px solid rgba(255, 255, 255, 0.2)',
+      boxShadow: 'inset 0 1px 1px rgba(255, 255, 255, 0.3), 0 8px 32px rgba(0, 0, 0, 0.15)', boxSizing: 'border-box'
   },
   cardLeft: { display:'flex', flexDirection: 'column', gap:'5px' },
   cardCityName: { fontSize:'20px', fontWeight:'700' },
@@ -790,7 +817,7 @@ const styles = {
   cardHighLow: { fontSize:'13px', opacity:0.6 },
 
   // --- FIXED: ADDED boxSizing & DECREASED BACKGROUND OPACITY ---
-  searchOverlay: { position:'fixed', top:0, left:0, width:'100%', height:'100%', background:'rgba(0, 0, 0, 0.25)', backdropFilter:'blur(20px) saturate(150%) brightness(110%)', WebkitBackdropFilter:'blur(20px) saturate(150%) brightness(110%)', zIndex:200, padding:'20px', boxSizing: 'border-box', overflowX: 'hidden' },
+  searchOverlay: { position:'absolute', top:0, left:0, width:'100%', height:'100%', background:'rgba(0, 0, 0, 0.2)', backdropFilter:'blur(30px) saturate(150%) brightness(115%)', WebkitBackdropFilter:'blur(30px) saturate(150%) brightness(115%)', zIndex:200, padding:'20px', boxSizing: 'border-box', overflowX: 'hidden' },
   searchHeader: { display:'flex', alignItems:'center', gap:'15px', marginBottom:'25px', background: 'rgba(255,255,255,0.08)', padding: '12px 20px', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.1)', boxSizing: 'border-box' },
   searchInputBig: { flex:1, background:'transparent', border:'none', color:'#fff', fontSize:'18px', outline:'none' },
   suggestionsList: { marginTop:'10px' },
