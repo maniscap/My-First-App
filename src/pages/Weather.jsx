@@ -550,7 +550,7 @@ const Weather = () => {
                   <span style={styles.celcius}>°{unit}</span>
               </div>
               <p style={styles.condition}>{current.condition.text}</p>
-              <div style={{...styles.aqiPill, background: aqiColor, borderColor: aqiColor}}>
+          <div style={{...styles.aqiPill, background: `linear-gradient(135deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0) 35%), ${aqiColor}` }}>
                   <FaMaskFace /> AQI {Math.round(current.air_quality?.pm10 || 0)}
               </div>
           </div>
@@ -676,9 +676,9 @@ const Weather = () => {
 
 // --- UPDATED: PADDING FIX & TRANSPARENCY ADDED ONLY TO MODAL/SEARCH UI ---
 const styles = {
-  container: { position:'fixed', top:0, left:0, width:'100%', height:'100%', color:'white', fontFamily:'"SF Pro Display", sans-serif', background:'#111' },
+  container: { position:'fixed', top:0, left:0, width:'100%', height:'100%', color:'white', fontFamily:'"SF Pro Display", sans-serif', background:'#111', textShadow: '0 2px 8px rgba(0,0,0,0.3)' },
   videoBg: { position:'absolute', top:0, left:0, width:'100%', height:'100%', objectFit:'cover', zIndex:-2 },
-  overlay: { position:'absolute', top:0, left:0, width:'100%', height:'100%', background:'rgba(0,0,0,0.4)', zIndex:-1 },
+  overlay: { position:'absolute', top:0, left:0, width:'100%', height:'100%', background:'rgba(0,0,0,0.1)', zIndex:-1 },
   loadingContainer: { height:'100vh', display:'flex', alignItems:'center', justifyContent:'center', background:'#111' },
   skeletonContainer: { width: '80%', display: 'flex', flexDirection: 'column', alignItems: 'center' },
   skeletonBox: { background: '#333', borderRadius: '12px', animation: 'shimmer 1.5s infinite linear', backgroundSize: '400px 100%', backgroundImage: 'linear-gradient(to right, #333 0%, #444 20%, #333 40%, #333 100%)' },
@@ -699,17 +699,19 @@ const styles = {
 
   hero: { textAlign:'center', marginTop:'20px', marginBottom:'30px' },
   tempWrapper: { display:'flex', justifyContent:'center', alignItems:'flex-start', marginLeft:'15px' },
-  bigTemp: { fontSize:'96px', fontWeight:'200', lineHeight:'1', margin:0, textShadow:'0 10px 30px rgba(0,0,0,0.2)' },
+  bigTemp: { fontSize:'96px', fontWeight:'200', lineHeight:'1', margin:0, letterSpacing: '-2px', textShadow:'0 10px 30px rgba(0,0,0,0.35)' },
   celcius: { fontSize:'30px', fontWeight:'400', marginTop:'15px' },
   condition: { fontSize:'24px', textTransform:'capitalize', margin:'5px 0 15px', fontWeight:'500' },
-  aqiPill: { display:'inline-flex', alignItems:'center', gap:'8px', padding:'6px 16px', borderRadius:'20px', fontSize:'14px', backdropFilter:'blur(10px)', border:'1px solid rgba(255,255,255,0.1)', transition: 'background 0.5s' },
+  aqiPill: { display:'inline-flex', alignItems:'center', gap:'8px', padding:'6px 16px', borderRadius:'30px', fontSize:'14px', backdropFilter:'blur(16px) saturate(150%) brightness(110%)', WebkitBackdropFilter:'blur(16px) saturate(150%) brightness(110%)', border: '1px solid rgba(255, 255, 255, 0.3)', borderTop: '1.5px solid rgba(255, 255, 255, 0.8)', borderLeft: '1.5px solid rgba(255, 255, 255, 0.5)', boxShadow: 'inset 0px 2px 8px rgba(255, 255, 255, 0.5), 0 0 10px rgba(255, 255, 255, 0.2), 0 4px 15px rgba(0,0,0,0.2)', transition: 'background 0.5s' },
 
   scrollContent: { height:'100%', overflowY:'auto', padding:'0 20px', scrollbarWidth:'none' },
   
   glassSection: { 
-      background:'rgba(30, 30, 30, 0.4)', borderRadius:'24px', padding:'20px', 
-      marginBottom:'15px', backdropFilter:'blur(20px)', border:'1px solid rgba(255,255,255,0.08)',
-      boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.1)'
+      background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.02) 100%)', 
+      borderRadius:'36px', padding:'20px', marginBottom:'15px', 
+      backdropFilter:'blur(16px) saturate(150%) brightness(110%)', WebkitBackdropFilter:'blur(16px) saturate(150%) brightness(110%)', 
+      border: '1px solid rgba(255, 255, 255, 0.2)', borderTop: '1.5px solid rgba(255, 255, 255, 0.8)', borderLeft: '1.5px solid rgba(255, 255, 255, 0.5)',
+      boxShadow: 'inset 0px 4px 15px rgba(255, 255, 255, 0.5), inset 0px -4px 10px rgba(0, 0, 0, 0.1), 0 0 20px rgba(255, 255, 255, 0.2), 0 10px 35px rgba(0, 0, 0, 0.2)'
   },
   sectionHeader: { display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'10px' },
   capsuleBtn: { background:'rgba(255,255,255,0.15)', border:'none', borderRadius:'20px', padding:'6px 14px', color:'#fff', fontSize:'11px', cursor:'pointer', fontWeight:'600' },
@@ -728,25 +730,28 @@ const styles = {
   rightColumn: { display:'flex' },
   
   modernCard: { 
-      background:'linear-gradient(145deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%)', 
-      backdropFilter:'blur(20px)', borderRadius:'24px', 
+      background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.02) 100%)', 
+      backdropFilter:'blur(16px) saturate(150%) brightness(110%)', WebkitBackdropFilter:'blur(16px) saturate(150%) brightness(110%)', borderRadius:'36px', 
       padding:'18px', aspectRatio:'1/1', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'space-between',
-      border:'1px solid rgba(255,255,255,0.1)', boxShadow:'0 4px 20px rgba(0,0,0,0.1)', position: 'relative'
+      border: '1px solid rgba(255, 255, 255, 0.2)', borderTop: '1.5px solid rgba(255, 255, 255, 0.8)', borderLeft: '1.5px solid rgba(255, 255, 255, 0.5)',
+      boxShadow: 'inset 0px 4px 15px rgba(255, 255, 255, 0.5), inset 0px -4px 10px rgba(0, 0, 0, 0.1), 0 0 20px rgba(255, 255, 255, 0.2), 0 10px 35px rgba(0, 0, 0, 0.2)', position: 'relative'
   },
   
   modernBigCard: {
-      background:'linear-gradient(145deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%)',
-      backdropFilter:'blur(20px)', borderRadius:'24px', 
+      background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.02) 100%)',
+      backdropFilter:'blur(16px) saturate(150%) brightness(110%)', WebkitBackdropFilter:'blur(16px) saturate(150%) brightness(110%)', borderRadius:'36px', 
       padding:'20px', width:'100%', display:'grid', gridTemplateColumns:'1fr 1fr', gridTemplateRows:'1fr 1fr', gap:'20px',
-      border:'1px solid rgba(255,255,255,0.1)', boxShadow:'0 4px 20px rgba(0,0,0,0.1)'
+      border: '1px solid rgba(255, 255, 255, 0.2)', borderTop: '1.5px solid rgba(255, 255, 255, 0.8)', borderLeft: '1.5px solid rgba(255, 255, 255, 0.5)',
+      boxShadow: 'inset 0px 4px 15px rgba(255, 255, 255, 0.5), inset 0px -4px 10px rgba(0, 0, 0, 0.1), 0 0 20px rgba(255, 255, 255, 0.2), 0 10px 35px rgba(0, 0, 0, 0.2)'
   },
   
   detailItem: { display:'flex', flexDirection:'column', justifyContent:'center' },
   
   fullWidthCard: {
-      gridColumn: '1 / -1', background:'linear-gradient(145deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%)',
-      backdropFilter:'blur(20px)', borderRadius:'24px', padding:'20px', 
-      border:'1px solid rgba(255,255,255,0.1)', marginBottom:'10px', boxShadow:'0 4px 20px rgba(0,0,0,0.1)'
+      gridColumn: '1 / -1', background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.02) 100%)',
+      backdropFilter:'blur(16px) saturate(150%) brightness(110%)', WebkitBackdropFilter:'blur(16px) saturate(150%) brightness(110%)', borderRadius:'36px', padding:'20px', 
+      border: '1px solid rgba(255, 255, 255, 0.2)', borderTop: '1.5px solid rgba(255, 255, 255, 0.8)', borderLeft: '1.5px solid rgba(255, 255, 255, 0.5)',
+      marginBottom:'10px', boxShadow: 'inset 0px 4px 15px rgba(255, 255, 255, 0.5), inset 0px -4px 10px rgba(0, 0, 0, 0.1), 0 0 20px rgba(255, 255, 255, 0.2), 0 10px 35px rgba(0, 0, 0, 0.2)'
   },
 
   cardLabel: { fontSize:'13px', opacity:0.7, display:'flex', gap:'6px', alignItems:'center', width:'100%', fontWeight:'500' },
@@ -761,19 +766,21 @@ const styles = {
 
   // --- FIXED: ADDED boxSizing & DECREASED BACKGROUND OPACITY ---
   modalOverlay: { position:'fixed', top:0, left:0, width:'100%', height:'100%', background:'rgba(0,0,0,0.2)', backdropFilter:'blur(10px)', WebkitBackdropFilter:'blur(10px)', zIndex:100, display:'flex', flexDirection:'column', boxSizing: 'border-box' },
-  modalContent: { flex:1, padding:'20px', background:'rgba(10, 10, 10, 0.3)', backdropFilter:'blur(15px)', WebkitBackdropFilter:'blur(15px)', overflowY:'auto', boxSizing: 'border-box', overflowX: 'hidden' },
+  modalContent: { flex:1, padding:'20px', background:'rgba(0, 0, 0, 0.25)', backdropFilter:'blur(20px) saturate(150%) brightness(110%)', WebkitBackdropFilter:'blur(20px) saturate(150%) brightness(110%)', overflowY:'auto', boxSizing: 'border-box', overflowX: 'hidden' },
   modalHeader: { display:'flex', justifyContent:'center', alignItems:'center', marginBottom:'20px', position:'relative' },
   closeModal: { background:'none', border:'none', color:'#fff', cursor:'pointer', position:'absolute', right:0 },
   
   searchBarTrigger: { 
-      background:'rgba(255,255,255,0.05)', padding:'14px 20px', borderRadius:'30px', display:'flex', alignItems:'center', marginBottom:'25px', cursor:'pointer',
-      border: '1px solid rgba(255,255,255,0.15)', backdropFilter:'blur(10px)', boxSizing: 'border-box'
+      background:'linear-gradient(135deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.02) 100%)', padding:'14px 20px', borderRadius:'30px', display:'flex', alignItems:'center', marginBottom:'25px', cursor:'pointer',
+      border: '1px solid rgba(255, 255, 255, 0.2)', borderTop: '1.5px solid rgba(255, 255, 255, 0.8)', borderLeft: '1.5px solid rgba(255, 255, 255, 0.5)',
+      boxShadow: 'inset 0px 2px 8px rgba(255, 255, 255, 0.5), 0 0 15px rgba(255, 255, 255, 0.2), 0 10px 25px rgba(0, 0, 0, 0.15)', backdropFilter:'blur(16px) saturate(150%) brightness(110%)', WebkitBackdropFilter:'blur(16px) saturate(150%) brightness(110%)', boxSizing: 'border-box'
   },
   savedList: { display:'flex', flexDirection:'column', gap:'15px' },
   cityCard: { 
-      background:'linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.02) 100%)', backdropFilter:'blur(15px)', borderRadius:'24px', padding:'25px', 
-      display:'flex', justifyContent:'space-between', alignItems:'center', cursor:'pointer', border:'1px solid rgba(255,255,255,0.15)',
-      boxShadow: '0 4px 15px rgba(0,0,0,0.2)', boxSizing: 'border-box'
+      background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.02) 100%)', backdropFilter:'blur(16px) saturate(150%) brightness(110%)', WebkitBackdropFilter:'blur(16px) saturate(150%) brightness(110%)', borderRadius:'36px', padding:'25px', 
+      display:'flex', justifyContent:'space-between', alignItems:'center', cursor:'pointer', 
+      border: '1px solid rgba(255, 255, 255, 0.2)', borderTop: '1.5px solid rgba(255, 255, 255, 0.8)', borderLeft: '1.5px solid rgba(255, 255, 255, 0.5)',
+      boxShadow: 'inset 0px 4px 15px rgba(255, 255, 255, 0.5), inset 0px -4px 10px rgba(0, 0, 0, 0.1), 0 0 20px rgba(255, 255, 255, 0.2), 0 10px 35px rgba(0, 0, 0, 0.2)', boxSizing: 'border-box'
   },
   cardLeft: { display:'flex', flexDirection: 'column', gap:'5px' },
   cardCityName: { fontSize:'20px', fontWeight:'700' },
@@ -783,7 +790,7 @@ const styles = {
   cardHighLow: { fontSize:'13px', opacity:0.6 },
 
   // --- FIXED: ADDED boxSizing & DECREASED BACKGROUND OPACITY ---
-  searchOverlay: { position:'fixed', top:0, left:0, width:'100%', height:'100%', background:'rgba(10, 10, 10, 0.3)', backdropFilter:'blur(15px)', WebkitBackdropFilter:'blur(15px)', zIndex:200, padding:'20px', boxSizing: 'border-box', overflowX: 'hidden' },
+  searchOverlay: { position:'fixed', top:0, left:0, width:'100%', height:'100%', background:'rgba(0, 0, 0, 0.25)', backdropFilter:'blur(20px) saturate(150%) brightness(110%)', WebkitBackdropFilter:'blur(20px) saturate(150%) brightness(110%)', zIndex:200, padding:'20px', boxSizing: 'border-box', overflowX: 'hidden' },
   searchHeader: { display:'flex', alignItems:'center', gap:'15px', marginBottom:'25px', background: 'rgba(255,255,255,0.08)', padding: '12px 20px', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.1)', boxSizing: 'border-box' },
   searchInputBig: { flex:1, background:'transparent', border:'none', color:'#fff', fontSize:'18px', outline:'none' },
   suggestionsList: { marginTop:'10px' },

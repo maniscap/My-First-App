@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { IoMdArrowBack, IoIosArrowDown, IoIosArrowUp, IoMdSunny, IoMdMoon, IoMdBookmark, IoMdSend, IoMdClose, IoMdVolumeHigh, IoMdVolumeOff, IoMdChatbubbles, IoMdGrid } from 'react-icons/io';
+import { IoMdArrowBack, IoIosArrowDown, IoIosArrowUp, IoMdSunny, IoMdMoon, IoMdBookmark, IoMdSend, IoMdClose, IoMdVolumeHigh, IoMdVolumeOff, IoMdChatbubbles, IoMdGrid, IoMdTrash, IoMdMic, IoMdMicOff } from 'react-icons/io';
 import { useSwipeable } from 'react-swipeable';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -17,12 +17,8 @@ const Page = React.forwardRef(({ title, children, number, theme }, ref) => {
       className="page" 
       style={{ 
         fontFamily: "'Times New Roman', serif",
-        background: isDark ? '#1a1a1c' : '#fffdf2',
-        border: isDark ? '1px solid #333' : '1px solid #e0d4b5', 
-        boxShadow: isDark 
-          ? 'inset 6px 0 15px rgba(0,0,0,0.3), 0 8px 32px rgba(0,0,0,0.2)' 
-          : 'inset 6px 0 15px rgba(0,0,0,0.05), 0 8px 32px rgba(0,0,0,0.1)',
-        borderRadius: '2px 16px 16px 2px',
+        background: 'transparent',
+        boxShadow: 'none',
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'space-between',
@@ -33,14 +29,14 @@ const Page = React.forwardRef(({ title, children, number, theme }, ref) => {
       }}
     >
       <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', padding: '20px 25px' }}>
-        <h2 style={{ fontSize: '20px', color: isDark ? '#4db6ac' : '#00695c', borderBottom: isDark ? '1px solid #333' : '1px solid #00695c', paddingBottom: '10px', marginTop: 0, marginBottom: '15px', fontFamily: 'sans-serif' }}>
-          {title}
+        <h2 style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '20px', color: isDark ? '#4db6ac' : '#00695c', borderBottom: isDark ? '1px solid rgba(255,255,255,0.2)' : '1px solid rgba(0,0,0,0.2)', paddingBottom: '10px', marginTop: 0, marginBottom: '15px', fontFamily: 'sans-serif', textShadow: isDark ? '0 1px 2px rgba(0,0,0,0.5)' : 'none' }}>
+          <span>{title}</span>
         </h2>
-        <div style={{ fontSize: '17px', lineHeight: '1.7', color: isDark ? '#d4d4d8' : '#444', textAlign: 'left', wordBreak: 'break-word' }}>
+        <div style={{ fontSize: '16px', lineHeight: '1.7', color: isDark ? '#f0f0f0' : '#111', textAlign: 'left', wordBreak: 'break-word', textShadow: isDark ? '0 1px 2px rgba(0,0,0,0.5)' : 'none' }}>
           {children}
         </div>
       </div>
-      <div style={{ textAlign: 'center', fontSize: '11px', color: isDark ? '#666' : '#888', borderTop: isDark ? '1px solid #333' : '1px solid #eee', paddingTop: '8px', marginTop: '8px', flexShrink: 0, padding: '0 15px 10px 15px' }}>
+      <div style={{ textAlign: 'center', fontSize: '12px', color: isDark ? '#aaa' : '#666', borderTop: isDark ? '1px solid rgba(255,255,255,0.2)' : '1px solid rgba(0,0,0,0.2)', paddingTop: '8px', marginTop: '8px', flexShrink: 0, padding: '0 15px 10px 15px' }}>
         Page {number}
       </div>
     </div>
@@ -55,12 +51,8 @@ const PageCover = React.forwardRef(({ children, theme }, ref) => {
         className="page page-cover" 
         style={{ 
           padding: '15px', 
-          background: isDark ? '#2a2a2e' : '#f3f0e6',
-          border: isDark ? '1px solid #444' : '1px solid #d9cbad', 
-          boxShadow: isDark 
-            ? 'inset 6px 0 15px rgba(0,0,0,0.5), 0 8px 32px rgba(0,0,0,0.3)' 
-            : 'inset 6px 0 15px rgba(0,0,0,0.1), 0 8px 32px rgba(0,0,0,0.1)',
-          borderRadius: '2px 16px 16px 2px',
+          background: 'transparent',
+          boxShadow: 'none',
           display: 'flex',
           flexDirection: 'column',
           justifyContent: 'center',
@@ -84,6 +76,7 @@ const DigitalLibrary = () => {
   const [bookTopic, setBookTopic] = useState('');
   const [language, setLanguage] = useState('English');
   const [bookData, setBookData] = useState(null);
+  const [coverImage, setCoverImage] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [countdown, setCountdown] = useState(30);
@@ -160,6 +153,12 @@ const DigitalLibrary = () => {
     };
   }, [showControls, currentPage]);
 
+  // Stop speaking if page changes
+  useEffect(() => {
+    window.speechSynthesis.cancel();
+    setIsSpeaking(false);
+  }, [currentPage]);
+
   // Cleanup speech synthesis
   useEffect(() => {
     return () => {
@@ -209,7 +208,7 @@ const DigitalLibrary = () => {
     if (window.speechSynthesis.speaking) {
       window.speechSynthesis.cancel();
       setIsSpeaking(false);
-      return () => clearTimeout(timer);
+      return;
     }
 
     if (currentPage === 0 || !bookData || currentPage >= totalPages -1) {
@@ -256,53 +255,72 @@ const DigitalLibrary = () => {
     setLoading(true);
     setError(null);
     setBookData(null);
+    setCoverImage(null);
+
+    // --- NEW: Fetch a high-quality image from Unsplash based on the topic ---
+    const unsplashUrl = `https://source.unsplash.com/400x600/?${encodeURIComponent(currentTopic + ',farm,agriculture')}`;
+    setCoverImage(unsplashUrl);
+    new Image().src = unsplashUrl; // Preload the image
 
     // --- PROMPT ENGINEERING: Forcing JSON Output ---
     const systemPrompt = `
-      You are a versatile and expert Indian agricultural AI companion. If the user's topic is technical or educational, write a highly accurate, comprehensive, and up-to-date farming guide customized for Indian climate, soil, and markets. If the user's topic sounds like a story, motivation, or bedtime reading, write an engaging, culturally relevant, and soothing story or tale related to rural life, farming, or nature.
+      You are a versatile and expert Indian agricultural AI author. 
+      The user requested a book on the topic: "${currentTopic}". 
+      Even if the topic is just a single word (e.g., "drone", "wheat"), you must expand it into a comprehensive, highly accurate agricultural guide or an engaging rural story customized for the Indian farming context.
 
       # SAFETY GUIDELINES:
-      You MUST refuse to generate content that is sexually explicit, violent, hateful, promotes dangerous acts, or is otherwise inappropriate. If the user asks for such content, respond with a polite refusal in the requested language, explaining that you cannot create content of that nature.
+      If the topic is sexually explicit, violent, or inappropriate, you must still return a valid JSON array, but with a single page explaining your refusal politely.
 
-      # LANGUAGE & FORMATTING RULES:
+      # CRITICAL FORMATTING RULES:
       1. The entire book MUST be written in the ${language} language.
-      2. CRITICAL REQUIREMENT: You MUST respond ONLY with a valid JSON array of objects. Do not include any introductory text or markdown formatting like \`\`\`json.
-      3. Each object in the array represents one page of the book.
-      4. Each page object must have two keys: "chapter_title" and "page_content".
-      5. Write detailed, rich content (around 80-100 words per page) so it fits well on a mobile screen.
-      6. Generate exactly 6 to 8 pages.
+      2. You MUST respond ONLY with a valid JSON array. NO conversational text, NO greetings, NO markdown formatting.
+      3. Each page object must have EXACTLY two keys: "chapter_title" and "page_content".
+      4. Write detailed, rich content (around 80-100 words per page).
+      5. Generate exactly 5 to 7 pages.
 
       # EXAMPLE JSON STRUCTURE:
       [
-        { "chapter_title": "Chapter 1 Title", "page_content": "..." },
-        { "chapter_title": "Chapter 2 Title", "page_content": "..." }
+        { "chapter_title": "Title Here", "page_content": "Content here..." }
       ]
     `;
 
-    try {
-      const result = await callAIWithTimeout(systemPrompt, `Topic: ${topic}`);
+    let attempts = 0;
+    const maxAttempts = 3; // Retry up to 3 times if a model fails or formatting breaks
+    let finalParsedData = null;
 
-      if (!result.success) {
-        throw new Error(result.error || "Failed to generate book.");
-      }
+    while (attempts < maxAttempts && !finalParsedData) {
+      attempts++;
+      try {
+        const retryHint = attempts > 1 ? "\n\nCRITICAL: Previous attempt failed. YOU MUST RETURN ONLY A VALID JSON ARRAY. DO NOT ADD ANY OTHER TEXT." : "";
+        const result = await callAIWithTimeout(systemPrompt + retryHint, `Topic: ${topic}`);
 
-      // Aggressively clean the response to prevent UI crashes if the LLM adds markdown
-      const cleanJsonStr = result.data
-        .replace(/```json/gi, '')
-        .replace(/```/gi, '')
-        .trim();
+        if (!result.success) throw new Error(result.error || "Failed to generate book.");
+
+        // Aggressively clean the response to prevent UI crashes if the LLM adds markdown
+        let cleanJsonStr = result.data.replace(/```json/gi, '').replace(/```/gi, '').trim();
+
+        // Use regex to extract only the array portion, ignoring any pre/post conversational text
+        const match = cleanJsonStr.match(/\[[\s\S]*\]/);
+        if (match) cleanJsonStr = match[0];
+          
+        const parsedData = JSON.parse(cleanJsonStr);
         
-      const parsedData = JSON.parse(cleanJsonStr);
-      
-      setBookData(parsedData);
-      setTopic(''); // Clear input after generating, bookTopic holds the title now
-
-    } catch (err) {
-      console.error("Book Generation Error:", err);
-      setError("The AI formatting failed. Please try again with a slightly different topic.");
-    } finally {
-      setLoading(false);
+        if (!Array.isArray(parsedData) || parsedData.length === 0 || !parsedData[0].page_content) {
+          throw new Error("Invalid JSON structure returned by AI");
+        }
+        finalParsedData = parsedData;
+      } catch (err) {
+        console.warn(`Book Generation Attempt ${attempts} failed:`, err);
+      }
     }
+
+    if (finalParsedData) {
+      setBookData(finalParsedData);
+      setTopic(''); // Clear input after generating
+    } else {
+      setError("The AI formatting failed after multiple attempts. Please try again with a slightly different topic.");
+    }
+    setLoading(false);
   };
 
   const handleBackClick = () => {
@@ -332,7 +350,8 @@ const DigitalLibrary = () => {
         const newSavedBook = {
           id: Date.now(),
           topic: bookTopic,
-          bookData: bookData
+          bookData: bookData,
+          coverImage: coverImage
         };
         updatedSavedBooks = [newSavedBook, ...prevSavedBooks];
       }
@@ -449,7 +468,8 @@ const DigitalLibrary = () => {
       background: theme === 'dark' ? '#121212' : 'linear-gradient(135deg, #e0f2f1 0%, #80cbc4 100%)', 
       height: '100dvh',
       minHeight: '100dvh', 
-      overflow: 'hidden',
+      overflowY: (bookData || loading) ? 'hidden' : 'auto',
+      overflowX: 'hidden',
       fontFamily: 'system-ui, sans-serif',
       display: 'flex',
       flexDirection: 'column',
@@ -480,24 +500,33 @@ const DigitalLibrary = () => {
         boxSizing: 'border-box',
         transition: 'all 0.3s ease'
       }}>
-          <div style={{ display: 'flex', alignItems: 'center' }}>
-            <button 
+          <div style={{ display: 'flex', alignItems: 'center', overflow: 'hidden' }}>
+            <button
               onClick={handleBackClick} 
-              style={{ background:'none', border:'none', cursor:'pointer', padding: 0, marginRight: '10px', display: 'flex', alignItems: 'center' }}
+              style={{ background:'none', border:'none', cursor:'pointer', padding: 0, marginRight: '10px', display: 'flex', alignItems: 'center', flexShrink: 0 }}
             >
               <IoMdArrowBack size={28} color={theme === 'dark' ? '#4db6ac' : '#00695c'}/>
             </button>
-            <h1 style={{ color: theme === 'dark' ? '#e0f2f1' : '#00695c', margin: 0, fontSize: '20px', whiteSpace: 'nowrap', transition: 'color 0.3s ease' }}>AI Farm Library 📚</h1>
+            <h1 style={{ color: theme === 'dark' ? '#e0f2f1' : '#00695c', margin: 0, fontSize: '18px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', transition: 'color 0.3s ease' }}>AI Farm Library 📚</h1>
           </div>
-          <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '8px' }}>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
             {bookData && !loading && (
-              <button 
-                onClick={handleSaveBook}
-                style={{ background: isAlreadySaved ? (theme === 'dark' ? '#4db6ac' : '#00695c') : (theme === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.6)'), border: isAlreadySaved ? 'none' : '1px solid rgba(0,0,0,0.1)', padding: '0 12px', height: '40px', borderRadius: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: isAlreadySaved ? (theme === 'dark' ? '#000' : 'white') : (theme === 'dark' ? '#4db6ac' : '#00695c'), flexShrink: 0, transition: 'all 0.3s ease', gap: '5px', fontWeight: 'bold', fontSize: '13px' }}
-              >
-                <IoMdBookmark size={18} />
-                {isAlreadySaved ? 'Saved' : 'Save'}
-              </button>
+              <>
+                <button 
+                  onClick={toggleSpeech} // The original isSpeaking var for this was unused.
+                  style={{ background: isSpeaking ? (theme === 'dark' ? '#4db6ac' : '#00695c') : (theme === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)'), border: isSpeaking ? 'none' : (theme === 'dark' ? '1px solid rgba(255,255,255,0.2)' : '1px solid rgba(0,0,0,0.1)'), width: '40px', height: '40px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: isSpeaking ? (theme === 'dark' ? '#000' : 'white') : (theme === 'dark' ? '#4db6ac' : '#00695c'), flexShrink: 0, transition: 'all 0.3s ease' }}
+                  title={isSpeaking ? 'Stop Reading' : 'Read Aloud'}
+                >
+                  {isSpeaking ? <IoMdVolumeHigh size={22} /> : <IoMdVolumeOff size={22} />}
+                </button>
+                <button 
+                  onClick={handleSaveBook}
+                  style={{ background: isAlreadySaved ? (theme === 'dark' ? '#4db6ac' : '#00695c') : (theme === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)'), border: isAlreadySaved ? 'none' : (theme === 'dark' ? '1px solid rgba(255,255,255,0.2)' : '1px solid rgba(0,0,0,0.1)'), width: '40px', height: '40px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: isAlreadySaved ? (theme === 'dark' ? '#000' : 'white') : (theme === 'dark' ? '#4db6ac' : '#00695c'), flexShrink: 0, transition: 'all 0.3s ease' }}
+                  title={isAlreadySaved ? 'Saved' : 'Save Book'}
+                >
+                  <IoMdBookmark size={22} />
+                </button>
+              </>
             )}
             <button 
               onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
@@ -509,7 +538,7 @@ const DigitalLibrary = () => {
         </div>
 
       {/* Main Content Container (Glass card removed when viewing book for a cleaner look) */}
-      <div style={{ 
+        <div style={{
         background: (bookData && !loading) ? 'transparent' : (theme === 'dark' ? 'rgba(30, 30, 30, 0.6)' : 'rgba(255, 255, 255, 0.6)'), 
         backdropFilter: (bookData && !loading) ? 'none' : 'blur(12px)',
         WebkitBackdropFilter: (bookData && !loading) ? 'none' : 'blur(12px)',
@@ -597,6 +626,7 @@ const DigitalLibrary = () => {
           <KindleStyleViewer 
             bookData={bookData}
             bookTopic={bookTopic}
+            coverImage={coverImage}
             theme={theme}
             currentPage={currentPage}
             setCurrentPage={setCurrentPage}
@@ -613,8 +643,8 @@ const DigitalLibrary = () => {
       </div>
 
       {/* Search History Dropdown */}
-      {!bookData && !loading && searchHistory.length > 0 && (
-        <div style={{ background: theme === 'dark' ? 'rgba(30, 30, 30, 0.6)' : 'rgba(255, 255, 255, 0.4)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', border: theme === 'dark' ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(255, 255, 255, 0.5)', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 8px 32px rgba(0,0,0,0.1)', maxWidth: '500px', width: '100%', margin: '20px auto 0 auto', transition: 'all 0.3s ease' }}>
+      {!bookData && !loading && (
+        <div style={{ background: theme === 'dark' ? 'rgba(30, 30, 30, 0.6)' : 'rgba(255, 255, 255, 0.4)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', border: theme === 'dark' ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(255, 255, 255, 0.5)', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 8px 32px rgba(0,0,0,0.1)', maxWidth: '500px', width: '100%', margin: '20px auto 0 auto', transition: 'all 0.3s ease', flexShrink: 0 }}>
           <button 
             onClick={() => setIsHistoryOpen(!isHistoryOpen)} 
             style={{ width: '100%', padding: '15px 20px', background: 'transparent', border: 'none', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', fontSize: '16px', fontWeight: 'bold', color: theme === 'dark' ? '#4db6ac' : '#00695c', transition: 'color 0.3s ease' }}
@@ -623,28 +653,45 @@ const DigitalLibrary = () => {
               <span>🕒</span>
               <span>Recent Topics</span>
             </div>
-            {isHistoryOpen ? <IoIosArrowUp size={20} /> : <IoIosArrowDown size={20} />}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              {searchHistory.length > 0 && (
+                <span onClick={(e) => { e.stopPropagation(); setSearchHistory([]); localStorage.removeItem('farmCap_library_history'); }} style={{ fontSize: '12px', color: '#d32f2f', cursor: 'pointer', background: 'rgba(211, 47, 47, 0.1)', padding: '4px 10px', borderRadius: '12px' }}>Clear All</span>
+              )}
+              {isHistoryOpen ? <IoIosArrowUp size={20} /> : <IoIosArrowDown size={20} />}
+            </div>
           </button>
           
           {isHistoryOpen && (
-            <div style={{ padding: '0 20px 15px 20px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              {searchHistory.map((item, idx) => (
-                <div 
-                  key={`${item}-${idx}`} 
-                  onClick={() => { setTopic(item); window.scrollTo({ top: 0, behavior: 'smooth' }); setIsHistoryOpen(false); }} 
-                  style={{ padding: '10px 15px', background: 'rgba(255, 255, 255, 0.7)', borderRadius: '8px', cursor: 'pointer', fontSize: '14px', color: '#333', border: '1px solid rgba(255,255,255,0.5)', transition: 'background 0.2s' }}
-                >
-                  🔍 {item}
+            <div style={{ padding: '0 20px 15px 20px', display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '250px', overflowY: 'auto' }}>
+              {searchHistory.length > 0 ? (
+                searchHistory.map((item, idx) => (
+                  <div 
+                    key={`${item}-${idx}`} 
+                    onClick={() => { setTopic(item); window.scrollTo({ top: 0, behavior: 'smooth' }); setIsHistoryOpen(false); }} 
+                    style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 15px', background: 'rgba(255, 255, 255, 0.7)', borderRadius: '8px', cursor: 'pointer', fontSize: '14px', color: '#333', border: '1px solid rgba(255,255,255,0.5)', transition: 'background 0.2s' }}
+                  >
+                    <div>🔍 {item}</div>
+                    <IoMdTrash size={18} color="#d32f2f" onClick={(e) => {
+                      e.stopPropagation();
+                      const newHistory = searchHistory.filter((_, i) => i !== idx);
+                      setSearchHistory(newHistory);
+                      localStorage.setItem('farmCap_library_history', JSON.stringify(newHistory));
+                    }} style={{ opacity: 0.8 }} onMouseOver={e => e.target.style.opacity = 1} onMouseOut={e => e.target.style.opacity = 0.8} />
+                  </div>
+                ))
+              ) : (
+                <div style={{ color: theme === 'dark' ? '#aaa' : '#666', fontSize: '14px', textAlign: 'center', padding: '10px' }}>
+                  You don't have any recent searches.
                 </div>
-              ))}
+              )}
             </div>
           )}
         </div>
       )}
 
       {/* Saved Books Dropdown */}
-      {!bookData && !loading && savedBooks.length > 0 && (
-        <div style={{ background: theme === 'dark' ? 'rgba(30, 30, 30, 0.6)' : 'rgba(255, 255, 255, 0.4)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', border: theme === 'dark' ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(255, 255, 255, 0.5)', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 8px 32px rgba(0,0,0,0.1)', maxWidth: '500px', width: '100%', margin: '20px auto 0 auto', transition: 'all 0.3s ease' }}>
+      {!bookData && !loading && (
+        <div style={{ background: theme === 'dark' ? 'rgba(30, 30, 30, 0.6)' : 'rgba(255, 255, 255, 0.4)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', border: theme === 'dark' ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(255, 255, 255, 0.5)', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 8px 32px rgba(0,0,0,0.1)', maxWidth: '500px', width: '100%', margin: '20px auto 20px auto', transition: 'all 0.3s ease', flexShrink: 0 }}>
           <button 
             onClick={() => setIsSavedBooksOpen(!isSavedBooksOpen)} 
             style={{ width: '100%', padding: '15px 20px', background: 'transparent', border: 'none', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', fontSize: '16px', fontWeight: 'bold', color: theme === 'dark' ? '#4db6ac' : '#00695c', transition: 'color 0.3s ease' }}
@@ -653,16 +700,33 @@ const DigitalLibrary = () => {
               <span>📚</span>
               <span>Saved Books</span>
             </div>
-            {isSavedBooksOpen ? <IoIosArrowUp size={20} /> : <IoIosArrowDown size={20} />}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              {savedBooks.length > 0 && (
+                <span onClick={(e) => { e.stopPropagation(); setSavedBooks([]); localStorage.removeItem('farmCap_saved_books'); }} style={{ fontSize: '12px', color: '#d32f2f', cursor: 'pointer', background: 'rgba(211, 47, 47, 0.1)', padding: '4px 10px', borderRadius: '12px' }}>Clear All</span>
+              )}
+              {isSavedBooksOpen ? <IoIosArrowUp size={20} /> : <IoIosArrowDown size={20} />}
+            </div>
           </button>
           
           {isSavedBooksOpen && (
-            <div style={{ padding: '0 20px 15px 20px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              {savedBooks.map((book) => ( 
-                <div key={book.id} onClick={() => { setBookData(book.bookData); setBookTopic(book.topic); }} style={{ padding: '10px 15px', background: 'rgba(255, 255, 255, 0.7)', borderRadius: '8px', cursor: 'pointer', fontSize: '14px', color: '#333', border: '1px solid rgba(255,255,255,0.5)', transition: 'background 0.2s' }}>
-                  📖 {book.topic}
+            <div style={{ padding: '0 20px 15px 20px', display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '250px', overflowY: 'auto' }}>
+              {savedBooks.length > 0 ? (
+                savedBooks.map((book) => ( 
+                  <div key={book.id} onClick={() => { setBookData(book.bookData); setBookTopic(book.topic); setCoverImage(book.coverImage || null); }} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 15px', background: 'rgba(255, 255, 255, 0.7)', borderRadius: '8px', cursor: 'pointer', fontSize: '14px', color: '#333', border: '1px solid rgba(255,255,255,0.5)', transition: 'background 0.2s' }}>
+                    <div>📖 {book.topic}</div>
+                    <IoMdTrash size={18} color="#d32f2f" onClick={(e) => {
+                      e.stopPropagation();
+                      const newBooks = savedBooks.filter(b => b.id !== book.id);
+                      setSavedBooks(newBooks);
+                      localStorage.setItem('farmCap_saved_books', JSON.stringify(newBooks));
+                    }} style={{ opacity: 0.8 }} onMouseOver={e => e.target.style.opacity = 1} onMouseOut={e => e.target.style.opacity = 0.8} />
+                  </div>
+                ))
+              ) : (
+                <div style={{ color: theme === 'dark' ? '#aaa' : '#666', fontSize: '14px', textAlign: 'center', padding: '10px' }}>
+                  You don't have any saved books.
                 </div>
-              ))}
+              )}
             </div>
           )}
         </div>
@@ -680,21 +744,40 @@ const DigitalLibrary = () => {
         handleChatSubmit={handleChatSubmit}
         handleOutOfBookAnswer={handleOutOfBookAnswer}
         chatContainerRef={chatContainerRef}
+        language={language}
+      />
+
+      <GridViewModal 
+        show={showGridView} 
+        onClose={() => setShowGridView(false)} 
+        bookData={bookData} 
+        bookTopic={bookTopic} 
+        coverImage={coverImage} 
+        theme={theme} 
+        setCurrentPage={setCurrentPage} 
       />
     </div>
   );
 };
 
-const KindleStyleViewer = ({ bookData, bookTopic, theme, currentPage, setCurrentPage, totalPages, handlePrevPage, handleNextPage, swipeHandlers, toggleControls, showControls, setShowGridView, setIsChatModalOpen }) => {
+const KindleStyleViewer = ({ bookData, bookTopic, coverImage, theme, currentPage, setCurrentPage, totalPages, handlePrevPage, handleNextPage, swipeHandlers, toggleControls, showControls, setShowGridView, setIsChatModalOpen }) => {
   
   const CurrentPageComponent = () => {
     if (currentPage === 0) {
       return (
         <PageCover theme={theme}>
-          <div style={{ textAlign: 'center' }}>
-            <h1 style={{ fontSize: '28px', color: theme === 'dark' ? '#4db6ac' : '#00695c', fontFamily: "'Times New Roman', serif" }}>{bookTopic}</h1>
-            <p style={{ fontStyle: 'italic', color: theme === 'dark' ? '#aaa' : '#555' }}>A FarmCap AI Guide</p>
-            <div style={{ fontSize: '60px', marginTop: '20px' }}>🌱</div>
+          <div style={{
+            width: '100%', height: '100%',
+            backgroundImage: `url(${coverImage || ''})`,
+            backgroundSize: 'cover', backgroundPosition: 'center',
+            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end',
+            padding: '30px', boxSizing: 'border-box', position: 'relative'
+          }}>
+            <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.8) 0%, transparent 60%)' }} />
+            <div style={{ position: 'relative', zIndex: 1, textAlign: 'center', color: 'white' }}>
+              <h1 style={{ fontSize: '32px', textShadow: '0 2px 5px rgba(0,0,0,0.7)', margin: '0 0 10px 0', lineHeight: '1.2' }}>{bookTopic}</h1>
+              <p style={{ fontStyle: 'italic', opacity: 0.9, margin: 0 }}>A FarmCap AI Guide</p>
+            </div>
           </div>
         </PageCover>
       );
@@ -741,7 +824,6 @@ const KindleStyleViewer = ({ bookData, bookTopic, theme, currentPage, setCurrent
             height: '100%',
             maxWidth: '420px',
             maxHeight: '90vh',
-            boxShadow: theme === 'dark' ? '0 10px 40px rgba(0,0,0,0.5)' : '0 10px 30px rgba(0,0,0,0.2)',
           }}>
           <CurrentPageComponent />
         </motion.div>
@@ -769,9 +851,11 @@ const KindleStyleViewer = ({ bookData, bookTopic, theme, currentPage, setCurrent
           >
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
               <span style={{ fontSize: '12px', color: theme === 'dark' ? '#aaa' : '#555' }}>Page {currentPage + 1} of {totalPages}</span>
-              <button onClick={() => setShowGridView(true)} style={{background: 'none', border: 'none', color: theme === 'dark' ? '#4db6ac' : '#00695c', cursor: 'pointer'}}>
-                <IoMdGrid size={22} />
-              </button>
+              <div style={{ display: 'flex', gap: '15px' }}>
+                <button onClick={() => setShowGridView(true)} style={{background: 'none', border: 'none', color: theme === 'dark' ? '#4db6ac' : '#00695c', cursor: 'pointer'}}>
+                  <IoMdGrid size={22} />
+                </button>
+              </div>
             </div>
             <input
               type="range"
@@ -809,30 +893,34 @@ const KindleStyleViewer = ({ bookData, bookTopic, theme, currentPage, setCurrent
   );
 };
 
-const GridViewModal = ({ show, onClose, bookData, bookTopic, theme, setCurrentPage }) => (
+const GridViewModal = ({ show, onClose, bookData, bookTopic, coverImage, theme, setCurrentPage }) => (
   <AnimatePresence>
     {show && (
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(5px)', zIndex: 1000, display: 'flex', flexDirection: 'column' }}
+        style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(20px) saturate(200%)', WebkitBackdropFilter: 'blur(20px) saturate(200%)', zIndex: 1000, display: 'flex', flexDirection: 'column' }}
         onClick={onClose}
       >
-        <div style={{ padding: '15px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: theme === 'dark' ? '#111' : '#eee' }}>
+        <div style={{ padding: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: theme === 'dark' ? 'rgba(20,20,25,0.6)' : 'rgba(255,255,255,0.4)', borderBottom: theme === 'dark' ? '1px solid rgba(255,255,255,0.1)' : '1px solid rgba(255,255,255,0.4)' }}>
           <h3 style={{ margin: 0, color: theme === 'dark' ? '#fff' : '#000' }}>Page Layouts</h3>
           <button onClick={onClose} style={{ background: 'none', border: 'none', color: theme === 'dark' ? '#fff' : '#000' }}><IoMdClose size={24} /></button>
         </div>
         <div style={{ flex: 1, overflowY: 'auto', padding: '15px', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))', gap: '15px' }}>
           {/* Cover */}
-          <div onClick={() => { setCurrentPage(0); onClose(); }} style={{ cursor: 'pointer', border: `2px solid ${theme === 'dark' ? '#4db6ac' : '#00695c'}`, borderRadius: '8px', padding: '10px', background: theme === 'dark' ? '#222' : '#fff', textAlign: 'center' }}>
+          <div onClick={() => { setCurrentPage(0); onClose(); }} style={{ cursor: 'pointer', border: `2px solid ${theme === 'dark' ? '#4db6ac' : '#00695c'}`, borderRadius: '16px', padding: '15px', background: theme === 'dark' ? 'rgba(0,0,0,0.3)' : 'rgba(255,255,255,0.6)', backdropFilter: 'blur(10px)', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
             <div style={{ fontSize: '12px', fontWeight: 'bold' }}>Cover</div>
-            <div style={{ fontSize: '24px', margin: '10px 0' }}>🌱</div>
+            {coverImage ? (
+              <img src={coverImage} alt="Cover" style={{ width: '60px', height: '80px', objectFit: 'cover', borderRadius: '8px', marginBottom: '10px' }} />
+            ) : (
+              <div style={{ fontSize: '24px', margin: '10px 0' }}>🌱</div>
+            )}
             <div style={{ fontSize: '10px', color: '#888' }}>Page 1</div>
           </div>
           {/* Pages */}
           {bookData.map((page, index) => (
-            <div key={index} onClick={() => { setCurrentPage(index + 1); onClose(); }} style={{ cursor: 'pointer', border: '1px solid #555', borderRadius: '8px', padding: '10px', background: theme === 'dark' ? '#222' : '#fff' }}>
+            <div key={index} onClick={() => { setCurrentPage(index + 1); onClose(); }} style={{ cursor: 'pointer', border: theme === 'dark' ? '1px solid rgba(255,255,255,0.2)' : '1px solid rgba(255,255,255,0.6)', borderRadius: '16px', padding: '15px', background: theme === 'dark' ? 'rgba(0,0,0,0.3)' : 'rgba(255,255,255,0.6)', backdropFilter: 'blur(10px)' }}>
               <div style={{ fontSize: '12px', fontWeight: 'bold', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{page.chapter_title}</div>
               <div style={{ fontSize: '10px', color: '#888', marginTop: '5px' }}>Page {index + 2}</div>
             </div>
@@ -843,7 +931,36 @@ const GridViewModal = ({ show, onClose, bookData, bookTopic, theme, setCurrentPa
   </AnimatePresence>
 );
 
-const ChatModal = ({ show, onClose, theme, chatMessages, isChatLoading, userQuestion, setUserQuestion, handleChatSubmit, handleOutOfBookAnswer, chatContainerRef }) => {
+const ChatModal = ({ show, onClose, theme, chatMessages, isChatLoading, userQuestion, setUserQuestion, handleChatSubmit, handleOutOfBookAnswer, chatContainerRef, language }) => {
+  const [isListening, setIsListening] = useState(false);
+
+  const startListening = () => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      alert("Your browser does not support speech recognition.");
+      return;
+    }
+    const recognition = new SpeechRecognition();
+    
+    const langCodeMap = {
+      'Hindi': 'hi-IN', 'Telugu': 'te-IN', 'Tamil': 'ta-IN',
+      'Marathi': 'mr-IN', 'Gujarati': 'gu-IN', 'Kannada': 'kn-IN', 'English': 'en-IN'
+    };
+    recognition.lang = langCodeMap[language] || 'en-US';
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+
+    recognition.onstart = () => setIsListening(true);
+    recognition.onresult = (event) => {
+      const transcript = event.results[0][0].transcript;
+      setUserQuestion(prev => prev ? prev + ' ' + transcript : transcript);
+    };
+    recognition.onerror = () => setIsListening(false);
+    recognition.onend = () => setIsListening(false);
+
+    recognition.start();
+  };
+
   return (
   <AnimatePresence>
     {show && (
@@ -859,27 +976,33 @@ const ChatModal = ({ show, onClose, theme, chatMessages, isChatLoading, userQues
           animate={{ y: '0%' }}
           exit={{ y: '100%' }}
           transition={{ type: 'spring', bounce: 0.1, duration: 0.4 }}
-          style={{ width: '100%', maxWidth: '500px', height: '75vh', background: theme === 'dark' ? '#1a1a1c' : '#f4f4f5', borderTopLeftRadius: '20px', borderTopRightRadius: '20px', display: 'flex', flexDirection: 'column', boxShadow: '0 -5px 20px rgba(0,0,0,0.3)' }}
+          style={{ width: '100%', maxWidth: '500px', height: '75vh', background: theme === 'dark' ? 'rgba(20, 20, 25, 0.8)' : 'rgba(255, 255, 255, 0.7)', backdropFilter: 'blur(30px) saturate(200%)', WebkitBackdropFilter: 'blur(30px) saturate(200%)', borderTop: theme === 'dark' ? '1px solid rgba(255,255,255,0.15)' : '1px solid rgba(255,255,255,0.6)', borderLeft: theme === 'dark' ? '1px solid rgba(255,255,255,0.1)' : '1px solid rgba(255,255,255,0.4)', borderRight: theme === 'dark' ? '1px solid rgba(255,255,255,0.1)' : '1px solid rgba(255,255,255,0.4)', borderTopLeftRadius: '32px', borderTopRightRadius: '32px', display: 'flex', flexDirection: 'column', boxShadow: '0 -10px 40px rgba(0,0,0,0.2)' }}
           onClick={e => e.stopPropagation()}
-        >
+        > 
           {/* Header */}
-          <div style={{ padding: '15px 20px', borderBottom: `1px solid ${theme === 'dark' ? '#333' : '#ddd'}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: theme === 'dark' ? '#222' : '#fff', borderTopLeftRadius: '20px', borderTopRightRadius: '20px' }}>
-            <h3 style={{ margin: 0, color: theme === 'dark' ? '#fff' : '#000', fontSize: '16px', fontWeight: '600' }}>Ask AI About This Book</h3>
-            <button onClick={onClose} style={{ background: 'none', border: 'none', color: theme === 'dark' ? '#aaa' : '#555', cursor: 'pointer' }}><IoMdClose size={24} /></button>
+          <div style={{ padding: '20px 25px', borderBottom: theme === 'dark' ? '1px solid rgba(255,255,255,0.1)' : '1px solid rgba(0,0,0,0.08)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'transparent', borderTopLeftRadius: '32px', borderTopRightRadius: '32px' }}>
+            <h3 style={{ margin: 0, color: theme === 'dark' ? '#fff' : '#000', fontSize: '16px', fontWeight: '600', flexGrow: 1, textAlign: 'center' }}>Ask AI About This Book</h3>
+            <button onClick={onClose} style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '50%', color: theme === 'dark' ? '#fff' : '#000', cursor: 'pointer', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><IoMdClose size={20} /></button>
           </div>
 
           {/* Messages */}
           <div ref={chatContainerRef} style={{ flex: 1, overflowY: 'auto', padding: '15px' }}>
+            <p style={{ fontSize: '13px', color: theme === 'dark' ? '#bbb' : '#666', textAlign: 'center', marginBottom: '15px' }}>
+              Ask about this book. If you want, you can ask from out of the book.
+            </p>
             {chatMessages.map(msg => (
               <div key={msg.id} style={{ display: 'flex', justifyContent: msg.sender === 'user' ? 'flex-end' : 'flex-start', marginBottom: '12px' }}>
                 <div style={{
-                  background: msg.sender === 'user' ? (theme === 'dark' ? '#4db6ac' : '#00695c') : (theme === 'dark' ? '#333' : '#fff'),
+                  background: msg.sender === 'user' ? (theme === 'dark' ? 'rgba(77, 182, 172, 0.85)' : 'rgba(0, 105, 92, 0.85)') : (theme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(255, 255, 255, 0.7)'),
+                  backdropFilter: 'blur(10px)',
+                  WebkitBackdropFilter: 'blur(10px)',
+                  border: theme === 'dark' ? '1px solid rgba(255,255,255,0.1)' : '1px solid rgba(255,255,255,0.4)',
                   color: msg.sender === 'user' ? (theme === 'dark' ? '#000' : '#fff') : (theme === 'dark' ? '#fff' : '#000'),
                   padding: '10px 15px',
                   borderRadius: '18px',
                   maxWidth: '85%',
                   lineHeight: '1.5',
-                  boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                  boxShadow: '0 4px 15px rgba(0,0,0,0.1)'
                 }}>
                   {msg.isLoading ? (
                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><div className="spinner"></div><span>Searching...</span></div>
@@ -889,7 +1012,7 @@ const ChatModal = ({ show, onClose, theme, chatMessages, isChatLoading, userQues
                   {msg.expandable && (
                     <button 
                       onClick={() => handleOutOfBookAnswer(msg.originalQuestion, msg.id)}
-                      style={{ background: theme === 'dark' ? '#555' : '#e0e0e0', color: theme === 'dark' ? 'white' : 'black', border: 'none', borderRadius: '8px', padding: '8px 12px', marginTop: '10px', cursor: 'pointer', width: '100%', fontWeight: '600' }}
+                      style={{ background: theme === 'dark' ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.08)', color: theme === 'dark' ? 'white' : 'black', border: theme === 'dark' ? '1px solid rgba(255,255,255,0.2)' : '1px solid rgba(0,0,0,0.1)', borderRadius: '8px', padding: '8px 12px', marginTop: '10px', cursor: 'pointer', width: '100%', fontWeight: '600', backdropFilter: 'blur(5px)' }}
                     >
                       Search Outside Book
                     </button>
@@ -897,13 +1020,20 @@ const ChatModal = ({ show, onClose, theme, chatMessages, isChatLoading, userQues
                 </div>
               </div>
             ))}
-            {isChatLoading && <div style={{ display: 'flex', justifyContent: 'flex-start' }}><div style={{ background: theme === 'dark' ? '#333' : '#fff', padding: '10px 15px', borderRadius: '18px' }}>Thinking...</div></div>}
+            {isChatLoading && <div style={{ display: 'flex', justifyContent: 'flex-start' }}><div style={{ background: theme === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.7)', backdropFilter: 'blur(10px)', border: theme === 'dark' ? '1px solid rgba(255,255,255,0.1)' : '1px solid rgba(255,255,255,0.4)', color: theme === 'dark' ? '#fff' : '#000', padding: '10px 15px', borderRadius: '18px', boxShadow: '0 4px 15px rgba(0,0,0,0.1)' }}>Thinking...</div></div>}
           </div>
 
           {/* Input Form */}
-          <form onSubmit={handleChatSubmit} style={{ padding: '15px', borderTop: `1px solid ${theme === 'dark' ? '#333' : '#ddd'}`, display: 'flex', gap: '10px', background: theme === 'dark' ? '#222' : '#fff' }}>
-            <input type="text" value={userQuestion} onChange={(e) => setUserQuestion(e.target.value)} placeholder="Ask a question..." style={{ flex: 1, padding: '12px', borderRadius: '20px', border: `1px solid ${theme === 'dark' ? '#444' : '#ccc'}`, background: 'transparent', color: theme === 'dark' ? '#fff' : '#000', outline: 'none' }} />
-            <button type="submit" style={{ background: theme === 'dark' ? '#4db6ac' : '#00695c', border: 'none', color: 'white', width: '44px', height: '44px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+          <form onSubmit={handleChatSubmit} style={{ padding: '15px', borderTop: theme === 'dark' ? '1px solid rgba(255,255,255,0.1)' : '1px solid rgba(0,0,0,0.08)', display: 'flex', gap: '10px', background: 'transparent', alignItems: 'center' }}>
+            <button 
+              type="button" 
+              onClick={startListening}
+              style={{ background: isListening ? '#d32f2f' : (theme === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.4)'), border: theme === 'dark' ? '1px solid rgba(255,255,255,0.15)' : '1px solid rgba(255,255,255,0.6)', color: isListening ? 'white' : (theme === 'dark' ? '#fff' : '#000'), width: '48px', height: '48px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'background 0.3s', flexShrink: 0, backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)' }}
+            >
+              {isListening ? <IoMdMicOff size={20} /> : <IoMdMic size={20} />}
+            </button>
+            <input type="text" value={userQuestion} onChange={(e) => setUserQuestion(e.target.value)} placeholder="Ask a question..." style={{ flex: 1, padding: '14px 18px', borderRadius: '24px', border: theme === 'dark' ? '1px solid rgba(255,255,255,0.1)' : '1px solid rgba(255,255,255,0.5)', background: theme === 'dark' ? 'rgba(0,0,0,0.3)' : 'rgba(255,255,255,0.6)', color: theme === 'dark' ? '#fff' : '#000', outline: 'none', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)', boxShadow: 'inset 0 2px 5px rgba(0,0,0,0.05)' }} />
+            <button type="submit" style={{ background: theme === 'dark' ? 'rgba(77, 182, 172, 0.9)' : 'rgba(0, 105, 92, 0.9)', border: theme === 'dark' ? '1px solid rgba(255,255,255,0.2)' : '1px solid rgba(255,255,255,0.4)', color: 'white', width: '48px', height: '48px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 4px 12px rgba(0,0,0,0.15)', backdropFilter: 'blur(10px)' }}>
               <IoMdSend size={20} />
             </button>
           </form>
