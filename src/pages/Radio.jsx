@@ -7,13 +7,11 @@ import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { 
   IoMdArrowBack, IoMdPause, IoMdPlay, IoMdSkipBackward, IoMdSkipForward, 
-  IoMdSearch, IoMdFunnel, IoMdArrowDown, IoMdRefresh,
-  IoMdMusicalNote, IoMdHeart, IoMdHeartEmpty, IoMdVolumeHigh, IoMdVolumeOff, IoMdTime,
-  IoMdShare, IoMdClose, IoMdList
+  IoMdSearch, IoMdArrowDown, IoMdRefresh,
+  IoMdMusicalNote, IoMdHeart, IoMdHeartEmpty, IoMdTime,
+  IoMdShare, IoMdClose, IoMdList, IoMdVolumeHigh, IoMdVolumeOff
 } from 'react-icons/io';
 
-// --- CONFIGURATION ---
-const API_BASE = "https://de1.api.radio-browser.info/json/stations";
 const DEFAULT_ICON = "https://cdn-icons-png.flaticon.com/512/9043/9043296.png"; 
 const AIR_ICON = "https://upload.wikimedia.org/wikipedia/en/thumb/8/82/All_India_Radio_logo.svg/1200px-All_India_Radio_logo.svg.png";
 const FARM_ICON = "https://cdn-icons-png.flaticon.com/512/3028/3028575.png";
@@ -41,11 +39,51 @@ const STATE_LOCATIONS = {
     "Jammu and Kashmir": { lat: 33.7782, lng: 76.5762 }
 };
 
+// --- SMART DEFAULTS ---
+const INDIAN_LANGUAGES = ['Assamese', 'Bengali', 'Gujarati', 'Hindi', 'Kannada', 'Malayalam', 'Marathi', 'Odia', 'Punjabi', 'Tamil', 'Telugu', 'Urdu'];
+
+const getInitialState = () => {
+    const savedLoc = localStorage.getItem('userLocation') || "";
+    for (const st of Object.keys(STATE_LOCATIONS)) {
+        if (savedLoc.includes(st)) return st;
+    }
+    return 'Maharashtra';
+};
+
+// --- PREMIUM HAPTIC ENGINE ---
+const triggerHaptic = (type = 'light') => {
+    try {
+        if (!navigator.vibrate) return;
+        if (type === 'light') navigator.vibrate(40);
+        if (type === 'medium') navigator.vibrate(80);
+        if (type === 'heavy') navigator.vibrate([60, 50, 60]);
+    } catch(e) {}
+};
+
+// --- DYNAMIC COLOR GENERATOR ---
+const getStationColor = (name) => {
+    if (!name) return '#4ade80';
+    const colors = ['#4ade80', '#60a5fa', '#c084fc', '#fbbf24', '#f87171', '#34d399', '#2dd4bf', '#ff9800'];
+    let hash = 0;
+    for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+    return colors[Math.abs(hash) % colors.length];
+};
+
 // --- GLOBAL SINGLETONS ---
 window.globalAudio = window.globalAudio || new Audio();
 const globalAudio = window.globalAudio;
 let globalHls = null;
 let globalCurrentStation = null;
+
+// --- PROFESSIONAL EQ ANIMATION WIDGET ---
+const MiniEqualizer = () => (
+    <div style={{display:'flex', alignItems:'flex-end', gap:'3px', height:'14px', margin:'0 4px'}}>
+        <div className="eq-bar" style={{animationDuration:'0.7s'}}></div>
+        <div className="eq-bar" style={{animationDuration:'0.5s'}}></div>
+        <div className="eq-bar" style={{animationDuration:'0.9s'}}></div>
+        <div className="eq-bar" style={{animationDuration:'0.6s'}}></div>
+    </div>
+);
 
 const Radio = () => {
   const navigate = useNavigate();
@@ -54,28 +92,63 @@ const Radio = () => {
   // --- STATE ---
   const [allStations, setAllStations] = useState([]);
   const [filteredStations, setFilteredStations] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [showFilters, setShowFilters] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [hasFetched, setHasFetched] = useState(false);
   const [isPlayerExpanded, setIsPlayerExpanded] = useState(false);
   const [suggestions, setSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   
+  const [recentStations, setRecentStations] = useState(() => {
+      const saved = localStorage.getItem('radio_recents');
+      return saved ? JSON.parse(saved) : [];
+  });
   const [favorites, setFavorites] = useState(() => {
       const saved = localStorage.getItem('radio_favorites');
       return saved ? JSON.parse(saved) : [];
   });
-  const [volume, setVolume] = useState(1);
-  const [isMuted, setIsMuted] = useState(false);
   const [showTimerMenu, setShowTimerMenu] = useState(false);
   const [sleepTimer, setSleepTimer] = useState(null);
+  const [activeSelect, setActiveSelect] = useState(null);
+  const [isBuffering, setIsBuffering] = useState(false);
+  const [isMuted, setIsMuted] = useState(globalAudio.muted);
   
-  const [langOpen, setLangOpen] = useState(false);
-  const [stateOpen, setStateOpen] = useState(false);
+  const [viewMode, setViewMode] = useState('all'); // 'all', 'favorites', 'recents'
+  
+  const stationsRef = useRef([]);
+
+  useEffect(() => {
+      stationsRef.current = filteredStations;
+  }, [filteredStations]);
 
   // --- PLAYER STATE ---
   const [selectedStation, setSelectedStation] = useState(globalCurrentStation);
   const [isPlaying, setIsPlaying] = useState(!globalAudio.paused); 
-  const [filters, setFilters] = useState({ search: '', state: 'All', language: 'All', favoritesOnly: false });
+  const [filters, setFilters] = useState({ search: '', state: getInitialState(), language: 'Hindi' });
+
+  // --- BACK NAVIGATION LOGIC ---
+  const handleBack = () => {
+    if (activeSelect) {
+      setActiveSelect(null);
+    } else if (showSuggestions || filters.search) {
+      setShowSuggestions(false);
+      setFilters({ ...filters, search: '' });
+    } else if (viewMode !== 'all') {
+      setViewMode('all');
+    } else if (hasFetched) {
+      setHasFetched(false);
+      setAllStations([]);
+    } else {
+      navigate('/dashboard');
+    }
+  };
+
+  const handleFullPlayerBack = () => {
+    if (showTimerMenu) {
+      setShowTimerMenu(false);
+    } else {
+      setIsPlayerExpanded(false);
+    }
+  };
 
   // --- PLAY/PAUSE LOGIC ---
   const togglePlay = (e) => {
@@ -87,16 +160,20 @@ const Radio = () => {
     if (isPlaying) {
         setIsPlaying(false);
         globalAudio.pause();
+        triggerHaptic('light');
     } else {
         setIsPlaying(true);
         const playPromise = globalAudio.play();
         if (playPromise !== undefined) {
             playPromise.catch(error => {
-                console.error("Playback failed:", error);
-                setIsPlaying(false); 
-                toast.error("Stream connection failed");
+                if (error.name !== 'AbortError') {
+                    console.error("Playback failed:", error);
+                    setIsPlaying(false); 
+                    toast.error("Stream connection failed");
+                }
             });
         }
+        triggerHaptic('medium');
     }
   };
 
@@ -109,34 +186,96 @@ const Radio = () => {
 
       const onPlay = () => setIsPlaying(true);
       const onPause = () => setIsPlaying(false);
+      const onPlaying = () => {
+          setIsBuffering(false);
+          if (window.radioTuningTimeout) {
+              clearTimeout(window.radioTuningTimeout);
+              window.radioTuningTimeout = null;
+          }
+      };
+      const onWaiting = () => setIsBuffering(true);
       
       globalAudio.addEventListener('play', onPlay);
       globalAudio.addEventListener('pause', onPause);
+      globalAudio.addEventListener('playing', onPlaying);
+      globalAudio.addEventListener('waiting', onWaiting);
       
       return () => {
           globalAudio.removeEventListener('play', onPlay);
           globalAudio.removeEventListener('pause', onPause);
+          globalAudio.removeEventListener('playing', onPlaying);
+          globalAudio.removeEventListener('waiting', onWaiting);
       };
   }, [isPlayerExpanded]); 
 
-  // --- FETCH DATA (SMART LOCATION FIX) ---
+  // --- MEDIASESSION API (LOCK SCREEN CONTROLS) ---
   useEffect(() => {
-    const fetchMassiveData = async () => {
+      if ('mediaSession' in navigator && selectedStation) {
+          navigator.mediaSession.metadata = new window.MediaMetadata({
+              title: selectedStation.name,
+              artist: selectedStation.normalizedState || 'FarmCap Radio',
+              album: 'Live Airwaves',
+              artwork: [
+                  { src: selectedStation.icon || DEFAULT_ICON, sizes: '96x96', type: 'image/png' },
+                  { src: selectedStation.icon || DEFAULT_ICON, sizes: '512x512', type: 'image/png' }
+              ]
+          });
+          navigator.mediaSession.setActionHandler('play', () => {
+              globalAudio.play(); setIsPlaying(true);
+          });
+          navigator.mediaSession.setActionHandler('pause', () => {
+              globalAudio.pause(); setIsPlaying(false);
+          });
+          navigator.mediaSession.setActionHandler('previoustrack', () => playPrev());
+          navigator.mediaSession.setActionHandler('nexttrack', () => playNext());
+      }
+  }, [selectedStation]);
+
+  // --- MANUAL EXPLICIT FETCH LOGIC ---
+  const fetchDynamicData = async () => {
       setLoading(true);
       try {
-        const reqs = [
-            axios.get(`${API_BASE}/search?countrycode=IN&limit=3000&hidebroken=true`), 
-            axios.get(`${API_BASE}/search?name=Akashvani&hidebroken=true`), 
-            axios.get(`${API_BASE}/search?name=All%20India%20Radio&hidebroken=true`),
-            axios.get(`${API_BASE}/search?tag=kisan&hidebroken=true`)
+        // ONLY fetch stations that are strictly marked as online & working
+        let baseParams = `countrycode=IN&hidebroken=true&lastcheckok=1&order=clickcount&reverse=true`;
+        let specificParams = `countrycode=IN&hidebroken=true&lastcheckok=1`;
+
+        if (window.location.protocol === 'https:') {
+            baseParams += '&is_https=1';
+            specificParams += '&is_https=1';
+        }
+
+        baseParams += `&state=${encodeURIComponent(filters.state)}`;
+        specificParams += `&state=${encodeURIComponent(filters.state)}`;
+        baseParams += `&language=${encodeURIComponent(filters.language.toLowerCase())}`;
+        specificParams += `&language=${encodeURIComponent(filters.language.toLowerCase())}`;
+
+        // The 3 most reliable main servers
+        const API_ENDPOINTS = [
+            "https://de1.api.radio-browser.info/json/stations",
+            "https://at1.api.radio-browser.info/json/stations",
+            "https://nl1.api.radio-browser.info/json/stations"
         ];
-        
-        const res = await Promise.all(reqs);
+
+        const fetchFromEndpoint = async (endpoint) => {
+            const reqs = [
+                axios.get(`${endpoint}/search?${baseParams}&limit=100`), 
+                axios.get(`${endpoint}/search?name=Akashvani&${specificParams}`), 
+                axios.get(`${endpoint}/search?name=All%20India%20Radio&${specificParams}`),
+                axios.get(`${endpoint}/search?tag=kisan&${specificParams}`)
+            ];
+            return await Promise.all(reqs);
+        };
+
+        // RACE ALL 3 APIS SIMULTANEOUSLY! Whichever is fastest wins, eliminating timeouts.
+        const res = await Promise.any(API_ENDPOINTS.map(ep => fetchFromEndpoint(ep)));
+
         const rawList = res.flatMap(r => r.data || []);
         const processedMap = new Map();
         
         rawList.forEach(s => {
-           if (!s.url_resolved && !s.url) return;
+           // STRICT ONLINE CHECK - Front-end filter to drop any offline streams
+           if ((!s.url_resolved && !s.url) || s.lastcheckok !== 1) return;
+           
            const name = (s.name || "Unknown").trim();
            let rawState = (s.state || "").trim();
            if (!rawState && name.toLowerCase().includes('chennai')) rawState = "Tamil Nadu";
@@ -152,19 +291,16 @@ const Radio = () => {
            let lat = parseFloat(s.geo_lat);
            let lng = parseFloat(s.geo_long);
 
-           // If API has no coordinates (0,0 or null), use Smart State Fallback
+           // If API has no coordinates, use Smart State Fallback
            if (!lat || !lng || (Math.abs(lat) < 1 && Math.abs(lng) < 1)) {
                if (normalizedState && STATE_LOCATIONS[normalizedState]) {
-                   // Place in correct state with slight random jitter (0.5 deg) so they don't stack perfectly
                    lat = STATE_LOCATIONS[normalizedState].lat + (Math.random() * 0.5 - 0.25);
                    lng = STATE_LOCATIONS[normalizedState].lng + (Math.random() * 0.5 - 0.25);
                } else {
-                   // Fallback for unknown states (Central India)
                    lat = 22 + (Math.random() * 5 - 2.5);
                    lng = 79 + (Math.random() * 5 - 2.5);
                }
            }
-           // --------------------------------
 
            let type = 'Private';
            let icon = s.favicon;
@@ -182,7 +318,7 @@ const Radio = () => {
            if (!processedMap.has(s.stationuuid)) {
                processedMap.set(s.stationuuid, { 
                    ...s, name, state: rawState, normalizedState, uniqueId: s.stationuuid, 
-                   lat: lat, lng: lng, type, icon 
+                   lat: lat, lng: lng, type, icon
                });
            }
         });
@@ -190,16 +326,19 @@ const Radio = () => {
         const finalStations = Array.from(processedMap.values());
         finalStations.sort((a, b) => (a.type === 'Govt' ? -1 : 1));
         setAllStations(finalStations);
-        setFilteredStations(finalStations);
+        setHasFetched(true);
         setLoading(false);
-      } catch (err) { console.error(err); setLoading(false); }
-    };
-    fetchMassiveData();
-  }, []);
+      } catch (err) { 
+        console.error(err); 
+        setLoading(false);
+        toast.error("Failed to connect to airwaves.");
+      }
+  };
 
-  // --- FILTERING ---
+  // --- LOCAL FILTERING (Search & Favorites) ---
   useEffect(() => {
     let result = allStations;
+    
     if (filters.search && filters.search.length > 0) {
         const q = filters.search.toLowerCase();
         result = result.filter(s => 
@@ -215,12 +354,15 @@ const Radio = () => {
     } else {
         setShowSuggestions(false);
     }
-    if (filters.favoritesOnly) result = result.filter(s => favorites.includes(s.uniqueId));
-    if (filters.state !== 'All') result = result.filter(s => s.normalizedState === filters.state);
-    if (filters.language !== 'All') result = result.filter(s => s.language && s.language.toLowerCase().includes(filters.language.toLowerCase()));
+    
+    if (viewMode === 'favorites') {
+        result = result.filter(s => favorites.includes(s.uniqueId));
+    } else if (viewMode === 'recents') {
+        result = recentStations;
+    }
     
     setFilteredStations(result);
-  }, [filters, allStations, favorites]);
+  }, [filters.search, viewMode, allStations, favorites, recentStations]);
 
   // --- PLAY ENGINE ---
   const playStation = async (station) => {
@@ -229,44 +371,110 @@ const Radio = () => {
     setSelectedStation(station);
     
     globalAudio.pause();
-    globalAudio.currentTime = 0;
+    globalAudio.removeAttribute('src'); // Flush the old buffer properly
     if (globalHls) { globalHls.destroy(); globalHls = null; }
     
     setShowSuggestions(false);
     setFilters({...filters, search: ''});
     setIsPlaying(false); 
+    setIsBuffering(true);
+
+    // Save to Recently Played
+    const newRecents = [station, ...recentStations.filter(s => s.uniqueId !== station.uniqueId)].slice(0, 15);
+    setRecentStations(newRecents);
+    localStorage.setItem('radio_recents', JSON.stringify(newRecents));
     
     const url = station.url_resolved || station.url;
-    globalAudio.volume = isMuted ? 0 : volume;
 
-    const isHls = url.includes('.m3u8') || station.type === 'Govt';
+    const handleStreamFailure = () => {
+        setIsBuffering(false);
+        if (window.radioTuningTimeout) {
+            clearTimeout(window.radioTuningTimeout);
+            window.radioTuningTimeout = null;
+        }
+        
+        // Remove the broken station from the list so it doesn't show up again
+        setAllStations(prev => prev.filter(s => s.uniqueId !== station.uniqueId));
+        
+        const currentList = stationsRef.current.filter(s => s.uniqueId !== station.uniqueId);
+        
+        if (currentList.length > 0) {
+            toast.error("Weak signal. Auto-tuning next...", { theme: 'dark', autoClose: 2000, toastId: 'tuning-error' });
+            
+            // Find what was next in the original list
+            const originalIdx = stationsRef.current.findIndex(s => s.uniqueId === station.uniqueId);
+            const nextIdx = originalIdx !== -1 ? originalIdx % currentList.length : 0;
+            const nextStationToPlay = currentList[nextIdx];
+
+            setTimeout(() => playStation(nextStationToPlay), 300);
+        } else {
+            toast.error("All stations offline.", { theme: 'dark' });
+            setIsPlaying(false);
+            globalAudio.pause();
+        }
+    };
+
+    if (window.radioTuningTimeout) clearTimeout(window.radioTuningTimeout);
+    window.radioTuningTimeout = setTimeout(() => {
+        handleStreamFailure();
+    }, 8000); // Reduce timeout to 8 seconds for a snappier experience
+
+    // FIX: Only use HLS for actual .m3u8 streams. Forcing Govt stations to HLS caused parsing errors and massive delays.
+    const isHls = url.includes('.m3u8');
 
     if (Hls.isSupported() && isHls) {
-        globalHls = new Hls({ enableWorker: true, lowLatencyMode: true });
+        globalHls = new Hls({ 
+            enableWorker: true, 
+            lowLatencyMode: true,
+            liveSyncDurationCount: 2,
+            liveMaxLatencyDurationCount: 3,
+            maxBufferLength: 3, // Aggressively reduced buffer to start audio almost instantly
+            maxMaxBufferLength: 5
+        });
         globalHls.loadSource(url);
         globalHls.attachMedia(globalAudio);
         globalHls.on(Hls.Events.MANIFEST_PARSED, () => {
-            globalAudio.play().catch(e => console.log("Auto-play prevented"));
-            setIsPlaying(true);
+            globalAudio.play().catch(e => {
+                if (e.name !== 'AbortError') {
+                    console.error("Auto-play prevented", e);
+                    handleStreamFailure();
+                }
+            });
+        });
+        globalHls.on(Hls.Events.ERROR, function (event, data) {
+            if (data.fatal) {
+                handleStreamFailure();
+            }
         });
     } else {
         globalAudio.src = url;
-        globalAudio.load();
-        globalAudio.play().catch(e => console.log("Stream load error"));
-        setIsPlaying(true);
+        globalAudio.preload = "auto";
+        const playPromise = globalAudio.play();
+        if (playPromise !== undefined) {
+            playPromise.catch(e => {
+                if (e.name !== 'AbortError') {
+                    console.error("Stream load error", e);
+                    handleStreamFailure();
+                }
+            });
+        }
     }
   };
 
   const playNext = (e) => {
       e && e.stopPropagation();
-      const idx = filteredStations.findIndex(s => s.uniqueId === selectedStation?.uniqueId);
-      if(idx !== -1) playStation(filteredStations[(idx + 1) % filteredStations.length]);
+      const currentList = stationsRef.current.length > 0 ? stationsRef.current : filteredStations;
+      const idx = currentList.findIndex(s => s.uniqueId === selectedStation?.uniqueId);
+      if(idx !== -1) playStation(currentList[(idx + 1) % currentList.length]);
+      triggerHaptic('light');
   };
 
   const playPrev = (e) => {
       e && e.stopPropagation();
-      const idx = filteredStations.findIndex(s => s.uniqueId === selectedStation?.uniqueId);
-      if(idx !== -1) playStation(filteredStations[(idx - 1 + filteredStations.length) % filteredStations.length]);
+      const currentList = stationsRef.current.length > 0 ? stationsRef.current : filteredStations;
+      const idx = currentList.findIndex(s => s.uniqueId === selectedStation?.uniqueId);
+      if(idx !== -1) playStation(currentList[(idx - 1 + currentList.length) % currentList.length]);
+      triggerHaptic('light');
   };
 
   const miniPlayerSwipeHandlers = useSwipeable({
@@ -277,11 +485,12 @@ const Radio = () => {
     delta: 10, 
   });
 
-  const handleVolumeChange = (e) => {
-      const val = parseFloat(e.target.value);
-      setVolume(val);
-      if(val > 0) setIsMuted(false);
-      globalAudio.volume = val;
+  const toggleMute = (e) => {
+      e && e.stopPropagation();
+      const nextMuted = !isMuted;
+      setIsMuted(nextMuted);
+      globalAudio.muted = nextMuted;
+      triggerHaptic('light');
   };
 
   const toggleFavorite = (e, station) => {
@@ -296,6 +505,7 @@ const Radio = () => {
       }
       setFavorites(newFavs);
       localStorage.setItem('radio_favorites', JSON.stringify(newFavs));
+      triggerHaptic('heavy');
   };
 
   const setTimer = (minutes) => {
@@ -314,9 +524,9 @@ const Radio = () => {
 
   const shareStation = () => {
       if (selectedStation) {
-          const text = `Listening to ${selectedStation.name} on RadioX!`;
+          const text = `Listening to ${selectedStation.name} on FarmCap Radio!`;
           if (navigator.share) {
-              navigator.share({ title: 'RadioX', text: text, url: window.location.href });
+              navigator.share({ title: 'FarmCap Radio', text: text, url: window.location.href });
           } else {
               navigator.clipboard.writeText(text);
               toast.success("Station copied!", { theme: "dark", autoClose: 1000 });
@@ -324,63 +534,53 @@ const Radio = () => {
       }
   };
 
-  const uniqueStatesList = useMemo(() => ['All', ...new Set(allStations.map(s => s.normalizedState).filter(Boolean))].sort(), [allStations]);
-  const uniqueLangList = useMemo(() => ['All', ...new Set(allStations.map(s => s.language ? s.language.split(',')[0].trim() : "").filter(Boolean))].sort(), [allStations]);
-
-  const CustomDropdown = ({ label, options, current, isOpen, setIsOpen, onSelect }) => (
-    <div style={{position:'relative', flex:1}}>
-        <button onClick={() => setIsOpen(!isOpen)} style={styles.dropdownBtn}>
-            <span style={{opacity:0.7, fontSize:10}}>{label}</span>
-            <div style={{fontWeight:'600'}}>{current}</div>
-            <IoMdArrowDown style={{marginLeft:'auto', transform: isOpen ? 'rotate(180deg)' : 'none', transition:'0.2s'}}/>
-        </button>
-        {isOpen && (
-            <div style={styles.dropdownList}>
-                {options.map(opt => (
-                    <div key={opt} onClick={() => { onSelect(opt); setIsOpen(false); }} style={styles.dropdownItem}>
-                        {opt}
-                    </div>
-                ))}
-            </div>
-        )}
-    </div>
-  );
+  const uniqueStatesList = useMemo(() => Object.keys(STATE_LOCATIONS).sort(), []);
+  const uniqueLangList = INDIAN_LANGUAGES;
+  
+  const activeColor = getStationColor(selectedStation?.name);
 
   return (
     <div style={styles.page}>
       <ToastContainer limit={1} position="top-center" />
       
+      <div style={styles.mobileWrapper}>
       {/* HEADER */}
       <div style={styles.glassHeader}>
         <div style={styles.headerTop}>
-            <button onClick={() => navigate('/dashboard')} style={styles.glassBtn}><IoMdArrowBack size={22}/></button>
+            <button onClick={handleBack} style={styles.glassBtn}><IoMdArrowBack size={22}/></button>
             <div style={{textAlign:'center'}}>
-                <div style={styles.logoText}>RADIO<span style={{color:'#4ade80'}}>X</span></div>
-                <div style={styles.subText}>{filteredStations.length} Signals Active</div>
+                <div style={styles.logoText}>FARMCAP <span style={{color:'#4ade80'}}>Radio</span></div>
+                <div style={styles.subText}>{hasFetched ? `${filteredStations.length} Signals Active` : 'Awaiting Calibration...'}</div>
             </div>
             <div style={{display:'flex', gap:10}}>
-                <button onClick={() => setFilters({...filters, favoritesOnly: !filters.favoritesOnly})} style={{...styles.glassBtn, background: filters.favoritesOnly ? '#ef4444' : 'rgba(255,255,255,0.08)'}}>
-                    {filters.favoritesOnly ? <IoMdHeart size={20} color="#fff"/> : <IoMdHeartEmpty size={20}/>}
+                {hasFetched && (
+                    <button onClick={fetchDynamicData} disabled={loading} style={{...styles.glassBtn, opacity: loading ? 0.5 : 1}} title="Refresh Signals">
+                        <IoMdRefresh size={20} color="#fff" className={loading ? "spin" : ""}/>
+                    </button>
+                )}
+                <button onClick={() => setViewMode(viewMode === 'recents' ? 'all' : 'recents')} style={{...styles.glassBtn, background: viewMode === 'recents' ? '#3b82f6' : 'rgba(255,255,255,0.1)'}} title="Recently Played">
+                    <IoMdTime size={20} color="#fff"/>
+                </button>
+                <button onClick={() => setViewMode(viewMode === 'favorites' ? 'all' : 'favorites')} style={{...styles.glassBtn, background: viewMode === 'favorites' ? '#ef4444' : 'rgba(255,255,255,0.1)'}} title="Favorites">
+                    {viewMode === 'favorites' ? <IoMdHeart size={20} color="#fff"/> : <IoMdHeartEmpty size={20} color="#fff"/>}
                 </button>
             </div>
         </div>
 
-        {/* SEARCH */}
-        <div style={{position: 'relative'}}>
+        {/* SEARCH (ONLY SHOW IF FETCHED) */}
+        {hasFetched && (
+          <div style={{position: 'relative', marginTop: 10}}>
             <div style={styles.searchContainer}>
                 <div style={styles.glassInputWrapper}>
                     <IoMdSearch size={18} color="rgba(255,255,255,0.6)"/>
-                    <input placeholder="Search Station, City or State..." value={filters.search} onChange={(e) => setFilters({...filters, search: e.target.value})} style={styles.glassInput}/>
-                    {filters.search.length > 0 && <IoMdClose style={{cursor:'pointer'}} onClick={()=>setFilters({...filters, search:''})} />}
+                    <input placeholder="Search Station, City or State..." value={filters.search} onChange={(e) => setFilters({...filters, search: e.target.value})} style={styles.glassInput} className="glass-input"/>
+                    {filters.search.length > 0 && <IoMdClose color="#fff" style={{cursor:'pointer'}} onClick={()=>setFilters({...filters, search:''})} />}
                 </div>
-                <button onClick={() => setShowFilters(!showFilters)} style={{...styles.glassBtn, background: showFilters ? '#4ade80' : 'rgba(255,255,255,0.1)', color: showFilters ? '#000' : '#fff'}}>
-                    <IoMdFunnel size={18}/>
-                </button>
             </div>
             {showSuggestions && suggestions.length > 0 && (
                 <div style={styles.suggestionsBox}>
                     {suggestions.map((s, i) => (
-                        <div key={i} style={styles.suggestionItem} onClick={() => playStation(s)}>
+                        <div key={i} style={styles.suggestionItem} className="dropdown-item-hover" onClick={() => playStation(s)}>
                             <img src={s.icon} onError={(e)=>e.target.src=DEFAULT_ICON} style={{width:30, height:30, borderRadius:4, marginRight:10}} />
                             <div style={{overflow:'hidden'}}>
                                 <div style={{fontWeight:'600', fontSize:13}}>{s.name}</div>
@@ -389,24 +589,45 @@ const Radio = () => {
                         </div>
                     ))}
                 </div>
-            )}
-        </div>
-
-        {showFilters && (
-            <div style={styles.glassPanel}>
-                <CustomDropdown label="Language" options={uniqueLangList} current={filters.language} isOpen={langOpen} setIsOpen={(v)=>{setLangOpen(v); setStateOpen(false)}} onSelect={(val)=>setFilters({...filters, language: val})} />
-                <div style={{width:1, background:'rgba(255,255,255,0.1)'}}></div>
-                <CustomDropdown label="State" options={uniqueStatesList} current={filters.state} isOpen={stateOpen} setIsOpen={(v)=>{setStateOpen(v); setLangOpen(false)}} onSelect={(val)=>setFilters({...filters, state: val})} />
-            </div>
+              )}
+          </div>
         )}
       </div>
 
       {/* GRID (FIXED: SCROLL & SMALL CARDS) */}
-      <div style={styles.mainArea} onClick={() => { setLangOpen(false); setStateOpen(false); setShowSuggestions(false); }}>
-        {loading ? (
-            <div style={styles.loader}>
-                <IoMdRefresh className="spin" size={40} color="#4ade80"/>
-                <div style={{marginTop:10, fontSize:12, letterSpacing:1}}>CALIBRATING...</div>
+      <div style={styles.mainArea} onClick={() => { setShowSuggestions(false); }}>
+        {!hasFetched ? (
+            <div style={styles.tunerWrapper}>
+                <div style={styles.tunerCard}>
+                    <div style={styles.tunerHeader}>
+                        <div style={styles.tunerIconBox}>
+                            <IoMdMusicalNote size={32} color="#4ade80" />
+                        </div>
+                        <h2 style={styles.tunerTitle}>Calibrate Signal</h2>
+                        <p style={styles.tunerDesc}>Select region and language to scan frequencies</p>
+                    </div>
+
+                    <div style={styles.tunerField}>
+                        <label style={styles.tunerLabel}>Language</label>
+                        <div onClick={() => setActiveSelect('language')} style={styles.tunerSelect}>
+                            <span>{filters.language}</span>
+                            <IoMdArrowDown size={18} color="rgba(255,255,255,0.5)" />
+                        </div>
+                    </div>
+
+                    <div style={styles.tunerField}>
+                        <label style={styles.tunerLabel}>State / Region</label>
+                        <div onClick={() => setActiveSelect('state')} style={styles.tunerSelect}>
+                            <span>{filters.state}</span>
+                            <IoMdArrowDown size={18} color="rgba(255,255,255,0.5)" />
+                        </div>
+                    </div>
+
+                    <button onClick={fetchDynamicData} disabled={loading} style={styles.scanBtn}>
+                        {loading ? <IoMdRefresh className="spin" size={20} /> : <IoMdSearch size={20} />}
+                        {loading ? 'SCANNING AIRWAVES...' : 'FETCH STATIONS'}
+                    </button>
+                </div>
             </div>
         ) : (
             <div style={styles.glassGrid}>
@@ -414,14 +635,14 @@ const Radio = () => {
                     <div style={styles.emptyState}>
                         <IoMdMusicalNote size={50} color="rgba(255,255,255,0.2)"/>
                         <p>No signals found.</p>
-                        <button onClick={()=>setFilters({search:'', state:'All', language:'All', favoritesOnly: false})} style={styles.resetBtn}>Reset Filters</button>
+                        <button onClick={()=>{setFilters({search:'', state:getInitialState(), language:'Hindi'}); setViewMode('all');}} style={styles.resetBtn}>Reset Filters</button>
                     </div>
                 ) : (
                     filteredStations.map(s => (
-                        <div key={s.uniqueId} onClick={() => playStation(s)} style={styles.glassCard}>
+                        <div key={s.uniqueId} onClick={() => playStation(s)} style={styles.glassCard} className="glass-card-hover">
                             <div style={{position:'relative'}}>
                                 <img src={s.icon} onError={(e)=>{e.target.onerror=null; e.target.src=DEFAULT_ICON}} style={styles.cardImg} alt=""/>
-                                {s.uniqueId === selectedStation?.uniqueId && isPlaying && <div style={styles.playingOverlay}><IoMdPlay/></div>}
+                                {s.uniqueId === selectedStation?.uniqueId && isPlaying && <div style={styles.playingOverlay}><MiniEqualizer/></div>}
                                 <button onClick={(e) => toggleFavorite(e, s)} style={{...styles.gridFavBtn, color: favorites.includes(s.uniqueId) ? '#ef4444' : '#fff'}}>
                                     {favorites.includes(s.uniqueId) ? <IoMdHeart size={14}/> : <IoMdHeartEmpty size={14}/>}
                                 </button>
@@ -448,15 +669,15 @@ const Radio = () => {
             
             <div style={styles.miniInfo}>
                 <div style={styles.miniTitle}>{selectedStation.name}</div>
-                <div style={styles.miniStatus}>
-                     <span style={{color: '#4ade80'}}>●</span> {isPlaying ? 'LIVE' : 'PAUSED'}
+                <div style={{...styles.miniStatus, display:'flex', alignItems:'center'}}>
+                     {isPlaying ? <><MiniEqualizer /> <span style={{color: activeColor, marginLeft:'5px', fontWeight:'700'}}>{isBuffering ? 'TUNING...' : 'LIVE'}</span></> : <><span style={{color: '#ef4444', marginRight:'5px'}}>●</span> PAUSED</>}
                 </div>
             </div>
             
             <div style={styles.miniControls}>
                 <button onClick={playPrev} style={styles.miniBtn}><IoMdSkipBackward size={22}/></button>
-                <button onClick={(e) => togglePlay(e)} style={styles.neonPlayBtnSmall}>
-                    {isPlaying ? <IoMdPause /> : <IoMdPlay style={{marginLeft:2}}/>}
+                <button onClick={(e) => togglePlay(e)} style={{...styles.neonPlayBtnSmall, color: activeColor, borderColor: `${activeColor}66`, background: `${activeColor}22`, boxShadow: `0 5px 15px ${activeColor}33`}}>
+                    {isPlaying ? <IoMdPause color={activeColor} /> : <IoMdPlay color={activeColor} style={{marginLeft:2}}/>}
                 </button>
                 <button onClick={playNext} style={styles.miniBtn}><IoMdSkipForward size={22}/></button>
             </div>
@@ -466,92 +687,133 @@ const Radio = () => {
       {/* FULL PLAYER */}
       <div style={{...styles.fullPlayer, top: isPlayerExpanded ? '0' : '100%'}}>
           
-          <div style={{...styles.bgImage, backgroundImage: `url(${STUDIO_BG})`}}></div>
+          <div style={{...styles.bgImage, backgroundImage: `url(${selectedStation?.icon || STUDIO_BG})`}}></div>
           <div style={styles.overlayGradient}></div>
           
-          <div style={styles.fullHeader}>
-              <button onClick={() => setIsPlayerExpanded(false)} style={styles.glassBtnCircle}><IoMdArrowDown size={24}/></button>
-              <div style={styles.nowPlayingText}>ON AIR NOW</div>
-              <button onClick={() => setIsPlayerExpanded(false)} style={styles.glassBtnCircle}><IoMdList size={22}/></button>
-          </div>
+          <div style={styles.fullPlayerSafeArea}>
+              <div style={styles.fullHeader}>
+                  <div style={styles.glassCapsuleHeader}>
+                      <button onClick={handleFullPlayerBack} style={styles.transparentBtn}><IoMdArrowBack size={24} color="#fff"/></button>
+                      <div style={styles.nowPlayingText}>🧢 FARMCAP Radio</div>
+                      <button onClick={toggleMute} style={styles.transparentBtn}>
+                          {isMuted ? <IoMdVolumeOff size={22} color="#ef4444"/> : <IoMdVolumeHigh size={22} color="#fff"/>}
+                      </button>
+                  </div>
+              </div>
 
-          <div style={styles.turntableArea}>
-              <div key={selectedStation?.uniqueId} style={styles.perspectiveContainer}>
-                  <div style={{...styles.toneArm, transform: isPlaying ? 'rotate(25deg)' : 'rotate(0deg)'}}>
-                     <div style={styles.toneArmBase}></div>
-                     <div style={styles.toneArmRod}></div>
-                     <div style={styles.toneArmHead}></div>
+              {/* MUSIC PLAYER TURNTABLE */}
+              <div style={styles.discWrapper}>
+                  {/* DYNAMIC GLOW AURA */}
+                  <div style={{...styles.recordAura, background: `radial-gradient(circle, ${activeColor}66 0%, transparent 70%)`, opacity: isPlaying ? 1 : 0, transform: isPlaying ? 'scale(1.1)' : 'scale(0.8)'}}></div>
+                  
+                  {/* 3D TONEARM */}
+                  <div style={{...styles.toneArm, transform: isPlaying ? 'rotate(18deg)' : 'rotate(0deg)'}}>
+                      <div style={styles.toneArmBase}></div>
+                      <div style={styles.toneArmRod}></div>
+                      <div style={styles.toneArmHead}></div>
+                      <div style={styles.toneArmNeedle}></div>
                   </div>
 
                   <div style={{
-                      ...styles.vinylFloating,
+                      ...styles.recordDisc,
+                      transform: isPlaying ? 'scale(1)' : 'scale(0.95)',
                       animationPlayState: isPlaying ? 'running' : 'paused'
                   }}>
-                      <div style={styles.vinylGrooves}></div>
-                      <div style={styles.vinylLabelContainer}>
-                          <img src={selectedStation?.icon} onError={(e)=>e.target.src=DEFAULT_ICON} style={styles.vinylLabelImg} />
+                      <div style={styles.recordGrooves}></div>
+                      <div style={styles.recordShine}></div>
+                      <div style={styles.recordCenter}>
+                          <img src={selectedStation?.icon} onError={(e)=>e.target.src=DEFAULT_ICON} style={styles.recordImg} alt="Artwork" />
+                          <div style={styles.recordCenterHole}></div>
                       </div>
-                      <div style={styles.vinylShineReal}></div>
+                  </div>
+              </div>
+
+              {/* SMALL CENTRAL CONTROL CARD (Horizontal & Compact) */}
+              <div style={{...styles.smallControlCard, boxShadow: `0 30px 60px rgba(0,0,0,0.8), 0 0 30px ${activeColor}33, inset 0 1px 1px rgba(255,255,255,0.2)`}}>
+                  
+                  {/* Top Row: Info & Playback Controls */}
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px' }}>
+                      <div style={{flex: 1, overflow: 'hidden', paddingRight: '15px', position: 'relative'}}>
+                          <div style={styles.playerTitleContainer}>
+                              <h1 className={selectedStation?.name?.length > 15 ? 'marquee-text' : ''} style={styles.playerTitle}>{selectedStation?.name}</h1>
+                          </div>
+                          <p style={styles.playerSub}>{selectedStation?.normalizedState || 'Internet Radio'}</p>
+                      </div>
+                      
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                          <button onClick={playPrev} style={styles.controlBtnSecondary}><IoMdSkipBackward size={26}/></button>
+                          <button onClick={(e) => togglePlay(e)} style={styles.playBtnGlass}>
+                              {isPlaying ? <IoMdPause size={26} color="#000"/> : <IoMdPlay size={26} color="#000" style={{marginLeft:4}}/>}
+                          </button>
+                          <button onClick={playNext} style={styles.controlBtnSecondary}><IoMdSkipForward size={26}/></button>
+                      </div>
+                  </div>
+
+                  {/* Middle Row: Live Progress & Favorite */}
+                  <div style={styles.liveProgressArea}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                          <span className={isBuffering ? "pulse-text" : ""} style={{...styles.liveTimeText, color: isPlaying ? activeColor : 'rgba(255,255,255,0.5)'}}>{isBuffering ? 'TUNING' : 'LIVE'}</span>
+                          <div style={{flex: 1, ...styles.liveTrack}}>
+                              <div style={{...styles.liveTrackFill, background: activeColor, animationPlayState: isPlaying ? 'running' : 'paused'}}></div>
+                          </div>
+                          <button onClick={(e) => toggleFavorite(e, selectedStation)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 0, display: 'flex' }}>
+                              {favorites.includes(selectedStation?.uniqueId) ? <IoMdHeart color={activeColor} size={22}/> : <IoMdHeartEmpty color="rgba(255,255,255,0.7)" size={22}/>}
+                          </button>
+                      </div>
+                  </div>
+
+                  {/* Added Row: Sleep Timer inside the card */}
+                  <div style={{display:'flex', justifyContent:'center', marginTop:'5px', position:'relative'}}>
+                       <button onClick={() => setShowTimerMenu(!showTimerMenu)} style={{...styles.transparentBtn, color: sleepTimer ? activeColor : '#fff', background: 'rgba(255,255,255,0.15)', padding: '8px 20px', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.3)', boxShadow: '0 5px 15px rgba(0,0,0,0.1)'}}>
+                           <IoMdTime size={18}/>
+                           <span style={{fontSize:'12px', marginLeft:'8px', fontWeight:'bold'}}>{sleepTimer ? `${sleepTimer}m` : 'Sleep Timer'}</span>
+                       </button>
+                       {showTimerMenu && (
+                           <div style={styles.timerMenu}>
+                               <div style={styles.timerHeader}>Sleep Timer <IoMdClose size={20} style={{cursor:'pointer', color:'rgba(255,255,255,0.5)'}} onClick={()=>setShowTimerMenu(false)}/></div>
+                               <div style={styles.timerGrid}>
+                                     <button onClick={()=>setTimer(15)} style={styles.timerOpt} className="timer-opt-hover">15m</button>
+                                     <button onClick={()=>setTimer(30)} style={styles.timerOpt} className="timer-opt-hover">30m</button>
+                                     <button onClick={()=>setTimer(60)} style={styles.timerOpt} className="timer-opt-hover">60m</button>
+                                     <button onClick={()=>setTimer(null)} style={{...styles.timerOpt, color:'#ef4444', background: 'rgba(239, 68, 68, 0.1)', borderColor: 'rgba(239, 68, 68, 0.2)'}} className="timer-opt-hover">Off</button>
+                               </div>
+                           </div>
+                       )}
                   </div>
               </div>
           </div>
+      </div>
 
-          <div style={styles.fullInfo}>
-              <div key={selectedStation?.uniqueId + "_text"} style={styles.textAnimContainer}>
-                <h1 style={styles.fullTitle}>{selectedStation?.name}</h1>
-                <div style={styles.fullMeta}>
-                    <span style={styles.tagBadgeGlass}>{selectedStation?.normalizedState || 'Internet Radio'}</span>
-                </div>
+      {/* PREMIUM APPLE 17 BOTTOM SHEET MODAL */}
+      {activeSelect && (
+          <div style={styles.modalOverlay} onClick={() => setActiveSelect(null)}>
+              <div style={styles.modalContent} onClick={e => e.stopPropagation()}>
+                  <div style={styles.modalHeader}>
+                      <h3 style={styles.modalTitle}>
+                          Select {activeSelect === 'language' ? 'Language' : 'State'}
+                      </h3>
+                      <button onClick={() => setActiveSelect(null)} style={styles.closeModalBtn}>
+                          <IoMdClose size={20} color="#fff" />
+                      </button>
+                  </div>
+                  <div style={styles.modalList}>
+                      {(activeSelect === 'language' ? uniqueLangList : uniqueStatesList).map(item => (
+                          <div key={item} 
+                               style={{
+                                   ...styles.modalItem,
+                                   background: filters[activeSelect] === item ? 'rgba(74, 222, 128, 0.15)' : 'transparent',
+                                   borderColor: filters[activeSelect] === item ? 'rgba(74, 222, 128, 0.4)' : 'rgba(255,255,255,0.05)',
+                               }}
+                               onClick={() => { setFilters({...filters, [activeSelect]: item}); setActiveSelect(null); }}>
+                              <span style={{fontWeight: filters[activeSelect] === item ? '700' : '500', color: filters[activeSelect] === item ? '#4ade80' : '#fff'}}>{item}</span>
+                              {filters[activeSelect] === item && <IoMdPlay size={14} color="#4ade80" />}
+                          </div>
+                      ))}
+                  </div>
               </div>
           </div>
-
-          <div style={styles.glassControlPanel}>
-             <div style={styles.actionBar}>
-                <button onClick={(e) => toggleFavorite(e, selectedStation)} style={styles.actionBtn}>
-                    {favorites.includes(selectedStation?.uniqueId) ? <IoMdHeart color="#ef4444" size={24}/> : <IoMdHeartEmpty size={24}/>}
-                    <span style={styles.actionLabel}>Like</span>
-                </button>
-
-                <div style={{position:'relative'}}>
-                    <button onClick={() => setShowTimerMenu(!showTimerMenu)} style={styles.actionBtn}>
-                        <IoMdTime size={24} color={sleepTimer ? '#4ade80' : '#fff'}/>
-                        <span style={styles.actionLabel}>{sleepTimer ? `${sleepTimer}m` : 'Timer'}</span>
-                    </button>
-                    {showTimerMenu && (
-                        <div style={styles.timerMenu}>
-                            <div style={styles.timerHeader}>Sleep Timer <IoMdClose onClick={()=>setShowTimerMenu(false)}/></div>
-                            <div style={styles.timerGrid}>
-                                <button onClick={()=>setTimer(15)} style={styles.timerOpt}>15m</button>
-                                <button onClick={()=>setTimer(30)} style={styles.timerOpt}>30m</button>
-                                <button onClick={()=>setTimer(60)} style={styles.timerOpt}>60m</button>
-                                <button onClick={()=>setTimer(null)} style={{...styles.timerOpt, color:'#ef4444'}}>Off</button>
-                            </div>
-                        </div>
-                    )}
-                </div>
-
-                <button onClick={shareStation} style={styles.actionBtn}>
-                    <IoMdShare size={24}/>
-                    <span style={styles.actionLabel}>Share</span>
-                </button>
-             </div>
-
-             <div style={styles.mainControls}>
-                 <button onClick={playPrev} style={styles.controlBtnSecondary}><IoMdSkipBackward size={28}/></button>
-                 
-                 <button onClick={(e) => togglePlay(e)} style={styles.playBtnGlass}>
-                     {isPlaying ? <IoMdPause size={36} color="#000"/> : <IoMdPlay size={36} color="#000" style={{marginLeft:4}}/>}
-                 </button>
-                 
-                 <button onClick={playNext} style={styles.controlBtnSecondary}><IoMdSkipForward size={28}/></button>
-             </div>
-             
-             <div style={styles.bottomVolume}>
-                  <IoMdVolumeOff size={18} style={{opacity:0.6}}/>
-                  <input type="range" min="0" max="1" step="0.05" value={isMuted ? 0 : volume} onChange={handleVolumeChange} style={styles.volumeSlider}/>
-                  <IoMdVolumeHigh size={18} style={{opacity:0.6}}/>
-             </div>
-          </div>
+      )}
+      
       </div>
     </div>
   );
@@ -559,50 +821,54 @@ const Radio = () => {
 
 // --- STYLES ---
 const styles = {
-  page: { position: 'fixed', inset: 0, background: '#09090b', color: '#fff', display: 'flex', flexDirection: 'column', fontFamily: "'Inter', sans-serif" },
-  glassHeader: { position: 'absolute', top: 0, left: 0, right: 0, zIndex: 20, background: 'linear-gradient(180deg, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0) 100%)', padding: '20px', display: 'flex', flexDirection: 'column', gap: 15 },
+  page: { position: 'fixed', inset: 0, background: 'radial-gradient(circle at 15% 50%, rgba(74, 222, 128, 0.12), transparent 35%), radial-gradient(circle at 85% 30%, rgba(33, 150, 243, 0.12), transparent 35%), #09090b', color: '#fff', display: 'flex', justifyContent: 'center', fontFamily: "'Inter', sans-serif" },
+  mobileWrapper: { width: '100%', maxWidth: '480px', height: '100%', position: 'relative', display: 'flex', flexDirection: 'column', overflow: 'hidden', boxShadow: '0 0 40px rgba(0,0,0,0.8)', background: 'transparent' },
+  glassHeader: { position: 'absolute', top: 0, left: 0, right: 0, zIndex: 20, background: 'linear-gradient(180deg, rgba(9,9,11,0.95) 0%, rgba(9,9,11,0) 100%)', padding: '20px', display: 'flex', flexDirection: 'column', gap: 15 },
   headerTop: { display: 'flex', justifyContent: 'space-between', alignItems: 'center' },
-  logoText: { fontSize: '20px', fontWeight: '800', letterSpacing: '-0.5px' },
-  subText: { fontSize: '11px', color: '#a1a1aa', fontWeight: '500' },
-  glassBtn: { width: 40, height: 40, borderRadius: '12px', border: 'none', background: 'rgba(255,255,255,0.08)', backdropFilter: 'blur(10px)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: '0.2s' },
+  logoText: { fontSize: '20px', fontWeight: '800', letterSpacing: '-0.5px', color: '#fff' },
+  subText: { fontSize: '11px', color: '#71717a', fontWeight: '500' },
+  glassBtn: { width: 40, height: 40, borderRadius: '12px', background: 'rgba(255, 255, 255, 0.08)', border: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 4px 15px rgba(0,0,0,0.2)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: '0.2s' },
   
   searchContainer: { display: 'flex', gap: 10 },
-  glassInputWrapper: { flex: 1, background: 'rgba(255,255,255,0.08)', backdropFilter: 'blur(10px)', borderRadius: '12px', display: 'flex', alignItems: 'center', padding: '0 12px', border: '1px solid rgba(255,255,255,0.05)' },
+  glassInputWrapper: { flex: 1, background: 'rgba(255,255,255,0.05)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', borderRadius: '14px', display: 'flex', alignItems: 'center', padding: '0 12px', border: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 4px 15px rgba(0,0,0,0.2)' },
   glassInput: { background: 'transparent', border: 'none', color: '#fff', padding: '12px 10px', width: '100%', outline: 'none', fontSize: '14px' },
-  suggestionsBox: { position:'absolute', top:'100%', left:0, right:50, background:'#18181b', borderRadius:12, border:'1px solid #333', marginTop:5, zIndex:300, boxShadow:'0 10px 40px rgba(0,0,0,0.8)' },
-  suggestionItem: { display:'flex', alignItems:'center', padding:10, borderBottom:'1px solid rgba(255,255,255,0.05)', cursor:'pointer' },
-  glassPanel: { background: 'rgba(30,30,30,0.9)', backdropFilter: 'blur(25px)', padding: 5, borderRadius: 12, display: 'flex', gap: 5, border: '1px solid rgba(255,255,255,0.1)', position: 'relative', zIndex: 100 },
-  dropdownBtn: { background: 'transparent', border: 'none', width: '100%', textAlign: 'left', padding: '8px 12px', color: '#fff', display: 'flex', flexDirection: 'column', cursor: 'pointer' },
-  dropdownList: { position: 'absolute', top: '110%', left: 0, right: 0, background: '#18181b', borderRadius: 12, border: '1px solid #333', maxHeight: '300px', overflowY: 'auto', zIndex: 200, padding: 5, boxShadow: '0 10px 40px rgba(0,0,0,0.8)' },
-  dropdownItem: { padding: '10px', fontSize: 13, color: '#d4d4d8', borderRadius: 8, cursor: 'pointer', borderBottom: '1px solid rgba(255,255,255,0.03)' },
+  suggestionsBox: { position:'absolute', top:'100%', left:0, right:0, maxHeight:'50vh', overflowY:'auto', background:'rgba(24, 24, 27, 0.85)', backdropFilter:'blur(30px) saturate(180%)', WebkitBackdropFilter:'blur(30px) saturate(180%)', borderRadius:14, border:'1px solid rgba(255,255,255,0.1)', borderTop:'1px solid rgba(255,255,255,0.2)', marginTop:5, zIndex:300, boxShadow:'0 20px 40px rgba(0,0,0,0.8)' },
+  suggestionItem: { display:'flex', alignItems:'center', padding:10, borderBottom:'1px solid rgba(255,255,255,0.05)', cursor:'pointer', color:'#fff' },
+
+  // NEW TUNER STYLES
+  tunerWrapper: { display: 'flex', alignItems: 'flex-start', justifyContent: 'center', height: '100%', padding: '120px 20px 0 20px', boxSizing: 'border-box' },
+  tunerCard: { width: '100%', maxWidth: '340px', background: 'rgba(15, 15, 20, 0.65)', backdropFilter: 'blur(20px) saturate(180%)', WebkitBackdropFilter: 'blur(20px) saturate(180%)', borderRadius: '32px', padding: '30px 25px', border: '1px solid rgba(255,255,255,0.1)', borderTop: '1px solid rgba(255,255,255,0.3)', borderLeft: '1px solid rgba(255,255,255,0.2)', boxShadow: 'inset 0 1px 1px rgba(255,255,255,0.3), 0 20px 40px rgba(0,0,0,0.5)', display: 'flex', flexDirection: 'column', gap: '15px', animation: 'fadeIn 0.5s ease-out' },
+  tunerHeader: { textAlign: 'center', marginBottom: '5px' },
+  radarContainer: { position: 'relative', display: 'flex', justifyContent: 'center', margin: '0 auto 15px auto', width: '60px', height: '60px', zIndex: 1 },
+  tunerIconBox: { width: '60px', height: '60px', borderRadius: '50%', background: 'rgba(74, 222, 128, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(74, 222, 128, 0.3)', boxShadow: '0 8px 20px rgba(74, 222, 128, 0.15)', position: 'relative', zIndex: 2 },
+  tunerTitle: { margin: '0 0 5px 0', fontSize: '22px', fontWeight: '800', color: '#fff', letterSpacing: '-0.5px' },
+  tunerDesc: { margin: 0, fontSize: '12px', color: '#71717a', fontWeight: '500' },
+  tunerField: { display: 'flex', flexDirection: 'column', gap: '8px' },
+  tunerLabel: { fontSize: '11px', color: '#4ade80', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '1px', marginLeft: '5px' },
+  tunerSelect: { background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', borderTop: '1px solid rgba(255,255,255,0.2)', borderLeft: '1px solid rgba(255,255,255,0.15)', color: '#fff', padding: '15px 20px', borderRadius: '16px', fontSize: '15px', fontWeight: '600', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', boxShadow: 'inset 0 2px 5px rgba(0,0,0,0.3), 0 4px 10px rgba(0,0,0,0.2)' },
+  scanBtn: { background: '#4ade80', border: 'none', color: '#000', padding: '16px', borderRadius: '16px', fontSize: '15px', fontWeight: '800', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', boxShadow: '0 10px 25px rgba(74, 222, 128, 0.3)', transition: 'all 0.2s', letterSpacing: '0.5px' },
 
   mainArea: { flex: 1, position: 'relative', overflow: 'hidden' }, 
   glassGrid: { 
       position: 'absolute', inset: 0, 
-      padding: '130px 15px 120px 15px', 
+      padding: '180px 15px 120px 15px', 
       display: 'grid', 
       gridTemplateColumns: 'repeat(auto-fill, minmax(90px, 1fr))', 
-      gap: 15, 
+      alignContent: 'start',
+      gap: 20, 
       overflowY: 'auto' 
   },
   emptyState: { display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', height:'100%', color:'#52525b', gap:10 },
-  resetBtn: { padding: '8px 16px', borderRadius: 8, background: '#4ade80', border:'none', fontWeight:'600', cursor:'pointer' },
-  glassCard: { background: 'linear-gradient(145deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.01) 100%)', backdropFilter: 'blur(10px)', borderRadius: '16px', padding: 12, border: '1px solid rgba(255,255,255,0.05)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, cursor: 'pointer', position:'relative' },
-  cardImg: { width: 50, height: 50, borderRadius: '50%', objectFit: 'cover', background: '#000', border:'2px solid rgba(255,255,255,0.1)' },
-  gridFavBtn: { position: 'absolute', top: 5, right: 5, background: 'rgba(0,0,0,0.5)', borderRadius:'50%', width:24, height:24, border:'none', display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer' },
+  resetBtn: { padding: '8px 16px', borderRadius: 8, background: '#4ade80', color:'#000', border:'none', fontWeight:'600', cursor:'pointer' },
+  glassCard: { background: 'linear-gradient(145deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.03) 100%)', backdropFilter: 'blur(25px) saturate(200%)', WebkitBackdropFilter: 'blur(25px) saturate(200%)', borderRadius: '32px', padding: '20px 15px', border: '1px solid rgba(255, 255, 255, 0.1)', borderTop: '1.5px solid rgba(255, 255, 255, 0.4)', borderLeft: '1.5px solid rgba(255, 255, 255, 0.3)', boxShadow: 'inset 0 1px 2px rgba(255, 255, 255, 0.4), inset 0 -1px 2px rgba(0,0,0,0.2), 0 15px 35px rgba(0,0,0,0.3)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, cursor: 'pointer', position:'relative', transition: 'all 0.4s cubic-bezier(0.2, 0.8, 0.2, 1)' },
+  cardImg: { width: 65, height: 65, borderRadius: '20px', objectFit: 'cover', background: '#000', border: '1px solid rgba(255,255,255,0.4)', boxShadow: '0 10px 20px rgba(0,0,0,0.5), inset 0 2px 4px rgba(255,255,255,0.3)' },
+  gridFavBtn: { position: 'absolute', top: -5, right: -10, background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)', borderRadius: '50%', width: 28, height: 28, border: '1px solid rgba(255,255,255,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 4px 10px rgba(0,0,0,0.3)' },
   cardText: { textAlign: 'center' },
-  cardTitle: { fontSize: 12, fontWeight: '700', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '80px' }, // Compact text
-  cardSub: { fontSize: 10, color: '#71717a' },
-  playingOverlay: { position: 'absolute', top: 12, left: '50%', transform: 'translateX(-50%)', width: 50, height: 50, borderRadius: '50%', background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#4ade80' },
+  cardTitle: { fontSize: 13, fontWeight: '800', color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '85px', letterSpacing: '0.3px' },
+  cardSub: { fontSize: 11, color: '#a1a1aa', fontWeight: '600' },
+  playingOverlay: { position: 'absolute', top: 0, left: '50%', transform: 'translateX(-50%)', width: 65, height: 65, borderRadius: '20px', background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#4ade80', border: '1px solid rgba(74, 222, 128, 0.5)', boxShadow: 'inset 0 0 15px rgba(74, 222, 128, 0.3)' },
 
-  miniGlassPlayer: { 
-      position: 'absolute', bottom: 25, left: 20, right: 20, height: 80, 
-      background: 'rgba(30,30,30,0.6)', backdropFilter: 'blur(25px)', 
-      borderRadius: '24px', border: '1px solid rgba(255,255,255,0.1)', 
-      display: 'flex', alignItems: 'center', padding: '0 15px', gap: 15, 
-      boxShadow: '0 20px 50px rgba(0,0,0,0.5)', zIndex: 50, cursor: 'pointer',
-      overflow: 'hidden'
-  },
+  miniGlassPlayer: { position: 'absolute', bottom: 25, left: 20, right: 20, height: 85, background: 'rgba(15, 15, 20, 0.85)', backdropFilter: 'blur(30px) saturate(180%)', WebkitBackdropFilter: 'blur(30px) saturate(180%)', borderRadius: '32px', border: '1px solid rgba(255,255,255,0.1)', borderTop: '1px solid rgba(255,255,255,0.3)', borderLeft: '1px solid rgba(255,255,255,0.2)', boxShadow: 'inset 0 1px 1px rgba(255,255,255,0.3), 0 15px 40px rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', padding: '0 15px', gap: 15, zIndex: 50, cursor: 'pointer', overflow: 'hidden' },
   miniProgressBarContainer: { position: 'absolute', bottom: 0, left: 0, right: 0, height: 3, background: 'rgba(255,255,255,0.1)' },
   miniProgressBar: { height: '100%', background: '#4ade80' },
   miniArt: { width: 50, height: 50, borderRadius: '12px', objectFit: 'cover', border: '1px solid rgba(255,255,255,0.1)' },
@@ -611,78 +877,69 @@ const styles = {
   miniStatus: { fontSize: 10, color: '#d4d4d8', letterSpacing: 0.5, marginTop: 2 },
   miniControls: { display: 'flex', alignItems: 'center', gap: 8, position: 'relative', zIndex: 60 }, 
   miniBtn: { background:'transparent', border:'none', color:'#fff', display:'flex', cursor:'pointer', padding: 6, opacity: 0.8 }, 
-  neonPlayBtnSmall: { width: 40, height: 40, borderRadius: '50%', border: 'none', background: '#fff', color: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 0 15px rgba(255,255,255,0.2)' },
+  neonPlayBtnSmall: { width: 44, height: 44, borderRadius: '50%', background: 'rgba(74, 222, 128, 0.2)', border: '1px solid rgba(74, 222, 128, 0.4)', color: '#4ade80', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 5px 15px rgba(74, 222, 128, 0.15)', backdropFilter: 'blur(5px)', WebkitBackdropFilter: 'blur(5px)' },
 
-  fullPlayer: { position: 'fixed', inset: 0, zIndex: 100, background: '#000', display: 'flex', flexDirection: 'column', transition: 'top 0.5s cubic-bezier(0.2, 0.8, 0.2, 1)', overflow: 'hidden' },
-  bgImage: { position: 'absolute', inset: 0, backgroundSize: 'cover', backgroundPosition: 'center', filter: 'brightness(0.8)' },
-  overlayGradient: { position: 'absolute', inset: 0, background: 'linear-gradient(to top, #000 0%, rgba(0,0,0,0.5) 50%, rgba(0,0,0,0.2) 100%)' },
+  fullPlayer: { position: 'absolute', left: 0, right: 0, bottom: 0, zIndex: 100, background: '#000', display: 'flex', flexDirection: 'column', transition: 'top 0.4s cubic-bezier(0.32, 0.72, 0, 1)', overflow: 'hidden', borderTopLeftRadius: '32px', borderTopRightRadius: '32px', boxShadow: '0 -20px 50px rgba(0,0,0,0.6)', height: '100%' },
+  bgImage: { position: 'absolute', inset: -100, backgroundSize: 'cover', backgroundPosition: 'center', filter: 'blur(60px) saturate(250%) brightness(0.7)', transition: 'background-image 0.8s ease' },
+  overlayGradient: { position: 'absolute', inset: 0, background: 'linear-gradient(180deg, rgba(0,0,0,0.05) 0%, rgba(0,0,0,0.5) 100%)' },
   
-  fullHeader: { position: 'relative', zIndex: 10, display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '40px 25px 10px 25px' },
-  glassBtnCircle: { width: 50, height: 50, borderRadius: '50%', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', backdropFilter: 'blur(10px)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: '0.2s' },
-  nowPlayingText: { fontSize: 11, letterSpacing: 2, fontWeight: '700', color: 'rgba(255,255,255,0.7)', textTransform: 'uppercase' },
+  fullPlayerSafeArea: { flex: 1, padding: '20px 25px 30px 25px', display: 'flex', flexDirection: 'column', position: 'relative', zIndex: 10, boxSizing: 'border-box' },
 
-  turntableArea: { flex: 1, position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10 },
-  perspectiveContainer: { 
-      perspective: '1200px', transformStyle: 'preserve-3d', 
-      width: '100%', height: '100%', display:'flex', alignItems:'center', justifyContent:'center',
-      animation: 'slideUp 0.6s cubic-bezier(0.2, 0.8, 0.2, 1)' 
-  },
-  vinylFloating: { 
-      width: '280px', height: '280px', borderRadius: '50%', 
-      background: 'radial-gradient(circle at 30% 30%, #333 0%, #000 100%)',
-      boxShadow: '0 40px 100px rgba(0,0,0,0.7), inset 0 0 0 2px #444',
-      transform: 'rotateX(20deg) rotateY(0deg)',
-      position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center',
-      animation: 'spinFloating 15s linear infinite'
-  },
-  vinylGrooves: { position: 'absolute', inset: 8, borderRadius: '50%', background: 'repeating-radial-gradient(#111, #111 2px, #1a1a1a 3px)', opacity: 0.8 },
-  vinylLabelContainer: { width: '110px', height: '110px', borderRadius: '50%', overflow: 'hidden', zIndex: 5, border: '4px solid #111' },
-  vinylLabelImg: { width: '100%', height: '100%', objectFit: 'cover' },
-  vinylShineReal: { position: 'absolute', inset: 0, borderRadius: '50%', background: 'linear-gradient(135deg, rgba(255,255,255,0.1) 0%, transparent 45%, rgba(255,255,255,0.05) 100%)', pointerEvents: 'none' },
+  fullHeader: { display: 'flex', justifyContent: 'center', alignItems: 'center', marginBottom: '15px' },
+  glassCapsuleHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(30, 30, 30, 0.6)', backdropFilter: 'blur(25px) saturate(200%)', WebkitBackdropFilter: 'blur(25px) saturate(200%)', border: '1px solid rgba(255, 255, 255, 0.15)', borderTop: '1px solid rgba(255, 255, 255, 0.3)', borderRadius: '40px', padding: '12px 25px', boxShadow: '0 10px 40px rgba(0,0,0,0.5)', width: '100%', maxWidth: '380px' },
+  transparentBtn: { background: 'transparent', border: 'none', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' },
+  nowPlayingText: { flex: 1, textAlign: 'center', fontSize: 15, letterSpacing: 1.5, fontWeight: '800', color: '#fff', textTransform: 'uppercase', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' },
 
-  toneArm: { position: 'absolute', top: 20, right: 30, width: 100, height: 200, pointerEvents: 'none', zIndex: 20, transformOrigin: 'top right', transition: 'transform 0.8s ease-in-out' },
-  toneArmBase: { position: 'absolute', top: 0, right: 0, width: 40, height: 40, borderRadius: '50%', background: '#d4d4d8', border: '4px solid #52525b', boxShadow: '0 10px 20px rgba(0,0,0,0.5)' },
-  toneArmRod: { position: 'absolute', top: 20, right: 20, width: 6, height: 160, background: '#e4e4e7', borderRadius: 3, transform: 'rotate(-15deg)', transformOrigin: 'top' },
-  toneArmHead: { position: 'absolute', bottom: 10, left: 10, width: 25, height: 40, background: '#27272a', borderRadius: 6, transform: 'rotate(15deg)', boxShadow: '0 5px 15px rgba(0,0,0,0.5)' },
-
-  fullInfo: { position: 'relative', zIndex: 10, textAlign: 'center', marginBottom: 20, padding: '0 30px' },
-  textAnimContainer: { animation: 'fadeIn 0.8s ease-out' },
-  fullTitle: { fontSize: 22, fontWeight: '700', lineHeight: 1.3, textShadow: '0 2px 10px rgba(0,0,0,0.5)', marginBottom:10, maxHeight: 60, overflow: 'hidden' },
-  tagBadgeGlass: { background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.1)', padding: '5px 12px', borderRadius: '30px', fontSize: 11, fontWeight: '600', backdropFilter: 'blur(10px)', color: '#ddd' },
-
-  glassControlPanel: {
-      position: 'relative', zIndex: 50,
-      background: 'rgba(255,255,255,0.05)',
-      backdropFilter: 'blur(20px)',
-      borderTop: '1px solid rgba(255,255,255,0.1)',
-      borderTopLeftRadius: '30px', borderTopRightRadius: '30px',
-      padding: '25px 20px 80px 20px', 
-      display: 'flex', flexDirection: 'column', gap: 25,
-      boxShadow: '0 -10px 40px rgba(0,0,0,0.5)'
-  },
-  actionBar: { display: 'flex', justifyContent: 'space-around', width: '100%', padding: '0 10px' },
-  actionBtn: { background: 'transparent', border: 'none', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, color: '#fff', cursor: 'pointer', opacity: 0.9, transition: '0.2s' },
-  actionLabel: { fontSize: 10, opacity: 0.6, fontWeight: '500' },
+  discWrapper: { flex: 1, position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '10px 0', minHeight: 0 },
   
-  mainControls: { display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 35, position: 'relative', zIndex: 200 },
-  controlBtnSecondary: { background: 'transparent', width: 50, height: 50, borderRadius: '50%', border: 'none', color: '#fff', cursor: 'pointer', display:'flex', alignItems:'center', justifyContent:'center', opacity: 0.9 },
-  playBtnGlass: { width: 80, height: 80, borderRadius: '50%', border: 'none', background: '#4ade80', color: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 10px 30px rgba(74, 222, 128, 0.3)', cursor: 'pointer', transform: 'scale(1)', transition: 'transform 0.1s' },
+  // NEW TONEARM & AURA
+  recordAura: { position: 'absolute', width: 'min(70vw, 280px)', height: 'min(70vw, 280px)', borderRadius: '50%', background: 'radial-gradient(circle, rgba(74, 222, 128, 0.4) 0%, transparent 70%)', transition: 'all 0.8s cubic-bezier(0.2, 0.8, 0.2, 1)', zIndex: 1, animation: 'pulseLive 3s infinite alternate' },
+  toneArm: { position: 'absolute', top: '10px', right: '10%', width: '60px', height: '180px', pointerEvents: 'none', zIndex: 10, transformOrigin: 'top right', transition: 'transform 0.6s cubic-bezier(0.32, 0.72, 0, 1)' },
+  toneArmBase: { position: 'absolute', top: 0, right: 0, width: '40px', height: '40px', borderRadius: '50%', background: 'radial-gradient(circle at 30% 30%, #e4e4e7, #52525b)', border: '2px solid #27272a', boxShadow: '0 10px 20px rgba(0,0,0,0.6)' },
+  toneArmRod: { position: 'absolute', top: '20px', right: '18px', width: '6px', height: '130px', background: 'linear-gradient(to right, #e4e4e7, #a1a1aa)', borderRadius: '3px', transform: 'rotate(-12deg)', transformOrigin: 'top', boxShadow: '2px 5px 10px rgba(0,0,0,0.5)' },
+  toneArmHead: { position: 'absolute', bottom: '26px', left: '18px', width: '18px', height: '35px', background: 'linear-gradient(to bottom, #3f3f46, #18181b)', borderRadius: '4px', transform: 'rotate(15deg)', boxShadow: '0 5px 10px rgba(0,0,0,0.6)' },
+  toneArmNeedle: { position: 'absolute', bottom: '22px', left: '22px', width: '2px', height: '6px', background: '#silver', transform: 'rotate(15deg)' },
 
-  bottomVolume: { display: 'flex', alignItems: 'center', gap: 15, padding: '0 20px', opacity: 0.8 },
-  volumeSlider: { width: '100%', accentColor: '#fff', height: 4, cursor: 'pointer', opacity: 0.7 },
+  recordDisc: { width: 'min(55vw, 220px)', height: 'min(55vw, 220px)', borderRadius: '50%', background: '#111', boxShadow: '0 20px 50px rgba(0,0,0,0.6), inset 0 0 0 6px #222', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', animation: 'spin 12s linear infinite', transition: 'transform 0.5s cubic-bezier(0.32, 0.72, 0, 1)' },
+  recordGrooves: { position: 'absolute', inset: '10px', borderRadius: '50%', background: 'repeating-radial-gradient(#111, #111 3px, #1a1a1a 4px, #1a1a1a 5px)', opacity: 0.8 },
+  recordShine: { position: 'absolute', inset: 0, borderRadius: '50%', background: 'linear-gradient(135deg, rgba(255,255,255,0.15) 0%, transparent 40%, transparent 60%, rgba(255,255,255,0.05) 100%)', pointerEvents: 'none' },
+  recordCenter: { width: '100px', height: '100px', borderRadius: '50%', border: '2px solid #333', overflow: 'hidden', position: 'relative', zIndex: 2, background: '#fff' },
+  recordImg: { width: '100%', height: '100%', objectFit: 'cover' },
+  recordCenterHole: { position: 'absolute', top: '50%', left: '50%', width: '14px', height: '14px', background: '#000', borderRadius: '50%', transform: 'translate(-50%, -50%)', border: '2px solid rgba(255,255,255,0.2)' },
 
-  timerMenu: { position: 'absolute', bottom: '130%', left: '50%', transform: 'translateX(-50%)', background: '#18181b', padding: 15, borderRadius: 16, width: 200, border: '1px solid #333', boxShadow:'0 10px 30px rgba(0,0,0,0.8)', zIndex: 60 },
-  timerHeader: { display: 'flex', justifyContent: 'space-between', marginBottom: 10, fontSize: 12, fontWeight: '700', color: '#a1a1aa' },
-  timerGrid: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 },
-  timerOpt: { background: '#27272a', border: 'none', color: '#fff', padding: 10, borderRadius: 8, fontSize: 12, cursor: 'pointer', fontWeight:'600' },
+  smallControlCard: { background: 'linear-gradient(145deg, rgba(255, 255, 255, 0.08) 0%, rgba(0, 0, 0, 0.15) 100%)', backdropFilter: 'blur(50px) saturate(250%)', WebkitBackdropFilter: 'blur(50px) saturate(250%)', borderRadius: '28px', padding: '15px 25px', display: 'flex', flexDirection: 'column', gap: '15px', border: '1px solid rgba(255,255,255,0.1)', borderTop: '1.5px solid rgba(255,255,255,0.5)', borderLeft: '1.5px solid rgba(255,255,255,0.4)', boxShadow: '0 30px 60px rgba(0,0,0,0.6), inset 0 1px 1px rgba(255,255,255,0.5), inset 0 -1px 1px rgba(255,255,255,0.1)', width: '100%', maxWidth: '380px', boxSizing: 'border-box', margin: '0 auto' },
+
+  playerInfoArea: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0' },
+  playerTitleContainer: { width: '100%', overflow: 'hidden', whiteSpace: 'nowrap', position: 'relative' },
+  playerTitle: { fontSize: 22, fontWeight: '800', color: '#fff', margin: '0 0 6px 0', display: 'inline-block', textShadow: '0 2px 5px rgba(0,0,0,0.4)' },
+  playerSub: { fontSize: 13, color: 'rgba(255,255,255,0.9)', margin: 0, fontWeight: '600', letterSpacing: '0.5px', textTransform: 'uppercase', textShadow: '0 1px 3px rgba(0,0,0,0.4)' },
+
+  mainControlsArea: { display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '40px', padding: '0' },
+  controlBtnSecondary: { background: 'rgba(255, 255, 255, 0.05)', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', cursor: 'pointer', display:'flex', alignItems:'center', justifyContent:'center', width: 50, height: 50, borderRadius: '50%', boxShadow: '0 4px 15px rgba(0,0,0,0.2)', transition: 'all 0.2s' },
+  playBtnGlass: { width: 75, height: 75, borderRadius: '50%', background: 'rgba(255, 255, 255, 0.15)', backdropFilter: 'blur(15px)', WebkitBackdropFilter: 'blur(15px)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transform: 'scale(1)', transition: 'all 0.2s', border: '1px solid rgba(255, 255, 255, 0.3)', boxShadow: '0 10px 25px rgba(0,0,0,0.3)' },
+  
+  timerMenu: { position: 'absolute', bottom: '130%', left: '50%', transform: 'translateX(-50%)', background: 'rgba(255, 255, 255, 0.15)', backdropFilter: 'blur(40px) saturate(200%)', WebkitBackdropFilter: 'blur(40px) saturate(200%)', padding: 15, borderRadius: 20, width: 220, border: '1px solid rgba(255,255,255,0.3)', boxShadow:'0 20px 40px rgba(0,0,0,0.4)', zIndex: 60 },
+  timerHeader: { display: 'flex', justifyContent: 'space-between', marginBottom: 12, fontSize: 14, fontWeight: '800', color: '#fff', textShadow: '0 1px 2px rgba(0,0,0,0.3)' },
+  timerGrid: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 },
+  timerOpt: { background: 'rgba(255,255,255,0.1)', border: 'none', color: '#fff', padding: 12, borderRadius: 12, fontSize: 14, cursor: 'pointer', fontWeight:'600', transition: '0.2s' },
   loader: { position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', textAlign: 'center' },
+
+  // BOTTOM SHEET MODAL STYLES
+  modalOverlay: { position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(8px)', zIndex: 1000, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' },
+  modalContent: { background: 'rgba(20, 20, 25, 0.85)', backdropFilter: 'blur(30px) saturate(180%)', WebkitBackdropFilter: 'blur(30px) saturate(180%)', width: '100%', maxWidth: '480px', maxHeight: '75vh', borderTopLeftRadius: '32px', borderTopRightRadius: '32px', borderTop: '1px solid rgba(255,255,255,0.2)', borderLeft: '1px solid rgba(255,255,255,0.1)', borderRight: '1px solid rgba(255,255,255,0.1)', display: 'flex', flexDirection: 'column', boxShadow: '0 -10px 40px rgba(0,0,0,0.5)', animation: 'slideUpSheet 0.4s cubic-bezier(0.2, 0.8, 0.2, 1)' },
+  modalHeader: { padding: '25px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.05)' },
+  modalTitle: { margin: 0, fontSize: '18px', fontWeight: '700', color: '#fff' },
+  closeModalBtn: { background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: '50%', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' },
+  modalList: { padding: '15px 25px 25px 25px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '8px' },
+  modalItem: { padding: '16px 20px', borderRadius: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', border: '1px solid rgba(255,255,255,0.05)', transition: '0.2s', fontSize: '15px' },
 };
 
 const styleSheet = document.createElement("style");
 styleSheet.innerText = `
-  @keyframes spinFloating { 
-      0% { transform: rotateX(20deg) rotate(0deg); } 
-      100% { transform: rotateX(20deg) rotate(360deg); } 
+  .glass-input::placeholder { color: rgba(255,255,255,0.5); }
+  @keyframes slideUpSheet {
+      from { transform: translateY(100%); }
+      to { transform: translateY(0); }
   }
   @keyframes slideUp {
       0% { transform: translateY(100px) scale(0.8); opacity: 0; }
@@ -692,8 +949,19 @@ styleSheet.innerText = `
       0% { opacity: 0; transform: translateY(10px); }
       100% { opacity: 1; transform: translateY(0); }
   }
+  .eq-bar { width: 4px; background: #4ade80; border-radius: 2px; animation: eq 1s ease-in-out infinite; }
+  @keyframes eq { 0%, 100% { height: 4px; } 50% { height: 14px; } }
+  .glass-card-hover { transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
+  .glass-card-hover:hover { transform: translateY(-8px) scale(1.02); box-shadow: inset 0 2px 4px rgba(255, 255, 255, 0.6), inset 0 -1px 2px rgba(0,0,0,0.2), 0 20px 40px rgba(0,0,0,0.6) !important; border-top: 1.5px solid rgba(255, 255, 255, 0.6) !important; border-left: 1.5px solid rgba(255, 255, 255, 0.4) !important; }
+  .dropdown-item-hover { transition: background 0.2s, color 0.2s; }
+  .dropdown-item-hover:hover { background: rgba(255,255,255,0.1); color: #fff !important; }
   .spin { animation: spin 1s linear infinite; }
   @keyframes spin { 100% { transform: rotate(360deg); } }
+  @keyframes pulseLive { 0% { opacity: 0.8; } 50% { opacity: 0.3; } 100% { opacity: 0.8; } }
+  .marquee-text { animation: marquee 12s linear infinite; padding-right: 50px; }
+  @keyframes marquee { 0% { transform: translateX(0%); } 100% { transform: translateX(-100%); } }
+  .pulse-text { animation: pulseText 1s infinite alternate; }
+  @keyframes pulseText { 0% { opacity: 1; } 100% { opacity: 0.3; } }
 `;
 document.head.appendChild(styleSheet);
 

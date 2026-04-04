@@ -8,6 +8,20 @@ import { motion, AnimatePresence } from 'framer-motion';
 // pulling from src/Utilities/
 import { processWithFarmBrain } from '../utils.js/AIBrain';
 
+// --- PREMIUM GLASS CARD STYLE EXTRACTED FROM WEATHER.JSX ---
+const getGlassStyle = (theme) => ({
+  background: theme === 'dark' ? 'rgba(20, 20, 25, 0.65)' : 'rgba(255, 255, 255, 0.5)',
+  backdropFilter: 'blur(16px) saturate(120%) brightness(110%)',
+  WebkitBackdropFilter: 'blur(16px) saturate(120%) brightness(110%)',
+  border: '1px solid rgba(255, 255, 255, 0.1)',
+  borderTop: '1px solid rgba(255, 255, 255, 0.3)',
+  borderLeft: '1px solid rgba(255, 255, 255, 0.2)',
+  boxShadow: 'inset 0 1px 1px rgba(255, 255, 255, 0.3), 0 8px 32px rgba(0, 0, 0, 0.15)',
+  borderRadius: '24px',
+  boxSizing: 'border-box',
+  transition: 'all 0.3s ease'
+});
+
 // --- 1. The Physical Page Component ---
 const Page = React.forwardRef(({ title, children, number, theme }, ref) => {
   const isDark = theme === 'dark';
@@ -16,28 +30,24 @@ const Page = React.forwardRef(({ title, children, number, theme }, ref) => {
       ref={ref}
       className="page" 
       style={{ 
-        fontFamily: "'Times New Roman', serif",
+        fontFamily: "Georgia, 'Times New Roman', serif",
         background: 'transparent',
         boxShadow: 'none',
         display: 'flex',
         flexDirection: 'column',
-        justifyContent: 'space-between',
         height: '100%',
+        width: '100%',
         boxSizing: 'border-box',
-        overflow: 'hidden', // To prevent scrollbars inside the page
         position: 'relative'
       }}
     >
-      <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', padding: '20px 25px' }}>
-        <h2 style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '20px', color: isDark ? '#4db6ac' : '#00695c', borderBottom: isDark ? '1px solid rgba(255,255,255,0.2)' : '1px solid rgba(0,0,0,0.2)', paddingBottom: '10px', marginTop: 0, marginBottom: '15px', fontFamily: 'sans-serif', textShadow: isDark ? '0 1px 2px rgba(0,0,0,0.5)' : 'none' }}>
-          <span>{title}</span>
+      <div className="hide-scrollbar" style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', padding: '40px 30px', scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' }}>
+        <h2 style={{ fontSize: '22px', color: isDark ? '#f0f0f0' : '#111', marginTop: 0, marginBottom: '25px', lineHeight: '1.3' }}>
+          {title}
         </h2>
-        <div style={{ fontSize: '16px', lineHeight: '1.7', color: isDark ? '#f0f0f0' : '#111', textAlign: 'left', wordBreak: 'break-word', textShadow: isDark ? '0 1px 2px rgba(0,0,0,0.5)' : 'none' }}>
+        <div style={{ fontSize: '18px', lineHeight: '1.8', color: isDark ? '#d4d4d8' : '#333', textAlign: 'justify', wordBreak: 'break-word' }}>
           {children}
         </div>
-      </div>
-      <div style={{ textAlign: 'center', fontSize: '12px', color: isDark ? '#aaa' : '#666', borderTop: isDark ? '1px solid rgba(255,255,255,0.2)' : '1px solid rgba(0,0,0,0.2)', paddingTop: '8px', marginTop: '8px', flexShrink: 0, padding: '0 15px 10px 15px' }}>
-        Page {number}
       </div>
     </div>
   );
@@ -50,7 +60,7 @@ const PageCover = React.forwardRef(({ children, theme }, ref) => {
         ref={ref}
         className="page page-cover" 
         style={{ 
-          padding: '15px', 
+          padding: '0', 
           background: 'transparent',
           boxShadow: 'none',
           display: 'flex',
@@ -58,11 +68,12 @@ const PageCover = React.forwardRef(({ children, theme }, ref) => {
           justifyContent: 'center',
           alignItems: 'center',
           height: '100%',
+          width: '100%',
           boxSizing: 'border-box',
           position: 'relative'
         }}
       >
-      <div style={{fontFamily: "'Times New Roman', serif"}}>
+      <div style={{fontFamily: "Georgia, 'Times New Roman', serif", width: '100%', height: '100%'}}>
          {children}
       </div>
       </div>
@@ -71,6 +82,16 @@ const PageCover = React.forwardRef(({ children, theme }, ref) => {
 
 // --- 2. The Main Library Component ---
 const DigitalLibrary = () => {
+  const [bgImage, setBgImage] = useState('');
+  const dayBg = 'https://images.unsplash.com/photo-1625246333195-78d9c38ad449?q=80&w=2940&auto=format&fit=crop';
+  const nightBg = 'https://images.unsplash.com/photo-1504333638930-c8787321eee0?q=80&w=2070&auto=format&fit=crop';
+
+  useEffect(() => {
+    const hour = new Date().getHours();
+    if (hour >= 18 || hour < 6) setTheme('dark');
+    else setTheme('light');
+  }, []);
+
   const navigate = useNavigate();
   const [topic, setTopic] = useState('');
   const [bookTopic, setBookTopic] = useState('');
@@ -79,14 +100,13 @@ const DigitalLibrary = () => {
   const [coverImage, setCoverImage] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [countdown, setCountdown] = useState(30);
+  const [countdown, setCountdown] = useState(60);
   const [theme, setTheme] = useState('light');
 
   const [currentPage, setCurrentPage] = useState(0);
-  const [totalPages, setTotalPages] = useState(0);
-  const [showControls, setShowControls] = useState(true);
+  const totalPages = bookData ? bookData.length + 2 : 0;
+  const [showControls, setShowControls] = useState(false);
   const [showGridView, setShowGridView] = useState(false);
-  const controlsTimeoutRef = useRef(null);
 
   // Chatbot state
   const [userQuestion, setUserQuestion] = useState('');
@@ -113,7 +133,7 @@ const DigitalLibrary = () => {
   useEffect(() => {
     if (!loading) return;
 
-    setCountdown(30); // Reset timer when loading starts
+    setCountdown(60); // Reset timer for deeper generation
 
     const timerId = setInterval(() => {
       setCountdown(prev => {
@@ -130,28 +150,6 @@ const DigitalLibrary = () => {
       clearInterval(timerId);
     }
   }, [loading]);
-
-  // Set total pages when a book is loaded
-  useEffect(() => {
-    if (bookData) {
-      setTotalPages(bookData.length + 2); // Cover + Pages + Back Cover. react-pageflip counts covers as pages.
-      setCurrentPage(0); // Reset to first page
-      setChatMessages([]); // Clear chat when a new book is generated
-    }
-  }, [bookData]);
-
-  // Auto-hide controls
-  useEffect(() => {
-    if (showControls) {
-      if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current);
-      controlsTimeoutRef.current = setTimeout(() => setShowControls(false), 4000);
-    } else {
-      if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current);
-    }
-    return () => {
-      if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current);
-    };
-  }, [showControls, currentPage]);
 
   // Stop speaking if page changes
   useEffect(() => {
@@ -185,7 +183,7 @@ const DigitalLibrary = () => {
   };
 
   const handleNextPage = () => {
-    setCurrentPage((prev) => Math.min(totalPages - 1, prev + 1));
+    setCurrentPage((prev) => Math.min(Math.max(0, totalPages - 1), prev + 1));
   };
 
   const swipeHandlers = useSwipeable({
@@ -271,12 +269,12 @@ const DigitalLibrary = () => {
       # SAFETY GUIDELINES:
       If the topic is sexually explicit, violent, or inappropriate, you must still return a valid JSON array, but with a single page explaining your refusal politely.
 
-      # CRITICAL FORMATTING RULES:
+      # CRITICAL FORMATTING RULES (READ THESE FOUR WORDS STRICTLY: ONLY VALID JSON ARRAY):
       1. The entire book MUST be written in the ${language} language.
       2. You MUST respond ONLY with a valid JSON array. NO conversational text, NO greetings, NO markdown formatting.
       3. Each page object must have EXACTLY two keys: "chapter_title" and "page_content".
-      4. Write detailed, rich content (around 80-100 words per page).
-      5. Generate exactly 5 to 7 pages.
+      4. Write extremely detailed, rich, and professional content (around 150 to 200 words per page). Provide actionable insights, steps, or rich narrative.
+      5. Generate exactly 6 to 8 pages to ensure comprehensive coverage.
 
       # EXAMPLE JSON STRUCTURE:
       [
@@ -291,24 +289,56 @@ const DigitalLibrary = () => {
     while (attempts < maxAttempts && !finalParsedData) {
       attempts++;
       try {
-        const retryHint = attempts > 1 ? "\n\nCRITICAL: Previous attempt failed. YOU MUST RETURN ONLY A VALID JSON ARRAY. DO NOT ADD ANY OTHER TEXT." : "";
+        const retryHint = attempts > 1 ? "\n\nCRITICAL: Previous attempt failed. READ THESE FOUR WORDS STRICTLY: ONLY VALID JSON ARRAY. DO NOT ADD ANY OTHER TEXT." : "";
         const result = await callAIWithTimeout(systemPrompt + retryHint, `Topic: ${topic}`);
 
         if (!result.success) throw new Error(result.error || "Failed to generate book.");
 
-        // Aggressively clean the response to prevent UI crashes if the LLM adds markdown
-        let cleanJsonStr = result.data.replace(/```json/gi, '').replace(/```/gi, '').trim();
+        let rawText = result.data;
+        let parsedData = null;
+        
+        // 1. Remove Markdown Formatting
+        let cleanStr = rawText.replace(/```(?:json)?/gi, '').replace(/```/gi, '').trim();
 
-        // Use regex to extract only the array portion, ignoring any pre/post conversational text
-        const match = cleanJsonStr.match(/\[[\s\S]*\]/);
-        if (match) cleanJsonStr = match[0];
-          
-        const parsedData = JSON.parse(cleanJsonStr);
-        
-        if (!Array.isArray(parsedData) || parsedData.length === 0 || !parsedData[0].page_content) {
-          throw new Error("Invalid JSON structure returned by AI");
-        }
-        finalParsedData = parsedData;
+        // 2. Extract the Array or Object
+        const startIdx = cleanStr.indexOf('[');
+        const endIdx = cleanStr.lastIndexOf(']');
+        
+        if (startIdx !== -1 && endIdx !== -1 && endIdx > startIdx) {
+            cleanStr = cleanStr.substring(startIdx, endIdx + 1);
+            parsedData = JSON.parse(cleanStr);
+        } else {
+            // Fallback for wrapped objects like { "book": [...] }
+            const objStart = cleanStr.indexOf('{');
+            const objEnd = cleanStr.lastIndexOf('}');
+            if (objStart !== -1 && objEnd !== -1 && objEnd > objStart) {
+                const objStr = cleanStr.substring(objStart, objEnd + 1);
+                const obj = JSON.parse(objStr);
+                for (const key in obj) {
+                    if (Array.isArray(obj[key])) { parsedData = obj[key]; break; }
+                }
+                if (!parsedData) parsedData = [obj];
+            } else {
+                 parsedData = JSON.parse(cleanStr);
+            }
+        }
+
+        // 3. Validation & Normalization (handles camelCase vs snake_case and single objects)
+        if (!Array.isArray(parsedData)) {
+            if (parsedData && typeof parsedData === 'object') parsedData = [parsedData];
+            else throw new Error("AI did not return a valid array or object.");
+        }
+        if (parsedData.length === 0) throw new Error("AI returned an empty array.");
+
+        finalParsedData = parsedData.map((page, index) => ({
+            chapter_title: page.chapter_title || page.chapterTitle || page.title || `Chapter ${index + 1}`,
+            page_content: page.page_content || page.pageContent || page.content || page.text || ""
+        })).filter(page => page.page_content.trim() !== "");
+
+        if (finalParsedData.length === 0) {
+            finalParsedData = null; 
+            throw new Error("No valid pages found after parsing.");
+        }
       } catch (err) {
         console.warn(`Book Generation Attempt ${attempts} failed:`, err);
       }
@@ -317,6 +347,8 @@ const DigitalLibrary = () => {
     if (finalParsedData) {
       setBookData(finalParsedData);
       setTopic(''); // Clear input after generating
+      setCurrentPage(0);
+      setChatMessages([]);
     } else {
       setError("The AI formatting failed after multiple attempts. Please try again with a slightly different topic.");
     }
@@ -478,64 +510,31 @@ const DigitalLibrary = () => {
     }}>
       <style>{`
         @keyframes border-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
       `}</style>
       <style>{`.spinner { animation: spin 1s linear infinite; } @keyframes spin { to { transform: rotate(360deg); } }`}</style>
-      {/* Header Container */}
-      <div style={{ 
-        background: theme === 'dark' ? 'rgba(30, 30, 30, 0.6)' : 'rgba(255, 255, 255, 0.6)', 
-        backdropFilter: 'blur(12px)', 
-        WebkitBackdropFilter: 'blur(12px)', 
-        border: theme === 'dark' ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(255, 255, 255, 0.5)', 
-        padding: '12px 15px', 
-        borderRadius: '12px', 
-        boxShadow: '0 8px 32px rgba(0,0,0,0.1)', 
-        display: 'flex', 
-        alignItems: 'center', 
-        justifyContent: 'space-between', 
-        marginBottom: '15px', 
-        flexShrink: 0, 
-        maxWidth: '500px', 
-        width: '100%', 
-        margin: '0 auto 15px auto', 
-        boxSizing: 'border-box',
-        transition: 'all 0.3s ease'
-      }}>
-          <div style={{ display: 'flex', alignItems: 'center', overflow: 'hidden' }}>
-            <button
-              onClick={handleBackClick} 
-              style={{ background:'none', border:'none', cursor:'pointer', padding: 0, marginRight: '10px', display: 'flex', alignItems: 'center', flexShrink: 0 }}
-            >
-              <IoMdArrowBack size={28} color={theme === 'dark' ? '#4db6ac' : '#00695c'}/>
-            </button>
-            <h1 style={{ color: theme === 'dark' ? '#e0f2f1' : '#00695c', margin: 0, fontSize: '18px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', transition: 'color 0.3s ease' }}>AI Farm Library 📚</h1>
-          </div>
-          <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
-            {bookData && !loading && (
-              <>
-                <button 
-                  onClick={toggleSpeech} // The original isSpeaking var for this was unused.
-                  style={{ background: isSpeaking ? (theme === 'dark' ? '#4db6ac' : '#00695c') : (theme === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)'), border: isSpeaking ? 'none' : (theme === 'dark' ? '1px solid rgba(255,255,255,0.2)' : '1px solid rgba(0,0,0,0.1)'), width: '40px', height: '40px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: isSpeaking ? (theme === 'dark' ? '#000' : 'white') : (theme === 'dark' ? '#4db6ac' : '#00695c'), flexShrink: 0, transition: 'all 0.3s ease' }}
-                  title={isSpeaking ? 'Stop Reading' : 'Read Aloud'}
-                >
-                  {isSpeaking ? <IoMdVolumeHigh size={22} /> : <IoMdVolumeOff size={22} />}
-                </button>
-                <button 
-                  onClick={handleSaveBook}
-                  style={{ background: isAlreadySaved ? (theme === 'dark' ? '#4db6ac' : '#00695c') : (theme === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)'), border: isAlreadySaved ? 'none' : (theme === 'dark' ? '1px solid rgba(255,255,255,0.2)' : '1px solid rgba(0,0,0,0.1)'), width: '40px', height: '40px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: isAlreadySaved ? (theme === 'dark' ? '#000' : 'white') : (theme === 'dark' ? '#4db6ac' : '#00695c'), flexShrink: 0, transition: 'all 0.3s ease' }}
-                  title={isAlreadySaved ? 'Saved' : 'Save Book'}
-                >
-                  <IoMdBookmark size={22} />
-                </button>
-              </>
-            )}
-            <button 
-              onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
-              style={{ background: theme === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)', border: theme === 'dark' ? '1px solid rgba(255,255,255,0.2)' : '1px solid rgba(0,0,0,0.1)', width: '40px', height: '40px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: theme === 'dark' ? '#4db6ac' : '#00695c', flexShrink: 0, transition: 'all 0.3s ease' }}
-            >
-              {theme === 'light' ? <IoMdMoon size={22} /> : <IoMdSunny size={22} />}
-            </button>
-          </div>
-        </div>
+
+      {/* Header Container (Hidden when reading) */}
+      {!bookData && (
+        <div style={{ 
+          background: theme === 'dark' ? 'rgba(30, 30, 30, 0.6)' : 'rgba(255, 255, 255, 0.6)', 
+          backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', 
+          border: theme === 'dark' ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(255, 255, 255, 0.5)', 
+          padding: '12px 15px', borderRadius: '12px', boxShadow: '0 8px 32px rgba(0,0,0,0.1)', display: 'flex', 
+          alignItems: 'center', justifyContent: 'space-between', marginBottom: '15px', flexShrink: 0, 
+          maxWidth: '500px', width: '100%', margin: '0 auto 15px auto', boxSizing: 'border-box'
+        }}>
+            <div style={{ display: 'flex', alignItems: 'center', overflow: 'hidden' }}>
+              <button onClick={handleBackClick} style={{ background:'none', border:'none', cursor:'pointer', padding: 0, marginRight: '10px', display: 'flex', alignItems: 'center', flexShrink: 0 }}>
+                <IoMdArrowBack size={28} color={theme === 'dark' ? '#4db6ac' : '#00695c'}/>
+              </button>
+              <h1 style={{ color: theme === 'dark' ? '#e0f2f1' : '#00695c', margin: 0, fontSize: '18px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>AI Farm Library 📚</h1>
+            </div>
+            <button onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')} style={{ background: theme === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)', border: theme === 'dark' ? '1px solid rgba(255,255,255,0.2)' : '1px solid rgba(0,0,0,0.1)', width: '40px', height: '40px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: theme === 'dark' ? '#4db6ac' : '#00695c', flexShrink: 0, transition: 'all 0.3s ease' }}>
+              {theme === 'light' ? <IoMdMoon size={22} /> : <IoMdSunny size={22} />}
+            </button>
+        </div>
+      )}
 
       {/* Main Content Container (Glass card removed when viewing book for a cleaner look) */}
         <div style={{
@@ -582,18 +581,19 @@ const DigitalLibrary = () => {
               <IoIosArrowDown size={20} color={theme === 'dark' ? '#fff' : '#333'} style={{ position: 'absolute', right: '16px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} />
             </div>
 
-            <input 
-              type="text" 
-              placeholder="e.g., Organic pest control for rice" 
-              value={topic}
-              onChange={(e) => setTopic(e.target.value)}
-              style={{ width: '100%', padding: '12px', borderRadius: '8px', border: theme === 'dark' ? '1px solid #444' : '1px solid rgba(255,255,255,0.6)', marginBottom: '15px', boxSizing: 'border-box', color: theme === 'dark' ? '#fff' : '#000', background: theme === 'dark' ? '#222' : 'rgba(255, 255, 255, 0.9)', fontSize: '15px', fontWeight: '500', outline: 'none', transition: 'all 0.3s ease' }}
-            />
+            <input 
+              type="text" 
+              placeholder="e.g., Organic pest control for rice" 
+              value={topic}
+              onChange={(e) => setTopic(e.target.value)}
+              className="glass-input"
+              style={{ width: '100%', padding: '14px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.3)', marginBottom: '20px', boxSizing: 'border-box', color: theme === 'dark' ? '#fff' : '#000', background: 'rgba(255, 255, 255, 0.15)', fontSize: '16px', fontWeight: '600', outline: 'none', transition: 'all 0.3s ease', backdropFilter: 'blur(10px)' }}
+            />
             <button 
               onClick={generateBook}
-              style={{ width: '100%', padding: '12px', background: theme === 'dark' ? '#4db6ac' : '#00695c', color: theme === 'dark' ? '#000' : 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', transition: 'all 0.3s ease' }}
+              style={{ width: '100%', padding: '16px', background: '#4CAF50', color: 'white', border: 'none', borderRadius: '12px', fontWeight: '800', fontSize: '16px', cursor: 'pointer', transition: 'all 0.3s ease', boxShadow: '0 4px 15px rgba(76, 175, 80, 0.4)' }}
             >
-              Generate My Custom Book
+              Generate Personal Guide
             </button>
             
             {error && <p style={{ color: '#d32f2f', fontSize: '14px', marginTop: '10px' }}>{error}</p>}
@@ -635,15 +635,23 @@ const DigitalLibrary = () => {
             handleNextPage={handleNextPage}
             swipeHandlers={swipeHandlers}
             toggleControls={toggleControls}
-            showControls={showControls}
+            showControls={showControls}
+            setShowControls={setShowControls}
+            showGridView={showGridView}
             setShowGridView={setShowGridView}
             setIsChatModalOpen={setIsChatModalOpen}
+            handleBackClick={handleBackClick}
+            toggleSpeech={toggleSpeech}
+            isSpeaking={isSpeaking}
+            handleSaveBook={handleSaveBook}
+            isAlreadySaved={isAlreadySaved}
           />
         )}
       </div>
 
-      {/* Search History Dropdown */}
       {!bookData && !loading && (
+        <>
+        {/* Search History Dropdown */}
         <div style={{ background: theme === 'dark' ? 'rgba(30, 30, 30, 0.6)' : 'rgba(255, 255, 255, 0.4)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', border: theme === 'dark' ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(255, 255, 255, 0.5)', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 8px 32px rgba(0,0,0,0.1)', maxWidth: '500px', width: '100%', margin: '20px auto 0 auto', transition: 'all 0.3s ease', flexShrink: 0 }}>
           <button 
             onClick={() => setIsHistoryOpen(!isHistoryOpen)} 
@@ -687,10 +695,8 @@ const DigitalLibrary = () => {
             </div>
           )}
         </div>
-      )}
 
       {/* Saved Books Dropdown */}
-      {!bookData && !loading && (
         <div style={{ background: theme === 'dark' ? 'rgba(30, 30, 30, 0.6)' : 'rgba(255, 255, 255, 0.4)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', border: theme === 'dark' ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(255, 255, 255, 0.5)', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 8px 32px rgba(0,0,0,0.1)', maxWidth: '500px', width: '100%', margin: '20px auto 20px auto', transition: 'all 0.3s ease', flexShrink: 0 }}>
           <button 
             onClick={() => setIsSavedBooksOpen(!isSavedBooksOpen)} 
@@ -712,7 +718,7 @@ const DigitalLibrary = () => {
             <div style={{ padding: '0 20px 15px 20px', display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '250px', overflowY: 'auto' }}>
               {savedBooks.length > 0 ? (
                 savedBooks.map((book) => ( 
-                  <div key={book.id} onClick={() => { setBookData(book.bookData); setBookTopic(book.topic); setCoverImage(book.coverImage || null); }} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 15px', background: 'rgba(255, 255, 255, 0.7)', borderRadius: '8px', cursor: 'pointer', fontSize: '14px', color: '#333', border: '1px solid rgba(255,255,255,0.5)', transition: 'background 0.2s' }}>
+                  <div key={book.id} onClick={() => { setBookData(book.bookData); setBookTopic(book.topic); setCoverImage(book.coverImage || null); setCurrentPage(0); setChatMessages([]); setIsSavedBooksOpen(false); }} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 15px', background: 'rgba(255, 255, 255, 0.7)', borderRadius: '8px', cursor: 'pointer', fontSize: '14px', color: '#333', border: '1px solid rgba(255,255,255,0.5)', transition: 'background 0.2s' }}>
                     <div>📖 {book.topic}</div>
                     <IoMdTrash size={18} color="#d32f2f" onClick={(e) => {
                       e.stopPropagation();
@@ -730,6 +736,7 @@ const DigitalLibrary = () => {
             </div>
           )}
         </div>
+        </>
       )}
 
       {/* Chat Modal */}
@@ -746,23 +753,19 @@ const DigitalLibrary = () => {
         chatContainerRef={chatContainerRef}
         language={language}
       />
-
-      <GridViewModal 
-        show={showGridView} 
-        onClose={() => setShowGridView(false)} 
-        bookData={bookData} 
-        bookTopic={bookTopic} 
-        coverImage={coverImage} 
-        theme={theme} 
-        setCurrentPage={setCurrentPage} 
-      />
     </div>
   );
 };
 
-const KindleStyleViewer = ({ bookData, bookTopic, coverImage, theme, currentPage, setCurrentPage, totalPages, handlePrevPage, handleNextPage, swipeHandlers, toggleControls, showControls, setShowGridView, setIsChatModalOpen }) => {
-  
-  const CurrentPageComponent = () => {
+const KindleStyleViewer = ({ bookData, bookTopic, coverImage, theme, currentPage, setCurrentPage, totalPages, handlePrevPage, handleNextPage, swipeHandlers, showControls, setShowControls, showGridView, setShowGridView, setIsChatModalOpen, handleBackClick, toggleSpeech, isSpeaking, handleSaveBook, isAlreadySaved }) => {
+  const isDark = theme === 'dark';
+
+  const toggleControlsInternal = (e) => {
+    if (e.target && typeof e.target.closest === 'function' && e.target.closest('.controls-ignore')) return;
+    setShowControls(!showControls);
+  };
+
+  const renderCurrentPage = () => {
     if (currentPage === 0) {
       return (
         <PageCover theme={theme}>
@@ -786,8 +789,8 @@ const KindleStyleViewer = ({ bookData, bookTopic, coverImage, theme, currentPage
       return (
         <PageCover theme={theme}>
           <div style={{ textAlign: 'center' }}>
-            <h2 style={{ color: theme === 'dark' ? '#fff' : '#333', fontFamily: "'Times New Roman', serif" }}>The End</h2>
-            <p style={{ color: theme === 'dark' ? '#aaa' : '#666' }}>Happy Farming!</p>
+            <h2 style={{ color: isDark ? '#fff' : '#333', fontFamily: "Georgia, 'Times New Roman', serif" }}>The End</h2>
+            <p style={{ color: isDark ? '#aaa' : '#666' }}>Happy Farming!</p>
           </div>
         </PageCover>
       );
@@ -802,93 +805,100 @@ const KindleStyleViewer = ({ bookData, bookTopic, coverImage, theme, currentPage
     );
   };
 
+  const iconBtnStyle = { background: 'transparent', border: 'none', cursor: 'pointer', color: isDark ? '#fff' : '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '10px' };
+
   return (
-    <div style={{
-      display: 'flex',
-      flexDirection: 'column',
-      flex: 1,
-      minHeight: 0,
-      width: '100%',
-      position: 'relative',
-      fontFamily: "'Times New Roman', serif",
-    }}>
-      {/* Main Page View Area */}
-      <div {...swipeHandlers} onClick={toggleControls} style={{ flex: 1, position: 'relative', display: 'flex', justifyContent: 'center', alignItems: 'center', overflow: 'hidden', cursor: 'pointer' }}>
+    <div 
+      {...swipeHandlers} 
+      style={{
+        position: 'fixed', inset: 0, zIndex: 1000, 
+        background: isDark ? '#000' : '#f4f4f4', 
+        display: 'flex', flexDirection: 'column'
+      }}
+    >
+      {/* TOP CONTROLS */}
+      <AnimatePresence>
+        {showControls && (
+          <motion.div 
+            initial={{ y: -80 }} animate={{ y: 0 }} exit={{ y: -80 }} transition={{ type: 'tween', duration: 0.2 }}
+            style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '70px', background: isDark ? '#1a1a1a' : '#fff', zIndex: 1010, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 15px', boxShadow: '0 4px 15px rgba(0,0,0,0.1)' }}
+            className="controls-ignore"
+          >
+            <button onClick={handleBackClick} style={iconBtnStyle}><IoMdArrowBack size={26}/></button>
+            <div style={{ display: 'flex', gap: '5px' }}>
+              <button onClick={toggleSpeech} style={iconBtnStyle} title="Read Aloud">{isSpeaking ? <IoMdVolumeHigh size={24} color="#4db6ac"/> : <IoMdVolumeOff size={24}/>}</button>
+              <button onClick={handleSaveBook} style={iconBtnStyle} title="Save Book">{isAlreadySaved ? <IoMdBookmark size={24} color="#ef4444"/> : <IoMdBookmark size={24} color="rgba(128,128,128,0.5)"/>}</button>
+              <button onClick={() => setIsChatModalOpen(true)} style={iconBtnStyle} title="Ask AI"><IoMdChatbubbles size={24}/></button>
+              <button onClick={() => setShowGridView(true)} style={iconBtnStyle} title="Grid View"><IoMdGrid size={24}/></button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* MAIN PAGE CONTENT (SCALES ON CLICK) */}
+      <div style={{ flex: 1, perspective: '1000px', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }} onClick={toggleControlsInternal}>
         <motion.div
-          key={currentPage}
-          initial={{ opacity: 0.8, scale: 0.98 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.2, ease: 'easeOut' }}
+          key={currentPage}
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ 
+            opacity: 1, 
+            x: 0,
+            scale: showControls ? 0.85 : 1, 
+            y: showControls ? -15 : 0, 
+            borderRadius: showControls ? '20px' : '0px',
+            boxShadow: showControls ? '0 25px 50px -12px rgba(0,0,0,0.5)' : 'none'
+          }}
+          transition={{ type: 'spring', damping: 25, stiffness: 200 }}
           style={{
             width: '100%',
             height: '100%',
-            maxWidth: '420px',
-            maxHeight: '90vh',
+            maxWidth: '600px',
+            background: isDark ? '#18181b' : '#fff',
+            overflow: 'hidden',
+            cursor: showControls ? 'pointer' : 'default'
           }}>
-          <CurrentPageComponent />
+          {renderCurrentPage()}
         </motion.div>
       </div>
 
-      {/* Controls Overlay */}
-      <AnimatePresence>
-        {showControls && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 20 }}
-            transition={{ duration: 0.2 }}
-            style={{
-              position: 'absolute',
-              bottom: 0,
-              left: 0,
-              right: 0,
-              background: theme === 'dark' ? 'rgba(30, 30, 30, 0.8)' : 'rgba(255, 255, 255, 0.8)',
-              backdropFilter: 'blur(10px)',
-              padding: '15px 20px',
-              borderTop: `1px solid ${theme === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'}`,
-              zIndex: 100,
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
-              <span style={{ fontSize: '12px', color: theme === 'dark' ? '#aaa' : '#555' }}>Page {currentPage + 1} of {totalPages}</span>
-              <div style={{ display: 'flex', gap: '15px' }}>
-                <button onClick={() => setShowGridView(true)} style={{background: 'none', border: 'none', color: theme === 'dark' ? '#4db6ac' : '#00695c', cursor: 'pointer'}}>
-                  <IoMdGrid size={22} />
-                </button>
-              </div>
-            </div>
-            <input
-              type="range"
-              min="0"
-              max={totalPages - 1}
-              value={currentPage}
-              onChange={(e) => setCurrentPage(parseInt(e.target.value, 10))}
-              style={{ width: '100%', accentColor: theme === 'dark' ? '#4db6ac' : '#00695c' }}
-            />
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* BOTTOM SLIDER CONTROLS */}
+      <AnimatePresence>
+        {showControls && (
+          <motion.div 
+            initial={{ y: 100 }} animate={{ y: 0 }} exit={{ y: 100 }} transition={{ type: 'tween', duration: 0.2 }}
+            style={{ position: 'absolute', bottom: 0, left: 0, right: 0, background: isDark ? '#1a1a1a' : '#fff', zIndex: 1010, padding: '20px 25px', boxShadow: '0 -4px 15px rgba(0,0,0,0.1)' }} 
+            className="controls-ignore"
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '15px', fontSize: '14px', fontWeight: 'bold', color: isDark ? '#aaa' : '#555' }}>
+               Page {currentPage + 1} of {Math.max(1, totalPages)}
+            </div>
+            <input
+              type="range" min="0" max={Math.max(0, totalPages - 1)} value={currentPage}
+              onChange={(e) => setCurrentPage(parseInt(e.target.value, 10))}
+              style={{ width: '100%', accentColor: isDark ? '#4db6ac' : '#00695c' }}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-      {/* Chat FAB */}
-      <button onClick={() => setIsChatModalOpen(true)} style={{
-        position: 'absolute',
-        bottom: '20px',
-        right: '20px',
-        width: '56px',
-        height: '56px',
-        borderRadius: '50%',
-        background: theme === 'dark' ? '#4db6ac' : '#00695c',
-        color: 'white',
-        border: 'none',
-        boxShadow: '0 4px 15px rgba(0,0,0,0.3)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        zIndex: 99,
-        cursor: 'pointer'
-      }}>
-        <IoMdChatbubbles size={24} />
-      </button>
+      {/* TINY READING FOOTER (HIDDEN WHEN CONTROLS ACTIVE) */}
+      <AnimatePresence>
+        {!showControls && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{ position: 'absolute', bottom: '15px', left: '20px', fontSize: '11px', color: '#888', pointerEvents: 'none' }}>
+            Page {currentPage + 1}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <GridViewModal 
+        show={showGridView} 
+        onClose={() => setShowGridView(false)} 
+        bookData={bookData} 
+        bookTopic={bookTopic} 
+        coverImage={coverImage} 
+        theme={theme} 
+        setCurrentPage={setCurrentPage} 
+      />
     </div>
   );
 };

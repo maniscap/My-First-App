@@ -11,39 +11,61 @@ import { MdLocationOn, MdDelete, MdGpsFixed } from 'react-icons/md';
 import { FaMaskFace } from 'react-icons/fa6'; 
 import { FaWind } from 'react-icons/fa';
 
-// --- WEATHER IMAGE ASSETS (URLs) ---
+// --- COMPREHENSIVE WEATHER IMAGE LIBRARY ---
 const weatherImages = {
-  clearDay: 'https://images.pexels.com/photos/296234/pexels-photo-296234.jpeg',
-  clearNight: 'https://images.pexels.com/photos/11752993/pexels-photo-11752993.jpeg',
-  cloudyDay: 'https://images.pexels.com/photos/158163/clouds-cloudporn-weather-lookup-158163.jpeg',
-  cloudyNight: 'https://images.pexels.com/photos/29473893/pexels-photo-29473893.jpeg',
-  partlyCloudyDay: 'https://images.pexels.com/photos/13958707/pexels-photo-13958707.jpeg',
-  partlyCloudyNight: 'https://images.pexels.com/photos/5489557/pexels-photo-5489557.jpeg',
-  mistDay: 'https://images.pexels.com/photos/6745483/pexels-photo-6745483.jpeg',
-  mistNight: 'https://images.pexels.com/photos/1529881/pexels-photo-1529881.jpeg',
-  rainDay: 'https://images.pexels.com/photos/30345921/pexels-photo-30345921.jpeg',
-  rainEvening: 'https://images.pexels.com/photos/8590614/pexels-photo-8590614.jpeg',
-  rainNight: 'https://images.pexels.com/photos/850488/pexels-photo-850488.png',
-  storm: 'https://images.pexels.com/photos/16218619/pexels-photo-16218619.jpeg',
+  sunny: 'https://images.pexels.com/photos/3768/sky-sunny-clouds-cloudy.jpg', // Paste your sunny image URL here (Only applies during daytime!)
+  clear: {
+    day: 'https://images.pexels.com/photos/296234/pexels-photo-296234.jpeg',
+    night: 'https://images.pexels.com/photos/11752993/pexels-photo-11752993.jpeg'
+  },
+  partlyCloudy: {
+    day: 'https://images.pexels.com/photos/13958707/pexels-photo-13958707.jpeg',
+    night: 'https://images.pexels.com/photos/5489557/pexels-photo-5489557.jpeg'
+  },
+  cloudy: {
+    day: 'https://images.pexels.com/photos/158163/clouds-cloudporn-weather-lookup-158163.jpeg',
+    night: 'https://images.pexels.com/photos/29473893/pexels-photo-29473893.jpeg'
+  },
+  mistFog: {
+    day: 'https://images.pexels.com/photos/6745483/pexels-photo-6745483.jpeg',
+    night: 'https://images.pexels.com/photos/1529881/pexels-photo-1529881.jpeg'
+  },
+  drizzle: {
+    day: 'https://images.pexels.com/photos/804474/pexels-photo-804474.jpeg',
+    night: 'https://images.pexels.com/photos/850488/pexels-photo-850488.png'
+  },
+  rain: {
+    day: 'https://images.pexels.com/photos/30345921/pexels-photo-30345921.jpeg',
+    night: 'https://images.pexels.com/photos/850488/pexels-photo-850488.png'
+  },
+  heavyRain: {
+    day: 'https://wallpaperaccess.com/full/674201.jpg',
+    night: 'https://images.pexels.com/photos/11665148/pexels-photo-11665148.jpeg'
+  },
+  thunder: {
+    day: 'https://images.pexels.com/photos/16218619/pexels-photo-16218619.jpeg',
+    night: 'https://images.pexels.com/photos/16218619/pexels-photo-16218619.jpeg'
+  },
+  snow: {
+    day: 'https://images.pexels.com/photos/258074/pexels-photo-258074.jpeg',
+    night: 'https://images.pexels.com/photos/3373155/pexels-photo-3373155.jpeg'
+  },
   sunrise: 'https://images.pexels.com/photos/10248028/pexels-photo-10248028.jpeg',
-  sunset: 'https://images.pexels.com/photos/539282/pexels-photo-539282.jpeg',
-  drizzle: 'https://images.pexels.com/photos/804474/pexels-photo-804474.jpeg',
-  defaultFallback: 'https://images.pexels.com/photos/1107717/pexels-photo-1107717.jpeg' 
+  sunset: 'https://images.pexels.com/photos/539282/pexels-photo-539282.jpeg'
 };
 
-// --- SMART TEXT MATCHER AS SECONDARY FALLBACK ---
-const getBackgroundImage = (conditionText, isDay) => {
-  if (!conditionText) return weatherImages.defaultFallback;
-  const text = conditionText.toLowerCase();
-  
-  if (text.includes('overcast') || text.includes('cloud')) return isDay ? weatherImages.cloudyDay : weatherImages.cloudyNight; 
-  if (text.includes('rain') || text.includes('shower')) return isDay ? weatherImages.rainDay : weatherImages.rainNight;
-  if (text.includes('drizzle')) return isDay ? weatherImages.drizzle : weatherImages.rainNight;
-  if (text.includes('clear') || text.includes('sun')) return isDay ? weatherImages.clearDay : weatherImages.clearNight;
-  if (text.includes('mist') || text.includes('fog')) return isDay ? weatherImages.mistDay : weatherImages.mistNight;
-  if (text.includes('thunder') || text.includes('storm')) return weatherImages.storm;
-  
-  return weatherImages.defaultFallback;
+// --- WEATHER API CODE MAPPING ---
+const getConditionCategory = (code) => {
+  if (code === 1000) return 'clear';
+  if (code === 1003) return 'partlyCloudy';
+  if ([1006, 1009].includes(code)) return 'cloudy';
+  if ([1030, 1135, 1147].includes(code)) return 'mistFog';
+  if ([1063, 1150, 1153, 1180, 1183].includes(code)) return 'drizzle';
+  if ([1186, 1189, 1192, 1240, 1243].includes(code)) return 'rain';
+  if ([1195, 1246].includes(code)) return 'heavyRain';
+  if ([1087, 1273, 1276, 1279, 1282].includes(code)) return 'thunder';
+  if ([1066, 1069, 1072, 1114, 1117, 1168, 1171, 1198, 1201, 1204, 1207, 1210, 1213, 1216, 1219, 1222, 1225, 1237, 1249, 1252, 1255, 1258, 1261, 1264].includes(code)) return 'snow';
+  return 'clear'; // Ultimate fallback
 };
 
 // --- HELPER COMPONENTS ---
@@ -77,7 +99,7 @@ const Weather = () => {
   const [savedWeatherList, setSavedWeatherList] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0); 
   const [loading, setLoading] = useState(true);
-  const [unit, setUnit] = useState('C'); 
+  const [unit, setUnit] = useState(() => localStorage.getItem('farmBuddy_weatherUnit') || 'C'); 
   
   const [showCityManager, setShowCityManager] = useState(false);
   const [showSearchOverlay, setShowSearchOverlay] = useState(false); 
@@ -122,6 +144,12 @@ const Weather = () => {
       }));
     }
   }, [currentIndex, savedWeatherList]);
+
+  const toggleUnit = () => {
+      const newUnit = unit === 'C' ? 'F' : 'C';
+      setUnit(newUnit);
+      localStorage.setItem('farmBuddy_weatherUnit', newUnit);
+  };
 
   const triggerToast = (msg) => {
     setToastMsg(msg);
@@ -246,33 +274,49 @@ const Weather = () => {
   };
 
   const getAssetLogic = (currentCityData) => {
-    if (!currentCityData) return weatherImages.clearDay;
-    const code = currentCityData.current.condition.code;
-    const text = currentCityData.current.condition.text; 
-    const isDay = currentCityData.current.is_day;
-    const hour = new Date().getHours();
-
-    if ([1087, 1273, 1276, 1279, 1282].includes(code)) return weatherImages.storm;
-    if ([1063, 1150, 1153, 1180, 1183, 1186, 1189, 1240].includes(code)) {
-        return isDay ? weatherImages.drizzle : weatherImages.rainNight;
-    }
-    if ([1192, 1195, 1198, 1201, 1243, 1246, 1249, 1252].includes(code)) {
-        if (hour >= 16 && hour <= 19) return weatherImages.rainEvening;
-        return isDay ? weatherImages.rainDay : weatherImages.rainNight;
-    }
-    if ([1030, 1135, 1147].includes(code)) return isDay ? weatherImages.mistDay : weatherImages.mistNight;
-    if ([1006, 1009].includes(code)) return isDay ? weatherImages.cloudyDay : weatherImages.cloudyNight;
-    if (code === 1003) return isDay ? weatherImages.partlyCloudyDay : weatherImages.partlyCloudyNight;
+    if (!currentCityData) return weatherImages.clear.day;
     
-    const smartMatch = getBackgroundImage(text);
-    if (smartMatch !== weatherImages.defaultFallback) return smartMatch;
+    const code = currentCityData.current.condition.code;
+    const isDay = currentCityData.current.is_day === 1; // 1 = Day, 0 = Night strictly for target city
+    
+    // --- Custom Sunny Logic (Strictly Day Time Only) ---
+    if (code === 1000 && isDay) {
+        return weatherImages.sunny || weatherImages.clear.day;
+    }
 
-    if (isDay) {
-        if (hour === 6) return weatherImages.sunrise;
-        if (hour >= 17 && hour <= 18) return weatherImages.sunset;
-        return weatherImages.clearDay;
-    } 
-    return weatherImages.clearNight;
+    const category = getConditionCategory(code);
+    
+    // --- Custom Sunrise / Sunset logic (Only applies if weather is 'clear') ---
+    if (category === 'clear' && currentCityData.forecast && currentCityData.forecast.forecastday.length > 0) {
+        try {
+            const localTimeStr = currentCityData.location.localtime;
+            const sunriseStr = currentCityData.forecast.forecastday[0].astro.sunrise;
+            const sunsetStr = currentCityData.forecast.forecastday[0].astro.sunset;
+
+            const localDateStr = localTimeStr.split(' ')[0];
+            const parseTime = (str) => {
+               const [time, modifier] = str.split(' ');
+               let [hours, minutes] = time.split(':');
+               if (hours === '12') hours = '00';
+               if (modifier === 'PM') hours = parseInt(hours, 10) + 12;
+               return new Date(`${localDateStr.replace(/-/g, '/')} ${hours}:${minutes}:00`);
+            };
+
+            const now = new Date(localTimeStr.replace(/-/g, '/'));
+            const sunrise = parseTime(sunriseStr);
+            const sunset = parseTime(sunsetStr);
+
+            // Use the sunrise/sunset images if within 45 mins (2700000 ms) of the event
+            if (Math.abs(now - sunrise) <= 2700000) return weatherImages.sunrise;
+            if (Math.abs(now - sunset) <= 2700000) return weatherImages.sunset;
+        } catch (e) {
+            console.warn("Time parsing failed for sunset/sunrise logic", e);
+        }
+    }
+
+    const timeOfDay = isDay ? 'day' : 'night';
+    
+    return weatherImages[category][timeOfDay];
   };
 
   const handleSearchChange = async (e) => {
@@ -398,24 +442,27 @@ const Weather = () => {
         if (xDiff > 50 && currentIndex < savedWeatherList.length - 1) setCurrentIndex(currentIndex + 1);
         if (xDiff < -50 && currentIndex > 0) setCurrentIndex(currentIndex - 1);
     }
-    if (yDiff < -100 && Math.abs(xDiff) < 40) handleRefresh();
+    if (yDiff < -100 && Math.abs(xDiff) < 40) {
+        const scroller = document.getElementById('weather-scroll-content');
+        if (!scroller || scroller.scrollTop <= 5) handleRefresh();
+    }
   };
 
   if (loading) return <div style={styles.loadingContainer}><SkeletonLoader /></div>;
-  if (savedWeatherList.length === 0) return <div style={styles.loading}>No locations found.</div>;
 
-  const weather = savedWeatherList[currentIndex]; 
-  const { current, location, forecast } = weather;
-  const image = getAssetLogic(weather);
-  const visibleDays = showFullForecast ? forecast.forecastday : forecast.forecastday.slice(0, 3);
-  const sunPosition = getSunPosition(forecast.forecastday[0].astro.sunrise, forecast.forecastday[0].astro.sunset, location.localtime);
-  const aqiInfo = getAqiInfo(current.air_quality);
+  const isEmpty = savedWeatherList.length === 0;
+  const weather = !isEmpty ? savedWeatherList[currentIndex] : null; 
+  const current = weather?.current;
+  const location = weather?.location;
+  const forecast = weather?.forecast;
+  const image = !isEmpty ? getAssetLogic(weather) : weatherImages.clear.day;
+  const visibleDays = !isEmpty ? (showFullForecast ? forecast.forecastday : forecast.forecastday.slice(0, 3)) : [];
+  const sunPosition = !isEmpty ? getSunPosition(forecast.forecastday[0].astro.sunrise, forecast.forecastday[0].astro.sunset, location.localtime) : 0;
+  const aqiInfo = !isEmpty ? getAqiInfo(current.air_quality) : { text: 'Unknown', color: 'transparent' };
 
-  // STITCH 24-HOUR FORECAST USING THE CITY'S EXACT LOCAL TIME
-  const allHours = forecast.forecastday.flatMap(day => day.hour);
-  const currentCityEpoch = location.localtime_epoch;
-  // Get the next 24 hours of data starting from roughly the current local hour
-  const next24Hours = allHours.filter(h => h.time_epoch >= currentCityEpoch - 3600).slice(0, 24);
+  const allHours = !isEmpty ? forecast.forecastday.flatMap(day => day.hour) : [];
+  const currentCityEpoch = !isEmpty ? location.localtime_epoch : 0;
+  const next24Hours = !isEmpty ? allHours.filter(h => h.time_epoch >= currentCityEpoch - 3600).slice(0, 24) : [];
 
   return (
     <div style={styles.container} onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd}>
@@ -430,14 +477,14 @@ const Weather = () => {
       <div style={styles.topBar}>
          <button onClick={() => navigate('/dashboard')} style={styles.iconBtn}><IoMdArrowBack size={24}/></button>
          <div style={styles.locationText}>
-           <span style={styles.cityTitle}>{location.name}</span>
+           <span style={styles.cityTitle}>{!isEmpty ? location.name : 'Weather'}</span>
            <span style={styles.regionTitle}>
-              {location.region} • {formatCityTime(location.localtime)}
+              {!isEmpty ? `${location.region} • ${formatCityTime(location.localtime)}` : 'Add a location'}
            </span>
          </div>
          <div style={styles.topRight}>
             <button onClick={handleRefresh} style={styles.iconBtn}><IoMdRefresh size={22}/></button>
-            <button onClick={() => setUnit(unit === 'C' ? 'F' : 'C')} style={styles.unitBtn}>°{unit}</button>
+            <button onClick={toggleUnit} style={styles.unitBtn}>°{unit}</button>
             <button onClick={() => setShowCityManager(true)} style={styles.iconBtn}><IoMdAdd size={24}/></button>
          </div>
       </div>
@@ -565,7 +612,9 @@ const Weather = () => {
                   <h1 style={styles.bigTemp}>{getTemp(current.temp_c)}</h1>
                   <span style={styles.celcius}>°{unit}</span>
               </div>
-              <p style={styles.condition}>{current.condition.text}</p>
+              <p style={styles.condition}>
+                  {current.is_day === 0 ? current.condition.text.replace(/Sunny/gi, 'Clear') : current.condition.text}
+              </p>
           <div style={{...styles.aqiPill, background: 'transparent' }}>
                   <FaMaskFace /> Air Quality: {aqiInfo.text}
               </div>
@@ -617,7 +666,7 @@ const Weather = () => {
                                  <IoMdNavigate size={24} color="#fff" />
                               </div>
                           </div>
-                          <div style={styles.windSpeed}>{current.wind_kph} <span style={{fontSize:'12px'}}>km/h</span></div>
+                                 <div style={styles.windSpeed}>{unit === 'C' ? current.wind_kph : current.wind_mph} <span style={{fontSize:'12px'}}>{unit === 'C' ? 'km/h' : 'mph'}</span></div>
                           <div style={{fontSize:'11px', opacity:0.7, marginTop:'4px', fontWeight:'600'}}>{current.wind_dir} Wind</div>
                       </div>
                   </div>
@@ -678,9 +727,9 @@ const Weather = () => {
                             <div style={{fontSize:'24px', fontWeight:'bold'}}>
                                 {forecast.forecastday[0].day.daily_chance_of_rain}%
                             </div>
-                            {forecast.forecastday[0].day.totalprecip_mm > 0 && (
+                                    {(unit === 'C' ? forecast.forecastday[0].day.totalprecip_mm : forecast.forecastday[0].day.totalprecip_in) > 0 && (
                                 <div style={{fontSize:'12px', color:'#63c5da', fontWeight:'bold', marginTop:'-2px'}}>
-                                    {forecast.forecastday[0].day.totalprecip_mm} mm expected
+                                            {unit === 'C' ? forecast.forecastday[0].day.totalprecip_mm : forecast.forecastday[0].day.totalprecip_in} {unit === 'C' ? 'mm' : 'in'} expected
                                 </div>
                             )}
                         </div>
