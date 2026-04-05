@@ -112,6 +112,45 @@ const Weather = () => {
   // --- SEARCH HISTORY STATE ---
   const [searchHistory, setSearchHistory] = useState([]);
 
+  useEffect(() => {
+    const handlePopState = (e) => {
+      if (e.state?.overlay === 'cityManager') {
+        setShowSearchOverlay(false);
+        setShowCityManager(true);
+      } else if (!e.state?.overlay) {
+        setShowSearchOverlay(false);
+        setShowCityManager(false);
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
+  const handleOpenCityManager = () => {
+    setShowCityManager(true);
+    window.history.pushState({ overlay: 'cityManager' }, '');
+  };
+
+  const handleCloseCityManager = () => {
+    setShowCityManager(false);
+    if (window.history.state?.overlay === 'cityManager') {
+      window.history.back();
+    }
+  };
+
+  const handleOpenSearchOverlay = () => {
+    setShowSearchOverlay(true);
+    window.history.pushState({ overlay: 'searchOverlay' }, '');
+  };
+
+  const handleCloseSearchOverlay = () => {
+    setShowSearchOverlay(false);
+    setGpsResult(null);
+    if (window.history.state?.overlay === 'searchOverlay') {
+      window.history.back();
+    }
+  };
+
   // UX States
   const [toastMsg, setToastMsg] = useState("");
   const [showToast, setShowToast] = useState(false);
@@ -386,6 +425,13 @@ const Weather = () => {
     setSearchQuery("");
     setSuggestions([]);
     setGpsResult(null);
+
+    if (window.history.state?.overlay === 'searchOverlay') {
+      window.history.go(-2);
+    } else if (window.history.state?.overlay === 'cityManager') {
+      window.history.back();
+    }
+
     setShowSearchOverlay(false); 
     setShowCityManager(false);
     triggerToast(`Added ${selectedName}`);
@@ -485,7 +531,7 @@ const Weather = () => {
          <div style={styles.topRight}>
             <button onClick={handleRefresh} style={styles.iconBtn}><IoMdRefresh size={22}/></button>
             <button onClick={toggleUnit} style={styles.unitBtn}>°{unit}</button>
-            <button onClick={() => setShowCityManager(true)} style={styles.iconBtn}><IoMdAdd size={24}/></button>
+            <button onClick={handleOpenCityManager} style={styles.iconBtn}><IoMdAdd size={24}/></button>
          </div>
       </div>
       
@@ -506,7 +552,7 @@ const Weather = () => {
                   {showSearchOverlay ? (
                       <div style={styles.searchOverlay}>
                           <div style={styles.searchHeader}>
-                              <IoMdArrowBack size={24} onClick={() => {setShowSearchOverlay(false); setGpsResult(null);}} style={{cursor:'pointer', color: '#ccc'}} />
+                              <IoMdArrowBack size={24} onClick={handleCloseSearchOverlay} style={{cursor:'pointer', color: '#ccc'}} />
                               <input 
                                 autoFocus type="text" placeholder="Search for a city..." 
                                 value={searchQuery} onChange={handleSearchChange} style={styles.searchInputBig}
@@ -574,15 +620,15 @@ const Weather = () => {
                       <>
                           <div style={styles.modalHeader}>
                               <h3>Manage cities</h3>
-                              <button onClick={() => setShowCityManager(false)} style={styles.closeModal}><IoMdClose size={24}/></button>
+                              <button onClick={handleCloseCityManager} style={styles.closeModal}><IoMdClose size={24}/></button>
                           </div>
-                          <div style={styles.searchBarTrigger} onClick={() => setShowSearchOverlay(true)}>
+                          <div style={styles.searchBarTrigger} onClick={handleOpenSearchOverlay}>
                               <IoMdSearch size={20} color="#888" />
                               <span style={{color:'#888', marginLeft:'10px'}}>Search for a city...</span>
                           </div>
                           <div style={styles.savedList}>
                               {savedWeatherList.map((city, idx) => (
-                                  <div key={idx} style={styles.cityCard} onClick={() => { setCurrentIndex(idx); setShowCityManager(false); }}>
+                                  <div key={idx} style={styles.cityCard} onClick={() => { setCurrentIndex(idx); handleCloseCityManager(); }}>
                                       <div style={styles.cardLeft}>
                                           <span style={styles.cardCityName}>{city.location.name}</span>
                                           <span style={{...styles.cardAqi, color: getAqiInfo(city.current.air_quality).color.replace('0.4','1')}}>
