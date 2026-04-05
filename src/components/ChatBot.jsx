@@ -7,6 +7,7 @@ import React, {
 } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { Menu, X, Trash2, Edit2, Mic, Image as ImageIcon, ArrowRight, RefreshCw, Volume2, VolumeX, Copy, Sparkles, PanelLeft, MessageSquarePlus } from 'lucide-react';
 
 /**
  * =================================================================================================
@@ -917,15 +918,21 @@ function ChatBot() {
               <div style={styles.sidebarOverlay} onClick={() => setShowSidebar(false)}>
                   <div style={styles.sidebar} onClick={(e) => e.stopPropagation()}>
                       <div style={styles.sidebarHeader}>
-                          <h3>🗄️ History</h3>
-                          <button onClick={() => setShowSidebar(false)} style={styles.sidebarCloseBtn}>✖</button>
+                          <h3 style={{display:'flex', alignItems:'center', gap:'8px', margin:0, fontSize:'18px', fontWeight:'600'}}>
+                              <Menu size={20} /> History
+                          </h3>
+                          <button onClick={() => setShowSidebar(false)} style={styles.sidebarCloseBtn}>
+                              <X size={24} strokeWidth={1.5} />
+                          </button>
                       </div>
                       
-                      <button onClick={handleNewChat} style={styles.newChatBtn}>+ New Consultation</button>
+                      <button onClick={handleNewChat} style={styles.newChatBtn}>
+                          <MessageSquarePlus size={18} /> New Consultation
+                      </button>
                       
                       <div style={styles.sessionList}>
                           {sessions.map(sess => (
-                              <div key={sess.id} style={{...styles.sessionItem, backgroundColor: sess.id === currentSessionId ? '#333' : 'transparent', borderLeft: sess.id === currentSessionId ? '4px solid #2E7D32' : '4px solid transparent'}} onClick={() => { setCurrentSessionId(sess.id); setShowSidebar(false); }}>
+                              <div key={sess.id} style={{...styles.sessionItem, backgroundColor: sess.id === currentSessionId ? 'rgba(255,255,255,0.1)' : 'transparent', borderLeft: sess.id === currentSessionId ? '4px solid #4ade80' : '4px solid transparent'}} onClick={() => { setCurrentSessionId(sess.id); setShowSidebar(false); }}>
                                   
                                   {/* ✏️ SIDEBAR EDIT LOGIC */}
                                   {editingSessionId === sess.id ? (
@@ -935,15 +942,20 @@ function ChatBot() {
                                               onChange={(e) => setEditTitleInput(e.target.value)} 
                                               onClick={(e) => e.stopPropagation()}
                                               style={styles.editInput}
+                                              autoFocus
                                           />
                                           <button onClick={(e) => saveSessionTitle(e)} style={styles.saveBtn}>✓</button>
                                       </div>
                                   ) : (
                                       <>
-                                        <span style={{overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', flex:1}}>{sess.title}</span>
-                                        <div style={{display:'flex', gap:'5px'}}>
-                                            <button onClick={(e) => startEditingSession(e, sess)} style={styles.iconBtn}>✎</button>
-                                            <button onClick={(e) => handleDeleteChat(e, sess.id)} style={styles.deleteChatBtn}>🗑️</button>
+                                        <span style={{overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', flex:1, fontWeight: sess.id === currentSessionId ? '600' : '400'}}>{sess.title}</span>
+                                        <div style={{display:'flex', gap:'8px', alignItems:'center'}}>
+                                            <button onClick={(e) => startEditingSession(e, sess)} style={styles.iconBtn}>
+                                                <Edit2 size={14} color="#A0A0A0" />
+                                            </button>
+                                            <button onClick={(e) => handleDeleteChat(e, sess.id)} style={styles.deleteChatBtn}>
+                                                <Trash2 size={16} color="#F84464" />
+                                            </button>
                                         </div>
                                       </>
                                   )}
@@ -958,22 +970,22 @@ function ChatBot() {
           <div style={styles.header}>
             <div style={{display:'flex', alignItems:'center', gap:'12px'}}>
                 <button onClick={() => setShowSidebar(true)} style={styles.iconBtnInner} title="History">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="#C4C7C5"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg>
+                    <PanelLeft size={24} color="#E3E3E3" strokeWidth={1.5} />
                 </button>
             </div>
             
             <div style={styles.headerTitleContainer} onClick={() => setShowSidebar(true)}>
+                <Sparkles size={18} color="#81C784" strokeWidth={2} />
                 <span style={styles.headerTitle}>Farm Buddy</span>
-                <span style={styles.headerBadge}>Advanced</span>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="#C4C7C5"><path d="M7 10l5 5 5-5z"/></svg>
+                <span style={styles.headerBadge}>PRO</span>
             </div>
             
             <div style={{display:'flex', alignItems:'center', gap:'8px'}}>
                 <button onClick={(e) => handleClearChat(e)} style={{...styles.iconBtnInner, ...(isClearing ? { animation: 'spin 0.4s linear' } : {})}} title="Clear Conversation">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="#C4C7C5"><path d="M19 8l-4 4h3c0 3.31-2.69 6-6 6-1.01 0-1.97-.25-2.8-.7l-1.46 1.46C8.97 19.54 10.43 20 12 20c4.42 0 8-3.58 8-8h3l-4-4zM6 12c0-3.31 2.69-6 6-6 1.01 0 1.97.25 2.8.7l1.46-1.46C15.03 4.46 13.57 4 12 4c-4.42 0-8 3.58-8 8H1l4 4 4-4H6z"/></svg>
+                    <RefreshCw size={20} color="#E3E3E3" strokeWidth={1.5} />
                 </button>
                 <button onClick={() => setIsOpen(false)} style={styles.iconBtnInner} title="Close">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="#C4C7C5"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+                    <X size={26} color="#E3E3E3" strokeWidth={1.5} />
                 </button>
             </div>
           </div>
@@ -981,7 +993,7 @@ function ChatBot() {
           {/* CHAT BODY */}
           <div style={{...styles.chatBody, ...(isClearing ? styles.chatBodyClearing : {})}} ref={chatBodyRef}>
             {messages.map((msg, i) => (
-              <div key={i} style={{ textAlign: msg.sender === 'bot' ? 'left' : 'right', marginBottom: '20px', display: 'flex', flexDirection: 'column', alignItems: msg.sender === 'bot' ? 'flex-start' : 'flex-end', animation: 'fadeIn 0.3s ease-in' }}>
+              <div key={i} style={{ textAlign: msg.sender === 'bot' ? 'left' : 'right', marginBottom: '16px', display: 'flex', flexDirection: 'column', alignItems: msg.sender === 'bot' ? 'flex-start' : 'flex-end', animation: 'fadeIn 0.3s ease-in' }}>
                 {msg.image && (
                     <img src={msg.image} alt="User Upload" style={styles.msgImg} onClick={() => window.open(msg.image, '_blank')} />
                 )}
@@ -1026,15 +1038,21 @@ function ChatBot() {
                     <span style={styles.timestamp}>{msg.sender === 'bot' ? '🤖' : '👤'} {msg.timestamp || ""}</span>
                     {/* EDIT PENCIL FOR USER */}
                     {msg.sender === 'user' && !editingMessageIndex && (
-                        <button onClick={() => startEditingMessage(i, msg.text)} style={styles.editMsgBtn} title="Edit & Retry">✎</button>
+                        <button onClick={() => startEditingMessage(i, msg.text)} style={styles.editMsgBtn} title="Edit & Retry"><Edit2 size={12} /></button>
                     )}
                 </div>
                 
                 {msg.sender === 'bot' && (
                   <div style={styles.actionRow}>
-                    <button onClick={() => handleSpeak(msg.text)} style={styles.outlineBtn}>{speaking ? '🔇 Stop' : '🔊 Read'}</button>
-                    <button onClick={() => handleCopy(msg.text)} style={styles.outlineBtn}>📋 Copy</button>
-                    <button onClick={() => handleRetry(i)} style={styles.outlineBtn}>🔄 Retry</button>
+                    <button onClick={() => handleSpeak(msg.text)} style={styles.outlineBtn}>
+                        {speaking ? <VolumeX size={14} /> : <Volume2 size={14} />} {speaking ? 'Stop' : 'Read'}
+                    </button>
+                    <button onClick={() => handleCopy(msg.text)} style={styles.outlineBtn}>
+                        <Copy size={14} /> Copy
+                    </button>
+                    <button onClick={() => handleRetry(i)} style={styles.outlineBtn}>
+                        <RefreshCw size={14} /> Retry
+                    </button>
                   </div>
                 )}
               </div>
@@ -1061,21 +1079,21 @@ function ChatBot() {
               </div>
             )}
             <div style={styles.inputRow}>
-              <div style={styles.inputWrapper}>
+              <div style={styles.inputWrapper} className="premium-input-wrapper">
                 <input type="file" accept="image/*,.pdf,.txt" onChange={handleFileChange} style={{ display: 'none' }} id="cam-input" />
                 <label htmlFor="cam-input" style={styles.iconBtnInner} title="Upload Image">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="#C4C7C5"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14zm-5.04-6.71l-2.75 3.54-1.96-2.36L6.5 17h11l-3.54-4.71z"/></svg>
+                    <ImageIcon size={22} color="#C4C7C5" strokeWidth={1.5} />
                 </label>
                 
                 <input type="text" placeholder={isOnline ? "Ask Farm Buddy..." : "Offline"} disabled={!isOnline} style={styles.inputField} value={input} onChange={(e) => setInput(e.target.value)} onKeyPress={(e) => e.key === 'Enter' && handleSend()} />
                 
                 <button onClick={startListening} style={styles.iconBtnInner} title="Voice Input">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="#C4C7C5"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm-1-9c0-.55.45-1 1-1s1 .45 1 1v6c0 .55-.45 1-1 1s-1-.45-1-1V5zm6 6c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg>
+                    <Mic size={22} color="#C4C7C5" strokeWidth={1.5} />
                 </button>
                 
                 {(input.trim() || uploadedFile) && (
-                    <button onClick={handleSend} style={{...styles.iconBtnInner, opacity: isOnline ? 1 : 0.5, cursor: isOnline ? 'pointer' : 'default'}} disabled={!isOnline}>
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="#A8C7FA"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+                    <button onClick={handleSend} style={{...styles.sendBtn, opacity: isOnline ? 1 : 0.5, cursor: isOnline ? 'pointer' : 'default', background: isOnline ? '#2E7D32' : '#555'}} disabled={!isOnline}>
+                        <ArrowRight size={22} color="#fff" strokeWidth={2.5} />
                     </button>
                 )}
               </div>
@@ -1090,11 +1108,50 @@ function ChatBot() {
       {/* FLOATING CAPSULE */}
       {!isOpen && (
         <div onMouseDown={handleMouseDown} onClick={handleClickButton} onTouchStart={handleTouchStart} onTouchMove={handleTouchMove} style={{ ...styles.floatCapsule, left: `${position.x}px`, top: `${position.y}px` }}>
-            <span style={{fontSize:'22px'}}>🧢</span> <span style={{fontWeight:'bold', color:'white', fontSize:'14px'}}>Farm Buddy</span>
+            <div style={styles.capsuleGlow}></div>
+            <Sparkles size={20} color="#fff" strokeWidth={2} />
+            <span style={{fontWeight:'600', color:'white', fontSize:'15px', letterSpacing:'0.5px'}}>Farm Buddy</span>
         </div>
       )}
       
-      <style>{` @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } } @keyframes slideIn { from { transform: translateX(-100%); } to { transform: translateX(0); } } .typing-dot { width: 8px; height: 8px; background-color: #aaa; border-radius: 50%; display: inline-block; margin: 0 2px; animation: typingAnimation 1.4s infinite ease-in-out both; } .typing-dot:nth-child(1) { animation-delay: -0.32s; } .typing-dot:nth-child(2) { animation-delay: -0.16s; } @keyframes typingAnimation { 0%, 80%, 100% { transform: scale(0); } 40% { transform: scale(1.0); } } @keyframes spin { 100% { transform: rotate(-360deg); } } @keyframes fadeOutUp { to { opacity: 0; transform: translateY(-20px); } } `}</style>
+      <style>{` 
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } } 
+        @keyframes slideIn { from { transform: translateX(-100%); } to { transform: translateX(0); } } 
+        .typing-dot { width: 8px; height: 8px; background-color: #aaa; border-radius: 50%; display: inline-block; margin: 0 2px; animation: typingAnimation 1.4s infinite ease-in-out both; } 
+        .typing-dot:nth-child(1) { animation-delay: -0.32s; } 
+        .typing-dot:nth-child(2) { animation-delay: -0.16s; } 
+        @keyframes typingAnimation { 0%, 80%, 100% { transform: scale(0); } 40% { transform: scale(1.0); } } 
+        @keyframes spin { 100% { transform: rotate(-360deg); } } 
+        @keyframes fadeOutUp { to { opacity: 0; transform: translateY(-20px); } } 
+        @keyframes pulseGlow { 0% { opacity: 0.3; } 100% { opacity: 0.8; } }
+
+        /* PREMIUM INPUT FOCUS EFFECTS */
+        .premium-input-wrapper { transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
+        .premium-input-wrapper:focus-within { border-color: rgba(255,255,255,0.2) !important; box-shadow: 0 10px 40px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.1) !important; background-color: rgba(25, 25, 28, 0.9) !important; }
+        .premium-input-wrapper input::placeholder { transition: color 0.3s ease; }
+        .premium-input-wrapper:focus-within input::placeholder { color: #aaa; }
+
+        /* APPLE GLASS CARD CUSTOM CLASSES */
+        .apple-glass-card {
+          background: transparent; 
+          backdrop-filter: blur(12px) saturate(120%) brightness(110%);
+          -webkit-backdrop-filter: blur(12px) saturate(120%) brightness(110%);
+          border-radius: 24px;
+          padding: 16px;
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          border-top: 1px solid rgba(255, 255, 255, 0.3);
+          border-left: 1px solid rgba(255, 255, 255, 0.2);
+          box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.3), 0 8px 32px rgba(0, 0, 0, 0.15);
+          color: #ffffff;
+          font-family: "SF Pro Display", -apple-system, sans-serif;
+          display: flex;
+          flex-direction: column;
+          justify-content: space-between;
+        }
+        .glass-label { font-size: 13px; opacity: 0.7; display: flex; gap: 6px; align-items: center; font-weight: 500; }
+        .glass-value { font-size: 26px; font-weight: 700; margin-top: 6px; }
+        .glass-subtext { font-size: 12px; opacity: 0.7; margin-top: 4px; }
+      `}</style>
     </div>
   );
 }
@@ -1123,8 +1180,13 @@ const styles = {
       left: 0,
       width: '100vw', 
       height: '100vh', 
-      backgroundColor: 'rgba(18, 18, 18, 0.95)', // Glassmorphism
-      backdropFilter: 'blur(10px)',
+      background: 'rgba(20, 20, 22, 0.65)',
+      backdropFilter: 'blur(12px) saturate(120%) brightness(110%)',
+      WebkitBackdropFilter: 'blur(12px) saturate(120%) brightness(110%)',
+      border: '1px solid rgba(255, 255, 255, 0.1)',
+      borderTop: '1px solid rgba(255, 255, 255, 0.3)',
+      borderLeft: '1px solid rgba(255, 255, 255, 0.2)',
+      boxShadow: 'inset 0 1px 1px rgba(255, 255, 255, 0.3), 0 8px 32px rgba(0, 0, 0, 0.15)',
       display: 'flex', 
       flexDirection: 'column', 
       zIndex: 10000, 
@@ -1134,21 +1196,24 @@ const styles = {
 
     floatCapsule: { 
       position: 'fixed', 
-      padding: '12px 22px', 
+      padding: '12px 24px', 
       borderRadius: '50px', 
-      backgroundColor: '#2E7D32', 
-      border: '2px solid white', 
-      boxShadow: '0 6px 20px rgba(0,0,0,0.5)', 
+      backgroundColor: 'rgba(20, 20, 22, 0.85)', 
+      backdropFilter: 'blur(20px)',
+      WebkitBackdropFilter: 'blur(20px)',
+      border: '1px solid rgba(255, 255, 255, 0.15)', 
+      boxShadow: '0 10px 30px rgba(0,0,0,0.5), inset 0 1px 1px rgba(255,255,255,0.2)', 
       display: 'flex', 
       alignItems: 'center', 
       gap: '10px', 
       zIndex: 10000, 
       touchAction: 'none', 
-      transition: 'transform 0.1s ease', 
+      transition: 'transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1)', 
       pointerEvents:'auto',
       userSelect: 'none',
       cursor: 'move'
     },
+    capsuleGlow: { position: 'absolute', inset: 0, borderRadius: '50px', background: 'linear-gradient(90deg, rgba(74, 222, 128, 0.15), rgba(96, 165, 250, 0.15))', zIndex: -1, animation: 'pulseGlow 3s infinite alternate' },
     
     // ✏️ EDIT UI STYLES
     editRow: { display:'flex', gap:'5px', width:'100%' },
@@ -1156,7 +1221,7 @@ const styles = {
     saveBtn: { background:'#2E7D32', border:'none', color:'white', borderRadius:'4px', cursor:'pointer' },
     iconBtn: { background:'transparent', border:'none', color:'#aaa', cursor:'pointer', fontSize:'14px' },
     
-    editMsgContainer: { width:'100%', maxWidth:'80%', background:'#222', padding:'10px', borderRadius:'10px', border:'1px solid #444' },
+    editMsgContainer: { background: 'transparent', backdropFilter: 'blur(12px) saturate(120%) brightness(110%)', WebkitBackdropFilter: 'blur(12px) saturate(120%) brightness(110%)', width:'100%', maxWidth:'85%', padding:'16px', borderRadius:'24px', borderBottomRightRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.1)', borderTop: '1px solid rgba(255, 255, 255, 0.3)', borderLeft: '1px solid rgba(255, 255, 255, 0.2)', boxShadow: 'inset 0 1px 1px rgba(255, 255, 255, 0.3), 0 8px 32px rgba(0, 0, 0, 0.15)' },
     editMsgTextarea: { width:'100%', height:'60px', background:'#111', color:'white', border:'1px solid #333', padding:'5px', borderRadius:'5px' },
     editMsgActions: { display:'flex', justifyContent:'flex-end', gap:'10px', marginTop:'5px' },
     saveEditBtn: { background:'#2E7D32', color:'white', border:'none', padding:'5px 10px', borderRadius:'4px', cursor:'pointer', fontSize:'12px' },
@@ -1164,23 +1229,23 @@ const styles = {
     editMsgBtn: { background:'transparent', border:'none', color:'#555', cursor:'pointer', fontSize:'12px', opacity:0.5 },
 
     sidebarOverlay: { position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', backgroundColor: 'rgba(0,0,0,0.6)', zIndex: 10001, display: 'flex', alignItems: 'flex-start' },
-    sidebar: { width: '85%', maxWidth: '320px', height: '100%', backgroundColor: 'rgba(28, 28, 30, 0.75)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', borderRight: '1px solid rgba(255, 255, 255, 0.1)', display: 'flex', flexDirection: 'column', animation: 'slideIn 0.25s ease-out', boxShadow: '4px 0 25px rgba(0,0,0,0.5)' },
-    sidebarHeader: { padding: '20px', borderBottom: '1px solid #333', display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: 'white', backgroundColor: '#111' },
+    sidebar: { width: '85%', maxWidth: '340px', height: '100%', backgroundColor: 'rgba(15, 15, 17, 0.85)', backdropFilter: 'blur(40px) saturate(150%)', WebkitBackdropFilter: 'blur(40px) saturate(150%)', borderRight: '1px solid rgba(255, 255, 255, 0.08)', display: 'flex', flexDirection: 'column', animation: 'slideIn 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)', boxShadow: '10px 0 40px rgba(0,0,0,0.5)' },
+    sidebarHeader: { padding: '24px 20px', borderBottom: '1px solid rgba(255,255,255,0.08)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: '#fff' },
     sidebarCloseBtn: { background:'none', border:'none', color:'white', fontSize:'24px', cursor:'pointer', padding: '0 5px', opacity: 0.8 },
-    newChatBtn: { margin: '15px', padding: '14px', backgroundColor: '#2E7D32', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', fontSize: '14px', boxShadow: '0 2px 5px rgba(0,0,0,0.2)', transition: 'background 0.2s' },
+    newChatBtn: { margin: '20px 15px 10px 15px', padding: '14px', backgroundColor: 'rgba(255,255,255,0.1)', color: '#fff', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', cursor: 'pointer', fontWeight: '600', fontSize: '15px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', transition: 'all 0.2s ease' },
     sessionList: { flex: 1, overflowY: 'auto', padding: '0 10px 20px 10px' },
-    sessionItem: { padding: '14px 15px', color: '#e0e0e0', cursor: 'pointer', borderRadius: '6px', marginBottom: '6px', fontSize: '14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', transition: 'background 0.1s' },
+    sessionItem: { padding: '14px 16px', color: '#e0e0e0', cursor: 'pointer', borderRadius: '12px', marginBottom: '6px', fontSize: '14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', transition: 'background 0.2s' },
     deleteChatBtn: { background:'none', border:'none', color:'#888', fontSize:'14px', cursor:'pointer', opacity: 0.7 },
     
-    header: { backgroundColor: 'transparent', padding: '12px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', height: '64px', flexShrink: 0 },
-    headerTitleContainer: { display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', padding: '8px 12px', borderRadius: '8px', transition: 'background-color 0.2s' },
+    header: { backgroundColor: 'transparent', padding: '8px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', height: '56px', flexShrink: 0, borderBottom: '1px solid rgba(255,255,255,0.08)' },
+    headerTitleContainer: { display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', padding: '8px 16px', borderRadius: '12px', transition: 'background-color 0.2s', backgroundColor: 'rgba(255,255,255,0.05)' },
     headerTitle: { color: '#E3E3E3', fontSize: '18px', fontWeight: '500', fontFamily: '"Google Sans", "Inter", sans-serif', letterSpacing: '-0.03em' },
     headerBadge: { background: 'linear-gradient(90deg, #2E7D32, #81C784)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', fontSize: '14px', fontWeight: '600' },
     
-    chatBody: { flex: 1, padding: '20px', overflowY: 'auto', scrollBehavior: 'smooth', position:'relative', backgroundColor: 'transparent', minHeight: 0 },
+    chatBody: { flex: 1, padding: '16px', overflowY: 'auto', scrollBehavior: 'smooth', position:'relative', backgroundColor: 'transparent', minHeight: 0 },
     chatBodyClearing: { animation: 'fadeOutUp 0.4s ease-out forwards' },
-    botBubble: { backgroundColor: 'rgba(44, 44, 46, 0.6)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', color: '#F0F0F0', padding: '16px 20px', borderRadius: '20px', maxWidth: '90%', border: '1px solid rgba(255, 255, 255, 0.1)', fontSize: '16px', lineHeight: '1.6', wordWrap: 'break-word', boxShadow: '0 4px 20px rgba(0,0,0,0.2)' },
-    userBubble: { backgroundColor: 'rgba(46, 125, 50, 0.5)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', color: 'white', padding: '12px 20px', borderRadius: '20px', maxWidth: '80%', fontSize: '16px', lineHeight: '1.6', boxShadow: '0 4px 15px rgba(0,0,0,0.25)', wordWrap: 'break-word', border: '1px solid rgba(255, 255, 255, 0.15)' },
+    botBubble: { background: 'transparent', color: '#ffffff', padding: '14px 18px', maxWidth: '90%', fontSize: '15px', lineHeight: '1.5', wordWrap: 'break-word' },
+    userBubble: { background: 'rgba(46, 125, 50, 0.15)', backdropFilter: 'blur(12px) saturate(120%) brightness(110%)', WebkitBackdropFilter: 'blur(12px) saturate(120%) brightness(110%)', color: '#ffffff', padding: '14px 18px', borderRadius: '24px', borderBottomRightRadius: '8px', maxWidth: '85%', fontSize: '15px', lineHeight: '1.5', wordWrap: 'break-word', border: '1px solid rgba(255, 255, 255, 0.1)', borderTop: '1px solid rgba(255, 255, 255, 0.3)', borderLeft: '1px solid rgba(255, 255, 255, 0.2)', boxShadow: 'inset 0 1px 1px rgba(255, 255, 255, 0.3), 0 8px 32px rgba(0, 0, 0, 0.15)' },
     
     codeBlock: { backgroundColor: '#0d0d0d', border: '1px solid #333', borderRadius: '8px', margin: '12px 0', overflow: 'hidden' },
     codeHeader: { backgroundColor: '#222', padding: '6px 12px', fontSize: '12px', color: '#888', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #333', fontFamily: 'monospace' },
@@ -1190,18 +1255,19 @@ const styles = {
     msgImg: { maxWidth: '300px', borderRadius: '12px', marginBottom: '10px', border: '1px solid #444', cursor: 'pointer', boxShadow: '0 4px 12px rgba(0,0,0,0.3)' },
     timestamp: { fontSize: '11px', color: '#888', marginTop: '6px', marginLeft: '4px', marginRight: '4px' },
     
-    typingIndicatorBubble: { backgroundColor: 'rgba(44, 44, 46, 0.6)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', padding: '12px 18px', borderRadius: '20px', border: '1px solid rgba(255, 255, 255, 0.1)', display:'inline-block', marginBottom:'15px' },
+    typingIndicatorBubble: { background: 'transparent', padding: '14px 20px', display:'inline-block', marginBottom:'15px' },
     loadingTxt: { color: '#888', fontSize: '13px', textAlign: 'center', marginTop: '10px', fontStyle: 'italic' },
     
     actionRow: { display: 'flex', gap: '10px', marginTop: '10px' },
-    outlineBtn: { backgroundColor: 'transparent', color: 'white', border: '1px solid rgba(255,255,255,0.4)', borderRadius: '20px', padding: '6px 14px', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', transition: 'all 0.2s ease', fontFamily: 'sans-serif' },
+    outlineBtn: { backgroundColor: 'rgba(255,255,255,0.05)', color: '#E3E3E3', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '20px', padding: '6px 14px', fontSize: '13px', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', transition: 'all 0.2s ease', fontFamily: '"Inter", sans-serif' },
     scrollBtn: { position: 'absolute', bottom: '120px', right: '30px', background: '#2E7D32', color:'white', border:'none', borderRadius:'50%', width:'50px', height:'50px', fontSize:'24px', cursor:'pointer', boxShadow:'0 4px 10px rgba(0,0,0,0.3)', zIndex:2001, display: 'flex', alignItems: 'center', justifyContent: 'center' },
     
-    footer: { backgroundColor: 'transparent', padding: '16px 20px 24px 20px', display: 'flex', flexDirection: 'column', alignItems: 'center', boxSizing: 'border-box', width: '100%' },
+    footer: { backgroundColor: 'transparent', padding: '12px 16px 16px 16px', display: 'flex', flexDirection: 'column', alignItems: 'center', boxSizing: 'border-box', width: '100%' },
     inputRow: { display: 'flex', alignItems: 'center', width: '100%', maxWidth: '830px', boxSizing: 'border-box' },
-    inputWrapper: { flex: 1, display: 'flex', alignItems: 'center', backgroundColor: '#1E1F22', borderRadius: '32px', padding: '8px 16px', minHeight: '56px', gap: '8px', boxSizing: 'border-box', width: '100%' },
+    inputWrapper: { flex: 1, display: 'flex', alignItems: 'center', backgroundColor: 'rgba(255, 255, 255, 0.08)', backdropFilter: 'blur(20px)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '32px', padding: '6px 10px 6px 16px', minHeight: '56px', gap: '10px', boxSizing: 'border-box', width: '100%', boxShadow: '0 4px 20px rgba(0,0,0,0.3)' },
     iconBtnInner: { background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '8px', borderRadius: '50%', transition: 'background-color 0.2s', flexShrink: 0 },
     inputField: { flex: 1, background: 'transparent', border: 'none', color: '#E3E3E3', outline: 'none', fontSize: '16px', padding: '0 8px', minWidth: 0, width: '100%', fontFamily: '"Inter", sans-serif', boxSizing: 'border-box' },
+    sendBtn: { background: '#2E7D32', border: 'none', borderRadius: '50%', width: '42px', height: '42px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1)', flexShrink: 0, boxShadow: '0 4px 15px rgba(46, 125, 50, 0.4)' },
     
     uploadPreviewRow: { width: '100%', maxWidth: '830px', marginBottom: '12px', display: 'flex' },
     imgBadge: { display: 'flex', alignItems: 'center', gap: '12px', backgroundColor: '#1E1F22', padding: '8px 16px 8px 8px', borderRadius: '16px', width: 'fit-content', border: '1px solid #444746' },
