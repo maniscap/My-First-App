@@ -273,9 +273,11 @@ const Radio = () => {
                   params.append('countrycode', 'IN');
                   params.append('hidebroken', 'true');
                   params.append('lastcheckok', '1');
-                  if (window.location.protocol === 'https:') {
-                      params.append('is_https', '1');
-                  }
+                  
+                  // FIX: Removed the strict `is_https` filter. Chrome on HTTPS devices would 
+                  // fail to fetch Indian streams because the vast majority are HTTP-only.
+                  // Chrome natively allows passive mixed-content Audio, so we shouldn't filter them out.
+                  
                   params.append('state', filters.state);
                   params.append('language', filters.language.toLowerCase());
                   
