@@ -116,6 +116,17 @@ const Radio = () => {
   
   const stationsRef = useRef([]);
 
+  // FORCE CACHE BUST: Unregister stuck Service Workers holding onto the old code
+  useEffect(() => {
+      if ('serviceWorker' in navigator) {
+          navigator.serviceWorker.getRegistrations().then((registrations) => {
+              for (let registration of registrations) {
+                  registration.unregister();
+              }
+          });
+      }
+  }, []);
+
   useEffect(() => {
       stationsRef.current = filteredStations;
   }, [filteredStations]);
@@ -235,20 +246,6 @@ const Radio = () => {
   const fetchDynamicData = async () => {
       setLoading(true);
       try {
-        // ONLY fetch stations that are strictly marked as online & working
-        let baseParams = `countrycode=IN&hidebroken=true&lastcheckok=1&order=clickcount&reverse=true`;
-        let specificParams = `countrycode=IN&hidebroken=true&lastcheckok=1`;
-
-        if (window.location.protocol === 'https:') {
-            baseParams += '&is_https=1';
-            specificParams += '&is_https=1';
-        }
-
-        baseParams += `&state=${encodeURIComponent(filters.state)}`;
-        specificParams += `&state=${encodeURIComponent(filters.state)}`;
-        baseParams += `&language=${encodeURIComponent(filters.language.toLowerCase())}`;
-        specificParams += `&language=${encodeURIComponent(filters.language.toLowerCase())}`;
-
         // The 3 most reliable main servers
         const API_ENDPOINTS = [
             "https://de1.api.radio-browser.info/json/stations",
@@ -256,15 +253,48 @@ const Radio = () => {
             "https://nl1.api.radio-browser.info/json/stations"
         ];
 
-        const fetchFromEndpoint = async (endpoint) => {
-            const reqs = [
-                axios.get(`${endpoint}/search?${baseParams}&limit=100`), 
-                axios.get(`${endpoint}/search?name=Akashvani&${specificParams}`), 
-                axios.get(`${endpoint}/search?name=All%20India%20Radio&${specificParams}`),
-                axios.get(`${endpoint}/search?tag=kisan&${specificParams}`)
-            ];
-            return await Promise.all(reqs);
-        };
+          const fetchFromEndpoint = async (endpoint) => {
+              const buildPayload = (extraParams) => {
+                  const params = new URLSearchParams();
+                  params.append('countrycode', 'IN');
+                  params.append('hidebroken', 'true');
+                  params.append('lastcheckok', '1');
+                  if (window.location.protocol === 'https:') {
+                      params.append('is_https', '1');
+                  }
+                  params.append('state', filters.state);
+                  params.append('language', filters.language.toLowerCase());
+                  
+                  Object.entries(extraParams).forEach(([k, v]) => params.append(k, v));
+                  return params;
+              };
+
+              const postData = async (payload) => {
+                  try {
+                      // Using POST bypasses Service Worker interceptors that break on GET requests
+                      const response = await axios.post(`${endpoint}/search`, payload);
+                      return { data: response.data };
+                  } catch (e) {
+                      console.warn(`Fetch failed for ${endpoint}:`, e);
+                      return { data: [] };
+                  }
+              };
+
+              const reqs = [
+                  postData(buildPayload({ order: 'clickcount', reverse: 'true', limit: '100' })),
+                  postData(buildPayload({ name: 'Akashvani' })),
+                  postData(buildPayload({ name: 'All India Radio' })),
+                  postData(buildPayload({ tag: 'kisan' }))
+              ];
+              
+              const results = await Promise.all(reqs);
+              
+              // Validates if at least one sub-query returned stations
+              const totalCount = results.reduce((acc, r) => acc + (r.data?.length || 0), 0);
+              if (totalCount === 0) throw new Error(`No valid data from ${endpoint}`);
+              
+              return results;
+          };
 
         // SEQUENTIAL FALLBACK: Try endpoints one by one instead of all at once
         let res = null;
