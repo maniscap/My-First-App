@@ -7,7 +7,7 @@ import React, {
 } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { Menu, X, Trash2, Edit2, Mic, Image as ImageIcon, ArrowRight, RefreshCw, Volume2, VolumeX, Copy, Sparkles, PanelLeft, MessageSquarePlus } from 'lucide-react';
+import { Menu, X, Trash2, Edit2, Mic, Image as ImageIcon, ArrowRight, RefreshCw, Volume2, VolumeX, Copy, Sparkles, PanelLeft, MessageSquarePlus, ArrowDown } from 'lucide-react';
 
 /**
  * =================================================================================================
@@ -179,14 +179,51 @@ function ChatBot() {
     return typeof window !== "undefined" && localStorage.getItem('farmbuddy_terms_v107') === 'true';
   });
   const [showFullTerms, setShowFullTerms] = useState(false);
+  const termsAcceptedRef = useRef(termsAccepted);
+  
+  useEffect(() => { 
+      termsAcceptedRef.current = termsAccepted; 
+  }, [termsAccepted]);
 
-  // 3.10 Image Processing States
+  // 3.10 Hardware Back-Button / PopState Listener
+  useEffect(() => {
+      const handlePopState = (e) => {
+          const state = e.state?.chatState;
+          if (state === 'sidebar') {
+              setShowSidebar(true);
+              setShowFullTerms(false);
+              setIsOpen(true);
+          } else if (state === 'terms') {
+              setShowFullTerms(true);
+              setShowSidebar(false);
+              setIsOpen(true);
+          } else if (state === 'open') {
+              if (!termsAcceptedRef.current) {
+                  setIsOpen(false);
+                  setShowFullTerms(false);
+                  window.history.back(); // Kick out completely if terms aren't accepted
+              } else {
+                  setIsOpen(true);
+                  setShowSidebar(false);
+                  setShowFullTerms(false);
+              }
+          } else {
+              setIsOpen(false);
+              setShowSidebar(false);
+              setShowFullTerms(false);
+          }
+      };
+      window.addEventListener('popstate', handlePopState);
+      return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
+  // 3.11 Image Processing States
   const [uploadedFile, setUploadedFile] = useState(null);
   const [rawBase64, setRawBase64] = useState(null); 
   const [dataUrl, setDataUrl] = useState(null); 
   const [mimeType, setMimeType] = useState(null);     
 
-  // 3.11 Scrolling
+  // 3.12 Scrolling
   const messagesEndRef = useRef(null);
   const chatBodyRef = useRef(null);
   
@@ -213,7 +250,7 @@ function ChatBot() {
       const newId = Date.now();
       setSessions(prev => [{ id: newId, title: "New Farm Consultation", messages: [getGreeting()] }, ...prev]);
       setCurrentSessionId(newId);
-      setShowSidebar(false);
+      closeSidebar();
   };
 
   const handleDeleteChat = (e, idToDelete) => {
@@ -387,25 +424,46 @@ function ChatBot() {
       .catch(() => alert("❌ Copy failed."));
   };
 
-  const handleRetry = () => {
-    if (!lastRequest.text && !lastRequest.dataUrl) return; // Nothing to retry
-    
-    setIsLoading(true);
-    setIsTyping(true); // Show typing indicator immediately
+  const handleRetry = (botMsgIndex) => {
+      const sess = sessions.find(s => s.id === currentSessionId);
+      if (!sess) return;
+      
+      const currentMessages = sess.messages;
+      let lastUserMsg = null;
+      
+      for (let j = botMsgIndex - 1; j >= 0; j--) {
+          if (currentMessages[j].sender === 'user') {
+              lastUserMsg = currentMessages[j];
+              break;
+          }
+      }
+      
+      if (!lastUserMsg) return;
 
-    // Remove the previous failed bot response from the chat history
-    setSessions(prev => prev.map(s => {
-        if(s.id === currentSessionId && s.messages.length > 0 && s.messages[s.messages.length - 1].sender === 'bot') {
-            return { ...s, messages: s.messages.slice(0, -1) };
-        }
-        return s;
-    }));
+      setIsLoading(true);
+      setIsTyping(true);
 
-    // By deferring the execution, we ensure React processes the state update above before the new AI call begins.
-    // This prevents a race condition where the old error message might not be removed before the new one is added.
-    setTimeout(() => {
-      executeAILoop(lastRequest.text, lastRequest.rawBase64, lastRequest.dataUrl, lastRequest.mimeType);
-    }, 0);
+      setSessions(prev => prev.map(s => {
+          if (s.id === currentSessionId) {
+              return { ...s, messages: s.messages.slice(0, botMsgIndex) };
+          }
+          return s;
+      }));
+
+      let rBase64 = null;
+      let mType = null;
+      if (lastUserMsg.image) {
+          const parts = lastUserMsg.image.split(',');
+          if (parts.length === 2) {
+              const match = parts[0].match(/:(.*?);/);
+              if (match) mType = match[1];
+              rBase64 = parts[1];
+          }
+      }
+
+      setTimeout(() => {
+          executeAILoop(lastUserMsg.text, rBase64, lastUserMsg.image, mType);
+      }, 0);
   };
 
   // ===============================================================================================
@@ -480,27 +538,54 @@ function ChatBot() {
       }
   };
   
+  const openSidebar = () => {
+      setShowSidebar(true);
+      window.history.pushState({ chatState: 'sidebar' }, '');
+  };
+
+  const closeSidebar = () => {
+      setShowSidebar(false);
+      if (window.history.state?.chatState === 'sidebar') {
+          window.history.back();
+      }
+  };
+
   const handleOpenChat = () => { 
       setIsOpen(true); 
-      // STRICT CHECK: If terms not accepted, show modal immediately.
+      window.history.pushState({ chatState: 'open' }, '');
+      
       if (!termsAccepted) { 
           setShowFullTerms(true); 
+          window.history.pushState({ chatState: 'terms' }, '');
       }
   };
   
+  const handleCloseChat = () => {
+      setIsOpen(false);
+      if (window.history.state?.chatState === 'open') {
+          window.history.back();
+      }
+  };
+
   const handleAcceptTerms = (e) => { 
       if(e && e.stopPropagation) e.stopPropagation(); 
       setTermsAccepted(true); 
+      termsAcceptedRef.current = true;
       setShowFullTerms(false); 
       localStorage.setItem('farmbuddy_terms_v107', 'true'); 
+      if (window.history.state?.chatState === 'terms') {
+          window.history.back(); // Naturally steps back to 'open' state
+      }
       setIsOpen(true); 
   };
 
   const handleCloseTerms = (e) => {
       if(e && e.stopPropagation) e.stopPropagation();
       setShowFullTerms(false);
-      // STRICT KICK-OUT: If they close the terms modal without accepting, close the whole chat.
-      if(!termsAccepted) setIsOpen(false);
+      if (window.history.state?.chatState === 'terms') {
+          window.history.back();
+      }
+      if(!termsAcceptedRef.current) setIsOpen(false);
   };
 
   // ===============================================================================================
@@ -915,13 +1000,13 @@ function ChatBot() {
           
           {/* SIDEBAR */}
           {showSidebar && (
-              <div style={styles.sidebarOverlay} onClick={() => setShowSidebar(false)}>
+              <div style={styles.sidebarOverlay} onClick={closeSidebar}>
                   <div style={styles.sidebar} onClick={(e) => e.stopPropagation()}>
                       <div style={styles.sidebarHeader}>
                           <h3 style={{display:'flex', alignItems:'center', gap:'8px', margin:0, fontSize:'18px', fontWeight:'600'}}>
                               <Menu size={20} /> History
                           </h3>
-                          <button onClick={() => setShowSidebar(false)} style={styles.sidebarCloseBtn}>
+                          <button onClick={closeSidebar} style={styles.sidebarCloseBtn}>
                               <X size={24} strokeWidth={1.5} />
                           </button>
                       </div>
@@ -932,7 +1017,7 @@ function ChatBot() {
                       
                       <div style={styles.sessionList}>
                           {sessions.map(sess => (
-                              <div key={sess.id} style={{...styles.sessionItem, backgroundColor: sess.id === currentSessionId ? 'rgba(255,255,255,0.1)' : 'transparent', borderLeft: sess.id === currentSessionId ? '4px solid #4ade80' : '4px solid transparent'}} onClick={() => { setCurrentSessionId(sess.id); setShowSidebar(false); }}>
+                              <div key={sess.id} style={{...styles.sessionItem, backgroundColor: sess.id === currentSessionId ? 'rgba(255,255,255,0.1)' : 'transparent', borderLeft: sess.id === currentSessionId ? '4px solid #4ade80' : '4px solid transparent'}} onClick={() => { setCurrentSessionId(sess.id); closeSidebar(); }}>
                                   
                                   {/* ✏️ SIDEBAR EDIT LOGIC */}
                                   {editingSessionId === sess.id ? (
@@ -969,12 +1054,12 @@ function ChatBot() {
           {/* HEADER */}
           <div style={styles.header}>
             <div style={{display:'flex', alignItems:'center', gap:'12px'}}>
-                <button onClick={() => setShowSidebar(true)} style={styles.iconBtnInner} title="History">
-                    <PanelLeft size={24} color="#E3E3E3" strokeWidth={1.5} />
+                <button onClick={openSidebar} style={styles.glassMenuBtn} title="History">
+                    <Menu size={20} color="#000" strokeWidth={2.5} />
                 </button>
             </div>
             
-            <div style={styles.headerTitleContainer} onClick={() => setShowSidebar(true)}>
+            <div style={styles.headerTitleContainer} onClick={openSidebar}>
                 <Sparkles size={18} color="#81C784" strokeWidth={2} />
                 <span style={styles.headerTitle}>Farm Buddy</span>
                 <span style={styles.headerBadge}>PRO</span>
@@ -984,7 +1069,7 @@ function ChatBot() {
                 <button onClick={(e) => handleClearChat(e)} style={{...styles.iconBtnInner, ...(isClearing ? { animation: 'spin 0.4s linear' } : {})}} title="Clear Conversation">
                     <RefreshCw size={20} color="#E3E3E3" strokeWidth={1.5} />
                 </button>
-                <button onClick={() => setIsOpen(false)} style={styles.iconBtnInner} title="Close">
+                <button onClick={handleCloseChat} style={styles.iconBtnInner} title="Close">
                     <X size={26} color="#E3E3E3" strokeWidth={1.5} />
                 </button>
             </div>
@@ -1005,6 +1090,7 @@ function ChatBot() {
                             value={editMessageText} 
                             onChange={(e) => setEditMessageText(e.target.value)}
                             style={styles.editMsgTextarea}
+                            className="premium-edit-textarea"
                         />
                         <div style={styles.editMsgActions}>
                             <button onClick={cancelEditingMessage} style={styles.cancelEditBtn}>Cancel</button>
@@ -1035,10 +1121,12 @@ function ChatBot() {
                 )}
                 
                 <div style={{display:'flex', alignItems:'center', gap:'5px'}}>
-                    <span style={styles.timestamp}>{msg.sender === 'bot' ? '🤖' : '👤'} {msg.timestamp || ""}</span>
+                    <span style={styles.timestamp}>{msg.sender === 'user' ? '👤 ' : ''}{msg.timestamp || ""}</span>
                     {/* EDIT PENCIL FOR USER */}
                     {msg.sender === 'user' && !editingMessageIndex && (
-                        <button onClick={() => startEditingMessage(i, msg.text)} style={styles.editMsgBtn} title="Edit & Retry"><Edit2 size={12} /></button>
+                        <button onClick={() => startEditingMessage(i, msg.text)} style={styles.editMsgBtn} title="Edit & Retry">
+                            <Edit2 size={14} color="#fff" strokeWidth={2} />
+                        </button>
                     )}
                 </div>
                 
@@ -1062,7 +1150,9 @@ function ChatBot() {
             <div ref={messagesEndRef} />
           </div>
             
-          {showScrollBtn && (<button onClick={scrollToBottom} style={styles.scrollBtn}>⬇️</button>)}
+          {showScrollBtn && (
+              <button onClick={scrollToBottom} style={styles.scrollBtn}><ArrowDown size={22} color="#fff" strokeWidth={2.5} /></button>
+          )}
 
           {/* FOOTER */}
           <div style={styles.footer}>
@@ -1098,7 +1188,7 @@ function ChatBot() {
                 )}
               </div>
             </div>
-            <div style={styles.legalLinks}>Farm Buddy can make mistakes. Check important info. {isOnline ? "" : " (Offline)"} <span onClick={() => setShowFullTerms(true)} style={styles.readTerms}>Terms</span></div>
+            <div style={styles.legalLinks}>Farm Buddy can make mistakes. Check important info. {isOnline ? "" : " (Offline)"} <span onClick={() => { setShowFullTerms(true); window.history.pushState({ chatState: 'terms' }, ''); }} style={styles.readTerms}>Terms</span></div>
           </div>
         </div>
       )}
@@ -1107,17 +1197,18 @@ function ChatBot() {
 
       {/* FLOATING CAPSULE */}
       {!isOpen && (
-        <div onMouseDown={handleMouseDown} onClick={handleClickButton} onTouchStart={handleTouchStart} onTouchMove={handleTouchMove} style={{ ...styles.floatCapsule, left: `${position.x}px`, top: `${position.y}px` }}>
-            <div style={styles.capsuleGlow}></div>
-            <Sparkles size={20} color="#fff" strokeWidth={2} />
-            <span style={{fontWeight:'600', color:'white', fontSize:'15px', letterSpacing:'0.5px'}}>Farm Buddy</span>
+        <div onMouseDown={handleMouseDown} onClick={handleClickButton} onTouchStart={handleTouchStart} onTouchMove={handleTouchMove} className="premium-glow-capsule" style={{ ...styles.floatCapsule, left: `${position.x}px`, top: `${position.y}px` }}>
+            <div className="glow-content">
+                <Sparkles size={20} color="#fff" strokeWidth={2} />
+                <span style={{fontWeight:'600', color:'white', fontSize:'15px', letterSpacing:'0.5px'}}>Farm Buddy</span>
+            </div>
         </div>
       )}
       
       <style>{` 
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } } 
         @keyframes slideIn { from { transform: translateX(-100%); } to { transform: translateX(0); } } 
-        .typing-dot { width: 8px; height: 8px; background-color: #aaa; border-radius: 50%; display: inline-block; margin: 0 2px; animation: typingAnimation 1.4s infinite ease-in-out both; } 
+        .typing-dot { width: 8px; height: 8px; background-color: #000; border-radius: 50%; display: inline-block; margin: 0 2px; animation: typingAnimation 1.4s infinite ease-in-out both; } 
         .typing-dot:nth-child(1) { animation-delay: -0.32s; } 
         .typing-dot:nth-child(2) { animation-delay: -0.16s; } 
         @keyframes typingAnimation { 0%, 80%, 100% { transform: scale(0); } 40% { transform: scale(1.0); } } 
@@ -1125,11 +1216,24 @@ function ChatBot() {
         @keyframes fadeOutUp { to { opacity: 0; transform: translateY(-20px); } } 
         @keyframes pulseGlow { 0% { opacity: 0.3; } 100% { opacity: 0.8; } }
 
+        /* GOOGLE AI STUDIO FULL BORDER GLOW */
+        @keyframes fullBorderGlow { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+        .premium-glow-capsule { border-radius: 50px; background: #000; box-shadow: 0 10px 30px rgba(0,0,0,0.5); overflow: hidden; transition: transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1); }
+        .premium-glow-capsule::before { content: ''; position: absolute; inset: 0; border-radius: 50px; background: linear-gradient(90deg, rgba(74, 222, 128, 0.3), #4ade80, rgba(96, 165, 250, 0.8), #4ade80, rgba(74, 222, 128, 0.3)); background-size: 200% 100%; animation: fullBorderGlow 3s ease infinite; z-index: 0; }
+        .premium-glow-capsule::before { content: ''; position: absolute; inset: 0; border-radius: 50px; background: linear-gradient(90deg, rgba(74, 222, 128, 0.3), #4ade80, #60a5fa, #d946ef, #4ade80, rgba(74, 222, 128, 0.3)); background-size: 200% 100%; animation: fullBorderGlow 3s ease infinite; z-index: 0; }
+        .premium-glow-capsule::after { content: ''; position: absolute; inset: 2px; background: #141416; border-radius: 50px; z-index: 1; box-shadow: inset 0 1px 2px rgba(255,255,255,0.15); }
+        .glow-content { position: relative; z-index: 2; display: flex; align-items: center; gap: 10px; padding: 12px 24px; pointer-events: auto; }
+
         /* PREMIUM INPUT FOCUS EFFECTS */
         .premium-input-wrapper { transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
         .premium-input-wrapper:focus-within { border-color: rgba(255,255,255,0.2) !important; box-shadow: 0 10px 40px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.1) !important; background-color: rgba(25, 25, 28, 0.9) !important; }
+        .premium-input-wrapper:focus-within { border-color: rgba(74, 222, 128, 0.4) !important; box-shadow: 0 15px 40px rgba(0,0,0,0.6), 0 0 20px rgba(74, 222, 128, 0.15), inset 0 0 0 1px rgba(74, 222, 128, 0.2) !important; background-color: rgba(20, 20, 22, 0.95) !important; transform: translateY(-2px); }
         .premium-input-wrapper input::placeholder { transition: color 0.3s ease; }
         .premium-input-wrapper:focus-within input::placeholder { color: #aaa; }
+
+        /* PREMIUM EDIT TEXTAREA FOCUS EFFECTS */
+        .premium-edit-textarea { transition: all 0.3s ease; }
+        .premium-edit-textarea:focus { border-color: rgba(74, 222, 128, 0.5) !important; box-shadow: inset 0 2px 6px rgba(0,0,0,0.4), 0 0 0 1px rgba(74, 222, 128, 0.3) !important; background: rgba(0, 0, 0, 0.5) !important; }
 
         /* APPLE GLASS CARD CUSTOM CLASSES */
         .apple-glass-card {
@@ -1180,9 +1284,9 @@ const styles = {
       left: 0,
       width: '100vw', 
       height: '100vh', 
-      background: 'rgba(20, 20, 22, 0.65)',
-      backdropFilter: 'blur(12px) saturate(120%) brightness(110%)',
-      WebkitBackdropFilter: 'blur(12px) saturate(120%) brightness(110%)',
+      background: 'rgba(20, 20, 22, 0.55)',
+      backdropFilter: 'blur(28px) saturate(140%) brightness(110%)',
+      WebkitBackdropFilter: 'blur(28px) saturate(140%) brightness(110%)',
       border: '1px solid rgba(255, 255, 255, 0.1)',
       borderTop: '1px solid rgba(255, 255, 255, 0.3)',
       borderLeft: '1px solid rgba(255, 255, 255, 0.2)',
@@ -1194,26 +1298,7 @@ const styles = {
       overflow: 'hidden'
     },
 
-    floatCapsule: { 
-      position: 'fixed', 
-      padding: '12px 24px', 
-      borderRadius: '50px', 
-      backgroundColor: 'rgba(20, 20, 22, 0.85)', 
-      backdropFilter: 'blur(20px)',
-      WebkitBackdropFilter: 'blur(20px)',
-      border: '1px solid rgba(255, 255, 255, 0.15)', 
-      boxShadow: '0 10px 30px rgba(0,0,0,0.5), inset 0 1px 1px rgba(255,255,255,0.2)', 
-      display: 'flex', 
-      alignItems: 'center', 
-      gap: '10px', 
-      zIndex: 10000, 
-      touchAction: 'none', 
-      transition: 'transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1)', 
-      pointerEvents:'auto',
-      userSelect: 'none',
-      cursor: 'move'
-    },
-    capsuleGlow: { position: 'absolute', inset: 0, borderRadius: '50px', background: 'linear-gradient(90deg, rgba(74, 222, 128, 0.15), rgba(96, 165, 250, 0.15))', zIndex: -1, animation: 'pulseGlow 3s infinite alternate' },
+    floatCapsule: { position: 'fixed', zIndex: 10000, touchAction: 'none', pointerEvents: 'auto', userSelect: 'none', cursor: 'move' },
     
     // ✏️ EDIT UI STYLES
     editRow: { display:'flex', gap:'5px', width:'100%' },
@@ -1221,15 +1306,16 @@ const styles = {
     saveBtn: { background:'#2E7D32', border:'none', color:'white', borderRadius:'4px', cursor:'pointer' },
     iconBtn: { background:'transparent', border:'none', color:'#aaa', cursor:'pointer', fontSize:'14px' },
     
-    editMsgContainer: { background: 'transparent', backdropFilter: 'blur(12px) saturate(120%) brightness(110%)', WebkitBackdropFilter: 'blur(12px) saturate(120%) brightness(110%)', width:'100%', maxWidth:'85%', padding:'16px', borderRadius:'24px', borderBottomRightRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.1)', borderTop: '1px solid rgba(255, 255, 255, 0.3)', borderLeft: '1px solid rgba(255, 255, 255, 0.2)', boxShadow: 'inset 0 1px 1px rgba(255, 255, 255, 0.3), 0 8px 32px rgba(0, 0, 0, 0.15)' },
-    editMsgTextarea: { width:'100%', height:'60px', background:'#111', color:'white', border:'1px solid #333', padding:'5px', borderRadius:'5px' },
-    editMsgActions: { display:'flex', justifyContent:'flex-end', gap:'10px', marginTop:'5px' },
-    saveEditBtn: { background:'#2E7D32', color:'white', border:'none', padding:'5px 10px', borderRadius:'4px', cursor:'pointer', fontSize:'12px' },
-    cancelEditBtn: { background:'transparent', color:'#aaa', border:'1px solid #555', padding:'5px 10px', borderRadius:'4px', cursor:'pointer', fontSize:'12px' },
-    editMsgBtn: { background:'transparent', border:'none', color:'#555', cursor:'pointer', fontSize:'12px', opacity:0.5 },
+    editMsgContainer: { background: 'rgba(30, 30, 32, 0.65)', backdropFilter: 'blur(20px) saturate(120%)', WebkitBackdropFilter: 'blur(20px) saturate(120%)', width:'100%', maxWidth:'85%', padding:'20px', borderRadius:'28px', borderBottomRightRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.15)', borderTop: '1px solid rgba(255, 255, 255, 0.3)', borderLeft: '1px solid rgba(255, 255, 255, 0.2)', boxShadow: 'inset 0 1px 1px rgba(255, 255, 255, 0.2), 0 10px 40px rgba(0, 0, 0, 0.3)' },
+    editMsgTextarea: { width:'100%', height:'80px', background:'rgba(0, 0, 0, 0.3)', color:'#E3E3E3', border:'1px solid rgba(255, 255, 255, 0.1)', padding:'12px 16px', borderRadius:'16px', outline:'none', fontSize:'15px', lineHeight:'1.5', fontFamily:'"Inter", sans-serif', resize:'none', boxShadow:'inset 0 2px 6px rgba(0,0,0,0.4)', boxSizing:'border-box' },
+    editMsgActions: { display:'flex', justifyContent:'flex-end', gap:'10px', marginTop:'12px' },
+    saveEditBtn: { background:'#2E7D32', color:'white', border:'none', padding:'8px 18px', borderRadius:'20px', cursor:'pointer', fontSize:'13px', fontWeight:'600', transition:'all 0.2s ease', boxShadow:'0 4px 12px rgba(46, 125, 50, 0.3)' },
+    cancelEditBtn: { background:'rgba(255, 255, 255, 0.08)', color:'#E3E3E3', border:'1px solid rgba(255, 255, 255, 0.15)', padding:'8px 18px', borderRadius:'20px', cursor:'pointer', fontSize:'13px', fontWeight:'600', transition:'all 0.2s ease' },
+    editMsgBtn: { background: 'rgba(255, 255, 255, 0.15)', border: '1px solid rgba(255, 255, 255, 0.2)', borderRadius: '50%', padding: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(10px)', transition: 'all 0.2s ease', boxShadow: '0 4px 10px rgba(0,0,0,0.2)' },
 
-    sidebarOverlay: { position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', backgroundColor: 'rgba(0,0,0,0.6)', zIndex: 10001, display: 'flex', alignItems: 'flex-start' },
-    sidebar: { width: '85%', maxWidth: '340px', height: '100%', backgroundColor: 'rgba(15, 15, 17, 0.85)', backdropFilter: 'blur(40px) saturate(150%)', WebkitBackdropFilter: 'blur(40px) saturate(150%)', borderRight: '1px solid rgba(255, 255, 255, 0.08)', display: 'flex', flexDirection: 'column', animation: 'slideIn 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)', boxShadow: '10px 0 40px rgba(0,0,0,0.5)' },
+    glassMenuBtn: { background: 'rgba(255, 255, 255, 0.85)', backdropFilter: 'blur(20px) saturate(150%)', WebkitBackdropFilter: 'blur(20px) saturate(150%)', border: '1px solid rgba(255, 255, 255, 0.5)', boxShadow: '0 8px 20px rgba(0, 0, 0, 0.15)', borderRadius: '12px', padding: '10px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s ease' },
+    sidebarOverlay: { position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', backgroundColor: 'rgba(0,0,0,0.6)', zIndex: 10001, display: 'flex', alignItems: 'center', justifyContent: 'flex-start' },
+    sidebar: { width: '85%', maxWidth: '340px', height: '96%', margin: '2%', borderRadius: '36px', background: 'rgba(5, 5, 5, 0.95)', backdropFilter: 'blur(30px)', WebkitBackdropFilter: 'blur(30px)', border: '1px solid rgba(255, 255, 255, 0.05)', borderTop: '1px solid rgba(255, 255, 255, 0.1)', borderLeft: '1px solid rgba(255, 255, 255, 0.08)', boxShadow: '0 10px 40px rgba(0, 0, 0, 0.8)', display: 'flex', flexDirection: 'column', animation: 'slideIn 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)' },
     sidebarHeader: { padding: '24px 20px', borderBottom: '1px solid rgba(255,255,255,0.08)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: '#fff' },
     sidebarCloseBtn: { background:'none', border:'none', color:'white', fontSize:'24px', cursor:'pointer', padding: '0 5px', opacity: 0.8 },
     newChatBtn: { margin: '20px 15px 10px 15px', padding: '14px', backgroundColor: 'rgba(255,255,255,0.1)', color: '#fff', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', cursor: 'pointer', fontWeight: '600', fontSize: '15px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', transition: 'all 0.2s ease' },
@@ -1255,12 +1341,12 @@ const styles = {
     msgImg: { maxWidth: '300px', borderRadius: '12px', marginBottom: '10px', border: '1px solid #444', cursor: 'pointer', boxShadow: '0 4px 12px rgba(0,0,0,0.3)' },
     timestamp: { fontSize: '11px', color: '#888', marginTop: '6px', marginLeft: '4px', marginRight: '4px' },
     
-    typingIndicatorBubble: { background: 'transparent', padding: '14px 20px', display:'inline-block', marginBottom:'15px' },
+    typingIndicatorBubble: { background: 'transparent', backdropFilter: 'blur(12px) saturate(120%) brightness(110%)', WebkitBackdropFilter: 'blur(12px) saturate(120%) brightness(110%)', padding: '14px 20px', borderRadius: '24px', borderBottomLeftRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.1)', borderTop: '1px solid rgba(255, 255, 255, 0.3)', borderLeft: '1px solid rgba(255, 255, 255, 0.2)', boxShadow: 'inset 0 1px 1px rgba(255, 255, 255, 0.3), 0 8px 32px rgba(0, 0, 0, 0.15)', display:'inline-block', marginBottom:'15px' },
     loadingTxt: { color: '#888', fontSize: '13px', textAlign: 'center', marginTop: '10px', fontStyle: 'italic' },
     
     actionRow: { display: 'flex', gap: '10px', marginTop: '10px' },
     outlineBtn: { backgroundColor: 'rgba(255,255,255,0.05)', color: '#E3E3E3', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '20px', padding: '6px 14px', fontSize: '13px', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', transition: 'all 0.2s ease', fontFamily: '"Inter", sans-serif' },
-    scrollBtn: { position: 'absolute', bottom: '120px', right: '30px', background: '#2E7D32', color:'white', border:'none', borderRadius:'50%', width:'50px', height:'50px', fontSize:'24px', cursor:'pointer', boxShadow:'0 4px 10px rgba(0,0,0,0.3)', zIndex:2001, display: 'flex', alignItems: 'center', justifyContent: 'center' },
+    scrollBtn: { position: 'absolute', bottom: '100px', right: '20px', background: 'rgba(20, 20, 22, 0.65)', backdropFilter: 'blur(20px)', border: '1px solid rgba(255, 255, 255, 0.15)', borderRadius: '50%', width: '44px', height: '44px', cursor: 'pointer', boxShadow: '0 8px 32px rgba(0,0,0,0.4)', zIndex: 2001, display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)' },
     
     footer: { backgroundColor: 'transparent', padding: '12px 16px 16px 16px', display: 'flex', flexDirection: 'column', alignItems: 'center', boxSizing: 'border-box', width: '100%' },
     inputRow: { display: 'flex', alignItems: 'center', width: '100%', maxWidth: '830px', boxSizing: 'border-box' },
