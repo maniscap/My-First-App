@@ -246,12 +246,26 @@ const Radio = () => {
   const fetchDynamicData = async () => {
       setLoading(true);
       try {
-        // The 3 most reliable main servers
-        const API_ENDPOINTS = [
-            "https://de1.api.radio-browser.info/json/stations",
-            "https://at1.api.radio-browser.info/json/stations",
-            "https://nl1.api.radio-browser.info/json/stations"
-        ];
+          // 1. DYNAMIC DISCOVERY: Fetch active servers to avoid ISP DNS blocks
+          let API_ENDPOINTS = [];
+          try {
+              const serverRes = await axios.get("https://all.api.radio-browser.info/json/servers");
+              if (serverRes.data && serverRes.data.length > 0) {
+                  API_ENDPOINTS = serverRes.data.map(server => `https://${server.name}/json/stations`);
+                  // Shuffle array to distribute load randomly
+                  API_ENDPOINTS = API_ENDPOINTS.sort(() => 0.5 - Math.random());
+              }
+          } catch (e) {
+              console.warn("Could not fetch dynamic servers. ISP might be blocking DNS.");
+          }
+
+          // 2. HARDCODED FALLBACKS
+          API_ENDPOINTS.push(
+              "https://de1.api.radio-browser.info/json/stations",
+              "https://at1.api.radio-browser.info/json/stations",
+              "https://nl1.api.radio-browser.info/json/stations"
+          );
+          API_ENDPOINTS = [...new Set(API_ENDPOINTS)]; // Remove duplicates
 
           const fetchFromEndpoint = async (endpoint) => {
               const buildPayload = (extraParams) => {
@@ -296,16 +310,27 @@ const Radio = () => {
               return results;
           };
 
-        // SEQUENTIAL FALLBACK: Try endpoints one by one instead of all at once
+          // 3. SEQUENTIAL EXECUTION: Try endpoints one by one
         let res = null;
         for (const ep of API_ENDPOINTS) {
             try {
                 res = await fetchFromEndpoint(ep);
-                if (res) break; // Success! Stop trying other endpoints
+                  if (res) break; 
             } catch (err) {
                 console.warn(`Endpoint ${ep} failed, trying next...`);
             }
         }
+          
+          // 4. ULTIMATE PROXY FALLBACK: If ISP completely blocks radio-browser.info
+          if (!res) {
+              console.warn("All direct endpoints failed. Attempting via CORS proxy...");
+              try {
+                  const proxyEp = "https://corsproxy.io/?https://de1.api.radio-browser.info/json/stations";
+                  res = await fetchFromEndpoint(proxyEp);
+              } catch (err) {
+                  console.error("Proxy fallback also failed.", err);
+              }
+          }
 
         if (!res) {
             throw new Error("All radio endpoints failed to respond");
