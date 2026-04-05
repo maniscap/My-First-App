@@ -266,26 +266,20 @@ const Radio = () => {
             return await Promise.all(reqs);
         };
 
-        // SAFE PROMISE RACE (Replaces Promise.any for older mobile browser compatibility)
-        const safePromiseAny = (promises) => {
-            return new Promise((resolve, reject) => {
-                let errors = [];
-                let hasResolved = false;
-                promises.forEach(p => {
-                    Promise.resolve(p).then(val => {
-                        if (!hasResolved) {
-                            hasResolved = true;
-                            resolve(val);
-                        }
-                    }).catch(err => {
-                        errors.push(err);
-                        if (errors.length === promises.length) reject(new Error("All endpoints failed"));
-                    });
-                });
-            });
-        };
+        // SEQUENTIAL FALLBACK: Try endpoints one by one instead of all at once
+        let res = null;
+        for (const ep of API_ENDPOINTS) {
+            try {
+                res = await fetchFromEndpoint(ep);
+                if (res) break; // Success! Stop trying other endpoints
+            } catch (err) {
+                console.warn(`Endpoint ${ep} failed, trying next...`);
+            }
+        }
 
-        const res = await safePromiseAny(API_ENDPOINTS.map(ep => fetchFromEndpoint(ep)));
+        if (!res) {
+            throw new Error("All radio endpoints failed to respond");
+        }
 
         // Safe flatMap alternative for older phones
         const rawList = res.reduce((acc, r) => acc.concat(r.data || []), []);
