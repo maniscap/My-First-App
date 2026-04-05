@@ -267,7 +267,7 @@ const Radio = () => {
           );
           API_ENDPOINTS = [...new Set(API_ENDPOINTS)]; // Remove duplicates
 
-          const fetchFromEndpoint = async (endpoint) => {
+          const fetchFromEndpoint = async (endpoint, useProxy = false) => {
               const buildPayload = (extraParams) => {
                   const params = new URLSearchParams();
                   params.append('countrycode', 'IN');
@@ -285,9 +285,18 @@ const Radio = () => {
 
               const postData = async (payload) => {
                   try {
-                      // Using POST bypasses Service Worker interceptors that break on GET requests
-                      const response = await axios.post(`${endpoint}/search`, payload);
-                      return { data: response.data };
+                      if (useProxy) {
+                          // AllOrigins Proxy: Forces GET request and encodes the entire destination URL
+                          const query = payload.toString();
+                          const targetUrl = `${endpoint}/search?${query}`;
+                          const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`;
+                          const response = await axios.get(proxyUrl);
+                          return { data: response.data };
+                      } else {
+                          // Direct Connection: Using POST bypasses Service Worker GET interceptor bugs
+                          const response = await axios.post(`${endpoint}/search`, payload);
+                          return { data: response.data };
+                      }
                   } catch (e) {
                       console.warn(`Fetch failed for ${endpoint}:`, e);
                       return { data: [] };
@@ -325,8 +334,8 @@ const Radio = () => {
           if (!res) {
               console.warn("All direct endpoints failed. Attempting via CORS proxy...");
               try {
-                  const proxyEp = "https://corsproxy.io/?https://de1.api.radio-browser.info/json/stations";
-                  res = await fetchFromEndpoint(proxyEp);
+                  // Use the primary endpoint but route it perfectly through the AllOrigins proxy
+                  res = await fetchFromEndpoint("https://de1.api.radio-browser.info/json/stations", true);
               } catch (err) {
                   console.error("Proxy fallback also failed.", err);
               }
