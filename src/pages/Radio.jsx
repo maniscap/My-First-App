@@ -269,22 +269,22 @@ const Radio = () => {
 
           const fetchFromEndpoint = async (endpoint, useProxy = false) => {
               const buildPayload = (extraParams) => {
-                  const params = new URLSearchParams();
-                  params.append('countrycode', 'IN');
-                  params.append('hidebroken', 'true');
-                  params.append('lastcheckok', '1');
-                  params.append('state', filters.state);
-                  params.append('language', filters.language.toLowerCase());
-                  
-                  Object.entries(extraParams).forEach(([k, v]) => params.append(k, v));
+                  const params = {
+                      countrycode: 'IN',
+                      hidebroken: 'true',
+                      lastcheckok: '1',
+                      state: filters.state,
+                      language: filters.language.toLowerCase(),
+                      ...extraParams
+                  };
                   return params;
               };
 
               const postData = async (payload) => {
                   try {
                       if (useProxy) {
-                          // AllOrigins Proxy: Use /get instead of /raw to ensure CORS headers are returned properly
-                          const query = payload.toString();
+                          // AllOrigins Proxy: Convert JSON payload back to query string for GET
+                          const query = new URLSearchParams(payload).toString();
                           const targetUrl = `${endpoint}/search?${query}`;
                           const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`;
                           const response = await axios.get(proxyUrl);
