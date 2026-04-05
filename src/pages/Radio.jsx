@@ -266,10 +266,29 @@ const Radio = () => {
             return await Promise.all(reqs);
         };
 
-        // RACE ALL 3 APIS SIMULTANEOUSLY! Whichever is fastest wins, eliminating timeouts.
-        const res = await Promise.any(API_ENDPOINTS.map(ep => fetchFromEndpoint(ep)));
+        // SAFE PROMISE RACE (Replaces Promise.any for older mobile browser compatibility)
+        const safePromiseAny = (promises) => {
+            return new Promise((resolve, reject) => {
+                let errors = [];
+                let hasResolved = false;
+                promises.forEach(p => {
+                    Promise.resolve(p).then(val => {
+                        if (!hasResolved) {
+                            hasResolved = true;
+                            resolve(val);
+                        }
+                    }).catch(err => {
+                        errors.push(err);
+                        if (errors.length === promises.length) reject(new Error("All endpoints failed"));
+                    });
+                });
+            });
+        };
 
-        const rawList = res.flatMap(r => r.data || []);
+        const res = await safePromiseAny(API_ENDPOINTS.map(ep => fetchFromEndpoint(ep)));
+
+        // Safe flatMap alternative for older phones
+        const rawList = res.reduce((acc, r) => acc.concat(r.data || []), []);
         const processedMap = new Map();
         
         rawList.forEach(s => {
