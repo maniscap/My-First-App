@@ -273,11 +273,6 @@ const Radio = () => {
                   params.append('countrycode', 'IN');
                   params.append('hidebroken', 'true');
                   params.append('lastcheckok', '1');
-                  
-                  // FIX: Removed the strict `is_https` filter. Chrome on HTTPS devices would 
-                  // fail to fetch Indian streams because the vast majority are HTTP-only.
-                  // Chrome natively allows passive mixed-content Audio, so we shouldn't filter them out.
-                  
                   params.append('state', filters.state);
                   params.append('language', filters.language.toLowerCase());
                   
@@ -288,12 +283,16 @@ const Radio = () => {
               const postData = async (payload) => {
                   try {
                       if (useProxy) {
-                          // AllOrigins Proxy: Forces GET request and encodes the entire destination URL
+                          // AllOrigins Proxy: Use /get instead of /raw to ensure CORS headers are returned properly
                           const query = payload.toString();
                           const targetUrl = `${endpoint}/search?${query}`;
-                          const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`;
+                          const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`;
                           const response = await axios.get(proxyUrl);
-                          return { data: response.data };
+                          
+                          if (response.data && response.data.contents) {
+                              return { data: JSON.parse(response.data.contents) };
+                          }
+                          return { data: [] };
                       } else {
                           // Direct Connection: Using POST bypasses Service Worker GET interceptor bugs
                           const response = await axios.post(`${endpoint}/search`, payload);
