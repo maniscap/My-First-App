@@ -988,6 +988,9 @@ function ChatBot() {
     </div>
   );
 
+  const lastUserMsgIndex = messages.reduce((acc, m, idx) => m.sender === 'user' ? idx : acc, -1);
+  const lastBotMsgIndex = messages.reduce((acc, m, idx) => m.sender === 'bot' ? idx : acc, -1);
+
   // ===============================================================================================
   // SECTION 10: RENDER (FULL SCREEN CINEMA UI)
   // ===============================================================================================
@@ -1123,7 +1126,7 @@ function ChatBot() {
                 <div style={{display:'flex', alignItems:'center', gap:'5px'}}>
                     <span style={styles.timestamp}>{msg.sender === 'user' ? '👤 ' : ''}{msg.timestamp || ""}</span>
                     {/* EDIT PENCIL FOR USER */}
-                    {msg.sender === 'user' && !editingMessageIndex && (
+                    {msg.sender === 'user' && !editingMessageIndex && i === lastUserMsgIndex && (
                         <button onClick={() => startEditingMessage(i, msg.text)} style={styles.editMsgBtn} title="Edit & Retry">
                             <Edit2 size={14} color="#fff" strokeWidth={2} />
                         </button>
@@ -1138,9 +1141,11 @@ function ChatBot() {
                     <button onClick={() => handleCopy(msg.text)} style={styles.outlineBtn}>
                         <Copy size={14} /> Copy
                     </button>
-                    <button onClick={() => handleRetry(i)} style={styles.outlineBtn}>
-                        <RefreshCw size={14} /> Retry
-                    </button>
+                    {i === lastBotMsgIndex && (
+                      <button onClick={() => handleRetry(i)} style={styles.outlineBtn}>
+                          <RefreshCw size={14} /> Retry
+                      </button>
+                    )}
                   </div>
                 )}
               </div>

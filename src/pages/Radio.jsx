@@ -13,7 +13,7 @@ import {
 } from 'react-icons/io';
 
 const DEFAULT_ICON = "https://cdn-icons-png.flaticon.com/512/9043/9043296.png"; 
-const AIR_ICON = "https://upload.wikimedia.org/wikipedia/en/thumb/8/82/All_India_Radio_logo.svg/1200px-All_India_Radio_logo.svg.png";
+const AIR_ICON = "https://cdn-icons-png.flaticon.com/512/4813/4813083.png";
 const FARM_ICON = "https://cdn-icons-png.flaticon.com/512/3028/3028575.png";
 const RADIO_BG = "https://images.unsplash.com/photo-1478737270239-2f02b77fc618?q=80&w=2070&auto=format&fit=crop";
 
@@ -122,8 +122,35 @@ const Radio = () => {
   const [isMuted, setIsMuted] = useState(globalAudio.muted);
   
   const [viewMode, setViewMode] = useState('all'); // 'all', 'favorites', 'recents'
+  const [filters, setFilters] = useState({ search: '', state: getInitialState(), language: 'Hindi' });
   
   const stationsRef = useRef([]);
+
+  useEffect(() => {
+    const onPopState = (e) => {
+      const view = e.state?.radioView;
+      
+      // Always reset sub-menus/overlays when navigating back
+      setShowTimerMenu(false);
+      setActiveSelect(null);
+      setShowSuggestions(false);
+
+      if (view === 'player') {
+        setIsPlayerExpanded(true);
+        setHasFetched(true);
+      } else if (view === 'list') {
+        setIsPlayerExpanded(false);
+        setHasFetched(true);
+      } else {
+        // Base state: Calibrate
+        setIsPlayerExpanded(false);
+        setHasFetched(false);
+      }
+    };
+
+    window.addEventListener('popstate', onPopState);
+    return () => window.removeEventListener('popstate', onPopState);
+  }, []);
 
   // FORCE CACHE BUST: Unregister stuck Service Workers holding onto the old code
   useEffect(() => {
@@ -143,30 +170,25 @@ const Radio = () => {
   // --- PLAYER STATE ---
   const [selectedStation, setSelectedStation] = useState(globalCurrentStation);
   const [isPlaying, setIsPlaying] = useState(!globalAudio.paused); 
-  const [filters, setFilters] = useState({ search: '', state: getInitialState(), language: 'Hindi' });
 
   // --- BACK NAVIGATION LOGIC ---
   const handleBack = () => {
-    if (activeSelect) {
-      setActiveSelect(null);
-    } else if (showSuggestions || filters.search) {
-      setShowSuggestions(false);
-      setFilters({ ...filters, search: '' });
-    } else if (viewMode !== 'all') {
-      setViewMode('all');
-    } else if (hasFetched) {
-      setHasFetched(false);
-      setAllStations([]);
+    if (hasFetched) {
+      window.history.back();
     } else {
       navigate('/dashboard');
     }
   };
 
   const handleFullPlayerBack = () => {
-    if (showTimerMenu) {
-      setShowTimerMenu(false);
-    } else {
-      setIsPlayerExpanded(false);
+    // Trigger the hardware back behavior seamlessly
+    window.history.back();
+  };
+
+  const openFullPlayer = () => {
+    if (!isPlayerExpanded) {
+      window.history.pushState({ radioView: 'player' }, '');
+      setIsPlayerExpanded(true);
     }
   };
 
@@ -413,6 +435,11 @@ const Radio = () => {
         const finalStations = Array.from(processedMap.values());
         finalStations.sort((a, b) => (a.type === 'Govt' ? -1 : 1));
         setAllStations(finalStations);
+
+        if (window.history.state?.radioView !== 'list') {
+            window.history.pushState({ radioView: 'list' }, '');
+        }
+        
         setHasFetched(true);
         setLoading(false);
       } catch (err) { 
@@ -770,7 +797,7 @@ const Radio = () => {
 
       {/* MINI PLAYER */}
       {selectedStation && !isPlayerExpanded && (
-        <div {...miniPlayerSwipeHandlers} style={styles.miniGlassPlayer} onClick={() => setIsPlayerExpanded(true)}>
+        <div {...miniPlayerSwipeHandlers} style={styles.miniGlassPlayer} onClick={openFullPlayer}>
             <div style={styles.miniProgressBarContainer}>
                 <div style={{...styles.miniProgressBar, width: isPlaying ? '100%' : '0%'}}></div>
             </div>
