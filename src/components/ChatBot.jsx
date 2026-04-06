@@ -7,7 +7,7 @@ import React, {
 } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { Menu, X, Trash2, Edit2, Mic, Image as ImageIcon, ArrowRight, RefreshCw, Volume2, VolumeX, Copy, Sparkles, PanelLeft, MessageSquarePlus, ArrowDown } from 'lucide-react';
+import { Menu, X, Trash2, Edit2, Mic, Image as ImageIcon, ArrowRight, RefreshCw, Volume2, VolumeX, Copy, Sparkles, PanelLeft, MessageSquarePlus, ArrowDown, Plus } from 'lucide-react';
 
 /**
  * =================================================================================================
@@ -226,6 +226,7 @@ function ChatBot() {
   // 3.12 Scrolling
   const messagesEndRef = useRef(null);
   const chatBodyRef = useRef(null);
+  const textareaRef = useRef(null);
   
   const scrollToBottom = () => { messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }); };
   useEffect(() => { scrollToBottom(); }, [messages, isTyping, isLoading]);
@@ -327,11 +328,14 @@ function ChatBot() {
   const saveAndRegenerateMessage = (index) => {
       const currentMessages = sessions.find(s => s.id === currentSessionId).messages;
       const slicedMessages = currentMessages.slice(0, index);
+      const oldMsg = currentMessages[index];
       const newMessage = {
           text: editMessageText,
           sender: "user",
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          image: currentMessages[index].image 
+          image: oldMsg.image,
+          mimeType: oldMsg.mimeType,
+          fileName: oldMsg.fileName
       };
 
       setSessions(prev => prev.map(s => {
@@ -345,7 +349,15 @@ function ChatBot() {
       setEditMessageText("");
       setIsLoading(true);
       setIsTyping(true);
-      executeAILoop(editMessageText, rawBase64, dataUrl, mimeType);
+
+      let rBase64 = null;
+      if (oldMsg.image) {
+          const parts = oldMsg.image.split(',');
+          if (parts.length === 2) rBase64 = parts[1];
+      }
+
+      const aiPrompt = editMessageText.trim() || (oldMsg.mimeType?.includes('pdf') ? "Please read and summarize this document in detail." : "Please analyze this image and describe what you see.");
+      executeAILoop(aiPrompt, rBase64, oldMsg.image, oldMsg.mimeType);
   };
 
   // ===============================================================================================
@@ -462,7 +474,8 @@ function ChatBot() {
       }
 
       setTimeout(() => {
-          executeAILoop(lastUserMsg.text, rBase64, lastUserMsg.image, mType);
+          const retryText = lastUserMsg.text || (mType?.includes('pdf') ? "Please read and summarize this document in detail." : "Please analyze this image.");
+          executeAILoop(retryText, rBase64, lastUserMsg.image, mType);
       }, 0);
   };
 
@@ -664,14 +677,16 @@ function ChatBot() {
           img.src = e.target.result;
         };
         reader.readAsDataURL(file);
-        setInput(`Analyze this crop image strictly for diseases.`);
     } else {
         const reader = new FileReader();
         reader.onload = (e) => {
-            const textContent = e.target.result.slice(0, 30000); 
-            setInput(`Analyze this file content:\n\n${textContent}\n\nUser Request: `);
+            const dataUrl = e.target.result;
+            const rawBase64 = dataUrl.split(',')[1];
+            setDataUrl(dataUrl);
+            setRawBase64(rawBase64);
+            setMimeType(file.type || 'application/pdf');
         };
-        reader.readAsText(file);
+        reader.readAsDataURL(file);
     }
   };
 
@@ -697,21 +712,29 @@ function ChatBot() {
     }
     if (!input.trim() && !uploadedFile) return;
 
-    const userText = input.trim() || "Analysis Request";
+    const userText = input.trim();
+    const aiPrompt = userText || (uploadedFile?.type?.includes('pdf') ? "Please read and summarize this document in detail." : "Please analyze this image and describe what you see.");
+    const fileName = uploadedFile ? uploadedFile.name : null;
+
     addMessage({ 
         text: userText, 
         sender: "user", 
         image: dataUrl, 
+        mimeType: mimeType,
+        fileName: fileName,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) 
     });
     
-    setLastRequest({ text: userText, rawBase64, dataUrl, mimeType });
+    setLastRequest({ text: aiPrompt, rawBase64, dataUrl, mimeType });
     setInput(""); 
     setUploadedFile(null); 
     setIsLoading(true); 
     setIsTyping(true);
+    if (textareaRef.current) {
+        textareaRef.current.style.height = 'auto';
+    }
     
-    executeAILoop(userText, rawBase64, dataUrl, mimeType);
+    executeAILoop(aiPrompt, rawBase64, dataUrl, mimeType);
   };
 
   const executeAILoop = async (text, rBase64, dUrl, mType) => {
@@ -743,11 +766,12 @@ function ChatBot() {
     let success = false; 
     let debugLog = "";
     
-    const hasImage = !!(rBase64 && dUrl);
-    const queue = hasImage ? MODEL_QUEUE.filter(m => m.vision === true) : MODEL_QUEUE;
+    const hasFile = !!(rBase64 && dUrl);
+    const isImage = mType && mType.startsWith('image/');
+    const queue = hasFile ? MODEL_QUEUE.filter(m => m.vision === true) : MODEL_QUEUE;
     
-    if (hasImage && queue.length === 0) {
-        addMessage({ text: "⚠️ **Configuration Error:** No vision-capable models available.", sender: "bot", timestamp: new Date().toLocaleTimeString() });
+    if (hasFile && queue.length === 0) {
+        addMessage({ text: "⚠️ **Configuration Error:** No file-capable models available.", sender: "bot", timestamp: new Date().toLocaleTimeString() });
         setIsLoading(false); setIsTyping(false);
         return;
     }
@@ -758,7 +782,7 @@ function ChatBot() {
         if (model.provider === 'gemini') {
           if (!GEMINI_KEY) { debugLog += "Gemini Key Missing; "; continue; }
           const url = `https://generativelanguage.googleapis.com/v1beta/models/${model.id}:generateContent?key=${GEMINI_KEY}`;
-          const parts = hasImage 
+          const parts = hasFile 
             ? [{ text: `SYSTEM: ${systemInstruction} \nUSER REQUEST: ${text}` }, { inline_data: { mime_type: mType || "image/jpeg", data: rBase64 } }] 
             : [{ text: `SYSTEM: ${systemInstruction}\nUSER REQUEST: ${text}` }];
           
@@ -822,9 +846,11 @@ function ChatBot() {
         } else if (model.provider === 'groq') {
           if (!GROQ_KEY) { debugLog += "Groq Key Missing; "; continue; }
           let payload;
-          if (hasImage && model.vision && dUrl) { 
+          if (hasFile && model.vision && dUrl && isImage) { 
               const mergedContent = `${systemInstruction}\n\nUSER REQUEST: ${text}`;
               payload = [{ role: "user", content: [{ type: "text", text: mergedContent }, { type: "image_url", image_url: { url: dUrl } }] }]; 
+          } else if (hasFile && !isImage) {
+              throw new Error("Groq does not support PDF processing. Falling back to next model.");
           } else { 
               payload = [{ role: "system", content: systemInstruction }, { role: "user", content: text }]; 
           }
@@ -836,6 +862,7 @@ function ChatBot() {
 
         } else if (model.provider === 'hf') {
           if (!HF_KEY) { debugLog += "HF Key Missing; "; continue; }
+          if (hasFile && !isImage) throw new Error("HuggingFace vision models require images, skipping PDF.");
           const fetchHF = async () => {
               const res = await fetch(dUrl);
               const blob = await res.blob();
@@ -868,8 +895,8 @@ function ChatBot() {
     }
 
     if (!success) {
-        finalResponse = hasImage 
-            ? `⚠️ **Vision Analysis Failed.** \n\nTried: ${queue.length} models. \n\n**Log:** ${debugLog}` 
+        finalResponse = hasFile 
+            ? `⚠️ **File Analysis Failed.** \n\nTried: ${queue.length} models. \n\n**Log:** ${debugLog}` 
             : `⚠️ **System Error:** All AI models failed. \nLogs: ${debugLog}`;
     }
     
@@ -988,9 +1015,6 @@ function ChatBot() {
     </div>
   );
 
-  const lastUserMsgIndex = messages.reduce((acc, m, idx) => m.sender === 'user' ? idx : acc, -1);
-  const lastBotMsgIndex = messages.reduce((acc, m, idx) => m.sender === 'bot' ? idx : acc, -1);
-
   // ===============================================================================================
   // SECTION 10: RENDER (FULL SCREEN CINEMA UI)
   // ===============================================================================================
@@ -1050,6 +1074,13 @@ function ChatBot() {
                               </div>
                           ))}
                       </div>
+                      
+                      <div style={styles.sidebarFooter}>
+                          <span style={styles.termsText}>Farm Buddy can make mistakes. Check important info.{isOnline ? "" : " (Offline)"}</span>
+                          <button onClick={() => { setShowFullTerms(true); window.history.pushState({ chatState: 'terms' }, ''); }} style={styles.readTermsBtn}>
+                              Terms & Conditions
+                          </button>
+                      </div>
                   </div>
               </div>
           )}
@@ -1083,7 +1114,16 @@ function ChatBot() {
             {messages.map((msg, i) => (
               <div key={i} style={{ textAlign: msg.sender === 'bot' ? 'left' : 'right', marginBottom: '16px', display: 'flex', flexDirection: 'column', alignItems: msg.sender === 'bot' ? 'flex-start' : 'flex-end', animation: 'fadeIn 0.3s ease-in' }}>
                 {msg.image && (
-                    <img src={msg.image} alt="User Upload" style={styles.msgImg} onClick={() => window.open(msg.image, '_blank')} />
+                    msg.mimeType && !msg.mimeType.startsWith('image/') ? (
+                        <div style={styles.pdfMessage} onClick={() => {
+                             const newTab = window.open();
+                             newTab?.document.write(`<iframe src="${msg.image}" frameborder="0" style="border:0; top:0px; left:0px; bottom:0px; right:0px; width:100%; height:100%;" allowfullscreen></iframe>`);
+                        }}>
+                            📄 {msg.fileName || "View Attached Document"}
+                        </div>
+                    ) : (
+                        <img src={msg.image} alt="User Upload" style={styles.msgImg} onClick={() => window.open(msg.image, '_blank')} />
+                    )
                 )}
                 
                 {/* ✏️ MESSAGE EDIT LOGIC */}
@@ -1100,7 +1140,7 @@ function ChatBot() {
                             <button onClick={() => saveAndRegenerateMessage(i)} style={styles.saveEditBtn}>Save & Regenerate</button>
                         </div>
                     </div>
-                ) : (
+                ) : msg.text ? (
                     <div style={msg.sender === 'bot' ? styles.botBubble : styles.userBubble}>
                       <ReactMarkdown 
                         children={msg.text} 
@@ -1121,12 +1161,12 @@ function ChatBot() {
                         }} 
                       />
                     </div>
-                )}
+                ) : null}
                 
                 <div style={{display:'flex', alignItems:'center', gap:'5px'}}>
                     <span style={styles.timestamp}>{msg.sender === 'user' ? '👤 ' : ''}{msg.timestamp || ""}</span>
                     {/* EDIT PENCIL FOR USER */}
-                    {msg.sender === 'user' && !editingMessageIndex && i === lastUserMsgIndex && (
+                    {msg.sender === 'user' && !editingMessageIndex && (
                         <button onClick={() => startEditingMessage(i, msg.text)} style={styles.editMsgBtn} title="Edit & Retry">
                             <Edit2 size={14} color="#fff" strokeWidth={2} />
                         </button>
@@ -1141,11 +1181,9 @@ function ChatBot() {
                     <button onClick={() => handleCopy(msg.text)} style={styles.outlineBtn}>
                         <Copy size={14} /> Copy
                     </button>
-                    {i === lastBotMsgIndex && (
-                      <button onClick={() => handleRetry(i)} style={styles.outlineBtn}>
-                          <RefreshCw size={14} /> Retry
-                      </button>
-                    )}
+                    <button onClick={() => handleRetry(i)} style={styles.outlineBtn}>
+                        <RefreshCw size={14} /> Retry
+                    </button>
                   </div>
                 )}
               </div>
@@ -1161,39 +1199,58 @@ function ChatBot() {
 
           {/* FOOTER */}
           <div style={styles.footer}>
-            {uploadedFile && (
-              <div style={styles.uploadPreviewRow}>
-                <div style={styles.imgBadge}>
-                  <div style={styles.previewThumb}>🖼️</div>
-                  <div style={styles.previewInfo}>
-                    <span style={styles.previewName}>{uploadedFile.name || 'Uploaded Image'}</span>
-                    <span style={styles.previewSize}>{(uploadedFile.size / 1024).toFixed(1)} KB</span>
+            <div style={styles.geminiInputCard}>
+                {uploadedFile && (
+                  <div style={{...styles.uploadPreviewRow, marginBottom: '4px'}}>
+                    <div style={styles.imgBadge}>
+                      <div style={styles.previewThumb}>{uploadedFile.type.startsWith('image/') ? '🖼️' : '📄'}</div>
+                      <div style={styles.previewInfo}>
+                        <span style={styles.previewName}>{uploadedFile.name || 'Uploaded Image'}</span>
+                        <span style={styles.previewSize}>{(uploadedFile.size / 1024).toFixed(1)} KB</span>
+                      </div>
+                      <button onClick={removeUploadedImage} style={styles.delBadge}>✖</button>
+                    </div>
                   </div>
-                  <button onClick={removeUploadedImage} style={styles.delBadge}>✖</button>
-                </div>
-              </div>
-            )}
-            <div style={styles.inputRow}>
-              <div style={styles.inputWrapper} className="premium-input-wrapper">
-                <input type="file" accept="image/*,.pdf,.txt" onChange={handleFileChange} style={{ display: 'none' }} id="cam-input" />
-                <label htmlFor="cam-input" style={styles.iconBtnInner} title="Upload Image">
-                    <ImageIcon size={22} color="#C4C7C5" strokeWidth={1.5} />
-                </label>
-                
-                <input type="text" placeholder={isOnline ? "Ask Farm Buddy..." : "Offline"} disabled={!isOnline} style={styles.inputField} value={input} onChange={(e) => setInput(e.target.value)} onKeyPress={(e) => e.key === 'Enter' && handleSend()} />
-                
-                <button onClick={startListening} style={styles.iconBtnInner} title="Voice Input">
-                    <Mic size={22} color="#C4C7C5" strokeWidth={1.5} />
-                </button>
-                
-                {(input.trim() || uploadedFile) && (
-                    <button onClick={handleSend} style={{...styles.sendBtn, opacity: isOnline ? 1 : 0.5, cursor: isOnline ? 'pointer' : 'default', background: isOnline ? '#2E7D32' : '#555'}} disabled={!isOnline}>
-                        <ArrowRight size={22} color="#fff" strokeWidth={2.5} />
-                    </button>
                 )}
-              </div>
+                
+                <textarea
+                    ref={textareaRef}
+                    placeholder={isOnline ? "Ask Farm Buddy..." : "Offline"}
+                    disabled={!isOnline}
+                    style={styles.geminiTextArea}
+                    className="gemini-textarea"
+                    value={input}
+                    rows={1}
+                    onChange={(e) => {
+                        setInput(e.target.value);
+                        e.target.style.height = 'auto';
+                        e.target.style.height = `${Math.min(e.target.scrollHeight, 150)}px`;
+                    }}
+                    onKeyDown={(e) => {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                            e.preventDefault();
+                            handleSend();
+                        }
+                    }}
+                />
+
+                <div style={styles.geminiActionRow}>
+                  <input type="file" accept="image/*,.pdf,.txt" onChange={handleFileChange} style={{ display: 'none' }} id="cam-input" />
+                  <label htmlFor="cam-input" style={styles.plusBtnInner} title="Add Attachment">
+                      <Plus size={22} color="#E3E3E3" strokeWidth={2} />
+                  </label>
+                  
+                  {!(input.trim() || uploadedFile) ? (
+                      <button onClick={startListening} style={styles.iconBtnInner} title="Voice Input">
+                          <Mic size={22} color="#E3E3E3" strokeWidth={1.5} />
+                      </button>
+                  ) : (
+                      <button onClick={handleSend} style={{...styles.sendBtn, opacity: isOnline ? 1 : 0.5, cursor: isOnline ? 'pointer' : 'default', background: isOnline ? '#2E7D32' : '#555'}} disabled={!isOnline}>
+                          <ArrowRight size={20} color="#fff" strokeWidth={2.5} />
+                      </button>
+                  )}
+                </div>
             </div>
-            <div style={styles.legalLinks}>Farm Buddy can make mistakes. Check important info. {isOnline ? "" : " (Offline)"} <span onClick={() => { setShowFullTerms(true); window.history.pushState({ chatState: 'terms' }, ''); }} style={styles.readTerms}>Terms</span></div>
           </div>
         </div>
       )}
@@ -1229,12 +1286,9 @@ function ChatBot() {
         .premium-glow-capsule::after { content: ''; position: absolute; inset: 2px; background: #141416; border-radius: 50px; z-index: 1; box-shadow: inset 0 1px 2px rgba(255,255,255,0.15); }
         .glow-content { position: relative; z-index: 2; display: flex; align-items: center; gap: 10px; padding: 12px 24px; pointer-events: auto; }
 
-        /* PREMIUM INPUT FOCUS EFFECTS */
-        .premium-input-wrapper { transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
-        .premium-input-wrapper:focus-within { border-color: rgba(255,255,255,0.2) !important; box-shadow: 0 10px 40px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.1) !important; background-color: rgba(25, 25, 28, 0.9) !important; }
-        .premium-input-wrapper:focus-within { border-color: rgba(74, 222, 128, 0.4) !important; box-shadow: 0 15px 40px rgba(0,0,0,0.6), 0 0 20px rgba(74, 222, 128, 0.15), inset 0 0 0 1px rgba(74, 222, 128, 0.2) !important; background-color: rgba(20, 20, 22, 0.95) !important; transform: translateY(-2px); }
-        .premium-input-wrapper input::placeholder { transition: color 0.3s ease; }
-        .premium-input-wrapper:focus-within input::placeholder { color: #aaa; }
+        /* AUTO-EXPANDING TEXTAREA PLACEHOLDER */
+        .gemini-textarea::placeholder { color: rgba(255,255,255,0.5); transition: color 0.3s ease; }
+        .gemini-textarea:focus::placeholder { color: #aaa; }
 
         /* PREMIUM EDIT TEXTAREA FOCUS EFFECTS */
         .premium-edit-textarea { transition: all 0.3s ease; }
@@ -1344,6 +1398,7 @@ const styles = {
     inlineCode: { backgroundColor: 'rgba(255,255,255,0.1)', padding: '2px 5px', borderRadius: '4px', fontFamily: 'monospace', fontSize: '13px', color: '#FFCC80' },
     
     msgImg: { maxWidth: '300px', borderRadius: '12px', marginBottom: '10px', border: '1px solid #444', cursor: 'pointer', boxShadow: '0 4px 12px rgba(0,0,0,0.3)' },
+    pdfMessage: { display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 16px', backgroundColor: 'rgba(46, 125, 50, 0.2)', borderRadius: '12px', border: '1px solid rgba(74, 222, 128, 0.4)', cursor: 'pointer', marginBottom: '10px', color: '#81C784', fontWeight: '600', boxShadow: '0 4px 12px rgba(0,0,0,0.2)' },
     timestamp: { fontSize: '11px', color: '#888', marginTop: '6px', marginLeft: '4px', marginRight: '4px' },
     
     typingIndicatorBubble: { background: 'transparent', backdropFilter: 'blur(12px) saturate(120%) brightness(110%)', WebkitBackdropFilter: 'blur(12px) saturate(120%) brightness(110%)', padding: '14px 20px', borderRadius: '24px', borderBottomLeftRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.1)', borderTop: '1px solid rgba(255, 255, 255, 0.3)', borderLeft: '1px solid rgba(255, 255, 255, 0.2)', boxShadow: 'inset 0 1px 1px rgba(255, 255, 255, 0.3), 0 8px 32px rgba(0, 0, 0, 0.15)', display:'inline-block', marginBottom:'15px' },
@@ -1353,14 +1408,17 @@ const styles = {
     outlineBtn: { backgroundColor: 'rgba(255,255,255,0.05)', color: '#E3E3E3', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '20px', padding: '6px 14px', fontSize: '13px', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', transition: 'all 0.2s ease', fontFamily: '"Inter", sans-serif' },
     scrollBtn: { position: 'absolute', bottom: '100px', right: '20px', background: 'rgba(20, 20, 22, 0.65)', backdropFilter: 'blur(20px)', border: '1px solid rgba(255, 255, 255, 0.15)', borderRadius: '50%', width: '44px', height: '44px', cursor: 'pointer', boxShadow: '0 8px 32px rgba(0,0,0,0.4)', zIndex: 2001, display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)' },
     
-    footer: { backgroundColor: 'transparent', padding: '12px 16px 16px 16px', display: 'flex', flexDirection: 'column', alignItems: 'center', boxSizing: 'border-box', width: '100%' },
-    inputRow: { display: 'flex', alignItems: 'center', width: '100%', maxWidth: '830px', boxSizing: 'border-box' },
-    inputWrapper: { flex: 1, display: 'flex', alignItems: 'center', backgroundColor: 'rgba(255, 255, 255, 0.08)', backdropFilter: 'blur(20px)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '32px', padding: '6px 10px 6px 16px', minHeight: '56px', gap: '10px', boxSizing: 'border-box', width: '100%', boxShadow: '0 4px 20px rgba(0,0,0,0.3)' },
-    iconBtnInner: { background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '8px', borderRadius: '50%', transition: 'background-color 0.2s', flexShrink: 0 },
-    inputField: { flex: 1, background: 'transparent', border: 'none', color: '#E3E3E3', outline: 'none', fontSize: '16px', padding: '0 8px', minWidth: 0, width: '100%', fontFamily: '"Inter", sans-serif', boxSizing: 'border-box' },
-    sendBtn: { background: '#2E7D32', border: 'none', borderRadius: '50%', width: '42px', height: '42px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1)', flexShrink: 0, boxShadow: '0 4px 15px rgba(46, 125, 50, 0.4)' },
+    footer: { backgroundColor: 'transparent', padding: '0', display: 'flex', flexDirection: 'column', alignItems: 'center', boxSizing: 'border-box', width: '100%', zIndex: 10 },
     
-    uploadPreviewRow: { width: '100%', maxWidth: '830px', marginBottom: '12px', display: 'flex' },
+    geminiInputCard: { width: '100%', maxWidth: '100%', backgroundColor: '#131314', borderTop: '1px solid rgba(255,255,255,0.05)', borderRadius: '24px 24px 0 0', padding: '16px 16px 28px 16px', boxSizing: 'border-box', display: 'flex', flexDirection: 'column', gap: '8px', boxShadow: '0 -4px 20px rgba(0,0,0,0.4)' },
+    geminiActionRow: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' },
+    geminiTextArea: { width: '100%', background: 'transparent', border: 'none', color: '#E3E3E3', outline: 'none', fontSize: '16px', padding: '4px 4px', fontFamily: '"Inter", sans-serif', resize: 'none', lineHeight: '1.4', minHeight: '24px', maxHeight: '150px', overflowY: 'auto', boxSizing: 'border-box' },
+    
+    iconBtnInner: { background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '8px', borderRadius: '50%', transition: 'background-color 0.2s', flexShrink: 0 },
+    plusBtnInner: { background: 'rgba(255, 255, 255, 0.1)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '36px', height: '36px', borderRadius: '50%', transition: 'background-color 0.2s', flexShrink: 0 },
+    sendBtn: { background: '#2E7D32', border: 'none', borderRadius: '50%', width: '38px', height: '38px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1)', flexShrink: 0, boxShadow: '0 4px 15px rgba(46, 125, 50, 0.4)' },
+    
+    uploadPreviewRow: { width: '100%', maxWidth: '100%', marginBottom: '12px', display: 'flex' },
     imgBadge: { display: 'flex', alignItems: 'center', gap: '12px', backgroundColor: '#1E1F22', padding: '8px 16px 8px 8px', borderRadius: '16px', width: 'fit-content', border: '1px solid #444746' },
     previewThumb: { width: '40px', height: '40px', backgroundColor: '#282A2C', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px' },
     previewInfo: { display: 'flex', flexDirection: 'column', gap: '2px' },
@@ -1368,16 +1426,18 @@ const styles = {
     previewSize: { color: '#C4C7C5', fontSize: '11px' },
     delBadge: { background: 'transparent', color: '#C4C7C5', border: 'none', fontSize: '16px', cursor: 'pointer', padding: '4px', marginLeft: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center' },
     
-    modalOverlay: { position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', backgroundColor: 'rgba(0,0,0,0.85)', zIndex: 10002, display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'auto', backdropFilter: 'blur(4px)' },
-    modalContent: { width: '90%', maxWidth: '600px', backgroundColor: 'white', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)', display: 'flex', flexDirection: 'column', maxHeight: '85vh', animation: 'fadeIn 0.2s ease-out' },
-    modalHeader: { padding: '20px 24px', backgroundColor: '#F3F4F6', borderBottom: '1px solid #E5E7EB', fontWeight: 'bold', fontSize: '16px', display: 'flex', justifyContent: 'space-between', color: '#1F2937' },
-    modalBody: { padding: '24px', overflowY: 'auto', color: '#4B5563', fontSize: '14px', lineHeight: '1.6', flex: 1 },
-    closeX: { background: 'none', border: 'none', fontSize: '24px', cursor: 'pointer', color: '#9CA3AF' },
-    acceptBtn: { width: '100%', padding: '20px', backgroundColor: '#2E7D32', color: 'white', border: 'none', fontWeight: 'bold', fontSize: '15px', cursor: 'pointer', textTransform: 'uppercase', letterSpacing: '1px' },
-    warnText: { color: '#DC2626', fontWeight: 'bold', borderBottom:'2px solid #F3F4F6', paddingBottom:'12px', marginBottom:'16px', textAlign:'center', fontSize: '15px' },
-    langBlock: { marginBottom: '25px', borderBottom: '1px solid #eee', paddingBottom: '15px' },
-    legalLinks: { textAlign: 'center', marginTop: '16px', fontSize: '12px', color: '#C4C7C5' },
-    readTerms: { color: '#A8C7FA', textDecoration: 'underline', cursor: 'pointer', marginLeft: '6px' }
+    sidebarFooter: { padding: '20px', borderTop: '1px solid rgba(255,255,255,0.08)', display: 'flex', flexDirection: 'column', gap: '12px', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.2)' },
+    termsText: { fontSize: '12px', color: '#A0A0A0', textAlign: 'center', lineHeight: '1.5' },
+    readTermsBtn: { background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', color: '#E3E3E3', borderRadius: '20px', padding: '8px 16px', fontSize: '13px', fontWeight: '600', cursor: 'pointer', transition: 'all 0.2s ease' },
+
+    modalOverlay: { position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', backgroundColor: 'rgba(0,0,0,0.6)', zIndex: 10002, display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'auto', backdropFilter: 'blur(8px)' },
+    modalContent: { width: '90%', maxWidth: '600px', backgroundColor: 'rgba(30, 31, 34, 0.85)', backdropFilter: 'blur(24px) saturate(150%)', WebkitBackdropFilter: 'blur(24px) saturate(150%)', borderRadius: '24px', border: '1px solid rgba(255, 255, 255, 0.1)', borderTop: '1px solid rgba(255, 255, 255, 0.3)', borderLeft: '1px solid rgba(255, 255, 255, 0.2)', boxShadow: 'inset 0 1px 1px rgba(255, 255, 255, 0.3), 0 25px 50px -12px rgba(0,0,0,0.8)', overflow: 'hidden', display: 'flex', flexDirection: 'column', maxHeight: '85vh', animation: 'fadeIn 0.2s ease-out' },
+    modalHeader: { padding: '20px 24px', backgroundColor: 'rgba(255,255,255,0.05)', borderBottom: '1px solid rgba(255,255,255,0.1)', fontWeight: 'bold', fontSize: '16px', display: 'flex', justifyContent: 'space-between', color: '#fff' },
+    modalBody: { padding: '24px', overflowY: 'auto', color: '#E3E3E3', fontSize: '14px', lineHeight: '1.6', flex: 1 },
+    closeX: { background: 'none', border: 'none', fontSize: '24px', cursor: 'pointer', color: '#E3E3E3', display: 'flex', alignItems: 'center', justifyContent: 'center' },
+    acceptBtn: { width: '100%', padding: '20px', backgroundColor: 'rgba(46, 125, 50, 0.8)', backdropFilter: 'blur(10px)', color: 'white', border: 'none', borderTop: '1px solid rgba(255,255,255,0.1)', fontWeight: 'bold', fontSize: '15px', cursor: 'pointer', textTransform: 'uppercase', letterSpacing: '1px', transition: 'background 0.2s ease' },
+    warnText: { color: '#ef4444', fontWeight: 'bold', borderBottom:'2px solid rgba(255,255,255,0.1)', paddingBottom:'12px', marginBottom:'16px', textAlign:'center', fontSize: '15px' },
+    langBlock: { marginBottom: '25px', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '15px' }
 };
 
 export default ChatBot; 
