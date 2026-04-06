@@ -299,18 +299,6 @@ const Radio = () => {
           API_ENDPOINTS = [...new Set(API_ENDPOINTS)]; // Remove duplicates
 
           const fetchFromEndpoint = async (endpoint, useProxy = false) => {
-              const buildPayload = (extraParams) => {
-                  return {
-                      countrycode: 'IN',
-                      hidebroken: 'true',
-                      lastcheckok: '1',
-                      state: filters.state,
-                      language: filters.language.toLowerCase(),
-                      languageExact: 'true',
-                      ...extraParams
-                  };
-              };
-
               const postData = async (payload) => {
                   try {
                       if (useProxy) {
@@ -336,10 +324,14 @@ const Radio = () => {
               };
 
               const reqs = [
-                  postData(buildPayload({ order: 'clickcount', reverse: 'true', limit: '100' })),
-                  postData(buildPayload({ name: 'Akashvani' })),
-                  postData(buildPayload({ name: 'All India Radio' })),
-                  postData(buildPayload({ tag: 'kisan' }))
+                  // 1. Fetch ALL top channels in the selected STATE (ignoring language constraint)
+                  postData({ countrycode: 'IN', hidebroken: 'true', lastcheckok: '1', state: filters.state, limit: '200', order: 'clickcount', reverse: 'true' }),
+                  // 2. Fetch ALL top channels for the selected LANGUAGE (ignoring state constraint)
+                  postData({ countrycode: 'IN', hidebroken: 'true', lastcheckok: '1', language: filters.language.toLowerCase(), limit: '200', order: 'clickcount', reverse: 'true' }),
+                  // 3. Specific Government and Farming channels
+                  postData({ countrycode: 'IN', hidebroken: 'true', lastcheckok: '1', state: filters.state, name: 'Akashvani' }),
+                  postData({ countrycode: 'IN', hidebroken: 'true', lastcheckok: '1', state: filters.state, name: 'All India Radio' }),
+                  postData({ countrycode: 'IN', hidebroken: 'true', lastcheckok: '1', tag: 'kisan' })
               ];
               
               const results = await Promise.all(reqs);
