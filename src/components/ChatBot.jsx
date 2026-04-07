@@ -7,7 +7,106 @@ import React, {
 } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { Menu, X, Trash2, Edit2, Mic, Image as ImageIcon, ArrowRight, RefreshCw, Volume2, VolumeX, Copy, Sparkles, PanelLeft, MessageSquarePlus, ArrowDown, Plus } from 'lucide-react';
+import { Menu, X, Trash2, Edit2, Mic, Image as ImageIcon, ArrowRight, RefreshCw, Volume2, VolumeX, Copy, Sparkles, PanelLeft, MessageSquarePlus, ArrowDown, Plus, Type, Check, Square, Download } from 'lucide-react';
+
+const ImageEditor = ({ imageUrl, onSave, onCancel }) => {
+  const canvasRef = useRef(null);
+  const [color, setColor] = useState('#FF3B30');
+  const [tool, setTool] = useState('pen'); // 'pen' | 'text'
+  const isDrawing = useRef(false);
+  const lastPos = useRef({ x: 0, y: 0 });
+
+  const loadImageToCanvas = useCallback(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const img = new Image();
+    img.onload = () => {
+      let width = img.width;
+      let height = img.height;
+      const MAX_DIM = 800; // Increased resolution for better doodle/text
+      if (width > MAX_DIM || height > MAX_DIM) {
+        if (width > height) { height *= MAX_DIM / width; width = MAX_DIM; }
+        else { width *= MAX_DIM / height; height = MAX_DIM; }
+      }
+      canvas.width = width;
+      canvas.height = height;
+      ctx.drawImage(img, 0, 0, width, height);
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+    };
+    img.src = imageUrl;
+  }, [imageUrl]);
+
+  useEffect(() => { loadImageToCanvas(); }, [loadImageToCanvas]);
+
+  const getPos = (e) => {
+    const rect = canvasRef.current.getBoundingClientRect();
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    const scaleX = canvasRef.current.width / rect.width;
+    const scaleY = canvasRef.current.height / rect.height;
+    return { x: (clientX - rect.left) * scaleX, y: (clientY - rect.top) * scaleY };
+  };
+
+  const handlePointerDown = (e) => {
+    const pos = getPos(e);
+    if (tool === 'pen') {
+      isDrawing.current = true;
+      lastPos.current = pos;
+    } else if (tool === 'text') {
+      const text = prompt("Enter text to overlay:");
+      if (text) {
+        const ctx = canvasRef.current.getContext('2d');
+        const fontSize = Math.max(24, canvasRef.current.width * 0.05);
+        ctx.font = `bold ${fontSize}px "Inter", sans-serif`;
+        ctx.fillStyle = color;
+        ctx.shadowColor = "black";
+        ctx.shadowBlur = 4;
+        ctx.fillText(text, pos.x, pos.y);
+        ctx.shadowBlur = 0;
+      }
+    }
+  };
+
+  const handlePointerMove = (e) => {
+    if (!isDrawing.current || tool !== 'pen') return;
+    const pos = getPos(e);
+    const ctx = canvasRef.current.getContext('2d');
+    ctx.strokeStyle = color;
+    ctx.lineWidth = Math.max(4, canvasRef.current.width * 0.01);
+    ctx.beginPath();
+    ctx.moveTo(lastPos.current.x, lastPos.current.y);
+    ctx.lineTo(pos.x, pos.y);
+    ctx.stroke();
+    lastPos.current = pos;
+  };
+
+  const handlePointerUp = () => { isDrawing.current = false; };
+
+  return (
+    <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', backgroundColor: 'rgba(0,0,0,0.85)', zIndex: 10005, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(10px)', pointerEvents: 'auto' }} onClick={(e) => e.stopPropagation()}>
+      <div style={{ display: 'flex', gap: '15px', marginBottom: '15px', background: 'rgba(255,255,255,0.1)', padding: '10px 20px', borderRadius: '20px', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'center' }}>
+        <button onClick={() => setTool('pen')} style={{ background: tool === 'pen' ? '#4ade80' : 'transparent', color: tool === 'pen' ? '#000' : '#fff', border: 'none', padding: '8px 12px', borderRadius: '10px', cursor: 'pointer', display: 'flex', gap: '5px', alignItems: 'center' }}><Edit2 size={16} /> Draw</button>
+        <button onClick={() => setTool('text')} style={{ background: tool === 'text' ? '#4ade80' : 'transparent', color: tool === 'text' ? '#000' : '#fff', border: 'none', padding: '8px 12px', borderRadius: '10px', cursor: 'pointer', display: 'flex', gap: '5px', alignItems: 'center' }}><Type size={16} /> Text</button>
+        <div style={{ width: '1px', height: '24px', background: 'rgba(255,255,255,0.2)' }} />
+        {['#FF3B30', '#FF9500', '#FFCC00', '#4CD964', '#5AC8FA', '#007AFF', '#5856D6', '#FFFFFF', '#000000'].map(c => (
+          <div key={c} onClick={() => setColor(c)} style={{ width: '24px', height: '24px', borderRadius: '50%', backgroundColor: c, cursor: 'pointer', border: color === c ? '3px solid #fff' : '2px solid transparent', boxShadow: color === c ? '0 0 10px rgba(255,255,255,0.5)' : 'none' }} />
+        ))}
+      </div>
+      
+      <div style={{ position: 'relative', maxWidth: '90vw', maxHeight: '70vh', overflow: 'hidden', borderRadius: '12px', border: '2px solid rgba(255,255,255,0.2)', boxShadow: '0 10px 30px rgba(0,0,0,0.5)' }}>
+        <canvas ref={canvasRef} onPointerDown={handlePointerDown} onPointerMove={handlePointerMove} onPointerUp={handlePointerUp} onPointerOut={handlePointerUp} style={{ display: 'block', maxWidth: '100%', maxHeight: '70vh', touchAction: 'none', cursor: tool === 'pen' ? 'crosshair' : 'text' }} />
+      </div>
+
+      <div style={{ display: 'flex', gap: '15px', marginTop: '20px', flexWrap: 'wrap', justifyContent: 'center' }}>
+        <button onClick={onCancel} style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.3)', color: '#fff', padding: '10px 20px', borderRadius: '24px', cursor: 'pointer', display: 'flex', gap: '8px', alignItems: 'center' }}><X size={18} /> Cancel</button>
+        <button onClick={loadImageToCanvas} style={{ background: 'rgba(255,255,255,0.1)', border: 'none', color: '#fff', padding: '10px 20px', borderRadius: '24px', cursor: 'pointer', display: 'flex', gap: '8px', alignItems: 'center' }}><RefreshCw size={18} /> Reset</button>
+        <button onClick={() => onSave(canvasRef.current.toDataURL('image/jpeg', 0.85))} style={{ background: '#2E7D32', border: 'none', color: '#fff', padding: '10px 24px', borderRadius: '24px', cursor: 'pointer', display: 'flex', gap: '8px', alignItems: 'center', fontWeight: 'bold' }}><Check size={18} /> Apply</button>
+      </div>
+    </div>
+  );
+};
 
 /**
  * =================================================================================================
@@ -127,7 +226,7 @@ function ChatBot() {
 
   // 3.3 Greeting Generator
   const getGreeting = useCallback(() => ({ 
-      text: "🚜 **Farm Buddy: Genesis Mode.**\n\nI am connected to the Titanium v107 Grid. \n\n📸 **Upload a photo** to unleash the vision engine.\n🎨 **Type 'Generate an image of...'** for AI art.\n\n*System Ready. Awaiting input.*", 
+      text: "🚜 **Farm Buddy: Genesis Mode.**\n\nI am your agricultural AI assistant, but **I can also answer ALL kinds of questions!** \n\n📸 **Upload a photo** for analysis.\n🎨 **Type 'Generate an image of...'** for AI art.\n\n*System Ready. Ask me anything!*", 
       sender: "bot",
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
   }), []);
@@ -164,6 +263,10 @@ function ChatBot() {
   const [isListening, setIsListening] = useState(false);
   const [isClearing, setIsClearing] = useState(false);
   const [speaking, setSpeaking] = useState(false);
+  
+  // Advanced UX Refs
+  const abortControllerRef = useRef(null);
+  const [isUserScrolling, setIsUserScrolling] = useState(false);
   
   // 3.8 Retry Cache
   const [lastRequest, setLastRequest] = useState({ 
@@ -222,19 +325,28 @@ function ChatBot() {
   const [rawBase64, setRawBase64] = useState(null); 
   const [dataUrl, setDataUrl] = useState(null); 
   const [mimeType, setMimeType] = useState(null);     
+  const [imageToEdit, setImageToEdit] = useState(null);
+  const [isDraggingFile, setIsDraggingFile] = useState(false);
 
   // 3.12 Scrolling
   const messagesEndRef = useRef(null);
   const chatBodyRef = useRef(null);
   const textareaRef = useRef(null);
   
-  const scrollToBottom = () => { messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }); };
+  const scrollToBottom = () => { 
+      if (!isUserScrolling) {
+          messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }); 
+      }
+  };
   useEffect(() => { scrollToBottom(); }, [messages, isTyping, isLoading]);
 
   useEffect(() => {
       const handleScroll = () => {
           if (chatBodyRef.current) {
               const { scrollTop, scrollHeight, clientHeight } = chatBodyRef.current;
+              // If user is more than 150px away from the bottom, they are manually scrolling
+              const isNearBottom = scrollHeight - scrollTop <= clientHeight + 150;
+              setIsUserScrolling(!isNearBottom);
               setShowScrollBtn(scrollHeight - scrollTop > clientHeight + 100);
           }
       };
@@ -286,6 +398,38 @@ function ChatBot() {
               setIsClearing(false);
           }, 400); // Wait for the fade-out animation to finish
       }
+  };
+
+  const handleExportChat = () => {
+      const sess = sessions.find(s => s.id === currentSessionId);
+      if (!sess || sess.messages.length === 0) {
+          alert("No messages to export!");
+          return;
+      }
+      
+      let textContent = `🚜 Farm Buddy Consultation: ${sess.title}\n📅 Date: ${new Date().toLocaleDateString()}\n\n`;
+      textContent += `======================================================\n\n`;
+      
+      sess.messages.forEach(msg => {
+          const sender = msg.sender === 'user' ? '👤 YOU' : '🤖 FARM BUDDY';
+          textContent += `${sender} [${msg.timestamp}]:\n${msg.text}\n\n`;
+          if (msg.image && (!msg.mimeType || !msg.mimeType.startsWith('image/'))) {
+              textContent += `[Attached Document: ${msg.fileName}]\n\n`;
+          }
+      });
+      
+      textContent += `======================================================\n`;
+      textContent += `Generated by Farm Buddy AI v107.0`;
+
+      const blob = new Blob([textContent], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `FarmBuddy_Report_${sess.id}.txt`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
   };
 
   const addMessage = (msg) => {
@@ -627,67 +771,34 @@ function ChatBot() {
     }
   };
 
-  const processImageForAI = (imgElement) => {
-      const canvas = document.createElement('canvas');
-      let width = imgElement.width; 
-      let height = imgElement.height; 
+  const processFile = (file) => {
+      if (!file) return;
+      setUploadedFile(file);
+      setMimeType(file.type); 
 
-      const MAX_DIM = 512; 
-      
-      if (width > MAX_DIM || height > MAX_DIM) {
-        if (width > height) { 
-            height *= MAX_DIM/width; 
-            width = MAX_DIM; 
-        } else { 
-            width *= MAX_DIM/height; 
-            height = MAX_DIM; 
-        }
-      }
-      
-      canvas.width = width; 
-      canvas.height = height;
-      
-      const ctx = canvas.getContext('2d');
-      ctx.imageSmoothingEnabled = true; 
-      ctx.drawImage(imgElement, 0, 0, width, height);
-      
-      const dataUrl = canvas.toDataURL('image/jpeg', 0.8); 
-      const rawBase64 = dataUrl.split(',')[1];
-
-      return { dataUrl, rawBase64 };
+      const reader = new FileReader();
+      reader.onload = (e) => {
+          const result = e.target.result;
+          setDataUrl(result);
+          setRawBase64(result.split(',')[1]);
+          setMimeType(file.type || 'application/pdf');
+      };
+      reader.readAsDataURL(file);
   };
 
   const handleFileChange = (event) => {
-    const file = event.target.files[0];
-    if (!file) return;
-    event.target.value = ''; 
-    setUploadedFile(file);
-    setMimeType(file.type); 
+      processFile(event.target.files[0]);
+      event.target.value = ''; 
+  };
 
-    if (file.type.startsWith('image/')) {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          const img = new Image();
-          img.onload = () => {
-            const { dataUrl, rawBase64 } = processImageForAI(img);
-            setDataUrl(dataUrl);
-            setRawBase64(rawBase64);
-            setMimeType('image/jpeg');
-          };
-          img.src = e.target.result;
-        };
-        reader.readAsDataURL(file);
-    } else {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            const dataUrl = e.target.result;
-            const rawBase64 = dataUrl.split(',')[1];
-            setDataUrl(dataUrl);
-            setRawBase64(rawBase64);
-            setMimeType(file.type || 'application/pdf');
-        };
-        reader.readAsDataURL(file);
-    }
+  const handleDragOver = (e) => { e.preventDefault(); setIsDraggingFile(true); };
+  const handleDragLeave = (e) => { e.preventDefault(); setIsDraggingFile(false); };
+  const handleDrop = (e) => {
+      e.preventDefault();
+      setIsDraggingFile(false);
+      if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+          processFile(e.dataTransfer.files[0]);
+      }
   };
 
   const removeUploadedImage = () => { 
@@ -696,13 +807,14 @@ function ChatBot() {
     setDataUrl(null); 
     setInput(""); 
     setMimeType(null);
+    setImageToEdit(null);
   };
 
   // ===============================================================================================
   // SECTION 8: MASTER AI ORCHESTRATOR
   // ===============================================================================================
   
-  const handleSend = async () => {
+  const handleSend = async (overrideText = null) => {
     // DOUBLE CHECK: Even if they bypass UI, logic prevents sending without terms.
     if (!termsAccepted) { setShowFullTerms(true); return; }
     
@@ -710,9 +822,10 @@ function ChatBot() {
         addMessage({ text: "⚠️ **Connection Error:** You are currently OFFLINE.", sender: "bot", timestamp: new Date().toLocaleTimeString() }); 
         return; 
     }
-    if (!input.trim() && !uploadedFile) return;
 
-    const userText = input.trim();
+    const userText = typeof overrideText === 'string' ? overrideText : input.trim();
+    if (!userText && !uploadedFile) return;
+
     const aiPrompt = userText || (uploadedFile?.type?.includes('pdf') ? "Please read and summarize this document in detail." : "Please analyze this image and describe what you see.");
     const fileName = uploadedFile ? uploadedFile.name : null;
 
@@ -737,6 +850,12 @@ function ChatBot() {
     executeAILoop(aiPrompt, rawBase64, dataUrl, mimeType);
   };
 
+  const handleStopGeneration = () => {
+      if (abortControllerRef.current) {
+          abortControllerRef.current.abort();
+      }
+  };
+
   const executeAILoop = async (text, rBase64, dUrl, mType) => {
     // 🎨 GEN-AI Check
     if (text.toLowerCase().startsWith("generate an image") || text.toLowerCase().startsWith("draw") || text.toLowerCase().startsWith("create an image")) {
@@ -757,15 +876,20 @@ function ChatBot() {
     }
 
     // 🧠 ANALYTICAL LOOP
-    const systemInstruction = `You are 'Farm Buddy', an expert Agricultural AI assistant.
+    const systemInstruction = `You are 'Farm Buddy', an expert Agricultural AI assistant, but you are also highly capable of answering ANY type of question (general knowledge, coding, math, science, etc.).
     1. Default Language: ENGLISH.
     2. Reply in Hindi/Telugu/Tamil ONLY if user asks.
-    3. Analyze crop images for diseases.`;
+    3. Analyze crop images for diseases when an image is provided.
+    4. If the user asks non-agricultural questions, answer them accurately and fully just like a general AI assistant would.`;
     
     let finalResponse = ""; 
     let success = false; 
     let debugLog = "";
     
+    // Initialize AbortController for this request
+    abortControllerRef.current = new AbortController();
+    const signal = abortControllerRef.current.signal;
+
     const hasFile = !!(rBase64 && dUrl);
     const isImage = mType && mType.startsWith('image/');
     const queue = hasFile ? MODEL_QUEUE.filter(m => m.vision === true) : MODEL_QUEUE;
@@ -776,122 +900,136 @@ function ChatBot() {
         return;
     }
 
-    for (const model of queue) {
-      if (success) break;
+    // 🚀 PARALLEL BATCH EXECUTION
+    const fetchModel = async (model) => {
       try {
         if (model.provider === 'gemini') {
-          if (!GEMINI_KEY) { debugLog += "Gemini Key Missing; "; continue; }
+          if (!GEMINI_KEY) throw new Error("Gemini Key Missing");
           const url = `https://generativelanguage.googleapis.com/v1beta/models/${model.id}:generateContent?key=${GEMINI_KEY}`;
           const parts = hasFile 
             ? [{ text: `SYSTEM: ${systemInstruction} \nUSER REQUEST: ${text}` }, { inline_data: { mime_type: mType || "image/jpeg", data: rBase64 } }] 
             : [{ text: `SYSTEM: ${systemInstruction}\nUSER REQUEST: ${text}` }];
           
           const payload = { contents: [{ parts: parts }] };
-          
-          // ✨ ENABLE GOOGLE SEARCH GROUNDING for modern Gemini models without disturbing old ones
-          if (model.id.match(/1\.5|2\.0|2\.5|3\./)) {
-              payload.tools = [{ googleSearch: {} }];
-          }
+          if (model.id.match(/1\.5|2\.0|2\.5|3\./)) payload.tools = [{ googleSearch: {} }];
 
-          const res = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
-          if (!res.ok) { 
-              const err = await res.json(); 
-              throw new Error(`${res.status}: ${err.error?.message || 'Unknown Error'}`); 
-          }
+          const res = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload), signal });
+          if (!res.ok) { const err = await res.json(); throw new Error(`${res.status}: ${err.error?.message || 'Unknown Error'}`); }
           const data = await res.json();
-          finalResponse = data.candidates?.[0]?.content?.parts?.[0]?.text;
+          let modelResponse = data.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (!modelResponse) throw new Error("Empty response");
           
-          // ✨ EXTRACT & DISPLAY SEARCH GROUNDING METADATA
           const metadata = data.candidates?.[0]?.groundingMetadata;
           if (metadata?.webSearchQueries?.length > 0) {
-              // Log the queries to the console as requested
-              console.log("Search Queries Used by Gemini:", metadata.webSearchQueries);
-              
-              // Append the queries and source URLs to the chat response visually
-              finalResponse += "\n\n---\n**🔍 Google Search Grounding:**\n";
-              metadata.webSearchQueries.forEach(query => {
-                  finalResponse += `- *Searched: "${query}"*\n`;
-              });
-              
+              console.log(`[${model.id}] Search Queries:`, metadata.webSearchQueries);
+              modelResponse += "\n\n---\n**🔍 Google Search Grounding:**\n";
+              metadata.webSearchQueries.forEach(query => { modelResponse += `- *Searched: "${query}"*\n`; });
               if (metadata.groundingChunks) {
                   const sources = [];
                   metadata.groundingChunks.forEach(chunk => {
-                      if (chunk.web?.uri) {
-                          sources.push({ title: chunk.web.title || chunk.web.uri, url: chunk.web.uri });
-                      }
+                      if (chunk.web?.uri) sources.push({ title: chunk.web.title || chunk.web.uri, url: chunk.web.uri });
                   });
-                  
                   const uniqueSources = Array.from(new Map(sources.map(s => [s.url, s])).values());
-                  
                   if (uniqueSources.length > 0) {
-                      console.log("\nSources used:");
-                      finalResponse += "\n**Sources:**\n";
+                      modelResponse += "\n**Sources:**\n";
                       uniqueSources.forEach((source, i) => {
-                          console.log(`- ${source.title}: ${source.url}`);
                           let secureUrl = source.url;
                           try { 
                               const urlObj = new URL(source.url);
                               if (urlObj.protocol === 'http:') urlObj.protocol = 'https:';
                               secureUrl = urlObj.toString();
                           } catch(e){}
-                          // Format as a markdown link so ReactMarkdown makes it clickable
-                          finalResponse += `${i + 1}. ${source.title}\n`;
+                          // Safely format as a clickable markdown link
+                          modelResponse += `${i + 1}. ${source.title}\n`;
                       });
                   }
               }
           }
-
-          if (finalResponse) success = true;
+          return modelResponse;
 
         } else if (model.provider === 'groq') {
-          if (!GROQ_KEY) { debugLog += "Groq Key Missing; "; continue; }
+          if (!GROQ_KEY) throw new Error("Groq Key Missing");
           let payload;
           if (hasFile && model.vision && dUrl && isImage) { 
               const mergedContent = `${systemInstruction}\n\nUSER REQUEST: ${text}`;
               payload = [{ role: "user", content: [{ type: "text", text: mergedContent }, { type: "image_url", image_url: { url: dUrl } }] }]; 
           } else if (hasFile && !isImage) {
-              throw new Error("Groq does not support PDF processing. Falling back to next model.");
+              throw new Error("Groq does not support PDF processing.");
           } else { 
               payload = [{ role: "system", content: systemInstruction }, { role: "user", content: text }]; 
           }
-          const res = await fetch("https://api.groq.com/openai/v1/chat/completions", { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${GROQ_KEY}` }, body: JSON.stringify({ model: model.id, messages: payload }) });
+          const res = await fetch("https://api.groq.com/openai/v1/chat/completions", { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${GROQ_KEY}` }, body: JSON.stringify({ model: model.id, messages: payload }), signal });
           const data = await res.json();
           if (data.error) throw new Error(`Groq ${data.error.message}`);
-          finalResponse = data.choices?.[0]?.message?.content;
-          if (finalResponse) success = true;
+          const modelResponse = data.choices?.[0]?.message?.content;
+          if (!modelResponse) throw new Error("Empty response");
+          return modelResponse;
 
         } else if (model.provider === 'hf') {
-          if (!HF_KEY) { debugLog += "HF Key Missing; "; continue; }
+          if (!HF_KEY) throw new Error("HF Key Missing");
           if (hasFile && !isImage) throw new Error("HuggingFace vision models require images, skipping PDF.");
           const fetchHF = async () => {
               const res = await fetch(dUrl);
               const blob = await res.blob();
-              return fetch(`https://api-inference.huggingface.co/models/${model.id}`, { method: "POST", headers: { Authorization: `Bearer ${HF_KEY}` }, body: blob });
+              return fetch(`https://api-inference.huggingface.co/models/${model.id}`, { method: "POST", headers: { Authorization: `Bearer ${HF_KEY}` }, body: blob, signal });
           };
           let res = await fetchHF();
           if (res.status === 503) { await new Promise(r => setTimeout(r, 5000)); res = await fetchHF(); }
-          if (!res.ok) { const txt = await res.text(); throw new Error(`HF ${res.status}`); }
+          if (!res.ok) { throw new Error(`HF ${res.status}`); }
           const data = await res.json();
           if (Array.isArray(data) && data[0].label) {
             const disease = data[0].label; 
             if (!text.includes("detected:")) {
-                 executeAILoop(`Detected: "${disease}". Detailed cure?`, null, null, null); 
-                 return; 
-            } else { finalResponse = `🔍 **Diagnosis:** ${disease}\n\n${text}`; success = true; }
+                 return { _isRecursive: true, payload: `Detected: "${disease}". Detailed cure?` }; 
+            } else { 
+                 return `🔍 **Diagnosis:** ${disease}\n\n${text}`; 
+            }
           }
+          throw new Error("Unrecognized HF response");
         }
-      } catch (e) { 
+      } catch (e) {
+          if (e.name === 'AbortError') {
+              debugLog += `${model.id} (Stopped by user); `;
+              throw e;
+          }
+          
           const isRateLimit = e.message && (e.message.includes("429") || e.message.includes("quota"));
           if (isRateLimit) {
-              console.warn(`Rate limit hit for ${model.id}. Moving to next fallback...`);
-              debugLog += `${model.id} (429 Rate Limit); `;
-              continue;
+              console.warn(`Rate limit hit for ${model.id}.`);
+              debugLog += `${model.id} (429); `;
           } else {
               console.error(`Unexpected error with ${model.id}:`, e);
               debugLog += `${model.id} (Err); `;
-              continue;
           }
+          throw e; // Re-throw so Promise.any knows this failed
       }
+    };
+
+    const BATCH_SIZE = 3;
+    for (let i = 0; i < queue.length; i += BATCH_SIZE) {
+        if (success) break;
+        const batch = queue.slice(i, i + BATCH_SIZE);
+        try {
+            // Promise.any races the models and resolves with the FIRST successful response
+            const result = await Promise.any(batch.map(model => fetchModel(model)));
+            
+            if (result?._isRecursive) {
+                executeAILoop(result.payload, null, null, null);
+                return;
+            }
+            
+            finalResponse = result;
+            success = true;
+            break;
+        } catch (aggregateError) {
+            if (aggregateError.errors && aggregateError.errors.some(e => e.name === 'AbortError')) {
+                success = false;
+                finalResponse = "🛑 *Generation stopped by user.*";
+                break;
+            }
+            // If we hit this block, EVERY model in the batch failed
+            console.warn(`All models in batch ${i / BATCH_SIZE + 1} failed. Trying next batch if available.`);
+        }
     }
 
     if (!success) {
@@ -1023,7 +1161,7 @@ function ChatBot() {
       
       {/* 🖥️ MAIN CHAT WIDGET (FULL SCREEN) */}
       {isOpen && (
-        <div style={styles.chatWidget}>
+        <div style={styles.chatWidget} onDragOver={handleDragOver} onDragLeave={handleDragLeave} onDrop={handleDrop}>
           
           {/* SIDEBAR */}
           {showSidebar && (
@@ -1100,6 +1238,9 @@ function ChatBot() {
             </div>
             
             <div style={{display:'flex', alignItems:'center', gap:'8px'}}>
+                <button onClick={handleExportChat} style={styles.iconBtnInner} title="Download Chat History">
+                    <Download size={20} color="#E3E3E3" strokeWidth={1.5} />
+                </button>
                 <button onClick={(e) => handleClearChat(e)} style={{...styles.iconBtnInner, ...(isClearing ? { animation: 'spin 0.4s linear' } : {})}} title="Clear Conversation">
                     <RefreshCw size={20} color="#E3E3E3" strokeWidth={1.5} />
                 </button>
@@ -1188,8 +1329,25 @@ function ChatBot() {
                 )}
               </div>
             ))}
+            
+            {/* QUICK STARTER PROMPTS */}
+            {messages.length === 1 && !isLoading && (
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginTop: '20px', justifyContent: 'center', animation: 'fadeIn 0.5s ease-out' }}>
+                    {[
+                        "🌱 How do I treat powdery mildew on tomato leaves?",
+                        "💻 Write a Python script to track my farm expenses.",
+                        "🌦️ What is the best summer crop to plant?",
+                        "📊 Explain modern market demand trends."
+                    ].map((promptText, idx) => (
+                        <button key={idx} onClick={() => handleSend(promptText)} style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.15)', color: '#E3E3E3', padding: '10px 16px', borderRadius: '20px', fontSize: '13px', cursor: 'pointer', transition: 'all 0.2s', backdropFilter: 'blur(10px)' }} onMouseOver={(e) => e.target.style.background = 'rgba(255,255,255,0.1)'} onMouseOut={(e) => e.target.style.background = 'rgba(255,255,255,0.05)'}>
+                            {promptText}
+                        </button>
+                    ))}
+                </div>
+            )}
+
             {isTyping && (<div style={styles.typingIndicatorBubble}><div className="typing-dot"></div><div className="typing-dot"></div><div className="typing-dot"></div></div>)}
-            {isLoading && !isTyping && <div style={styles.loadingTxt}>⚡ Analyzing with Multi-Model Grid...</div>}
+            {isLoading && !isTyping && <div style={styles.loadingTxt}>⚡ Analyzing with Multi-Model Grid... <button onClick={handleStopGeneration} style={{background: 'transparent', border: 'none', color: '#ff4d4d', cursor: 'pointer', textDecoration: 'underline'}}>Stop</button></div>}
             <div ref={messagesEndRef} />
           </div>
             
@@ -1203,7 +1361,17 @@ function ChatBot() {
                 {uploadedFile && (
                   <div style={{...styles.uploadPreviewRow, marginBottom: '4px'}}>
                     <div style={styles.imgBadge}>
-                      <div style={styles.previewThumb}>{uploadedFile.type.startsWith('image/') ? '🖼️' : '📄'}</div>
+                      <div 
+                        style={{...styles.previewThumb, padding: 0, overflow: 'hidden', cursor: uploadedFile.type.startsWith('image/') ? 'pointer' : 'default'}}
+                        onClick={() => {
+                          if (uploadedFile.type.startsWith('image/')) setImageToEdit(dataUrl);
+                        }}
+                        title={uploadedFile.type.startsWith('image/') ? "Click to edit image" : ""}
+                      >
+                        {uploadedFile.type.startsWith('image/') && dataUrl ? (
+                          <img src={dataUrl} alt="preview" style={{width: '100%', height: '100%', objectFit: 'cover'}} />
+                        ) : '📄'}
+                      </div>
                       <div style={styles.previewInfo}>
                         <span style={styles.previewName}>{uploadedFile.name || 'Uploaded Image'}</span>
                         <span style={styles.previewSize}>{(uploadedFile.size / 1024).toFixed(1)} KB</span>
@@ -1215,8 +1383,8 @@ function ChatBot() {
                 
                 <textarea
                     ref={textareaRef}
-                    placeholder={isOnline ? "Ask Farm Buddy..." : "Offline"}
-                    disabled={!isOnline}
+                    placeholder={isLoading ? "Generating response..." : isOnline ? "Ask Farm Buddy..." : "Offline"}
+                    disabled={!isOnline || isLoading}
                     style={styles.geminiTextArea}
                     className="gemini-textarea"
                     value={input}
@@ -1240,7 +1408,11 @@ function ChatBot() {
                       <Plus size={22} color="#E3E3E3" strokeWidth={2} />
                   </label>
                   
-                  {!(input.trim() || uploadedFile) ? (
+                  {isLoading ? (
+                      <button onClick={handleStopGeneration} style={{...styles.sendBtn, background: '#ef4444'}} title="Stop Generation">
+                          <Square fill="white" size={16} color="#fff" />
+                      </button>
+                  ) : !(input.trim() || uploadedFile) ? (
                       <button onClick={startListening} style={styles.iconBtnInner} title="Voice Input">
                           <Mic size={22} color="#E3E3E3" strokeWidth={1.5} />
                       </button>
@@ -1252,7 +1424,29 @@ function ChatBot() {
                 </div>
             </div>
           </div>
+
+          {/* DRAG & DROP OVERLAY */}
+          {isDraggingFile && (
+              <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(46, 125, 50, 0.2)', backdropFilter: 'blur(8px)', zIndex: 10001, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', border: '4px dashed #4ade80', borderRadius: '24px', pointerEvents: 'none' }}>
+                  <ImageIcon size={64} color="#4ade80" style={{ marginBottom: '16px', animation: 'pulseGlow 1.5s infinite alternate' }} />
+                  <h2 style={{ color: '#fff', fontSize: '24px', fontWeight: 'bold' }}>Drop image or document here</h2>
+              </div>
+          )}
+
         </div>
+      )}
+
+      {imageToEdit && (
+          <ImageEditor 
+              imageUrl={imageToEdit}
+              onSave={(editedDataUrl) => {
+                  setDataUrl(editedDataUrl);
+                  setRawBase64(editedDataUrl.split(',')[1]);
+                  setMimeType('image/jpeg');
+                  setImageToEdit(null);
+              }}
+              onCancel={() => setImageToEdit(null)}
+          />
       )}
 
       {showFullTerms && <FullTermsModal />}
@@ -1343,13 +1537,13 @@ const styles = {
       left: 0,
       width: '100vw', 
       height: '100vh', 
-      background: 'rgba(20, 20, 22, 0.55)',
-      backdropFilter: 'blur(28px) saturate(140%) brightness(110%)',
-      WebkitBackdropFilter: 'blur(28px) saturate(140%) brightness(110%)',
-      border: '1px solid rgba(255, 255, 255, 0.1)',
-      borderTop: '1px solid rgba(255, 255, 255, 0.3)',
-      borderLeft: '1px solid rgba(255, 255, 255, 0.2)',
-      boxShadow: 'inset 0 1px 1px rgba(255, 255, 255, 0.3), 0 8px 32px rgba(0, 0, 0, 0.15)',
+          background: 'radial-gradient(circle at 15% 0%, rgba(255,255,255,0.15) 0%, transparent 40%), radial-gradient(circle at 85% 100%, rgba(255,255,255,0.05) 0%, transparent 40%), linear-gradient(135deg, rgba(20, 20, 22, 0.45) 0%, rgba(10, 10, 12, 0.65) 100%)',
+          backdropFilter: 'blur(50px) saturate(200%) brightness(120%)',
+          WebkitBackdropFilter: 'blur(50px) saturate(200%) brightness(120%)',
+          border: '1px solid rgba(255, 255, 255, 0.15)',
+          borderTop: '1px solid rgba(255, 255, 255, 0.45)',
+          borderLeft: '1px solid rgba(255, 255, 255, 0.3)',
+          boxShadow: 'inset 0 1px 2px rgba(255, 255, 255, 0.4), inset 0 0 15px rgba(255,255,255,0.1), 0 8px 32px rgba(0, 0, 0, 0.3)',
       display: 'flex', 
       flexDirection: 'column', 
       zIndex: 10000, 
@@ -1365,7 +1559,7 @@ const styles = {
     saveBtn: { background:'#2E7D32', border:'none', color:'white', borderRadius:'4px', cursor:'pointer' },
     iconBtn: { background:'transparent', border:'none', color:'#aaa', cursor:'pointer', fontSize:'14px' },
     
-    editMsgContainer: { background: 'rgba(30, 30, 32, 0.65)', backdropFilter: 'blur(20px) saturate(120%)', WebkitBackdropFilter: 'blur(20px) saturate(120%)', width:'100%', maxWidth:'85%', padding:'20px', borderRadius:'28px', borderBottomRightRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.15)', borderTop: '1px solid rgba(255, 255, 255, 0.3)', borderLeft: '1px solid rgba(255, 255, 255, 0.2)', boxShadow: 'inset 0 1px 1px rgba(255, 255, 255, 0.2), 0 10px 40px rgba(0, 0, 0, 0.3)' },
+    editMsgContainer: { background: 'linear-gradient(135deg, rgba(30, 30, 35, 0.65) 0%, rgba(20, 20, 25, 0.75) 100%)', backdropFilter: 'blur(30px) saturate(200%) brightness(120%)', WebkitBackdropFilter: 'blur(30px) saturate(200%) brightness(120%)', width:'100%', maxWidth:'85%', padding:'20px', borderRadius:'28px', borderBottomRightRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.15)', borderTop: '1px solid rgba(255, 255, 255, 0.4)', borderLeft: '1px solid rgba(255, 255, 255, 0.3)', boxShadow: 'inset 0 1px 2px rgba(255, 255, 255, 0.4), inset 0 0 15px rgba(255,255,255,0.05), 0 10px 40px rgba(0, 0, 0, 0.4)' },
     editMsgTextarea: { width:'100%', height:'80px', background:'rgba(0, 0, 0, 0.3)', color:'#E3E3E3', border:'1px solid rgba(255, 255, 255, 0.1)', padding:'12px 16px', borderRadius:'16px', outline:'none', fontSize:'15px', lineHeight:'1.5', fontFamily:'"Inter", sans-serif', resize:'none', boxShadow:'inset 0 2px 6px rgba(0,0,0,0.4)', boxSizing:'border-box' },
     editMsgActions: { display:'flex', justifyContent:'flex-end', gap:'10px', marginTop:'12px' },
     saveEditBtn: { background:'#2E7D32', color:'white', border:'none', padding:'8px 18px', borderRadius:'20px', cursor:'pointer', fontSize:'13px', fontWeight:'600', transition:'all 0.2s ease', boxShadow:'0 4px 12px rgba(46, 125, 50, 0.3)' },
@@ -1390,7 +1584,7 @@ const styles = {
     chatBody: { flex: 1, padding: '16px', overflowY: 'auto', scrollBehavior: 'smooth', position:'relative', backgroundColor: 'transparent', minHeight: 0 },
     chatBodyClearing: { animation: 'fadeOutUp 0.4s ease-out forwards' },
     botBubble: { background: 'transparent', color: '#ffffff', padding: '14px 18px', maxWidth: '90%', fontSize: '15px', lineHeight: '1.5', wordWrap: 'break-word' },
-    userBubble: { background: 'rgba(46, 125, 50, 0.15)', backdropFilter: 'blur(12px) saturate(120%) brightness(110%)', WebkitBackdropFilter: 'blur(12px) saturate(120%) brightness(110%)', color: '#ffffff', padding: '14px 18px', borderRadius: '24px', borderBottomRightRadius: '8px', maxWidth: '85%', fontSize: '15px', lineHeight: '1.5', wordWrap: 'break-word', border: '1px solid rgba(255, 255, 255, 0.1)', borderTop: '1px solid rgba(255, 255, 255, 0.3)', borderLeft: '1px solid rgba(255, 255, 255, 0.2)', boxShadow: 'inset 0 1px 1px rgba(255, 255, 255, 0.3), 0 8px 32px rgba(0, 0, 0, 0.15)' },
+    userBubble: { background: 'linear-gradient(135deg, rgba(74, 222, 128, 0.2) 0%, rgba(46, 125, 50, 0.3) 100%)', backdropFilter: 'blur(24px) saturate(200%) brightness(120%)', WebkitBackdropFilter: 'blur(24px) saturate(200%) brightness(120%)', color: '#ffffff', padding: '14px 18px', borderRadius: '24px', borderBottomRightRadius: '8px', maxWidth: '85%', fontSize: '15px', lineHeight: '1.5', wordWrap: 'break-word', border: '1px solid rgba(255, 255, 255, 0.15)', borderTop: '1px solid rgba(255, 255, 255, 0.4)', borderLeft: '1px solid rgba(255, 255, 255, 0.3)', boxShadow: 'inset 0 1px 2px rgba(255, 255, 255, 0.4), inset 0 0 10px rgba(255,255,255,0.1), 0 8px 32px rgba(0, 0, 0, 0.2)' },
     
     codeBlock: { backgroundColor: '#0d0d0d', border: '1px solid #333', borderRadius: '8px', margin: '12px 0', overflow: 'hidden' },
     codeHeader: { backgroundColor: '#222', padding: '6px 12px', fontSize: '12px', color: '#888', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #333', fontFamily: 'monospace' },
@@ -1401,7 +1595,7 @@ const styles = {
     pdfMessage: { display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 16px', backgroundColor: 'rgba(46, 125, 50, 0.2)', borderRadius: '12px', border: '1px solid rgba(74, 222, 128, 0.4)', cursor: 'pointer', marginBottom: '10px', color: '#81C784', fontWeight: '600', boxShadow: '0 4px 12px rgba(0,0,0,0.2)' },
     timestamp: { fontSize: '11px', color: '#888', marginTop: '6px', marginLeft: '4px', marginRight: '4px' },
     
-    typingIndicatorBubble: { background: 'transparent', backdropFilter: 'blur(12px) saturate(120%) brightness(110%)', WebkitBackdropFilter: 'blur(12px) saturate(120%) brightness(110%)', padding: '14px 20px', borderRadius: '24px', borderBottomLeftRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.1)', borderTop: '1px solid rgba(255, 255, 255, 0.3)', borderLeft: '1px solid rgba(255, 255, 255, 0.2)', boxShadow: 'inset 0 1px 1px rgba(255, 255, 255, 0.3), 0 8px 32px rgba(0, 0, 0, 0.15)', display:'inline-block', marginBottom:'15px' },
+    typingIndicatorBubble: { background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%)', backdropFilter: 'blur(24px) saturate(200%) brightness(120%)', WebkitBackdropFilter: 'blur(24px) saturate(200%) brightness(120%)', padding: '14px 20px', borderRadius: '24px', borderBottomLeftRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.15)', borderTop: '1px solid rgba(255, 255, 255, 0.4)', borderLeft: '1px solid rgba(255, 255, 255, 0.3)', boxShadow: 'inset 0 1px 2px rgba(255, 255, 255, 0.4), inset 0 0 10px rgba(255,255,255,0.1), 0 8px 32px rgba(0, 0, 0, 0.2)', display:'inline-block', marginBottom:'15px' },
     loadingTxt: { color: '#888', fontSize: '13px', textAlign: 'center', marginTop: '10px', fontStyle: 'italic' },
     
     actionRow: { display: 'flex', gap: '10px', marginTop: '10px' },
@@ -1410,7 +1604,7 @@ const styles = {
     
     footer: { backgroundColor: 'transparent', padding: '0', display: 'flex', flexDirection: 'column', alignItems: 'center', boxSizing: 'border-box', width: '100%', zIndex: 10 },
     
-    geminiInputCard: { width: '100%', maxWidth: '100%', backgroundColor: '#131314', borderTop: '1px solid rgba(255,255,255,0.05)', borderRadius: '24px 24px 0 0', padding: '16px 16px 28px 16px', boxSizing: 'border-box', display: 'flex', flexDirection: 'column', gap: '8px', boxShadow: '0 -4px 20px rgba(0,0,0,0.4)' },
+    geminiInputCard: { width: '100%', maxWidth: '100%', background: 'rgba(20, 20, 22, 0.65)', backdropFilter: 'blur(40px) saturate(200%)', WebkitBackdropFilter: 'blur(40px) saturate(200%)', borderTop: '1px solid rgba(255,255,255,0.25)', borderRadius: '24px 24px 0 0', padding: '16px 16px 28px 16px', boxSizing: 'border-box', display: 'flex', flexDirection: 'column', gap: '8px', boxShadow: 'inset 0 1px 2px rgba(255, 255, 255, 0.2), 0 -8px 30px rgba(0,0,0,0.4)' },
     geminiActionRow: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' },
     geminiTextArea: { width: '100%', background: 'transparent', border: 'none', color: '#E3E3E3', outline: 'none', fontSize: '16px', padding: '4px 4px', fontFamily: '"Inter", sans-serif', resize: 'none', lineHeight: '1.4', minHeight: '24px', maxHeight: '150px', overflowY: 'auto', boxSizing: 'border-box' },
     
@@ -1430,8 +1624,8 @@ const styles = {
     termsText: { fontSize: '12px', color: '#A0A0A0', textAlign: 'center', lineHeight: '1.5' },
     readTermsBtn: { background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', color: '#E3E3E3', borderRadius: '20px', padding: '8px 16px', fontSize: '13px', fontWeight: '600', cursor: 'pointer', transition: 'all 0.2s ease' },
 
-    modalOverlay: { position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', backgroundColor: 'rgba(0,0,0,0.6)', zIndex: 10002, display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'auto', backdropFilter: 'blur(8px)' },
-    modalContent: { width: '90%', maxWidth: '600px', backgroundColor: 'rgba(30, 31, 34, 0.85)', backdropFilter: 'blur(24px) saturate(150%)', WebkitBackdropFilter: 'blur(24px) saturate(150%)', borderRadius: '24px', border: '1px solid rgba(255, 255, 255, 0.1)', borderTop: '1px solid rgba(255, 255, 255, 0.3)', borderLeft: '1px solid rgba(255, 255, 255, 0.2)', boxShadow: 'inset 0 1px 1px rgba(255, 255, 255, 0.3), 0 25px 50px -12px rgba(0,0,0,0.8)', overflow: 'hidden', display: 'flex', flexDirection: 'column', maxHeight: '85vh', animation: 'fadeIn 0.2s ease-out' },
+    modalOverlay: { position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', backgroundColor: 'rgba(0,0,0,0.6)', zIndex: 10002, display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'auto', backdropFilter: 'blur(15px)' },
+    modalContent: { width: '90%', maxWidth: '600px', background: 'linear-gradient(135deg, rgba(35, 36, 40, 0.75) 0%, rgba(20, 21, 24, 0.85) 100%)', backdropFilter: 'blur(40px) saturate(200%)', WebkitBackdropFilter: 'blur(40px) saturate(200%)', borderRadius: '24px', border: '1px solid rgba(255, 255, 255, 0.15)', borderTop: '1px solid rgba(255, 255, 255, 0.4)', borderLeft: '1px solid rgba(255, 255, 255, 0.3)', boxShadow: 'inset 0 1px 2px rgba(255, 255, 255, 0.4), inset 0 0 15px rgba(255,255,255,0.05), 0 25px 50px -12px rgba(0,0,0,0.8)', overflow: 'hidden', display: 'flex', flexDirection: 'column', maxHeight: '85vh', animation: 'fadeIn 0.2s ease-out' },
     modalHeader: { padding: '20px 24px', backgroundColor: 'rgba(255,255,255,0.05)', borderBottom: '1px solid rgba(255,255,255,0.1)', fontWeight: 'bold', fontSize: '16px', display: 'flex', justifyContent: 'space-between', color: '#fff' },
     modalBody: { padding: '24px', overflowY: 'auto', color: '#E3E3E3', fontSize: '14px', lineHeight: '1.6', flex: 1 },
     closeX: { background: 'none', border: 'none', fontSize: '24px', cursor: 'pointer', color: '#E3E3E3', display: 'flex', alignItems: 'center', justifyContent: 'center' },
@@ -1440,4 +1634,4 @@ const styles = {
     langBlock: { marginBottom: '25px', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '15px' }
 };
 
-export default ChatBot; 
+export default ChatBot;
