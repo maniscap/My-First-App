@@ -133,7 +133,7 @@ const DigitalLibrary = () => {
   useEffect(() => {
     if (!loading) return;
 
-    setCountdown(60); // Reset timer for deeper generation
+    setCountdown(90); // Extended timer for maximum context generation
 
     const timerId = setInterval(() => {
       setCountdown(prev => {
@@ -273,12 +273,17 @@ const DigitalLibrary = () => {
       1. The entire book MUST be written in the ${language} language.
       2. You MUST respond ONLY with a valid JSON array. NO conversational text, NO greetings, NO markdown formatting.
       3. Each page object must have EXACTLY two keys: "chapter_title" and "page_content".
-      4. Write extremely detailed, rich, and professional content (around 150 to 200 words per page). Provide actionable insights, steps, or rich narrative.
-      5. Generate exactly 6 to 8 pages to ensure comprehensive coverage.
+      4. Write extremely detailed, rich, and professional content (around 200 words per page).
+      5. ABSOLUTE REQUIREMENT: Every single chapter MUST have AT LEAST TWO PAGES (Part 1 and Part 2). NEVER write a chapter that is only one page. If you start a chapter, you must write at least two JSON objects for it (Part 1 and Part 2).
+      6. Generate as many pages as possible (aim for 15 to 30 pages) utilizing your maximum output capacity.
+      7. CRITICAL: You MUST properly close the JSON array ( ] ) before your output limit is reached. Do not cut off mid-sentence.
 
-      # EXAMPLE JSON STRUCTURE:
+      # EXAMPLE JSON STRUCTURE (showing mandatory multi-page chapter format):
       [
-        { "chapter_title": "Title Here", "page_content": "Content here..." }
+        { "chapter_title": "Chapter 1: Basics (Part 1)", "page_content": "Detailed content part 1..." },
+        { "chapter_title": "Chapter 1: Basics (Part 2)", "page_content": "Detailed content part 2..." },
+        { "chapter_title": "Chapter 2: Advanced (Part 1)", "page_content": "Detailed content part 1..." },
+        { "chapter_title": "Chapter 2: Advanced (Part 2)", "page_content": "Detailed content part 2..." }
       ]
     `;
 
@@ -290,7 +295,7 @@ const DigitalLibrary = () => {
       attempts++;
       try {
         const retryHint = attempts > 1 ? "\n\nCRITICAL: Previous attempt failed. READ THESE FOUR WORDS STRICTLY: ONLY VALID JSON ARRAY. DO NOT ADD ANY OTHER TEXT." : "";
-        const result = await callAIWithTimeout(systemPrompt + retryHint, `Topic: ${topic}`);
+        const result = await callAIWithTimeout(systemPrompt + retryHint, `Topic: ${topic}`, 90000); // 90-second timeout for massive generation
 
         if (!result.success) throw new Error(result.error || "Failed to generate book.");
 

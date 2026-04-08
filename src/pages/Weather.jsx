@@ -479,19 +479,31 @@ const Weather = () => {
       setTouchEndY(e.targetTouches[0].clientY);
   };
   
-  const onTouchEnd = () => {
+  const onTouchEnd = (e) => {
     if (!touchStartX || !touchEndX || !touchStartY || !touchEndY) return;
+    
+    // Prevent city swipe if touching a horizontal scrolling container like the hourly forecast
+    const isNoSwipeZone = e.target && e.target.closest && e.target.closest('.no-swipe');
+    
     const xDiff = touchStartX - touchEndX;
     const yDiff = touchStartY - touchEndY; 
 
-    if (Math.abs(xDiff) > 50 && Math.abs(yDiff) < 30) {
-        if (xDiff > 50 && currentIndex < savedWeatherList.length - 1) setCurrentIndex(currentIndex + 1);
-        if (xDiff < -50 && currentIndex > 0) setCurrentIndex(currentIndex - 1);
+    // Horizontal swipe (City change) - Increased sensitivity & diagonal tolerance
+    if (!isNoSwipeZone && Math.abs(xDiff) > 35 && Math.abs(xDiff) > Math.abs(yDiff) * 0.8) {
+        if (xDiff > 0 && currentIndex < savedWeatherList.length - 1) setCurrentIndex(currentIndex + 1);
+        if (xDiff < 0 && currentIndex > 0) setCurrentIndex(currentIndex - 1);
     }
-    if (yDiff < -100 && Math.abs(xDiff) < 40) {
+    // Vertical swipe (Pull to refresh) - Increased sensitivity
+    else if (yDiff < -70 && Math.abs(yDiff) > Math.abs(xDiff)) {
         const scroller = document.getElementById('weather-scroll-content');
         if (!scroller || scroller.scrollTop <= 5) handleRefresh();
     }
+
+    // Reset touch coordinates
+    setTouchStartX(null);
+    setTouchEndX(null);
+    setTouchStartY(null);
+    setTouchEndY(null);
   };
 
   if (loading) return <div style={styles.loadingContainer}><SkeletonLoader /></div>;
@@ -652,7 +664,7 @@ const Weather = () => {
       )}
 
       {/* MAIN CONTENT */}
-      <div style={styles.scrollContent}>
+      <div id="weather-scroll-content" style={styles.scrollContent}>
           <div style={styles.hero}>
               <div style={styles.tempWrapper}>
                   <h1 style={styles.bigTemp}>{getTemp(current.temp_c)}</h1>
@@ -690,7 +702,7 @@ const Weather = () => {
               <p style={{fontSize:'12px', opacity:0.7, marginBottom:'15px', display:'flex', alignItems:'center', gap:'5px', fontWeight:'600', letterSpacing:'0.5px'}}>
                   <WiTime3 size={18}/> 24-HOUR FORECAST
               </p>
-              <div style={styles.hourlyScroll}>
+              <div className="no-swipe" style={styles.hourlyScroll}>
                   {next24Hours.map((h, i) => (
                       <div key={i} style={styles.hourItem}>
                           {/* Extracts just the "HH:mm" from "YYYY-MM-DD HH:mm" safely! */}
