@@ -84,11 +84,21 @@ export const processWithFarmBrain = async (systemPrompt, userText = "", imageBas
                 const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model.id}:generateContent?key=${GEMINI_KEY}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ contents: [{ parts }] })
+                    body: JSON.stringify({ 
+                        contents: [{ parts }],
+                        generationConfig: {
+                            maxOutputTokens: 8192, // Force absolute maximum length for long books
+                            temperature: 0.7       // Creative but focused tone
+                        }
+                    })
                 });
 
                 if (!response.ok) throw new Error(`Gemini API Error: ${response.status}`);
                 const data = await response.json();
+                
+                if (!data.candidates || !data.candidates[0].content) {
+                    throw new Error("Gemini blocked the response due to safety filters or an empty return.");
+                }
                 resultText = data.candidates[0].content.parts[0].text;
             } 
             
@@ -118,7 +128,12 @@ export const processWithFarmBrain = async (systemPrompt, userText = "", imageBas
                         'Authorization': `Bearer ${GROQ_KEY}`,
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ model: model.id, messages })
+                    body: JSON.stringify({ 
+                        model: model.id, 
+                        messages: messages,
+                        max_tokens: 8000, // Force absolute maximum length
+                        temperature: 0.7
+                    })
                 });
 
                 if (!response.ok) throw new Error(`Groq API Error: ${response.status}`);

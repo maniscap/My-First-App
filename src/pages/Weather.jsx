@@ -7,7 +7,7 @@ import {
 import { 
   IoMdAdd, IoMdSearch, IoMdClose, IoMdNavigate, IoMdArrowBack, IoMdRefresh
 } from 'react-icons/io';
-import { MdLocationOn, MdDelete, MdGpsFixed } from 'react-icons/md';
+import { MdLocationOn, MdDelete, MdGpsFixed, MdLocationOff } from 'react-icons/md';
 import { FaMaskFace } from 'react-icons/fa6'; 
 import { FaWind } from 'react-icons/fa';
 
@@ -664,6 +664,25 @@ const Weather = () => {
       )}
 
       {/* MAIN CONTENT */}
+      {isEmpty ? (
+        <div style={styles.emptyStateWrapper}>
+            <div style={styles.emptyStateCard}>
+                <div style={styles.emptyStateIconBg}>
+                    <MdLocationOff size={56} color="#ff6b6b" />
+                </div>
+                <h2 style={styles.emptyStateTitle}>Location Required</h2>
+                <p style={styles.emptyStateDesc}>We couldn't detect your location. Please turn on your device's GPS to see local weather, or search for a city manually.</p>
+                
+                <button onClick={() => { setLoading(true); loadAllCities(); }} style={styles.enableGpsBtn}>
+                    <MdGpsFixed size={20} /> Retry GPS
+                </button>
+                
+                <button onClick={handleOpenCityManager} style={styles.manualSearchBtn}>
+                    <IoMdSearch size={20} /> Search Manually
+                </button>
+            </div>
+        </div>
+      ) : (
       <div id="weather-scroll-content" style={styles.scrollContent}>
           <div style={styles.hero}>
               <div style={styles.tempWrapper}>
@@ -803,6 +822,7 @@ const Weather = () => {
 
           <div style={{height:'100px'}}></div>
       </div>
+      )}
       </div>
     </div>
   );
@@ -939,7 +959,15 @@ const styles = {
   
   popularLabel: { fontSize:'12px', color: '#ddd', marginTop:'30px', marginBottom:'15px', letterSpacing:'1px', fontWeight: 'bold' },
   popularGrid: { display:'flex', flexWrap:'wrap', gap:'10px' },
-  popularChip: { background:'rgba(255,255,255,0.1)', padding:'10px 18px', borderRadius:'25px', fontSize:'14px', cursor:'pointer', border:'1px solid rgba(255,255,255,0.2)', color: '#fff', backdropFilter: 'blur(10px)', boxSizing: 'border-box' }
+  popularChip: { background:'rgba(255,255,255,0.1)', padding:'10px 18px', borderRadius:'25px', fontSize:'14px', cursor:'pointer', border:'1px solid rgba(255,255,255,0.2)', color: '#fff', backdropFilter: 'blur(10px)', boxSizing: 'border-box' },
+
+  emptyStateWrapper: { flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px', zIndex: 5 },
+  emptyStateCard: { background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', borderRadius: '32px', padding: '40px 25px', textAlign: 'center', border: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 10px 40px rgba(0,0,0,0.3)', display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', boxSizing: 'border-box' },
+  emptyStateIconBg: { background: 'rgba(255, 107, 107, 0.15)', padding: '20px', borderRadius: '50%', marginBottom: '20px', border: '1px solid rgba(255, 107, 107, 0.3)' },
+  emptyStateTitle: { margin: '0 0 10px 0', fontSize: '24px', fontWeight: 'bold' },
+  emptyStateDesc: { margin: '0 0 30px 0', fontSize: '14px', color: 'rgba(255,255,255,0.7)', lineHeight: '1.5' },
+  enableGpsBtn: { background: '#4CAF50', color: 'white', border: 'none', padding: '16px 20px', borderRadius: '16px', fontSize: '16px', fontWeight: 'bold', width: '100%', marginBottom: '15px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', boxShadow: '0 4px 15px rgba(76, 175, 80, 0.4)' },
+  manualSearchBtn: { background: 'rgba(255,255,255,0.1)', color: 'white', border: '1px solid rgba(255,255,255,0.2)', padding: '16px 20px', borderRadius: '16px', fontSize: '16px', fontWeight: 'bold', width: '100%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }
 };
 
 export default Weather;

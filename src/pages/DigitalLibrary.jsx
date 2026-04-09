@@ -82,10 +82,6 @@ const PageCover = React.forwardRef(({ children, theme }, ref) => {
 
 // --- 2. The Main Library Component ---
 const DigitalLibrary = () => {
-  const [bgImage, setBgImage] = useState('');
-  const dayBg = 'https://images.unsplash.com/photo-1625246333195-78d9c38ad449?q=80&w=2940&auto=format&fit=crop';
-  const nightBg = 'https://images.unsplash.com/photo-1504333638930-c8787321eee0?q=80&w=2070&auto=format&fit=crop';
-
   useEffect(() => {
     const hour = new Date().getHours();
     if (hour >= 18 || hour < 6) setTheme('dark');
@@ -96,6 +92,10 @@ const DigitalLibrary = () => {
   const [topic, setTopic] = useState('');
   const [bookTopic, setBookTopic] = useState('');
   const [language, setLanguage] = useState('English');
+  const [bookLength, setBookLength] = useState('Standard (10 Pages)');
+  const [chapters, setChapters] = useState(3);
+  const [contentStyle, setContentStyle] = useState('Practical Advice (Step-by-step)');
+  const [customStyle, setCustomStyle] = useState('');
   const [bookData, setBookData] = useState(null);
   const [coverImage, setCoverImage] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -104,7 +104,7 @@ const DigitalLibrary = () => {
   const [theme, setTheme] = useState('light');
 
   const [currentPage, setCurrentPage] = useState(0);
-  const totalPages = bookData ? bookData.length + 2 : 0;
+  const totalPages = bookData ? bookData.length + 3 : 0;
   const [showControls, setShowControls] = useState(false);
   const [showGridView, setShowGridView] = useState(false);
 
@@ -209,11 +209,11 @@ const DigitalLibrary = () => {
       return;
     }
 
-    if (currentPage === 0 || !bookData || currentPage >= totalPages -1) {
-      return; // Do not read cover pages
+    if (currentPage === 0 || currentPage === 1 || !bookData || currentPage >= totalPages - 1) {
+      return; // Do not read cover, ToC, or End pages
     }
 
-    const pageIndex = currentPage - 1;
+    const pageIndex = currentPage - 2;
     const pageData = bookData[pageIndex];
     if (!pageData) return;
 
@@ -260,11 +260,22 @@ const DigitalLibrary = () => {
     setCoverImage(unsplashUrl);
     new Image().src = unsplashUrl; // Preload the image
 
+    let targetPages = 10;
+    if (bookLength.includes('5')) targetPages = 5;
+    if (bookLength.includes('15')) targetPages = 15;
+    if (bookLength.includes('20')) targetPages = 20;
+
+    let toneInstruction = '';
+    if (contentStyle.includes('Educational')) toneInstruction = 'Write in an educational and theoretical tone. Explain the science and the "why" behind the concepts clearly.';
+    else if (contentStyle.includes('Practical')) toneInstruction = 'Write strictly as a highly actionable, step-by-step practical advice guide. Focus on "how-to" and daily farming tasks.';
+    else if (contentStyle.includes('Story')) toneInstruction = 'Write the content as an engaging narrative or story that teaches the concepts through relatable rural characters and scenarios.';
+    else toneInstruction = `Write exactly according to this custom instruction: "${customStyle}"`;
+
     // --- PROMPT ENGINEERING: Forcing JSON Output ---
     const systemPrompt = `
       You are a versatile and expert Indian agricultural AI author. 
       The user requested a book on the topic: "${currentTopic}". 
-      Even if the topic is just a single word (e.g., "drone", "wheat"), you must expand it into a comprehensive, highly accurate agricultural guide or an engaging rural story customized for the Indian farming context.
+      Expand it into a comprehensive guide customized for the Indian farming context.
 
       # SAFETY GUIDELINES:
       If the topic is sexually explicit, violent, or inappropriate, you must still return a valid JSON array, but with a single page explaining your refusal politely.
@@ -273,10 +284,12 @@ const DigitalLibrary = () => {
       1. The entire book MUST be written in the ${language} language.
       2. You MUST respond ONLY with a valid JSON array. NO conversational text, NO greetings, NO markdown formatting.
       3. Each page object must have EXACTLY two keys: "chapter_title" and "page_content".
-      4. Write extremely detailed, rich, and professional content (around 200 words per page).
-      5. ABSOLUTE REQUIREMENT: Every single chapter MUST have AT LEAST TWO PAGES (Part 1 and Part 2). NEVER write a chapter that is only one page. If you start a chapter, you must write at least two JSON objects for it (Part 1 and Part 2).
-      6. Generate as many pages as possible (aim for 15 to 30 pages) utilizing your maximum output capacity.
-      7. CRITICAL: You MUST properly close the JSON array ( ] ) before your output limit is reached. Do not cut off mid-sentence.
+      4. TONE & STYLE: ${toneInstruction}
+      5. CONTENT CLARITY: Use simple, engaging, and easy-to-understand language. Explain any technical jargon clearly so even a beginner can easily understand.
+      6. LENGTH CONSTRAINTS: You must generate approximately ${targetPages} pages.
+      7. CHAPTER CONSTRAINTS: Divide the content logically across EXACTLY ${chapters} chapters.
+      8. ABSOLUTE REQUIREMENT: Every single chapter MUST have AT LEAST TWO PAGES. NEVER write a chapter that is only one page. Group them nicely.
+      9. CRITICAL: You MUST properly close the JSON array ( ] ) before your output limit is reached. Do not cut off mid-sentence.
 
       # EXAMPLE JSON STRUCTURE (showing mandatory multi-page chapter format):
       [
@@ -499,19 +512,87 @@ const DigitalLibrary = () => {
     }
   };
 
+  const glassInputStyle = {
+    width: '100%',
+    background: 'rgba(0, 0, 0, 0.2)',
+    border: '1px solid rgba(255, 255, 255, 0.15)',
+    borderTop: '1px solid rgba(255, 255, 255, 0.3)',
+    borderRadius: '16px',
+    padding: '16px 20px',
+    color: '#fff',
+    fontSize: '15px',
+    fontWeight: '500',
+    outline: 'none',
+    boxShadow: 'inset 0 2px 5px rgba(0,0,0,0.15)',
+    boxSizing: 'border-box',
+    appearance: 'none',
+    WebkitAppearance: 'none',
+    MozAppearance: 'none',
+    transition: 'all 0.3s ease'
+  };
+
+  const labelStyle = { display: 'block', fontSize: '12px', color: 'rgba(255, 255, 255, 0.9)', fontWeight: '700', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px', textShadow: '0 1px 2px rgba(0,0,0,0.5)' };
+
+  const glassCardStyle = {
+    background: 'transparent',
+    backdropFilter: 'blur(16px) saturate(120%) brightness(110%)',
+    WebkitBackdropFilter: 'blur(16px) saturate(120%) brightness(110%)',
+    border: '1px solid rgba(255, 255, 255, 0.1)',
+    borderTop: '1px solid rgba(255, 255, 255, 0.3)',
+    borderLeft: '1px solid rgba(255, 255, 255, 0.2)',
+    boxShadow: 'inset 0 1px 1px rgba(255, 255, 255, 0.3), 0 8px 32px rgba(0, 0, 0, 0.15)',
+    borderRadius: '24px',
+    padding: '25px',
+    boxSizing: 'border-box',
+    width: '100%',
+    maxWidth: '500px',
+    margin: '0 auto',
+    display: 'flex',
+    flexDirection: 'column',
+    transition: 'all 0.3s ease'
+  };
+
+  const glassHeaderStyle = {
+    background: 'transparent', 
+    backdropFilter: 'blur(16px) saturate(120%) brightness(110%)', 
+    WebkitBackdropFilter: 'blur(16px) saturate(120%) brightness(110%)', 
+    border: '1px solid rgba(255, 255, 255, 0.1)', 
+    borderTop: '1px solid rgba(255, 255, 255, 0.3)', 
+    borderLeft: '1px solid rgba(255, 255, 255, 0.2)', 
+    boxShadow: 'inset 0 1px 1px rgba(255, 255, 255, 0.3), 0 8px 32px rgba(0,0,0,0.15)', 
+    padding: '12px 15px', 
+    borderRadius: '20px', 
+    display: 'flex', 
+    alignItems: 'center', 
+    justifyContent: 'space-between', 
+    marginBottom: '20px', 
+    flexShrink: 0, 
+    maxWidth: '500px', 
+    width: '100%', 
+    margin: '0 auto 20px auto', 
+    boxSizing: 'border-box'
+  };
+
   return (
-    <div style={{ 
-      padding: '15px', 
-      background: theme === 'dark' ? '#121212' : 'linear-gradient(135deg, #e0f2f1 0%, #80cbc4 100%)', 
-      height: '100dvh',
-      minHeight: '100dvh', 
+    <div style={{ position: 'fixed', inset: 0, fontFamily: '"SF Pro Display", system-ui, sans-serif' }}>
+      {/* Sharp Global Background via IMG tag like Weather.jsx */}
+      <img 
+        src="https://images.pexels.com/photos/10248028/pexels-photo-10248028.jpeg" 
+        alt="Library Background" 
+        style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover', zIndex: -2 }} 
+      />
+      {/* Dim Overlay */}
+      <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', backgroundColor: 'rgba(0,0,0,0.1)', zIndex: -1 }}></div>
+      
+      <div style={{ 
+        position: 'relative',
+      padding: '20px 15px', 
+        height: '100%',
       overflowY: (bookData || loading) ? 'hidden' : 'auto',
       overflowX: 'hidden',
-      fontFamily: 'system-ui, sans-serif',
       display: 'flex',
       flexDirection: 'column',
       boxSizing: 'border-box',
-      transition: 'background 0.4s ease'
     }}>
       <style>{`
         @keyframes border-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
@@ -521,106 +602,116 @@ const DigitalLibrary = () => {
 
       {/* Header Container (Hidden when reading) */}
       {!bookData && (
-        <div style={{ 
-          background: theme === 'dark' ? 'rgba(30, 30, 30, 0.6)' : 'rgba(255, 255, 255, 0.6)', 
-          backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', 
-          border: theme === 'dark' ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(255, 255, 255, 0.5)', 
-          padding: '12px 15px', borderRadius: '12px', boxShadow: '0 8px 32px rgba(0,0,0,0.1)', display: 'flex', 
-          alignItems: 'center', justifyContent: 'space-between', marginBottom: '15px', flexShrink: 0, 
-          maxWidth: '500px', width: '100%', margin: '0 auto 15px auto', boxSizing: 'border-box'
-        }}>
+        <div style={glassHeaderStyle}>
             <div style={{ display: 'flex', alignItems: 'center', overflow: 'hidden' }}>
               <button onClick={handleBackClick} style={{ background:'none', border:'none', cursor:'pointer', padding: 0, marginRight: '10px', display: 'flex', alignItems: 'center', flexShrink: 0 }}>
-                <IoMdArrowBack size={28} color={theme === 'dark' ? '#4db6ac' : '#00695c'}/>
+                <IoMdArrowBack size={26} color="#fff"/>
               </button>
-              <h1 style={{ color: theme === 'dark' ? '#e0f2f1' : '#00695c', margin: 0, fontSize: '18px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>AI Farm Library 📚</h1>
+              <h1 style={{ color: '#fff', margin: 0, fontSize: '18px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontWeight: '700', textShadow: '0 2px 4px rgba(0,0,0,0.5)' }}>AI Farm Library 📚</h1>
             </div>
-            <button onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')} style={{ background: theme === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)', border: theme === 'dark' ? '1px solid rgba(255,255,255,0.2)' : '1px solid rgba(0,0,0,0.1)', width: '40px', height: '40px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: theme === 'dark' ? '#4db6ac' : '#00695c', flexShrink: 0, transition: 'all 0.3s ease' }}>
-              {theme === 'light' ? <IoMdMoon size={22} /> : <IoMdSunny size={22} />}
-            </button>
         </div>
       )}
 
       {/* Main Content Container (Glass card removed when viewing book for a cleaner look) */}
         <div style={{
-        background: (bookData && !loading) ? 'transparent' : (theme === 'dark' ? 'rgba(30, 30, 30, 0.6)' : 'rgba(255, 255, 255, 0.6)'), 
-        backdropFilter: (bookData && !loading) ? 'none' : 'blur(12px)',
-        WebkitBackdropFilter: (bookData && !loading) ? 'none' : 'blur(12px)',
-        border: (bookData && !loading) ? 'none' : (theme === 'dark' ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(255, 255, 255, 0.5)'),
-        padding: (bookData && !loading) ? '0' : '20px',
-        borderRadius: '16px', 
-        boxShadow: (bookData && !loading) ? 'none' : '0 8px 32px rgba(0,0,0,0.1)', 
-        display: 'flex', 
-        flexDirection: 'column',
+        ...(bookData && !loading ? {} : glassCardStyle),
+        padding: (bookData && !loading) ? '0' : '25px',
+        background: (bookData && !loading) ? 'transparent' : glassCardStyle.background,
+        border: (bookData && !loading) ? 'none' : glassCardStyle.border,
+        boxShadow: (bookData && !loading) ? 'none' : glassCardStyle.boxShadow,
+        backdropFilter: (bookData && !loading) ? 'none' : glassCardStyle.backdropFilter,
+        WebkitBackdropFilter: (bookData && !loading) ? 'none' : glassCardStyle.WebkitBackdropFilter,
         flex: (bookData && !loading) ? 1 : 'none', 
-        minHeight: 0, 
-        maxWidth: '500px', 
-        width: '100%', 
-        margin: '0 auto', 
-        boxSizing: 'border-box',
-        transition: 'all 0.3s ease'
+        margin: '0 auto',
+        boxSizing: 'border-box'
       }}>
 
         {/* Input Section - The "Librarian" */}
         {!bookData && !loading && (
           <div>
-            <h2 style={{ fontSize: '18px', margin: '0 0 15px 0', color: theme === 'dark' ? '#fff' : '#333', transition: 'color 0.3s ease' }}>What do you want to learn today?</h2>
-            <p style={{ fontSize: '14px', color: theme === 'dark' ? '#bbb' : '#666', marginBottom: '15px', transition: 'color 0.3s ease' }}>
-              Ask our AI agricultural scientist to write a custom, on-demand guide just for you.
-            </p>
-            
-            <div style={{ position: 'relative', marginBottom: '15px' }}>
-              <select
-                value={language}
-                onChange={(e) => setLanguage(e.target.value)}
-                style={{ width: '100%', padding: '12px', paddingRight: '40px', borderRadius: '8px', border: theme === 'dark' ? '1px solid #444' : '1px solid rgba(255,255,255,0.6)', boxSizing: 'border-box', background: theme === 'dark' ? '#222' : 'rgba(255, 255, 255, 0.9)', fontSize: '15px', color: theme === 'dark' ? '#fff' : '#000', fontWeight: '500', outline: 'none', appearance: 'none', WebkitAppearance: 'none', MozAppearance: 'none', transition: 'all 0.3s ease' }}
-              >
-                <option value="English">English</option>
-                <option value="Hindi">Hindi (हिंदी)</option>
-                <option value="Telugu">Telugu (తెలుగు)</option>
-                <option value="Tamil">Tamil (தமிழ்)</option>
-                <option value="Marathi">Marathi (मराठी)</option>
-                <option value="Gujarati">Gujarati (ગુજરાતી)</option>
-                <option value="Kannada">Kannada (ಕನ್ನಡ)</option>
-              </select>
-              <IoIosArrowDown size={20} color={theme === 'dark' ? '#fff' : '#333'} style={{ position: 'absolute', right: '16px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} />
-            </div>
+            <h2 style={{ fontSize: '22px', margin: '0 0 5px 0', color: '#fff', fontWeight: '700', textShadow: '0 2px 4px rgba(0,0,0,0.5)' }}>Build Your Custom Guide</h2>
+            <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.9)', marginBottom: '25px', textShadow: '0 1px 2px rgba(0,0,0,0.5)' }}>Set your preferences and let AI write a personalized book.</p>
 
-            <input 
-              type="text" 
-              placeholder="e.g., Organic pest control for rice" 
-              value={topic}
-              onChange={(e) => setTopic(e.target.value)}
-              className="glass-input"
-              style={{ width: '100%', padding: '14px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.3)', marginBottom: '20px', boxSizing: 'border-box', color: theme === 'dark' ? '#fff' : '#000', background: 'rgba(255, 255, 255, 0.15)', fontSize: '16px', fontWeight: '600', outline: 'none', transition: 'all 0.3s ease', backdropFilter: 'blur(10px)' }}
-            />
-            <button 
-              onClick={generateBook}
-              style={{ width: '100%', padding: '16px', background: '#4CAF50', color: 'white', border: 'none', borderRadius: '12px', fontWeight: '800', fontSize: '16px', cursor: 'pointer', transition: 'all 0.3s ease', boxShadow: '0 4px 15px rgba(76, 175, 80, 0.4)' }}
-            >
-              Generate Personal Guide
-            </button>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+              <div>
+                  <label style={labelStyle}>What is the topic?</label>
+                  <input type="text" placeholder="e.g. Organic pest control for rice" value={topic} onChange={(e) => setTopic(e.target.value)} style={glassInputStyle} />
+              </div>
+
+              <div style={{ display: 'flex', gap: '15px' }}>
+                  <div style={{ flex: 1, position: 'relative' }}>
+                      <label style={labelStyle}>Length</label>
+                      <select value={bookLength} onChange={(e) => setBookLength(e.target.value)} style={glassInputStyle}>
+                          <option value="Short (5 Pages)">Short (~5 Pages)</option>
+                          <option value="Standard (10 Pages)">Standard (~10 Pages)</option>
+                          <option value="In-Depth (20 Pages)">In-Depth (~20 Pages)</option>
+                      </select>
+                      <IoIosArrowDown size={20} color="#fff" style={{ position: 'absolute', right: '16px', top: '40px', pointerEvents: 'none' }} />
+                  </div>
+                  <div style={{ flex: 1 }}>
+                      <label style={labelStyle}>Chapters: {chapters}</label>
+                      <input type="range" min="1" max="5" value={chapters} onChange={(e) => setChapters(parseInt(e.target.value))} style={{ width: '100%', height: '5px', borderRadius: '5px', outline: 'none', accentColor: '#4db6ac', marginTop: '16px' }} />
+                  </div>
+              </div>
+
+              <div style={{ display: 'flex', gap: '15px' }}>
+                  <div style={{ flex: 1, position: 'relative' }}>
+                      <label style={labelStyle}>Writing Style</label>
+                      <select value={contentStyle} onChange={(e) => setContentStyle(e.target.value)} style={glassInputStyle}>
+                          <option value="Educational (Science & Theory)">Educational (Theory)</option>
+                          <option value="Practical Advice (Step-by-step)">Practical (How-To)</option>
+                          <option value="Story Mode (Narrative)">Story Mode</option>
+                          <option value="Custom Instruction">Custom</option>
+                      </select>
+                      <IoIosArrowDown size={20} color="#fff" style={{ position: 'absolute', right: '16px', top: '40px', pointerEvents: 'none' }} />
+                  </div>
+                  <div style={{ flex: 1, position: 'relative' }}>
+                      <label style={labelStyle}>Language</label>
+                      <select value={language} onChange={(e) => setLanguage(e.target.value)} style={glassInputStyle}>
+                          <option value="English">English</option>
+                          <option value="Hindi">Hindi</option>
+                          <option value="Telugu">Telugu</option>
+                          <option value="Tamil">Tamil</option>
+                          <option value="Marathi">Marathi</option>
+                          <option value="Gujarati">Gujarati</option>
+                          <option value="Kannada">Kannada</option>
+                      </select>
+                      <IoIosArrowDown size={20} color="#fff" style={{ position: 'absolute', right: '16px', top: '40px', pointerEvents: 'none' }} />
+                  </div>
+              </div>
+
+              {contentStyle === 'Custom Instruction' && (
+                  <div>
+                      <label style={labelStyle}>Custom Instructions</label>
+                      <input type="text" placeholder="e.g. Explain it like a bedtime story..." value={customStyle} onChange={(e) => setCustomStyle(e.target.value)} style={glassInputStyle} />
+                  </div>
+              )}
+
+              <button onClick={generateBook} style={{ width: '100%', padding: '16px', background: 'linear-gradient(135deg, #34d399 0%, #059669 100%)', color: 'white', border: '1px solid rgba(255,255,255,0.2)', borderTop: '1px solid rgba(255,255,255,0.4)', borderRadius: '16px', fontWeight: '800', fontSize: '16px', cursor: 'pointer', transition: 'all 0.3s ease', boxShadow: '0 8px 25px rgba(5, 150, 105, 0.4), inset 0 1px 2px rgba(255,255,255,0.4)', marginTop: '10px' }}>
+                  🚀 Generate My Book
+              </button>
             
             {error && <p style={{ color: '#d32f2f', fontSize: '14px', marginTop: '10px' }}>{error}</p>}
+            </div>
           </div>
         )}
 
         {/* Loading State */}
         {loading && (
-          <div style={{ textAlign: 'center', color: theme === 'dark' ? '#e0f2f1' : '#00695c', padding: '50px 0', transition: 'color 0.3s ease' }}>
+          <div style={{ textAlign: 'center', color: '#fff', padding: '50px 0' }}>
             <div style={{ marginBottom: '20px' }}>
-              <div style={{ fontSize: '48px' }}>🧢</div>
-              <div style={{ fontSize: '24px', fontWeight: 'bold', color: theme === 'dark' ? '#4db6ac' : '#00695c', letterSpacing: '1px', marginTop: '5px', transition: 'color 0.3s ease' }}>FARMCAP</div>
+              <div style={{ fontSize: '56px', filter: 'drop-shadow(0 4px 10px rgba(0,0,0,0.5))' }}>🧢</div>
+              <div style={{ fontSize: '24px', fontWeight: '800', color: '#fff', letterSpacing: '1px', marginTop: '10px' }}>FARMCAP</div>
             </div>
-            <h3 style={{marginBottom: '10px', color: theme === 'dark' ? '#fff' : '#333'}}>Writing your custom book...</h3>
-            <p style={{ fontSize: '14px', color: theme === 'dark' ? '#bbb' : '#666' }}>Consulting AI models for the best farming practices...</p>
-            <div style={{ marginTop: '25px', padding: '10px 20px', border: `1px solid ${theme === 'dark' ? '#4db6ac' : '#00695c'}`, borderRadius: '12px', display: 'inline-block', background: theme === 'dark' ? 'rgba(77, 182, 172, 0.1)' : 'rgba(0, 105, 92, 0.05)', transition: 'all 0.3s ease' }}>
-              <p style={{ margin: 0, fontSize: '13px', color: theme === 'dark' ? '#b2dfdb' : '#004d40' }}>Estimated time remaining:</p>
-              <p style={{ margin: '5px 0 0 0', fontSize: '22px', fontWeight: 'bold', color: theme === 'dark' ? '#4db6ac' : '#00695c' }}>
+            <h3 style={{marginBottom: '10px', color: '#fff'}}>Writing your custom book...</h3>
+            <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.7)' }}>Consulting AI models for the best farming practices...</p>
+            <div style={{ marginTop: '25px', padding: '15px 25px', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '16px', display: 'inline-block', background: 'rgba(0,0,0,0.3)', boxShadow: 'inset 0 2px 10px rgba(0,0,0,0.2)' }}>
+              <p style={{ margin: 0, fontSize: '13px', color: 'rgba(255,255,255,0.8)' }}>Estimated time remaining:</p>
+              <p style={{ margin: '5px 0 0 0', fontSize: '26px', fontWeight: '800', color: '#4db6ac' }}>
                 {countdown} seconds
               </p>
             </div>
-            <div style={{ fontSize: '11px', color: '#d32f2f', fontWeight: 'bold', lineHeight: '1.4', padding: '10px', marginTop: '30px', border: '1px solid #d32f2f', borderRadius: '5px', background: 'rgba(211, 47, 47, 0.05)', textAlign: 'left', maxWidth: '400px', marginLeft: 'auto', marginRight: 'auto' }}>
+            <div style={{ fontSize: '11px', color: '#ff8a80', fontWeight: '600', lineHeight: '1.5', padding: '12px', marginTop: '30px', border: '1px solid rgba(255, 138, 128, 0.3)', borderRadius: '12px', background: 'rgba(255, 138, 128, 0.1)', textAlign: 'left', maxWidth: '400px', margin: '30px auto 0' }}>
               Disclaimer: These are books generated by the AI. Please check before taking any steps based on this, as AI can make mistakes. You have the responsibility to check, and the app and its owners are not responsible for any loss of money or crop.
             </div>
           </div>
@@ -633,6 +724,7 @@ const DigitalLibrary = () => {
             bookTopic={bookTopic}
             coverImage={coverImage}
             theme={theme}
+            setTheme={setTheme}
             currentPage={currentPage}
             setCurrentPage={setCurrentPage}
             totalPages={totalPages}
@@ -657,10 +749,10 @@ const DigitalLibrary = () => {
       {!bookData && !loading && (
         <>
         {/* Search History Dropdown */}
-        <div style={{ background: theme === 'dark' ? 'rgba(30, 30, 30, 0.6)' : 'rgba(255, 255, 255, 0.4)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', border: theme === 'dark' ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(255, 255, 255, 0.5)', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 8px 32px rgba(0,0,0,0.1)', maxWidth: '500px', width: '100%', margin: '20px auto 0 auto', transition: 'all 0.3s ease', flexShrink: 0 }}>
+        <div style={{ background: 'transparent', backdropFilter: 'blur(16px) saturate(120%) brightness(110%)', WebkitBackdropFilter: 'blur(16px) saturate(120%) brightness(110%)', border: '1px solid rgba(255, 255, 255, 0.1)', borderTop: '1px solid rgba(255, 255, 255, 0.3)', borderLeft: '1px solid rgba(255, 255, 255, 0.2)', borderRadius: '24px', overflow: 'hidden', boxShadow: 'inset 0 1px 1px rgba(255, 255, 255, 0.3), 0 8px 32px rgba(0,0,0,0.15)', maxWidth: '500px', width: '100%', margin: '20px auto 0 auto', flexShrink: 0 }}>
           <button 
             onClick={() => setIsHistoryOpen(!isHistoryOpen)} 
-            style={{ width: '100%', padding: '15px 20px', background: 'transparent', border: 'none', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', fontSize: '16px', fontWeight: 'bold', color: theme === 'dark' ? '#4db6ac' : '#00695c', transition: 'color 0.3s ease' }}
+            style={{ width: '100%', padding: '16px 20px', background: 'transparent', border: 'none', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', fontSize: '15px', fontWeight: '700', color: '#fff', textShadow: '0 1px 2px rgba(0,0,0,0.5)' }}
           > 
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <span>🕒</span>
@@ -668,7 +760,7 @@ const DigitalLibrary = () => {
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               {searchHistory.length > 0 && (
-                <span onClick={(e) => { e.stopPropagation(); setSearchHistory([]); localStorage.removeItem('farmCap_library_history'); }} style={{ fontSize: '12px', color: '#d32f2f', cursor: 'pointer', background: 'rgba(211, 47, 47, 0.1)', padding: '4px 10px', borderRadius: '12px' }}>Clear All</span>
+                <span onClick={(e) => { e.stopPropagation(); setSearchHistory([]); localStorage.removeItem('farmCap_library_history'); }} style={{ fontSize: '11px', color: '#ff8a80', cursor: 'pointer', background: 'rgba(211, 47, 47, 0.2)', padding: '5px 12px', borderRadius: '16px', border: '1px solid rgba(211, 47, 47, 0.4)' }}>Clear All</span>
               )}
               {isHistoryOpen ? <IoIosArrowUp size={20} /> : <IoIosArrowDown size={20} />}
             </div>
@@ -681,10 +773,10 @@ const DigitalLibrary = () => {
                   <div 
                     key={`${item}-${idx}`} 
                     onClick={() => { setTopic(item); window.scrollTo({ top: 0, behavior: 'smooth' }); setIsHistoryOpen(false); }} 
-                    style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 15px', background: 'rgba(255, 255, 255, 0.7)', borderRadius: '8px', cursor: 'pointer', fontSize: '14px', color: '#333', border: '1px solid rgba(255,255,255,0.5)', transition: 'background 0.2s' }}
+                    style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 15px', background: 'rgba(0, 0, 0, 0.2)', borderRadius: '12px', cursor: 'pointer', fontSize: '14px', color: '#fff', border: '1px solid rgba(255,255,255,0.1)', transition: 'background 0.2s', boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.15)', textShadow: '0 1px 2px rgba(0,0,0,0.4)' }}
                   >
                     <div>🔍 {item}</div>
-                    <IoMdTrash size={18} color="#d32f2f" onClick={(e) => {
+                    <IoMdTrash size={18} color="#ff8a80" onClick={(e) => {
                       e.stopPropagation();
                       const newHistory = searchHistory.filter((_, i) => i !== idx);
                       setSearchHistory(newHistory);
@@ -693,7 +785,7 @@ const DigitalLibrary = () => {
                   </div>
                 ))
               ) : (
-                <div style={{ color: theme === 'dark' ? '#aaa' : '#666', fontSize: '14px', textAlign: 'center', padding: '10px' }}>
+                <div style={{ color: '#aaa', fontSize: '14px', textAlign: 'center', padding: '10px' }}>
                   You don't have any recent searches.
                 </div>
               )}
@@ -702,10 +794,10 @@ const DigitalLibrary = () => {
         </div>
 
       {/* Saved Books Dropdown */}
-        <div style={{ background: theme === 'dark' ? 'rgba(30, 30, 30, 0.6)' : 'rgba(255, 255, 255, 0.4)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', border: theme === 'dark' ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(255, 255, 255, 0.5)', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 8px 32px rgba(0,0,0,0.1)', maxWidth: '500px', width: '100%', margin: '20px auto 20px auto', transition: 'all 0.3s ease', flexShrink: 0 }}>
+        <div style={{ background: 'transparent', backdropFilter: 'blur(16px) saturate(120%) brightness(110%)', WebkitBackdropFilter: 'blur(16px) saturate(120%) brightness(110%)', border: '1px solid rgba(255, 255, 255, 0.1)', borderTop: '1px solid rgba(255, 255, 255, 0.3)', borderLeft: '1px solid rgba(255, 255, 255, 0.2)', borderRadius: '24px', overflow: 'hidden', boxShadow: 'inset 0 1px 1px rgba(255, 255, 255, 0.3), 0 8px 32px rgba(0,0,0,0.15)', maxWidth: '500px', width: '100%', margin: '20px auto 20px auto', flexShrink: 0 }}>
           <button 
             onClick={() => setIsSavedBooksOpen(!isSavedBooksOpen)} 
-            style={{ width: '100%', padding: '15px 20px', background: 'transparent', border: 'none', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', fontSize: '16px', fontWeight: 'bold', color: theme === 'dark' ? '#4db6ac' : '#00695c', transition: 'color 0.3s ease' }}
+            style={{ width: '100%', padding: '16px 20px', background: 'transparent', border: 'none', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', fontSize: '15px', fontWeight: '700', color: '#fff', textShadow: '0 1px 2px rgba(0,0,0,0.5)' }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <span>📚</span>
@@ -713,7 +805,7 @@ const DigitalLibrary = () => {
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               {savedBooks.length > 0 && (
-                <span onClick={(e) => { e.stopPropagation(); setSavedBooks([]); localStorage.removeItem('farmCap_saved_books'); }} style={{ fontSize: '12px', color: '#d32f2f', cursor: 'pointer', background: 'rgba(211, 47, 47, 0.1)', padding: '4px 10px', borderRadius: '12px' }}>Clear All</span>
+                <span onClick={(e) => { e.stopPropagation(); setSavedBooks([]); localStorage.removeItem('farmCap_saved_books'); }} style={{ fontSize: '11px', color: '#ff8a80', cursor: 'pointer', background: 'rgba(211, 47, 47, 0.2)', padding: '5px 12px', borderRadius: '16px', border: '1px solid rgba(211, 47, 47, 0.4)' }}>Clear All</span>
               )}
               {isSavedBooksOpen ? <IoIosArrowUp size={20} /> : <IoIosArrowDown size={20} />}
             </div>
@@ -723,9 +815,9 @@ const DigitalLibrary = () => {
             <div style={{ padding: '0 20px 15px 20px', display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '250px', overflowY: 'auto' }}>
               {savedBooks.length > 0 ? (
                 savedBooks.map((book) => ( 
-                  <div key={book.id} onClick={() => { setBookData(book.bookData); setBookTopic(book.topic); setCoverImage(book.coverImage || null); setCurrentPage(0); setChatMessages([]); setIsSavedBooksOpen(false); }} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 15px', background: 'rgba(255, 255, 255, 0.7)', borderRadius: '8px', cursor: 'pointer', fontSize: '14px', color: '#333', border: '1px solid rgba(255,255,255,0.5)', transition: 'background 0.2s' }}>
+                  <div key={book.id} onClick={() => { setBookData(book.bookData); setBookTopic(book.topic); setCoverImage(book.coverImage || null); setCurrentPage(0); setChatMessages([]); setIsSavedBooksOpen(false); }} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 15px', background: 'rgba(0, 0, 0, 0.2)', borderRadius: '12px', cursor: 'pointer', fontSize: '14px', color: '#fff', border: '1px solid rgba(255,255,255,0.1)', transition: 'background 0.2s', boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.15)', textShadow: '0 1px 2px rgba(0,0,0,0.4)' }}>
                     <div>📖 {book.topic}</div>
-                    <IoMdTrash size={18} color="#d32f2f" onClick={(e) => {
+                    <IoMdTrash size={18} color="#ff8a80" onClick={(e) => {
                       e.stopPropagation();
                       const newBooks = savedBooks.filter(b => b.id !== book.id);
                       setSavedBooks(newBooks);
@@ -734,7 +826,7 @@ const DigitalLibrary = () => {
                   </div>
                 ))
               ) : (
-                <div style={{ color: theme === 'dark' ? '#aaa' : '#666', fontSize: '14px', textAlign: 'center', padding: '10px' }}>
+                <div style={{ color: '#aaa', fontSize: '14px', textAlign: 'center', padding: '10px' }}>
                   You don't have any saved books.
                 </div>
               )}
@@ -759,10 +851,11 @@ const DigitalLibrary = () => {
         language={language}
       />
     </div>
+  </div>
   );
 };
 
-const KindleStyleViewer = ({ bookData, bookTopic, coverImage, theme, currentPage, setCurrentPage, totalPages, handlePrevPage, handleNextPage, swipeHandlers, showControls, setShowControls, showGridView, setShowGridView, setIsChatModalOpen, handleBackClick, toggleSpeech, isSpeaking, handleSaveBook, isAlreadySaved }) => {
+const KindleStyleViewer = ({ bookData, bookTopic, coverImage, theme, setTheme, currentPage, setCurrentPage, totalPages, handlePrevPage, handleNextPage, swipeHandlers, showControls, setShowControls, showGridView, setShowGridView, setIsChatModalOpen, handleBackClick, toggleSpeech, isSpeaking, handleSaveBook, isAlreadySaved }) => {
   const isDark = theme === 'dark';
 
   const toggleControlsInternal = (e) => {
@@ -790,6 +883,33 @@ const KindleStyleViewer = ({ bookData, bookTopic, coverImage, theme, currentPage
         </PageCover>
       );
     }
+    if (currentPage === 1) {
+      const toc = [];
+      let currentChap = "";
+      bookData.forEach((page, index) => {
+        const chapterBaseTitle = page.chapter_title.replace(/\s*\(?(Part|Continued)[\s\d]*\)?/i, '').trim();
+        if (chapterBaseTitle !== currentChap) {
+          toc.push({ title: chapterBaseTitle, pageIndex: index + 2 });
+          currentChap = chapterBaseTitle;
+        }
+      });
+
+      return (
+        <PageCover theme={theme}>
+          <div style={{ padding: '40px 30px', width: '100%', height: '100%', boxSizing: 'border-box', display: 'flex', flexDirection: 'column', background: isDark ? '#18181b' : '#fff' }}>
+            <h2 style={{ fontSize: '24px', color: isDark ? '#fff' : '#111', borderBottom: `2px solid ${isDark ? '#4db6ac' : '#00695c'}`, paddingBottom: '10px', marginBottom: '20px', fontFamily: "Georgia, 'Times New Roman', serif" }}>Table of Contents</h2>
+            <div className="hide-scrollbar" style={{ flex: 1, overflowY: 'auto' }}>
+              {toc.map((item, i) => (
+                <div key={i} onClick={(e) => { e.stopPropagation(); setCurrentPage(item.pageIndex); }} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '15px 0', borderBottom: isDark ? '1px dashed rgba(255,255,255,0.1)' : '1px dashed rgba(0,0,0,0.1)', cursor: 'pointer' }} onMouseOver={(e) => e.currentTarget.style.opacity = 0.7} onMouseOut={(e) => e.currentTarget.style.opacity = 1}>
+                  <span style={{ fontSize: '16px', fontWeight: 'bold', color: isDark ? '#b2dfdb' : '#004d40', fontFamily: "Georgia, 'Times New Roman', serif" }}>{item.title}</span>
+                  <span style={{ fontSize: '14px', color: isDark ? '#fff' : '#000', fontFamily: "Georgia, 'Times New Roman', serif" }}>Page {item.pageIndex + 1}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </PageCover>
+      );
+    }
     if (currentPage === totalPages - 1) {
       return (
         <PageCover theme={theme}>
@@ -800,7 +920,7 @@ const KindleStyleViewer = ({ bookData, bookTopic, coverImage, theme, currentPage
         </PageCover>
       );
     }
-    const pageIndex = currentPage - 1;
+    const pageIndex = currentPage - 2;
     const page = bookData[pageIndex];
     if (!page) return <Page number={currentPage} title="Page not found" theme={theme}>This page could not be loaded.</Page>;
     return (
@@ -831,6 +951,9 @@ const KindleStyleViewer = ({ bookData, bookTopic, coverImage, theme, currentPage
           >
             <button onClick={handleBackClick} style={iconBtnStyle}><IoMdArrowBack size={26}/></button>
             <div style={{ display: 'flex', gap: '5px' }}>
+              <button onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')} style={iconBtnStyle} title="Toggle Theme">
+                {theme === 'light' ? <IoMdMoon size={24} /> : <IoMdSunny size={24} />}
+              </button>
               <button onClick={toggleSpeech} style={iconBtnStyle} title="Read Aloud">{isSpeaking ? <IoMdVolumeHigh size={24} color="#4db6ac"/> : <IoMdVolumeOff size={24}/>}</button>
               <button onClick={handleSaveBook} style={iconBtnStyle} title="Save Book">{isAlreadySaved ? <IoMdBookmark size={24} color="#ef4444"/> : <IoMdBookmark size={24} color="rgba(128,128,128,0.5)"/>}</button>
               <button onClick={() => setIsChatModalOpen(true)} style={iconBtnStyle} title="Ask AI"><IoMdChatbubbles size={24}/></button>
@@ -933,11 +1056,19 @@ const GridViewModal = ({ show, onClose, bookData, bookTopic, coverImage, theme, 
             )}
             <div style={{ fontSize: '10px', color: '#888' }}>Page 1</div>
           </div>
+
+          {/* ToC */}
+          <div onClick={() => { setCurrentPage(1); onClose(); }} style={{ cursor: 'pointer', border: theme === 'dark' ? '1px solid rgba(255,255,255,0.2)' : '1px solid rgba(255,255,255,0.6)', borderRadius: '16px', padding: '15px', background: theme === 'dark' ? 'rgba(0,0,0,0.3)' : 'rgba(255,255,255,0.6)', backdropFilter: 'blur(10px)', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+            <div style={{ fontSize: '12px', fontWeight: 'bold' }}>Contents</div>
+            <div style={{ fontSize: '24px', margin: '10px 0' }}>📑</div>
+            <div style={{ fontSize: '10px', color: '#888' }}>Page 2</div>
+          </div>
+
           {/* Pages */}
           {bookData.map((page, index) => (
-            <div key={index} onClick={() => { setCurrentPage(index + 1); onClose(); }} style={{ cursor: 'pointer', border: theme === 'dark' ? '1px solid rgba(255,255,255,0.2)' : '1px solid rgba(255,255,255,0.6)', borderRadius: '16px', padding: '15px', background: theme === 'dark' ? 'rgba(0,0,0,0.3)' : 'rgba(255,255,255,0.6)', backdropFilter: 'blur(10px)' }}>
+            <div key={index} onClick={() => { setCurrentPage(index + 2); onClose(); }} style={{ cursor: 'pointer', border: theme === 'dark' ? '1px solid rgba(255,255,255,0.2)' : '1px solid rgba(255,255,255,0.6)', borderRadius: '16px', padding: '15px', background: theme === 'dark' ? 'rgba(0,0,0,0.3)' : 'rgba(255,255,255,0.6)', backdropFilter: 'blur(10px)' }}>
               <div style={{ fontSize: '12px', fontWeight: 'bold', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{page.chapter_title}</div>
-              <div style={{ fontSize: '10px', color: '#888', marginTop: '5px' }}>Page {index + 2}</div>
+              <div style={{ fontSize: '10px', color: '#888', marginTop: '5px' }}>Page {index + 3}</div>
             </div>
           ))}
         </div>
