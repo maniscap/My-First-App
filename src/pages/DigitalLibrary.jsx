@@ -127,6 +127,7 @@ const DigitalLibrary = () => {
 
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [isSavedBooksOpen, setIsSavedBooksOpen] = useState(false);
+  const [showSavePrompt, setShowSavePrompt] = useState(false);
   const chatContainerRef = useRef(null);
 
   // Countdown timer effect
@@ -373,17 +374,45 @@ const DigitalLibrary = () => {
     setLoading(false);
   };
 
+  const isAlreadySaved = bookData && bookTopic ? savedBooks.some(book => book.topic.toLowerCase() === bookTopic.toLowerCase()) : false;
+
   const handleBackClick = () => {
-    if (bookData) {
+    if (bookData && !isAlreadySaved) {
+      setShowSavePrompt(true);
+    } else if (bookData) {
+      isNavigatingBack.current = true;
       setBookData(null); // Go back to input from the book
+      if (window.history.state?.overlay === 'bookReader') {
+        window.history.back();
+      }
+      setTimeout(() => { isNavigatingBack.current = false; }, 100);
     } else if (loading) {
       setLoading(false); // Go back to input from the loading screen
     } else {
-      navigate('/agri-insights', { state: { explored: true } }); // Go back to insights
+      navigate('/dashboard'); // Go back to home page
     }
   };
 
-  const isAlreadySaved = bookData && bookTopic ? savedBooks.some(book => book.topic.toLowerCase() === bookTopic.toLowerCase()) : false;
+  const handleDiscardAndLeave = () => {
+    setShowSavePrompt(false);
+    isNavigatingBack.current = true;
+    setBookData(null);
+    if (window.history.state?.overlay === 'bookReader') {
+      window.history.back();
+    }
+    setTimeout(() => { isNavigatingBack.current = false; }, 100);
+  };
+
+  const handleSaveAndLeave = () => {
+    handleSaveBook();
+    setShowSavePrompt(false);
+    isNavigatingBack.current = true;
+    setBookData(null);
+    if (window.history.state?.overlay === 'bookReader') {
+      window.history.back();
+    }
+    setTimeout(() => { isNavigatingBack.current = false; }, 100);
+  };
 
   const handleSaveBook = () => {
     if (!bookData || !bookTopic) return;
@@ -573,11 +602,13 @@ const DigitalLibrary = () => {
     boxSizing: 'border-box'
   };
 
+  const optionStyle = { background: '#1e1e24', color: '#fff' };
+
   return (
     <div style={{ position: 'fixed', inset: 0, fontFamily: '"SF Pro Display", system-ui, sans-serif' }}>
       {/* Sharp Global Background via IMG tag like Weather.jsx */}
       <img 
-        src="https://images.pexels.com/photos/10248028/pexels-photo-10248028.jpeg" 
+        src="https://images.pexels.com/photos/158163/clouds-cloudporn-weather-lookup-158163.jpeg" 
         alt="Library Background" 
         style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover', zIndex: -2 }} 
       />
@@ -603,11 +634,11 @@ const DigitalLibrary = () => {
       {/* Header Container (Hidden when reading) */}
       {!bookData && (
         <div style={glassHeaderStyle}>
-            <div style={{ display: 'flex', alignItems: 'center', overflow: 'hidden' }}>
-              <button onClick={handleBackClick} style={{ background:'none', border:'none', cursor:'pointer', padding: 0, marginRight: '10px', display: 'flex', alignItems: 'center', flexShrink: 0 }}>
+            <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', overflow: 'hidden' }}>
+              <button onClick={handleBackClick} style={{ position: 'absolute', left: 0, background:'none', border:'none', cursor:'pointer', padding: 0, display: 'flex', alignItems: 'center', flexShrink: 0 }}>
                 <IoMdArrowBack size={26} color="#fff"/>
               </button>
-              <h1 style={{ color: '#fff', margin: 0, fontSize: '18px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontWeight: '700', textShadow: '0 2px 4px rgba(0,0,0,0.5)' }}>AI Farm Library 📚</h1>
+              <h1 style={{ color: '#fff', margin: 0, fontSize: '18px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontWeight: '700', textShadow: '0 2px 4px rgba(0,0,0,0.5)', textAlign: 'center' }}>AI Farm Library 📚</h1>
             </div>
         </div>
       )}
@@ -642,9 +673,9 @@ const DigitalLibrary = () => {
                   <div style={{ flex: 1, position: 'relative' }}>
                       <label style={labelStyle}>Length</label>
                       <select value={bookLength} onChange={(e) => setBookLength(e.target.value)} style={glassInputStyle}>
-                          <option value="Short (5 Pages)">Short (~5 Pages)</option>
-                          <option value="Standard (10 Pages)">Standard (~10 Pages)</option>
-                          <option value="In-Depth (20 Pages)">In-Depth (~20 Pages)</option>
+                          <option value="Short (5 Pages)" style={optionStyle}>Short (~5 Pages)</option>
+                          <option value="Standard (10 Pages)" style={optionStyle}>Standard (~10 Pages)</option>
+                          <option value="In-Depth (20 Pages)" style={optionStyle}>In-Depth (~20 Pages)</option>
                       </select>
                       <IoIosArrowDown size={20} color="#fff" style={{ position: 'absolute', right: '16px', top: '40px', pointerEvents: 'none' }} />
                   </div>
@@ -658,23 +689,23 @@ const DigitalLibrary = () => {
                   <div style={{ flex: 1, position: 'relative' }}>
                       <label style={labelStyle}>Writing Style</label>
                       <select value={contentStyle} onChange={(e) => setContentStyle(e.target.value)} style={glassInputStyle}>
-                          <option value="Educational (Science & Theory)">Educational (Theory)</option>
-                          <option value="Practical Advice (Step-by-step)">Practical (How-To)</option>
-                          <option value="Story Mode (Narrative)">Story Mode</option>
-                          <option value="Custom Instruction">Custom</option>
+                          <option value="Educational (Science & Theory)" style={optionStyle}>Educational (Theory)</option>
+                          <option value="Practical Advice (Step-by-step)" style={optionStyle}>Practical (How-To)</option>
+                          <option value="Story Mode (Narrative)" style={optionStyle}>Story Mode</option>
+                          <option value="Custom Instruction" style={optionStyle}>Custom</option>
                       </select>
                       <IoIosArrowDown size={20} color="#fff" style={{ position: 'absolute', right: '16px', top: '40px', pointerEvents: 'none' }} />
                   </div>
                   <div style={{ flex: 1, position: 'relative' }}>
                       <label style={labelStyle}>Language</label>
                       <select value={language} onChange={(e) => setLanguage(e.target.value)} style={glassInputStyle}>
-                          <option value="English">English</option>
-                          <option value="Hindi">Hindi</option>
-                          <option value="Telugu">Telugu</option>
-                          <option value="Tamil">Tamil</option>
-                          <option value="Marathi">Marathi</option>
-                          <option value="Gujarati">Gujarati</option>
-                          <option value="Kannada">Kannada</option>
+                          <option value="English" style={optionStyle}>English</option>
+                          <option value="Hindi" style={optionStyle}>Hindi</option>
+                          <option value="Telugu" style={optionStyle}>Telugu</option>
+                          <option value="Tamil" style={optionStyle}>Tamil</option>
+                          <option value="Marathi" style={optionStyle}>Marathi</option>
+                          <option value="Gujarati" style={optionStyle}>Gujarati</option>
+                          <option value="Kannada" style={optionStyle}>Kannada</option>
                       </select>
                       <IoIosArrowDown size={20} color="#fff" style={{ position: 'absolute', right: '16px', top: '40px', pointerEvents: 'none' }} />
                   </div>
@@ -850,6 +881,32 @@ const DigitalLibrary = () => {
         chatContainerRef={chatContainerRef}
         language={language}
       />
+
+      {/* Unsaved Changes Prompt */}
+      <AnimatePresence>
+        {showSavePrompt && (
+          <motion.div
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(10px)', zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
+              style={{ background: theme === 'dark' ? '#18181b' : '#fff', padding: '25px', borderRadius: '24px', width: '90%', maxWidth: '340px', textAlign: 'center', boxShadow: '0 20px 40px rgba(0,0,0,0.5)', border: theme === 'dark' ? '1px solid rgba(255,255,255,0.1)' : '1px solid rgba(0,0,0,0.1)' }}
+            >
+              <div style={{ fontSize: '40px', margin: '0 0 10px 0' }}>⚠️</div>
+              <h3 style={{ margin: '0 0 10px 0', color: theme === 'dark' ? '#fff' : '#000' }}>Save before leaving?</h3>
+              <p style={{ color: theme === 'dark' ? '#aaa' : '#666', fontSize: '14px', marginBottom: '20px', lineHeight: '1.5' }}>
+                You haven't saved <strong>"{bookTopic}"</strong>. It takes time to generate these books. Do you want to save it to your library?
+              </p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                <button onClick={handleSaveAndLeave} style={{ background: theme === 'dark' ? '#4db6ac' : '#00695c', color: theme === 'dark' ? '#000' : '#fff', border: 'none', padding: '14px', borderRadius: '16px', fontWeight: 'bold', fontSize: '15px', cursor: 'pointer', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>💾 Save Book & Leave</button>
+                <button onClick={handleDiscardAndLeave} style={{ background: 'rgba(211, 47, 47, 0.1)', color: '#ef4444', border: '1px solid rgba(211, 47, 47, 0.3)', padding: '14px', borderRadius: '16px', fontWeight: 'bold', fontSize: '15px', cursor: 'pointer' }}>🗑️ Discard</button>
+                <button onClick={() => setShowSavePrompt(false)} style={{ background: 'transparent', color: theme === 'dark' ? '#888' : '#aaa', border: 'none', padding: '10px', fontSize: '14px', cursor: 'pointer', fontWeight: '600' }}>Cancel</button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   </div>
   );
@@ -1122,11 +1179,11 @@ const ChatModal = ({ show, onClose, theme, chatMessages, isChatLoading, userQues
           animate={{ y: '0%' }}
           exit={{ y: '100%' }}
           transition={{ type: 'spring', bounce: 0.1, duration: 0.4 }}
-          style={{ width: '100%', maxWidth: '500px', height: '75vh', background: theme === 'dark' ? 'rgba(20, 20, 25, 0.8)' : 'rgba(255, 255, 255, 0.7)', backdropFilter: 'blur(30px) saturate(200%)', WebkitBackdropFilter: 'blur(30px) saturate(200%)', borderTop: theme === 'dark' ? '1px solid rgba(255,255,255,0.15)' : '1px solid rgba(255,255,255,0.6)', borderLeft: theme === 'dark' ? '1px solid rgba(255,255,255,0.1)' : '1px solid rgba(255,255,255,0.4)', borderRight: theme === 'dark' ? '1px solid rgba(255,255,255,0.1)' : '1px solid rgba(255,255,255,0.4)', borderTopLeftRadius: '32px', borderTopRightRadius: '32px', display: 'flex', flexDirection: 'column', boxShadow: '0 -10px 40px rgba(0,0,0,0.2)' }}
+          style={{ width: '100%', maxWidth: '500px', height: '75vh', background: theme === 'dark' ? 'linear-gradient(135deg, rgba(30, 30, 35, 0.75) 0%, rgba(10, 10, 15, 0.85) 100%)' : 'linear-gradient(135deg, rgba(255, 255, 255, 0.65) 0%, rgba(255, 255, 255, 0.35) 100%)', backdropFilter: 'blur(25px) saturate(200%)', WebkitBackdropFilter: 'blur(25px) saturate(200%)', borderTop: theme === 'dark' ? '1.5px solid rgba(255,255,255,0.3)' : '1.5px solid rgba(255,255,255,0.8)', borderLeft: theme === 'dark' ? '1.5px solid rgba(255,255,255,0.2)' : '1.5px solid rgba(255,255,255,0.5)', borderRight: theme === 'dark' ? '1px solid rgba(255,255,255,0.1)' : '1px solid rgba(255,255,255,0.4)', borderTopLeftRadius: '36px', borderTopRightRadius: '36px', display: 'flex', flexDirection: 'column', boxShadow: '0 -20px 50px rgba(0,0,0,0.4), inset 0 2px 5px rgba(255,255,255,0.3)' }}
           onClick={e => e.stopPropagation()}
         > 
           {/* Header */}
-          <div style={{ padding: '20px 25px', borderBottom: theme === 'dark' ? '1px solid rgba(255,255,255,0.1)' : '1px solid rgba(0,0,0,0.08)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'transparent', borderTopLeftRadius: '32px', borderTopRightRadius: '32px' }}>
+          <div style={{ padding: '20px 25px', borderBottom: theme === 'dark' ? '1px solid rgba(255,255,255,0.2)' : '1px solid rgba(0,0,0,0.1)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'transparent', borderTopLeftRadius: '36px', borderTopRightRadius: '36px' }}>
             <h3 style={{ margin: 0, color: theme === 'dark' ? '#fff' : '#000', fontSize: '16px', fontWeight: '600', flexGrow: 1, textAlign: 'center' }}>Ask AI About This Book</h3>
             <button onClick={onClose} style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '50%', color: theme === 'dark' ? '#fff' : '#000', cursor: 'pointer', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><IoMdClose size={20} /></button>
           </div>
@@ -1145,10 +1202,10 @@ const ChatModal = ({ show, onClose, theme, chatMessages, isChatLoading, userQues
                   border: theme === 'dark' ? '1px solid rgba(255,255,255,0.1)' : '1px solid rgba(255,255,255,0.4)',
                   color: msg.sender === 'user' ? (theme === 'dark' ? '#000' : '#fff') : (theme === 'dark' ? '#fff' : '#000'),
                   padding: '10px 15px',
-                  borderRadius: '18px',
+                  borderRadius: '20px',
                   maxWidth: '85%',
                   lineHeight: '1.5',
-                  boxShadow: '0 4px 15px rgba(0,0,0,0.1)'
+                  boxShadow: '0 8px 25px rgba(0,0,0,0.15), inset 0 1px 2px rgba(255,255,255,0.2)'
                 }}>
                   {msg.isLoading ? (
                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><div className="spinner"></div><span>Searching...</span></div>
@@ -1158,7 +1215,7 @@ const ChatModal = ({ show, onClose, theme, chatMessages, isChatLoading, userQues
                   {msg.expandable && (
                     <button 
                       onClick={() => handleOutOfBookAnswer(msg.originalQuestion, msg.id)}
-                      style={{ background: theme === 'dark' ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.08)', color: theme === 'dark' ? 'white' : 'black', border: theme === 'dark' ? '1px solid rgba(255,255,255,0.2)' : '1px solid rgba(0,0,0,0.1)', borderRadius: '8px', padding: '8px 12px', marginTop: '10px', cursor: 'pointer', width: '100%', fontWeight: '600', backdropFilter: 'blur(5px)' }}
+                      style={{ background: theme === 'dark' ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.08)', color: theme === 'dark' ? 'white' : 'black', border: theme === 'dark' ? '1px solid rgba(255,255,255,0.3)' : '1px solid rgba(0,0,0,0.15)', borderTop: theme === 'dark' ? '1.5px solid rgba(255,255,255,0.4)' : '1.5px solid rgba(0,0,0,0.2)', borderRadius: '12px', padding: '10px 14px', marginTop: '12px', cursor: 'pointer', width: '100%', fontWeight: '700', backdropFilter: 'blur(10px)', boxShadow: '0 4px 10px rgba(0,0,0,0.15)' }}
                     >
                       Search Outside Book
                     </button>
@@ -1166,7 +1223,7 @@ const ChatModal = ({ show, onClose, theme, chatMessages, isChatLoading, userQues
                 </div>
               </div>
             ))}
-            {isChatLoading && <div style={{ display: 'flex', justifyContent: 'flex-start' }}><div style={{ background: theme === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.7)', backdropFilter: 'blur(10px)', border: theme === 'dark' ? '1px solid rgba(255,255,255,0.1)' : '1px solid rgba(255,255,255,0.4)', color: theme === 'dark' ? '#fff' : '#000', padding: '10px 15px', borderRadius: '18px', boxShadow: '0 4px 15px rgba(0,0,0,0.1)' }}>Thinking...</div></div>}
+            {isChatLoading && <div style={{ display: 'flex', justifyContent: 'flex-start' }}><div style={{ background: theme === 'dark' ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.8)', backdropFilter: 'blur(15px)', border: theme === 'dark' ? '1px solid rgba(255,255,255,0.2)' : '1px solid rgba(255,255,255,0.6)', color: theme === 'dark' ? '#fff' : '#000', padding: '10px 15px', borderRadius: '20px', boxShadow: '0 8px 25px rgba(0,0,0,0.15), inset 0 1px 2px rgba(255,255,255,0.2)' }}>Thinking...</div></div>}
           </div>
 
           {/* Input Form */}
@@ -1178,8 +1235,8 @@ const ChatModal = ({ show, onClose, theme, chatMessages, isChatLoading, userQues
             >
               {isListening ? <IoMdMicOff size={20} /> : <IoMdMic size={20} />}
             </button>
-            <input type="text" value={userQuestion} onChange={(e) => setUserQuestion(e.target.value)} placeholder="Ask a question..." style={{ flex: 1, padding: '14px 18px', borderRadius: '24px', border: theme === 'dark' ? '1px solid rgba(255,255,255,0.1)' : '1px solid rgba(255,255,255,0.5)', background: theme === 'dark' ? 'rgba(0,0,0,0.3)' : 'rgba(255,255,255,0.6)', color: theme === 'dark' ? '#fff' : '#000', outline: 'none', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)', boxShadow: 'inset 0 2px 5px rgba(0,0,0,0.05)' }} />
-            <button type="submit" style={{ background: theme === 'dark' ? 'rgba(77, 182, 172, 0.9)' : 'rgba(0, 105, 92, 0.9)', border: theme === 'dark' ? '1px solid rgba(255,255,255,0.2)' : '1px solid rgba(255,255,255,0.4)', color: 'white', width: '48px', height: '48px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 4px 12px rgba(0,0,0,0.15)', backdropFilter: 'blur(10px)' }}>
+            <input type="text" value={userQuestion} onChange={(e) => setUserQuestion(e.target.value)} placeholder="Ask a question..." style={{ flex: 1, padding: '14px 18px', borderRadius: '30px', border: '1px solid rgba(255, 255, 255, 0.2)', borderTop: '1.5px solid rgba(255, 255, 255, 0.4)', borderLeft: '1.5px solid rgba(255, 255, 255, 0.3)', background: 'rgba(0,0,0,0.1)', color: theme === 'dark' ? '#fff' : '#000', outline: 'none', backdropFilter: 'blur(16px) saturate(150%)', WebkitBackdropFilter: 'blur(16px) saturate(150%)', boxShadow: 'inset 0 4px 12px rgba(0,0,0,0.2), 0 4px 15px rgba(0,0,0,0.1)' }} />
+            <button type="submit" style={{ background: theme === 'dark' ? 'linear-gradient(135deg, rgba(77, 182, 172, 0.9) 0%, rgba(0, 105, 92, 0.9) 100%)' : 'linear-gradient(135deg, rgba(0, 105, 92, 0.9) 0%, rgba(0, 77, 64, 0.9) 100%)', border: theme === 'dark' ? '1.5px solid rgba(255,255,255,0.4)' : '1.5px solid rgba(255,255,255,0.6)', color: 'white', width: '48px', height: '48px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 8px 20px rgba(0,0,0,0.25), inset 0 2px 4px rgba(255,255,255,0.5)', backdropFilter: 'blur(10px)' }}>
               <IoMdSend size={20} />
             </button>
           </form>
