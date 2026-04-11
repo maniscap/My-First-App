@@ -960,7 +960,21 @@ const DigitalLibrary = () => {
 const KindleStyleViewer = ({ bookData, bookTopic, coverImage, theme, setTheme, currentPage, setCurrentPage, totalPages, handlePrevPage, handleNextPage, swipeHandlers, showControls, setShowControls, showGridView, setShowGridView, setIsChatModalOpen, handleBackClick, toggleSpeech, isSpeaking, handleSaveBook, isAlreadySaved, fontSize, setFontSize }) => {
   const isDark = theme === 'dark';
 
-  const pinchRef = useRef({ startDist: 0 });
+  const pinchRef = useRef({ startDist: 0, startFontSize: 16 });
+
+  // Aggressively prevent native browser pinch-zoom while reading
+  useEffect(() => {
+    const preventNativeZoom = (e) => {
+      if (e.touches.length > 1) {
+        e.preventDefault();
+      }
+    };
+    
+    document.addEventListener('touchmove', preventNativeZoom, { passive: false });
+    return () => {
+      document.removeEventListener('touchmove', preventNativeZoom);
+    };
+  }, []);
 
   const getDistance = (touches) => {
     const dx = touches[0].clientX - touches[1].clientX;
@@ -971,19 +985,17 @@ const KindleStyleViewer = ({ bookData, bookTopic, coverImage, theme, setTheme, c
   const handleTouchStart = (e) => {
     if (e.touches.length === 2) {
       pinchRef.current.startDist = getDistance(e.touches);
+      pinchRef.current.startFontSize = fontSize;
     }
   };
 
   const handleTouchMove = (e) => {
     if (e.touches.length === 2 && pinchRef.current.startDist > 0) {
       const currentDist = getDistance(e.touches);
-      const diff = currentDist - pinchRef.current.startDist;
+      const scale = currentDist / pinchRef.current.startDist;
       
-      // Adjust font size incrementally for every ~8 pixels of physical pinch movement
-      if (Math.abs(diff) >= 8) {
-        setFontSize(prev => Math.max(12, Math.min(38, prev + (diff > 0 ? 1 : -1))));
-        pinchRef.current.startDist = currentDist; // Reset relative baseline for continuous zoom
-      }
+      const newFontSize = Math.max(12, Math.min(38, pinchRef.current.startFontSize * scale));
+      setFontSize(Math.round(newFontSize));
     }
   };
 
@@ -1100,7 +1112,7 @@ const KindleStyleViewer = ({ bookData, bookTopic, coverImage, theme, setTheme, c
 
       {/* MAIN PAGE CONTENT (SCALES ON CLICK) */}
       <div 
-        style={{ flex: 1, perspective: '1000px', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', touchAction: 'pan-x pan-y' }} 
+        style={{ flex: 1, perspective: '1000px', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', touchAction: 'pan-y' }} 
         onClick={toggleControlsInternal}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
