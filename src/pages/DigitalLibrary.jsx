@@ -962,20 +962,6 @@ const KindleStyleViewer = ({ bookData, bookTopic, coverImage, theme, setTheme, c
 
   const pinchRef = useRef({ startDist: 0, startFontSize: 16 });
 
-  // Aggressively prevent native browser pinch-zoom while reading
-  useEffect(() => {
-    const preventNativeZoom = (e) => {
-      if (e.touches.length > 1) {
-        e.preventDefault();
-      }
-    };
-    
-    document.addEventListener('touchmove', preventNativeZoom, { passive: false });
-    return () => {
-      document.removeEventListener('touchmove', preventNativeZoom);
-    };
-  }, []);
-
   const getDistance = (touches) => {
     const dx = touches[0].clientX - touches[1].clientX;
     const dy = touches[0].clientY - touches[1].clientY;

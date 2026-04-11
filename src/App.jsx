@@ -40,6 +40,18 @@ function App() {
   const [showSplash, setShowSplash] = useState(true); 
   const SPLASH_DURATION = 4500; // 4500 = 4.5 seconds. Change this easily anytime.
 
+  // --- GLOBAL NATIVE ZOOM PREVENTION ---
+  useEffect(() => {
+    const preventNativeZoom = (e) => {
+      if (e.touches.length > 1) {
+        e.preventDefault();
+      }
+    };
+    
+    document.addEventListener('touchmove', preventNativeZoom, { passive: false });
+    return () => document.removeEventListener('touchmove', preventNativeZoom);
+  }, []);
+
   // --- FIREBASE AUTHENTICATION CHECKER ---
   useEffect(() => {
     const auth = getAuth();
