@@ -23,7 +23,7 @@ const getGlassStyle = (theme) => ({
 });
 
 // --- 1. The Physical Page Component ---
-const Page = React.forwardRef(({ title, children, number, theme }, ref) => {
+const Page = React.forwardRef(({ title, children, number, theme, fontSize = 16 }, ref) => {
   const isDark = theme === 'dark';
   return (
     <div 
@@ -41,11 +41,11 @@ const Page = React.forwardRef(({ title, children, number, theme }, ref) => {
         position: 'relative'
       }}
     >
-      <div className="hide-scrollbar" style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', padding: '40px 30px', scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' }}>
-        <h2 style={{ fontSize: '22px', color: isDark ? '#f0f0f0' : '#111', marginTop: 0, marginBottom: '25px', lineHeight: '1.3' }}>
+      <div className="hide-scrollbar" style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', padding: '25px 20px', scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' }}>
+        <h2 style={{ fontSize: `${Math.max(18, fontSize + 4)}px`, color: isDark ? '#f0f0f0' : '#111', marginTop: 0, marginBottom: '20px', lineHeight: '1.3' }}>
           {title}
         </h2>
-        <div style={{ fontSize: '18px', lineHeight: '1.8', color: isDark ? '#d4d4d8' : '#333', textAlign: 'justify', wordBreak: 'break-word' }}>
+        <div style={{ fontSize: `${fontSize}px`, lineHeight: '1.6', color: isDark ? '#d4d4d8' : '#333', textAlign: 'justify', wordBreak: 'break-word' }}>
           {children}
         </div>
       </div>
@@ -102,6 +102,7 @@ const DigitalLibrary = () => {
   const [error, setError] = useState(null);
   const [countdown, setCountdown] = useState(60);
   const [theme, setTheme] = useState('light');
+  const [fontSize, setFontSize] = useState(16);
 
   const [currentPage, setCurrentPage] = useState(0);
   const totalPages = bookData ? bookData.length + 3 : 0;
@@ -129,6 +130,10 @@ const DigitalLibrary = () => {
   const [isSavedBooksOpen, setIsSavedBooksOpen] = useState(false);
   const [showSavePrompt, setShowSavePrompt] = useState(false);
   const chatContainerRef = useRef(null);
+
+  const stateRef = useRef({ bookData: null, loading: false, isAlreadySaved: true, showSavePrompt: false });
+  const skipNextPopState = useRef(false);
+  const generationIdRef = useRef(null);
 
   // Countdown timer effect
   useEffect(() => {
@@ -171,6 +176,40 @@ const DigitalLibrary = () => {
       chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
     }
   }, [chatMessages, isChatLoading]);
+
+  const isAlreadySaved = bookData && bookTopic ? savedBooks.some(book => book.topic.toLowerCase() === bookTopic.toLowerCase()) : false;
+
+  useEffect(() => {
+    stateRef.current = { bookData, loading, isAlreadySaved, showSavePrompt };
+  }, [bookData, loading, isAlreadySaved, showSavePrompt]);
+
+  useEffect(() => {
+    const handlePopState = (e) => {
+      if (skipNextPopState.current) {
+        skipNextPopState.current = false;
+        return;
+      }
+      const { bookData, loading, isAlreadySaved, showSavePrompt } = stateRef.current;
+
+      if (showSavePrompt) {
+        setShowSavePrompt(false);
+        window.history.pushState({ isSubView: true }, ''); // Prevent back
+      } else if (bookData && !isAlreadySaved) {
+        setShowSavePrompt(true);
+        window.history.pushState({ isSubView: true }, ''); // Prevent back
+      } else if (bookData) {
+        setBookData(null);
+        setCurrentPage(0);
+        setChatMessages([]);
+      } else if (loading) {
+        setLoading(false);
+        generationIdRef.current = null; // Cancel generation
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
 
   const callAIWithTimeout = (systemPrompt, userPrompt, timeout = 30000) => {
     const timeoutPromise = new Promise((_, reject) =>
@@ -251,10 +290,14 @@ const DigitalLibrary = () => {
     setSearchHistory(updatedHistory);
     localStorage.setItem('farmCap_library_history', JSON.stringify(updatedHistory));
 
+    const currentGenId = Date.now();
+    generationIdRef.current = currentGenId;
+
     setLoading(true);
     setError(null);
     setBookData(null);
     setCoverImage(null);
+    window.history.pushState({ isSubView: true }, '');
 
     // --- NEW: Fetch a high-quality image from Unsplash based on the topic ---
     const unsplashUrl = `https://source.unsplash.com/400x600/?${encodeURIComponent(currentTopic + ',farm,agriculture')}`;
@@ -363,6 +406,10 @@ const DigitalLibrary = () => {
       }
     }
 
+    if (generationIdRef.current !== currentGenId) {
+      return; // User cancelled the generation by going back
+    }
+
     if (finalParsedData) {
       setBookData(finalParsedData);
       setTopic(''); // Clear input after generating
@@ -370,48 +417,40 @@ const DigitalLibrary = () => {
       setChatMessages([]);
     } else {
       setError("The AI formatting failed after multiple attempts. Please try again with a slightly different topic.");
+      skipNextPopState.current = true;
+      window.history.back();
     }
     setLoading(false);
   };
 
-  const isAlreadySaved = bookData && bookTopic ? savedBooks.some(book => book.topic.toLowerCase() === bookTopic.toLowerCase()) : false;
-
   const handleBackClick = () => {
+    const { bookData, loading, isAlreadySaved } = stateRef.current;
     if (bookData && !isAlreadySaved) {
       setShowSavePrompt(true);
-    } else if (bookData) {
-      isNavigatingBack.current = true;
-      setBookData(null); // Go back to input from the book
-      if (window.history.state?.overlay === 'bookReader') {
-        window.history.back();
-      }
-      setTimeout(() => { isNavigatingBack.current = false; }, 100);
-    } else if (loading) {
-      setLoading(false); // Go back to input from the loading screen
+    } else if (bookData || loading) {
+      window.history.back(); // Invokes the robust hardware-back logic via popstate
     } else {
-      navigate('/dashboard'); // Go back to home page
+      navigate('/dashboard');
     }
   };
 
   const handleDiscardAndLeave = () => {
     setShowSavePrompt(false);
-    isNavigatingBack.current = true;
     setBookData(null);
-    if (window.history.state?.overlay === 'bookReader') {
-      window.history.back();
-    }
-    setTimeout(() => { isNavigatingBack.current = false; }, 100);
+    setCurrentPage(0);
+    setChatMessages([]);
+    skipNextPopState.current = true;
+    window.history.back();
   };
 
   const handleSaveAndLeave = () => {
     handleSaveBook();
     setShowSavePrompt(false);
-    isNavigatingBack.current = true;
     setBookData(null);
-    if (window.history.state?.overlay === 'bookReader') {
-      window.history.back();
-    }
-    setTimeout(() => { isNavigatingBack.current = false; }, 100);
+    setCurrentPage(0);
+    setChatMessages([]);
+    skipNextPopState.current = true;
+    window.history.back();
   };
 
   const handleSaveBook = () => {
@@ -773,6 +812,8 @@ const DigitalLibrary = () => {
             isSpeaking={isSpeaking}
             handleSaveBook={handleSaveBook}
             isAlreadySaved={isAlreadySaved}
+            fontSize={fontSize}
+            setFontSize={setFontSize}
           />
         )}
       </div>
@@ -790,15 +831,17 @@ const DigitalLibrary = () => {
               <span>Recent Topics</span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              {searchHistory.length > 0 && (
-                <span onClick={(e) => { e.stopPropagation(); setSearchHistory([]); localStorage.removeItem('farmCap_library_history'); }} style={{ fontSize: '11px', color: '#ff8a80', cursor: 'pointer', background: 'rgba(211, 47, 47, 0.2)', padding: '5px 12px', borderRadius: '16px', border: '1px solid rgba(211, 47, 47, 0.4)' }}>Clear All</span>
-              )}
               {isHistoryOpen ? <IoIosArrowUp size={20} /> : <IoIosArrowDown size={20} />}
             </div>
           </button>
           
           {isHistoryOpen && (
             <div style={{ padding: '0 20px 15px 20px', display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '250px', overflowY: 'auto' }}>
+              {searchHistory.length > 0 && (
+                <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '4px' }}>
+                  <span onClick={(e) => { e.stopPropagation(); setSearchHistory([]); localStorage.removeItem('farmCap_library_history'); }} style={{ fontSize: '11px', color: '#ff8a80', cursor: 'pointer', background: 'rgba(211, 47, 47, 0.2)', padding: '5px 12px', borderRadius: '16px', border: '1px solid rgba(211, 47, 47, 0.4)' }}>Clear All</span>
+                </div>
+              )}
               {searchHistory.length > 0 ? (
                 searchHistory.map((item, idx) => (
                   <div 
@@ -835,18 +878,20 @@ const DigitalLibrary = () => {
               <span>Saved Books</span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              {savedBooks.length > 0 && (
-                <span onClick={(e) => { e.stopPropagation(); setSavedBooks([]); localStorage.removeItem('farmCap_saved_books'); }} style={{ fontSize: '11px', color: '#ff8a80', cursor: 'pointer', background: 'rgba(211, 47, 47, 0.2)', padding: '5px 12px', borderRadius: '16px', border: '1px solid rgba(211, 47, 47, 0.4)' }}>Clear All</span>
-              )}
               {isSavedBooksOpen ? <IoIosArrowUp size={20} /> : <IoIosArrowDown size={20} />}
             </div>
           </button>
           
           {isSavedBooksOpen && (
             <div style={{ padding: '0 20px 15px 20px', display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '250px', overflowY: 'auto' }}>
+              {savedBooks.length > 0 && (
+                <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '4px' }}>
+                  <span onClick={(e) => { e.stopPropagation(); setSavedBooks([]); localStorage.removeItem('farmCap_saved_books'); }} style={{ fontSize: '11px', color: '#ff8a80', cursor: 'pointer', background: 'rgba(211, 47, 47, 0.2)', padding: '5px 12px', borderRadius: '16px', border: '1px solid rgba(211, 47, 47, 0.4)' }}>Clear All</span>
+                </div>
+              )}
               {savedBooks.length > 0 ? (
                 savedBooks.map((book) => ( 
-                  <div key={book.id} onClick={() => { setBookData(book.bookData); setBookTopic(book.topic); setCoverImage(book.coverImage || null); setCurrentPage(0); setChatMessages([]); setIsSavedBooksOpen(false); }} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 15px', background: 'rgba(0, 0, 0, 0.2)', borderRadius: '12px', cursor: 'pointer', fontSize: '14px', color: '#fff', border: '1px solid rgba(255,255,255,0.1)', transition: 'background 0.2s', boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.15)', textShadow: '0 1px 2px rgba(0,0,0,0.4)' }}>
+                  <div key={book.id} onClick={() => { setBookData(book.bookData); setBookTopic(book.topic); setCoverImage(book.coverImage || null); setCurrentPage(0); setChatMessages([]); setIsSavedBooksOpen(false); window.history.pushState({ isSubView: true }, ''); }} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 15px', background: 'rgba(0, 0, 0, 0.2)', borderRadius: '12px', cursor: 'pointer', fontSize: '14px', color: '#fff', border: '1px solid rgba(255,255,255,0.1)', transition: 'background 0.2s', boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.15)', textShadow: '0 1px 2px rgba(0,0,0,0.4)' }}>
                     <div>📖 {book.topic}</div>
                     <IoMdTrash size={18} color="#ff8a80" onClick={(e) => {
                       e.stopPropagation();
@@ -912,8 +957,41 @@ const DigitalLibrary = () => {
   );
 };
 
-const KindleStyleViewer = ({ bookData, bookTopic, coverImage, theme, setTheme, currentPage, setCurrentPage, totalPages, handlePrevPage, handleNextPage, swipeHandlers, showControls, setShowControls, showGridView, setShowGridView, setIsChatModalOpen, handleBackClick, toggleSpeech, isSpeaking, handleSaveBook, isAlreadySaved }) => {
+const KindleStyleViewer = ({ bookData, bookTopic, coverImage, theme, setTheme, currentPage, setCurrentPage, totalPages, handlePrevPage, handleNextPage, swipeHandlers, showControls, setShowControls, showGridView, setShowGridView, setIsChatModalOpen, handleBackClick, toggleSpeech, isSpeaking, handleSaveBook, isAlreadySaved, fontSize, setFontSize }) => {
   const isDark = theme === 'dark';
+
+  const pinchRef = useRef({ startDist: 0 });
+
+  const getDistance = (touches) => {
+    const dx = touches[0].clientX - touches[1].clientX;
+    const dy = touches[0].clientY - touches[1].clientY;
+    return Math.sqrt(dx * dx + dy * dy);
+  };
+
+  const handleTouchStart = (e) => {
+    if (e.touches.length === 2) {
+      pinchRef.current.startDist = getDistance(e.touches);
+    }
+  };
+
+  const handleTouchMove = (e) => {
+    if (e.touches.length === 2 && pinchRef.current.startDist > 0) {
+      const currentDist = getDistance(e.touches);
+      const diff = currentDist - pinchRef.current.startDist;
+      
+      // Adjust font size incrementally for every ~8 pixels of physical pinch movement
+      if (Math.abs(diff) >= 8) {
+        setFontSize(prev => Math.max(12, Math.min(38, prev + (diff > 0 ? 1 : -1))));
+        pinchRef.current.startDist = currentDist; // Reset relative baseline for continuous zoom
+      }
+    }
+  };
+
+  const handleTouchEnd = (e) => {
+    if (e.touches.length < 2) {
+      pinchRef.current.startDist = 0;
+    }
+  };
 
   const toggleControlsInternal = (e) => {
     if (e.target && typeof e.target.closest === 'function' && e.target.closest('.controls-ignore')) return;
@@ -953,8 +1031,8 @@ const KindleStyleViewer = ({ bookData, bookTopic, coverImage, theme, setTheme, c
 
       return (
         <PageCover theme={theme}>
-          <div style={{ padding: '40px 30px', width: '100%', height: '100%', boxSizing: 'border-box', display: 'flex', flexDirection: 'column', background: isDark ? '#18181b' : '#fff' }}>
-            <h2 style={{ fontSize: '24px', color: isDark ? '#fff' : '#111', borderBottom: `2px solid ${isDark ? '#4db6ac' : '#00695c'}`, paddingBottom: '10px', marginBottom: '20px', fontFamily: "Georgia, 'Times New Roman', serif" }}>Table of Contents</h2>
+          <div style={{ padding: '30px 20px', width: '100%', height: '100%', boxSizing: 'border-box', display: 'flex', flexDirection: 'column', background: isDark ? '#18181b' : '#fff' }}>
+            <h2 style={{ fontSize: `${Math.max(20, fontSize + 4)}px`, color: isDark ? '#fff' : '#111', borderBottom: `2px solid ${isDark ? '#4db6ac' : '#00695c'}`, paddingBottom: '10px', marginBottom: '20px', fontFamily: "Georgia, 'Times New Roman', serif" }}>Table of Contents</h2>
             <div className="hide-scrollbar" style={{ flex: 1, overflowY: 'auto' }}>
               {toc.map((item, i) => (
                 <div key={i} onClick={(e) => { e.stopPropagation(); setCurrentPage(item.pageIndex); }} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '15px 0', borderBottom: isDark ? '1px dashed rgba(255,255,255,0.1)' : '1px dashed rgba(0,0,0,0.1)', cursor: 'pointer' }} onMouseOver={(e) => e.currentTarget.style.opacity = 0.7} onMouseOut={(e) => e.currentTarget.style.opacity = 1}>
@@ -979,9 +1057,9 @@ const KindleStyleViewer = ({ bookData, bookTopic, coverImage, theme, setTheme, c
     }
     const pageIndex = currentPage - 2;
     const page = bookData[pageIndex];
-    if (!page) return <Page number={currentPage} title="Page not found" theme={theme}>This page could not be loaded.</Page>;
+    if (!page) return <Page number={currentPage} title="Page not found" theme={theme} fontSize={fontSize}>This page could not be loaded.</Page>;
     return (
-      <Page number={currentPage} title={page.chapter_title} theme={theme}>
+      <Page number={currentPage} title={page.chapter_title} theme={theme} fontSize={fontSize}>
         {page.page_content}
       </Page>
     );
@@ -1021,7 +1099,13 @@ const KindleStyleViewer = ({ bookData, bookTopic, coverImage, theme, setTheme, c
       </AnimatePresence>
 
       {/* MAIN PAGE CONTENT (SCALES ON CLICK) */}
-      <div style={{ flex: 1, perspective: '1000px', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }} onClick={toggleControlsInternal}>
+      <div 
+        style={{ flex: 1, perspective: '1000px', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', touchAction: 'pan-x pan-y' }} 
+        onClick={toggleControlsInternal}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+      >
         <motion.div
           key={currentPage}
           initial={{ opacity: 0, x: 20 }}
