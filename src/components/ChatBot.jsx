@@ -127,6 +127,7 @@ function ChatBot() {
   const GROQ_KEY = import.meta.env.VITE_GROQ_KEY;
   const GEMINI_KEY = import.meta.env.VITE_GEMINI_KEY; 
   const HF_KEY = import.meta.env.VITE_HF_KEY; 
+  const OPENROUTER_KEY = import.meta.env.VITE_OPENROUTER_KEY;
 
   // 🛠️ SYSTEM BOOT SEQUENCE
   useEffect(() => {
@@ -136,64 +137,74 @@ function ChatBot() {
     const status = {
         GROQ: GROQ_KEY ? "🟢 ONLINE" : "🔴 OFFLINE",
         GEMINI: GEMINI_KEY ? "🟢 ONLINE" : "🔴 OFFLINE",
-        HF: HF_KEY ? "🟢 ONLINE" : "🔴 OFFLINE"
+        HF: HF_KEY ? "🟢 ONLINE" : "🔴 OFFLINE",
+        OPENROUTER: OPENROUTER_KEY ? "🟢 ONLINE" : "🔴 OFFLINE"
     };
     console.table(status);
     console.groupEnd();
-  }, [GROQ_KEY, GEMINI_KEY, HF_KEY]);
+  }, [GROQ_KEY, GEMINI_KEY, HF_KEY, OPENROUTER_KEY]);
 
 
   // ===============================================================================================
-  // SECTION 2: THE "BRUTE FORCE" MODEL GRID (FULL 30+ MODELS)
+  // SECTION 2: THE "BRUTE FORCE" MODEL GRID (CLEANED & OPTIMIZED)
   // ===============================================================================================
   
   const MODEL_QUEUE = useMemo(() => [
-     // --- LATEST GEMINI 3 & 2.5 SERIES (2026) ---
-    { provider: 'gemini', id: 'gemini-3.1-pro-preview', vision: true, desc: "Gemini 3.1 Pro (Advanced Reasoning)" },
-    { provider: 'gemini', id: 'gemini-3-flash-preview', vision: true, desc: "Gemini 3 Flash (Fast Agentic)" },
-    { provider: 'gemini', id: 'gemini-3.1-flash-lite-preview', vision: true, desc: "Gemini 3.1 Flash Lite" },
+    // --- TOP TIER GEMINI (Vision + Text + Search Grounding) ---
     { provider: 'gemini', id: 'gemini-2.5-pro', vision: true, desc: "Gemini 2.5 Pro" },
     { provider: 'gemini', id: 'gemini-2.5-flash', vision: true, desc: "Gemini 2.5 Flash" },
-    { provider: 'gemini', id: 'gemini-1.5-flash', vision: true, desc: "Gemini 1.5 Flash" },
+    { provider: 'gemini', id: 'gemini-2.0-flash', vision: true, desc: "Gemini 2.0 Flash" },
     { provider: 'gemini', id: 'gemini-1.5-pro', vision: true, desc: "Gemini 1.5 Pro" },
-    // --- LATEST GROQ / DEEPSEEK / META SERIES (2026) ---
-    { provider: 'groq', id: 'deepseek-r1-distill-llama-70b', vision: false, desc: "DeepSeek R1 (Elite Reasoning)" },
+    { provider: 'gemini', id: 'gemini-1.5-flash', vision: true, desc: "Gemini 1.5 Flash" },
+    { provider: 'gemini', id: 'gemini-2.0-pro-exp-0205', vision: true, desc: "Gemini 2.0 Pro Exp" },
+    { provider: 'gemini', id: 'gemini-2.0-flash-thinking-exp-01-21', vision: true, desc: "Gemini 2.0 Flash Thinking" },
+    { provider: 'gemini', id: 'gemini-2.5-flash-8b', vision: true, desc: "Gemini 2.5 Flash 8B" },
+    
+    // --- OPENROUTER ELITE (Free Tier) ---
+    { provider: 'openrouter', id: 'google/gemini-2.5-pro:free', vision: true, desc: "OR Gemini 2.5 Pro" },
+    { provider: 'openrouter', id: 'google/gemini-2.0-pro-exp-02-05:free', vision: true, desc: "OR Gemini 2.0 Pro Exp" },
+    { provider: 'openrouter', id: 'meta-llama/llama-3.3-70b-instruct:free', vision: false, desc: "OR Llama 3.3 70B" },
+    { provider: 'openrouter', id: 'deepseek/deepseek-r1-distill-llama-70b:free', vision: false, desc: "OR DeepSeek R1" },
+    { provider: 'openrouter', id: 'google/gemini-2.0-flash-thinking-exp:free', vision: true, desc: "OR Gemini 2.0 Flash Thinking" },
+    { provider: 'openrouter', id: 'qwen/qwen-2.5-coder-32b-instruct:free', vision: false, desc: "OR Qwen 2.5 32B" },
+    { provider: 'openrouter', id: 'qwen/qwen-2.5-72b-instruct:free', vision: false, desc: "OR Qwen 2.5 72B" },
+    { provider: 'openrouter', id: 'nvidia/llama-3.1-nemotron-70b-instruct:free', vision: false, desc: "OR Nemotron 70B" },
+    { provider: 'openrouter', id: 'mistralai/mistral-nemo:free', vision: false, desc: "OR Mistral Nemo" },
+    { provider: 'openrouter', id: 'meta-llama/llama-3.1-8b-instruct:free', vision: false, desc: "OR Llama 3.1 8B" },
+    { provider: 'openrouter', id: 'gryphe/mythomax-l2-13b:free', vision: false, desc: "OR Mythomax L2" },
+    { provider: 'openrouter', id: 'undi95/toppy-m-7b:free', vision: false, desc: "OR Toppy M" },
+    
+    // --- GROQ FAST TIER ---
     { provider: 'groq', id: 'llama-3.3-70b-versatile', vision: false, desc: "Llama 3.3 70B" },
+    { provider: 'groq', id: 'llama-3.3-70b-specdec', vision: false, desc: "Llama 3.3 70B SpecDec" },
+    { provider: 'groq', id: 'deepseek-r1-distill-llama-70b', vision: false, desc: "DeepSeek R1 70B" },
+    { provider: 'groq', id: 'llama-3.2-90b-vision-preview', vision: true, desc: "Llama 3.2 90B Vision" },
+    { provider: 'groq', id: 'llama-3.2-11b-vision-preview', vision: true, desc: "Llama 3.2 11B Vision" },
+    { provider: 'groq', id: 'mixtral-8x7b-32768', vision: false, desc: "Mixtral 8x7B" },
     { provider: 'groq', id: 'qwen-2.5-32b', vision: false, desc: "Qwen 2.5 32B" },
-    { provider: 'groq', id: 'llama-3.2-11b-vision-preview', vision: true, desc: "Llama 3.2 11B Vision" },
-    { provider: 'groq', id: 'llama-3.2-90b-vision-preview', vision: true, desc: "Llama 3.2 90B Vision" },
-    { provider: 'groq', id: 'llama-3.2-11b-vision-preview', vision: true, desc: "Llama 3.2 11B Vision" },
-    { provider: 'groq', id: 'llama-3.2-90b-vision-preview', vision: true, desc: "Llama 3.2 90B Vision" },
-    // --- HUGGING FACE SPECIALTY MODELS ---
+    { provider: 'groq', id: 'llama-3.1-8b-instant', vision: false, desc: "Llama 3.1 8B" },
+    { provider: 'groq', id: 'gemma2-9b-it', vision: false, desc: "Gemma 2 9B" },
+    { provider: 'groq', id: 'llama3-70b-8192', vision: false, desc: "Llama 3 70B" },
+    { provider: 'groq', id: 'llama3-8b-8192', vision: false, desc: "Llama 3 8B" },
+    { provider: 'groq', id: 'gemma-7b-it', vision: false, desc: "Gemma 7B" },
+
+    // --- HUGGING FACE SPECIALTY (Crop Disease - Keep these for image analysis) ---
     { provider: 'hf', id: 'linkan/plant-disease-classification-v2', vision: true, desc: "HF Plant Disease V2" },
     { provider: 'hf', id: 'google/vit-base-patch16-224', vision: true, desc: "Google ViT" },
     { provider: 'hf', id: 'microsoft/resnet-50', vision: true, desc: "ResNet-50" },
-    { provider: 'hf', id: 'linkan/plant-disease-classification-v2', vision: true, desc: "HF Plant Disease V2" },
-    { provider: 'hf', id: 'google/vit-base-patch16-224', vision: true, desc: "Google ViT" },
-    { provider: 'hf', id: 'microsoft/resnet-50', vision: true, desc: "ResNet-50" },
-    { provider: 'hf', id: 'facebook/detr-resnet-50', vision: true, desc: "Facebook DETR" },
-    { provider: 'hf', id: 'google/vit-large-patch16-224', vision: true, desc: "Google ViT Large" },
     { provider: 'hf', id: 'nateraw/vit-base-beans', vision: true, desc: "HF Beans Disease" },
-    { provider: 'hf', id: 'jazmys/vit-base-patch16-224-in21k-finetuned-lora-food', vision: true, desc: "HF Food Analysis" },
-    { provider: 'gemini', id: 'gemini-2.0-flash-exp', vision: true, desc: "Gemini 2.0 Exp" },
-    { provider: 'gemini', id: 'gemini-pro-vision', vision: true, desc: "Gemini 1.0 Vision" },
+    
+    // --- HUGGING FACE TEXT FALLBACKS ---
+    { provider: 'hf', id: 'meta-llama/Meta-Llama-3.1-8B-Instruct', vision: false, desc: "HF Llama 3.1 8B" },
+    { provider: 'hf', id: 'mistralai/Mistral-Nemo-Instruct-2407', vision: false, desc: "HF Mistral Nemo" },
+    { provider: 'hf', id: 'Qwen/Qwen2.5-7B-Instruct', vision: false, desc: "HF Qwen 2.5 7B" },
+    { provider: 'hf', id: 'google/gemma-2-9b-it', vision: false, desc: "HF Gemma 2 9B" },
+    { provider: 'hf', id: 'microsoft/Phi-3.5-mini-instruct', vision: false, desc: "HF Phi-3.5 Mini" },
+
+    // --- FINAL LEGACY FALLBACKS ---
     { provider: 'gemini', id: 'gemini-1.5-flash-8b', vision: true, desc: "Gemini 1.5 Flash 8B" },
-    { provider: 'groq', id: 'llama-3.3-70b-versatile', vision: false }, 
-    { provider: 'groq', id: 'llama-3.1-70b-versatile', vision: false },
-    { provider: 'groq', id: 'llama-3.1-8b-instant', vision: false },
-    { provider: 'groq', id: 'llama3-70b-8192', vision: false },
-    { provider: 'groq', id: 'llama3-8b-8192', vision: false },
-    { provider: 'groq', id: 'mixtral-8x7b-32768', vision: false },
-    { provider: 'groq', id: 'gemma2-9b-it', vision: false },
-    { provider: 'groq', id: 'gemma-7b-it', vision: false },
-    { provider: 'gemini', id: 'gemini-1.0-pro', vision: false },
-    { provider: 'gemini', id: 'gemini-pro', vision: false },
-    { provider: 'gemini', id: 'text-bison-001', vision: false },
-    { provider: 'gemini', id: 'chat-bison-001', vision: false },
-    { provider: 'groq', id: 'llama3-groq-70b-8192-tool-use-preview', vision: false },
-    { provider: 'groq', id: 'llama3-groq-8b-8192-tool-use-preview', vision: false },
-    { provider: 'groq', id: 'llama-3.1-8b-instant', vision: false, desc: "Llama 3.1 8B (Speed)" },
-    { provider: 'gemini', id: 'gemini-1.5-flash-8b', vision: true, desc: "Gemini 1.5 Flash 8B" }
+    { provider: 'gemini', id: 'gemini-1.0-pro', vision: false, desc: "Gemini 1.0 Pro" },
+    { provider: 'openrouter', id: 'google/gemini-1.5-pro:free', vision: true, desc: "OR Gemini 1.5 Pro" }
   ], []);
 
 
@@ -961,6 +972,24 @@ function ChatBot() {
           const res = await fetch("https://api.groq.com/openai/v1/chat/completions", { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${GROQ_KEY}` }, body: JSON.stringify({ model: model.id, messages: payload }), signal });
           const data = await res.json();
           if (data.error) throw new Error(`Groq ${data.error.message}`);
+          const modelResponse = data.choices?.[0]?.message?.content;
+          if (!modelResponse) throw new Error("Empty response");
+          return modelResponse;
+
+        } else if (model.provider === 'openrouter') {
+          if (!OPENROUTER_KEY) throw new Error("OpenRouter Key Missing");
+          let payload;
+          if (hasFile && model.vision && dUrl && isImage) { 
+              const mergedContent = `${systemInstruction}\n\nUSER REQUEST: ${text}`;
+              payload = [{ role: "user", content: [{ type: "text", text: mergedContent }, { type: "image_url", image_url: { url: dUrl } }] }]; 
+          } else if (hasFile && !isImage) {
+              throw new Error("OpenRouter free models may not process raw PDFs, skipping.");
+          } else { 
+              payload = [{ role: "system", content: systemInstruction }, { role: "user", content: text }]; 
+          }
+          const res = await fetch("https://openrouter.ai/api/v1/chat/completions", { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${OPENROUTER_KEY}` }, body: JSON.stringify({ model: model.id, messages: payload }), signal });
+          const data = await res.json();
+          if (data.error) throw new Error(`OpenRouter ${data.error.message}`);
           const modelResponse = data.choices?.[0]?.message?.content;
           if (!modelResponse) throw new Error("Empty response");
           return modelResponse;

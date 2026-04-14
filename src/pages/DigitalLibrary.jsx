@@ -5,9 +5,9 @@ import { useSwipeable } from 'react-swipeable';
 import { motion, AnimatePresence } from 'framer-motion';
 import jsPDF from 'jspdf';
 
-// The path is perfectly set for a file sitting in src/pages/ 
-// pulling from src/Utilities/
-import { processWithFarmBrain } from '../utils.js/AIBrain';
+// The path is perfectly set for a file sitting in src/pages/ pulling from src/utils.js/
+// We now import the specialized multi-agent and continuous generation tracks
+import { processWithFarmBrain, generateEducationalBook, generateStoryBook, extendStory } from '../utils.js/AIBrain';
 
 // --- PREMIUM GLASS CARD STYLE EXTRACTED FROM WEATHER.JSX ---
 const getGlassStyle = (theme) => ({
@@ -44,10 +44,12 @@ const Page = React.forwardRef(({ title, children, number, theme, fontSize = 16, 
     >
       {bookmarkNode}
       <div className="hide-scrollbar" style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', padding: '25px 20px', scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' }}>
-        <h2 style={{ fontSize: `${Math.max(18, fontSize + 4)}px`, color: isDark ? '#f0f0f0' : '#111', marginTop: 0, marginBottom: '20px', lineHeight: '1.3' }}>
-          {title}
-        </h2>
-        <div style={{ fontSize: `${fontSize}px`, lineHeight: '1.6', color: isDark ? '#d4d4d8' : '#333', textAlign: 'justify', wordBreak: 'break-word' }}>
+        {title && (
+          <h2 style={{ fontSize: `${Math.max(18, fontSize + 4)}px`, fontWeight: 'bold', color: isDark ? '#f0f0f0' : '#111', marginTop: 0, marginBottom: '20px', lineHeight: '1.3' }}>
+            {title}
+          </h2>
+        )}
+        <div style={{ fontSize: `${fontSize}px`, lineHeight: '1.6', color: isDark ? '#d4d4d8' : '#333', textAlign: 'justify', wordBreak: 'break-word', whiteSpace: 'pre-wrap' }}>
           {children}
         </div>
       </div>
@@ -99,6 +101,12 @@ const DigitalLibrary = () => {
   const [contentStyle, setContentStyle] = useState('Practical Advice (Step-by-step)');
   const [customStyle, setCustomStyle] = useState('');
   const [bookData, setBookData] = useState(null);
+  
+  // NEW TRACKING STATES FOR STORIES
+  const [isStoryMode, setIsStoryMode] = useState(false);
+  const [storyContext, setStoryContext] = useState('');
+  const [extendingStory, setExtendingStory] = useState(false);
+
   const [coverImage, setCoverImage] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -220,6 +228,40 @@ const DigitalLibrary = () => {
     return Promise.race([processWithFarmBrain(systemPrompt, userPrompt), timeoutPromise]);
   };
   
+  // --- HELPER TO CHUNK CONTINUOUS STORY TEXT INTO PAGES ---
+  const chunkTextToPages = (text, titlePrefix) => {
+      // Strip basic markdown to keep plain-text UI clean
+      const cleanText = text.replace(/\*\*/g, '').replace(/#/g, '');
+      const paragraphs = cleanText.split('\n\n').filter(p => p.trim());
+      const pages = [];
+      let currentPage = "";
+      let isFirstPage = true;
+      for (const p of paragraphs) {
+          // Increased capacity to 2000 to fully fill the page
+          if (currentPage.length + p.length > 2000) { 
+              if (currentPage.trim()) {
+                  pages.push({ 
+                      chapter_title: isFirstPage ? titlePrefix : "", 
+                      header_title: titlePrefix,
+                      page_content: currentPage.trim() 
+                  });
+                  isFirstPage = false;
+              }
+              currentPage = p + "\n\n";
+          } else {
+              currentPage += p + "\n\n";
+          }
+      }
+      if (currentPage.trim()) { 
+          pages.push({ 
+              chapter_title: isFirstPage ? titlePrefix : "", 
+              header_title: titlePrefix,
+              page_content: currentPage.trim() 
+          }); 
+      }
+      return pages;
+  };
+
   const handlePrevPage = () => {
     setCurrentPage((prev) => Math.max(0, prev - 1));
   };
@@ -259,7 +301,7 @@ const DigitalLibrary = () => {
     const pageData = bookData[pageIndex];
     if (!pageData) return;
 
-    const textToSpeak = `${pageData.chapter_title}. ${pageData.page_content}`;
+    const textToSpeak = `${pageData.chapter_title ? pageData.chapter_title + '. ' : ''}${pageData.page_content}`;
     const utterance = new SpeechSynthesisUtterance(textToSpeak);
 
     const voices = window.speechSynthesis.getVoices();
@@ -306,124 +348,119 @@ const DigitalLibrary = () => {
     setCoverImage(unsplashUrl);
     new Image().src = unsplashUrl; // Preload the image
 
+    const isStory = contentStyle.includes('Story');
+    setIsStoryMode(isStory);
+
     let targetPages = 10;
     if (bookLength.includes('5')) targetPages = 5;
     if (bookLength.includes('15')) targetPages = 15;
     if (bookLength.includes('20')) targetPages = 20;
 
-    let toneInstruction = '';
-    if (contentStyle.includes('Educational')) toneInstruction = 'Write in an educational and theoretical tone. Explain the science and the "why" behind the concepts clearly.';
-    else if (contentStyle.includes('Practical')) toneInstruction = 'Write strictly as a highly actionable, step-by-step practical advice guide. Focus on "how-to" and daily farming tasks.';
-    else if (contentStyle.includes('Story')) toneInstruction = 'Write the content as an engaging narrative or story that teaches the concepts through relatable rural characters and scenarios.';
-    else toneInstruction = `Write exactly according to this custom instruction: "${customStyle}"`;
-
-    // --- PROMPT ENGINEERING: Forcing JSON Output ---
-    const systemPrompt = `
-      You are a versatile and expert Indian agricultural AI author. 
-      The user requested a book on the topic: "${currentTopic}". 
-      Expand it into a comprehensive guide customized for the Indian farming context.
-
-      # SAFETY GUIDELINES:
-      If the topic is sexually explicit, violent, or inappropriate, you must still return a valid JSON array, but with a single page explaining your refusal politely.
-
-      # CRITICAL FORMATTING RULES (READ THESE FOUR WORDS STRICTLY: ONLY VALID JSON ARRAY):
-      1. The entire book MUST be written in the ${language} language.
-      2. You MUST respond ONLY with a valid JSON array. NO conversational text, NO greetings, NO markdown formatting.
-      3. Each page object must have EXACTLY two keys: "chapter_title" and "page_content".
-      4. TONE & STYLE: ${toneInstruction}
-      5. CONTENT CLARITY: Use simple, engaging, and easy-to-understand language. Explain any technical jargon clearly so even a beginner can easily understand.
-      6. LENGTH CONSTRAINTS: You must generate approximately ${targetPages} pages.
-      7. CHAPTER CONSTRAINTS: Divide the content logically across EXACTLY ${chapters} chapters.
-      8. ABSOLUTE REQUIREMENT: Every single chapter MUST have AT LEAST TWO PAGES. NEVER write a chapter that is only one page. Group them nicely.
-      9. CRITICAL: You MUST properly close the JSON array ( ] ) before your output limit is reached. Do not cut off mid-sentence.
-
-      # EXAMPLE JSON STRUCTURE (showing mandatory multi-page chapter format):
-      [
-        { "chapter_title": "Chapter 1: Basics (Part 1)", "page_content": "Detailed content part 1..." },
-        { "chapter_title": "Chapter 1: Basics (Part 2)", "page_content": "Detailed content part 2..." },
-        { "chapter_title": "Chapter 2: Advanced (Part 1)", "page_content": "Detailed content part 1..." },
-        { "chapter_title": "Chapter 2: Advanced (Part 2)", "page_content": "Detailed content part 2..." }
-      ]
-    `;
-
-    let attempts = 0;
-    const maxAttempts = 3; // Retry up to 3 times if a model fails or formatting breaks
     let finalParsedData = null;
 
-    while (attempts < maxAttempts && !finalParsedData) {
-      attempts++;
       try {
-        const retryHint = attempts > 1 ? "\n\nCRITICAL: Previous attempt failed. READ THESE FOUR WORDS STRICTLY: ONLY VALID JSON ARRAY. DO NOT ADD ANY OTHER TEXT." : "";
-        const result = await callAIWithTimeout(systemPrompt + retryHint, `Topic: ${topic}`, 90000); // 90-second timeout for massive generation
+        if (isStory) {
+          // TRACK 1: CONTINUOUS STORY GENERATION
+          const style = `Language: ${language}, Tone: Emotional, narrative, engaging story`;
+          const result = await generateStoryBook(currentTopic, bookLength, style);
+          if (!result.success) throw new Error(result.error);
+          
+          setStoryContext(result.context);
+          finalParsedData = chunkTextToPages(result.story, "The Story Begins");
+          setBookData(finalParsedData); // Fix: Actually render the story pages!
 
-        if (!result.success) throw new Error(result.error || "Failed to generate book.");
-
-        let rawText = result.data;
-        let parsedData = null;
-        
-        // 1. Remove Markdown Formatting
-        let cleanStr = rawText.replace(/```(?:json)?/gi, '').replace(/```/gi, '').trim();
-
-        // 2. Extract the Array or Object
-        const startIdx = cleanStr.indexOf('[');
-        const endIdx = cleanStr.lastIndexOf(']');
-        
-        if (startIdx !== -1 && endIdx !== -1 && endIdx > startIdx) {
-            cleanStr = cleanStr.substring(startIdx, endIdx + 1);
-            parsedData = JSON.parse(cleanStr);
         } else {
-            // Fallback for wrapped objects like { "book": [...] }
-            const objStart = cleanStr.indexOf('{');
-            const objEnd = cleanStr.lastIndexOf('}');
-            if (objStart !== -1 && objEnd !== -1 && objEnd > objStart) {
-                const objStr = cleanStr.substring(objStart, objEnd + 1);
-                const obj = JSON.parse(objStr);
-                for (const key in obj) {
-                    if (Array.isArray(obj[key])) { parsedData = obj[key]; break; }
-                }
-                if (!parsedData) parsedData = [obj];
-            } else {
-                 parsedData = JSON.parse(cleanStr);
-            }
-        }
+          // TRACK 2: PARALLEL EDUCATIONAL PLANNER-WORKER
+          let toneInstruction = '';
+          if (contentStyle.includes('Educational')) toneInstruction = `Language: ${language}, Tone: Educational and theoretical. Explain the science clearly.`;
+          else if (contentStyle.includes('Practical')) toneInstruction = `Language: ${language}, Tone: Highly actionable, step-by-step practical advice.`;
+          else toneInstruction = `Language: ${language}, Tone: ${customStyle}`;
 
-        // 3. Validation & Normalization (handles camelCase vs snake_case and single objects)
-        if (!Array.isArray(parsedData)) {
-            if (parsedData && typeof parsedData === 'object') parsedData = [parsedData];
-            else throw new Error("AI did not return a valid array or object.");
-        }
-        if (parsedData.length === 0) throw new Error("AI returned an empty array.");
+          // We use an array to hold the incoming generated chapters incrementally
+          let incrementalChapters = new Array(chapters).fill(null);
+          let baseBookData = [];
 
-        finalParsedData = parsedData.map((page, index) => ({
-            chapter_title: page.chapter_title || page.chapterTitle || page.title || `Chapter ${index + 1}`,
-            page_content: page.page_content || page.pageContent || page.content || page.text || ""
-        })).filter(page => page.page_content.trim() !== "");
-
-        if (finalParsedData.length === 0) {
-            finalParsedData = null; 
-            throw new Error("No valid pages found after parsing.");
+          const result = await generateEducationalBook(currentTopic, chapters, toneInstruction, (progress) => {
+              if (progress.step === 'TOC') {
+                  // 1. The Director finished! Build the skeleton of the book instantly.
+                  setLoading(false); // Stop the main loading spinner
+                  baseBookData = progress.outline.map((chap, i) => ({
+                      chapter_title: `Chapter ${i + 1}: ${chap.chapter_title || chap.title}`,
+                      header_title: `Chapter ${i + 1}: ${chap.chapter_title || chap.title}`,
+                      page_content: "✍️ The Writer Team is currently generating this chapter... Please check back in a few seconds."
+                  }));
+                  setBookData(baseBookData); // Show the Table of Contents immediately
+              } 
+              else if (progress.step === 'CHAPTER') {
+                  // 2. A Writer Team finished a chapter! Update the skeleton.
+                  const cleanTitle = progress.title.replace(/\*\*/g, '').replace(/#/g, '');
+                  const chapterHeading = `Chapter ${progress.index + 1}: ${cleanTitle}`;
+                  const cleanContent = progress.content.replace(/\*\*/g, '').replace(/#/g, '');
+                  
+                  // Convert this specific massive chapter into UI Pages
+                  const formattedPages = chunkTextToPages(cleanContent, chapterHeading);
+                  incrementalChapters[progress.index] = formattedPages;
+                  
+                  // Rebuild the entire book array to maintain exact 1 to 6 order
+                  let updatedBookData = [];
+                  for (let i = 0; i < chapters; i++) {
+                      if (incrementalChapters[i]) {
+                          updatedBookData = [...updatedBookData, ...incrementalChapters[i]];
+                      } else if (baseBookData[i]) {
+                          updatedBookData.push(baseBookData[i]); // Keep the loading placeholder
+                      }
+                  }
+                  setBookData(updatedBookData);
+              }
+          });
+          
+          if (!result.success) throw new Error(result.error);
+        
+          // Generation is fully complete. The onProgress callback already handled rendering!
+          finalParsedData = bookData; 
         }
       } catch (err) {
-        console.warn(`Book Generation Attempt ${attempts} failed:`, err);
+        console.warn(`Book Generation failed:`, err);
       }
-    }
 
     if (generationIdRef.current !== currentGenId) {
       return; // User cancelled the generation by going back
     }
 
-    if (finalParsedData) {
-      setBookData(finalParsedData);
+    if (finalParsedData && finalParsedData.length > 0) {
       setTopic(''); // Clear input after generating
       setCurrentPage(0);
       setChatMessages([]);
     } else {
-      setError("The AI formatting failed after multiple attempts. Please try again with a slightly different topic.");
+      setError("The AI failed to generate the book. Please try again with a different topic or style.");
       skipNextPopState.current = true;
       window.history.back();
     }
     setLoading(false);
   };
+
+  // --- HANDLE CONTINUOUS STORY EXTENSION ---
+  const handleExtendStory = async () => {
+      setExtendingStory(true);
+      try {
+          const result = await extendStory(storyContext, `Continue the story naturally, maintaining the tone in ${language}.`);
+          if (result.success) {
+              const currentParts = bookData.length;
+              const newPages = chunkTextToPages(result.nextPart, `Continuing the Journey`);
+              
+              setBookData(prev => [...prev, ...newPages]);
+              setStoryContext(prev => prev + "\n\n" + result.nextPart);
+              
+              // Move user to the newly generated page
+              setCurrentPage(bookData.length + 2); // 0=Cover, 1=ToC, so next page is length + 2
+          } else {
+              alert("Failed to extend story: " + result.error);
+          }
+      } catch(e) {
+          alert("Error extending story.");
+      }
+      setExtendingStory(false);
+  };
 
   const handleBackClick = () => {
     const { bookData, loading, isAlreadySaved } = stateRef.current;
@@ -471,7 +508,9 @@ const DigitalLibrary = () => {
           id: Date.now(),
           topic: bookTopic,
           bookData: bookData,
-          coverImage: coverImage
+          coverImage: coverImage,
+          isStoryMode: isStoryMode,
+          storyContext: storyContext
         };
         updatedSavedBooks = [newSavedBook, ...prevSavedBooks];
       }
@@ -497,10 +536,12 @@ const DigitalLibrary = () => {
     doc.setFontSize(12);
     book.bookData.forEach((page) => {
       if (y > 270) { doc.addPage(); y = 20; }
-      doc.setFont("helvetica", "bold");
-      const chapterLines = doc.splitTextToSize(page.chapter_title, 170);
-      doc.text(chapterLines, 20, y);
-      y += (chapterLines.length * 7) + 5;
+      if (page.chapter_title) {
+          doc.setFont("helvetica", "bold");
+          const chapterLines = doc.splitTextToSize(page.chapter_title, 170);
+          doc.text(chapterLines, 20, y);
+          y += (chapterLines.length * 7) + 5;
+      }
       doc.setFont("helvetica", "normal");
       const contentLines = doc.splitTextToSize(page.page_content, 170);
       contentLines.forEach(line => {
@@ -543,7 +584,7 @@ const DigitalLibrary = () => {
     setIsChatLoading(true);
     setUserQuestion('');
 
-    const bookContent = bookData.map(p => `Chapter: ${p.chapter_title}\nContent: ${p.page_content}`).join('\n\n');
+    const bookContent = bookData.map(p => `Chapter: ${p.header_title || p.chapter_title}\nContent: ${p.page_content}`).join('\n\n');
 
     const systemPrompt = `
       You are an expert agricultural AI assistant. The user has just read a book about "${bookTopic}" that you generated for them. They have a follow-up question. Your primary goal is to answer based on the provided book content. This includes answering direct questions AND interpreting conceptual or indirect themes (like the moral of a story).
@@ -771,7 +812,7 @@ const DigitalLibrary = () => {
                   </div>
                   <div style={{ flex: 1 }}>
                       <label style={labelStyle}>Chapters: {chapters}</label>
-                      <input type="range" min="1" max="5" value={chapters} onChange={(e) => setChapters(parseInt(e.target.value))} style={{ width: '100%', height: '5px', borderRadius: '5px', outline: 'none', accentColor: '#4db6ac', marginTop: '16px' }} />
+                      <input type="range" min="1" max="6" value={chapters} onChange={(e) => setChapters(parseInt(e.target.value))} style={{ width: '100%', height: '5px', borderRadius: '5px', outline: 'none', accentColor: '#4db6ac', marginTop: '16px' }} />
                   </div>
               </div>
 
@@ -942,7 +983,7 @@ const DigitalLibrary = () => {
               )}
               {savedBooks.length > 0 ? (
                 savedBooks.map((book) => ( 
-                  <div key={book.id} onClick={() => { setBookData(book.bookData); setBookTopic(book.topic); setCoverImage(book.coverImage || null); setCurrentPage(0); setChatMessages([]); setIsSavedBooksOpen(false); window.history.pushState({ isSubView: true }, ''); }} style={{ display: 'flex', flexDirection: 'column', gap: '12px', padding: '15px', background: 'rgba(0, 0, 0, 0.3)', borderRadius: '16px', cursor: 'pointer', color: '#fff', border: '1px solid rgba(255,255,255,0.1)', transition: 'background 0.2s', boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.15)', textShadow: '0 1px 2px rgba(0,0,0,0.4)' }}>
+                  <div key={book.id} onClick={() => { setBookData(book.bookData); setBookTopic(book.topic); setCoverImage(book.coverImage || null); setIsStoryMode(book.isStoryMode || false); setStoryContext(book.storyContext || ''); setCurrentPage(0); setChatMessages([]); setIsSavedBooksOpen(false); window.history.pushState({ isSubView: true }, ''); }} style={{ display: 'flex', flexDirection: 'column', gap: '12px', padding: '15px', background: 'rgba(0, 0, 0, 0.3)', borderRadius: '16px', cursor: 'pointer', color: '#fff', border: '1px solid rgba(255,255,255,0.1)', transition: 'background 0.2s', boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.15)', textShadow: '0 1px 2px rgba(0,0,0,0.4)' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '10px' }}>
                       <div style={{ fontSize: '15px', fontWeight: 'bold', lineHeight: '1.4', wordBreak: 'break-word', flex: 1 }}>
                         📖 {book.topic}
@@ -1020,7 +1061,7 @@ const DigitalLibrary = () => {
   );
 };
 
-const KindleStyleViewer = ({ bookData, bookTopic, coverImage, theme, setTheme, currentPage, setCurrentPage, totalPages, handlePrevPage, handleNextPage, swipeHandlers, showControls, setShowControls, showGridView, setShowGridView, setIsChatModalOpen, handleBackClick, toggleSpeech, isSpeaking, handleSaveBook, isAlreadySaved, fontSize, setFontSize }) => {
+const KindleStyleViewer = ({ bookData, bookTopic, coverImage, theme, setTheme, currentPage, setCurrentPage, totalPages, handlePrevPage, handleNextPage, swipeHandlers, showControls, setShowControls, showGridView, setShowGridView, setIsChatModalOpen, handleBackClick, toggleSpeech, isSpeaking, handleSaveBook, isAlreadySaved, fontSize, setFontSize, isStoryMode, handleExtendStory, extendingStory }) => {
   const isDark = theme === 'dark';
 
   const pinchRef = useRef({ startDist: 0, startFontSize: 16 });
@@ -1076,7 +1117,7 @@ const KindleStyleViewer = ({ bookData, bookTopic, coverImage, theme, setTheme, c
     if (!page) return null;
     return (
       <>
-        <div style={{fontSize:'11px', fontWeight:'bold', marginBottom:'8px', color: isDark ? '#4db6ac' : '#00695c', display:'-webkit-box', WebkitLineClamp:3, WebkitBoxOrient:'vertical', overflow:'hidden'}}>{page.chapter_title}</div>
+        <div style={{fontSize:'11px', fontWeight:'bold', marginBottom:'8px', color: isDark ? '#4db6ac' : '#00695c', display:'-webkit-box', WebkitLineClamp:3, WebkitBoxOrient:'vertical', overflow:'hidden'}}>{page.header_title || page.chapter_title}</div>
         <div style={{fontSize:'9px', color: isDark ? '#ccc' : '#666', display:'-webkit-box', WebkitLineClamp:8, WebkitBoxOrient:'vertical', overflow:'hidden', textAlign:'left', lineHeight: '1.4'}}>{page.page_content}</div>
       </>
     );
@@ -1106,10 +1147,10 @@ const KindleStyleViewer = ({ bookData, bookTopic, coverImage, theme, setTheme, c
       const toc = [];
       let currentChap = "";
       bookData.forEach((page, index) => {
-        const chapterBaseTitle = page.chapter_title.replace(/\s*\(?(Part|Continued)[\s\d]*\)?/i, '').trim();
-        if (chapterBaseTitle !== currentChap) {
-          toc.push({ title: chapterBaseTitle, pageIndex: index + 2 });
-          currentChap = chapterBaseTitle;
+        const title = page.header_title || page.chapter_title;
+        if (title && title !== currentChap && !title.includes("✍️")) {
+          toc.push({ title: title, pageIndex: index + 2 });
+          currentChap = title;
         }
       });
 
@@ -1135,6 +1176,15 @@ const KindleStyleViewer = ({ bookData, bookTopic, coverImage, theme, setTheme, c
           <div style={{ textAlign: 'center' }}>
             <h2 style={{ color: isDark ? '#fff' : '#333', fontFamily: "'Times New Roman', Times, serif" }}>The End</h2>
             <p style={{ color: isDark ? '#aaa' : '#666' }}>Happy Farming!</p>
+            {isStoryMode && (
+                <button 
+                    onClick={(e) => { e.stopPropagation(); handleExtendStory(); }}
+                    disabled={extendingStory}
+                    style={{ marginTop: '20px', padding: '12px 24px', background: '#2196F3', color: '#fff', border: 'none', borderRadius: '24px', fontSize: '16px', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 4px 15px rgba(33, 150, 243, 0.4)' }}
+                >
+                    {extendingStory ? 'Writing next part...' : 'Continue Story ✍️'}
+                </button>
+            )}
           </div>
         </PageCover>
       );
@@ -1379,7 +1429,7 @@ const GridViewModal = ({ show, onClose, bookData, bookTopic, coverImage, theme, 
           {/* Pages */}
           {bookData.map((page, index) => (
             <div key={index} onClick={() => { setCurrentPage(index + 2); onClose(); }} style={{ cursor: 'pointer', border: theme === 'dark' ? '1px solid rgba(255,255,255,0.2)' : '1px solid rgba(255,255,255,0.6)', borderRadius: '16px', padding: '15px', background: theme === 'dark' ? 'rgba(0,0,0,0.3)' : 'rgba(255,255,255,0.6)', backdropFilter: 'blur(10px)', boxShadow: currentPage === index + 2 ? activeShadow : 'none' }}>
-              <div style={{ fontSize: '12px', fontWeight: 'bold', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{page.chapter_title}</div>
+              <div style={{ fontSize: '12px', fontWeight: 'bold', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{page.header_title || page.chapter_title}</div>
               <div style={{ fontSize: '10px', color: '#888', marginTop: '5px' }}>Page {index + 3}</div>
             </div>
           ))}
@@ -1417,7 +1467,7 @@ const PageBookmarksModal = ({ show, onClose, bookData, theme, setCurrentPage, pa
                    if (!page) return null;
                    return (
                        <div key={pageNum} onClick={() => { setCurrentPage(pageNum); onClose(); }} style={{ cursor: 'pointer', border: theme === 'dark' ? '1px solid rgba(255,255,255,0.2)' : '1px solid rgba(255,255,255,0.6)', borderRadius: '16px', padding: '15px', background: theme === 'dark' ? 'rgba(0,0,0,0.3)' : 'rgba(255,255,255,0.6)', backdropFilter: 'blur(10px)', textAlign: 'center', boxShadow: currentPage === pageNum ? activeShadow : 'none' }}>
-                         <div style={{ fontSize: '12px', fontWeight: 'bold', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', color: theme === 'dark' ? '#fff' : '#000' }}>{page.chapter_title}</div>
+                         <div style={{ fontSize: '12px', fontWeight: 'bold', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', color: theme === 'dark' ? '#fff' : '#000' }}>{page.header_title || page.chapter_title}</div>
                          <div style={{ fontSize: '10px', color: '#888', marginTop: '10px' }}>Page {pageNum + 1}</div>
                        </div>
                    )
