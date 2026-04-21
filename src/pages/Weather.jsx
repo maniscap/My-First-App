@@ -295,9 +295,8 @@ const Weather = () => {
 
   const fetchSingleCity = async (query) => {
     try {
-      const apiKey = import.meta.env.VITE_WEATHER_KEY;
-      const url = `https://api.weatherapi.com/v1/forecast.json?key=${apiKey}&q=${query}&days=7&aqi=yes&alerts=yes`;
-      const response = await axios.get(url);
+      const url = `/api/Weather`;
+      const response = await axios.post(url, { action: 'forecast', query: query });
       return response.data;
     } catch (err) { 
         triggerToast("Network Error");
@@ -364,9 +363,8 @@ const Weather = () => {
     setGpsResult(null); 
     if (query.length > 2) {
         try {
-            const apiKey = import.meta.env.VITE_WEATHER_KEY;
-            const url = `https://api.weatherapi.com/v1/search.json?key=${apiKey}&q=${query}`;
-            const res = await axios.get(url);
+            const url = `/api/Weather`;
+            const res = await axios.post(url, { action: 'search', query: query });
             setSuggestions(res.data);
         } catch (error) {}
     } else { setSuggestions([]); }

@@ -5,7 +5,7 @@
       "destination": "https://api.ceda.ashoka.edu.in/v1/:path*"
     },
     {
-      "source": "/(.*)",
+      "source": "/((?!api/|assets/|src/|@vite/|@react-refresh|.*\\..*).*)",
       "destination": "/index.html"
     }
   ]
