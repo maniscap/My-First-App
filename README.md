@@ -1,16 +1,23 @@
-# React + Vite
+# 🚜 FarmCap - Technical & Developer Documentation
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+> **Status:** 🚧 *Under Active Development*
+> *This document is a structural placeholder. The detailed technical architecture will be fully documented here once the development phase is complete.*
 
-Currently, two official plugins are available:
+## 📦 Packages & Plugins
+*(To be written: Comprehensive list of npm dependencies, Vite plugins, UI libraries, and their purposes in the project.)*
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## ⚙️ Backend & Serverless APIs
+*(To be written: Architecture of the Vercel serverless functions (`/api`), external API integrations, fallback logic, and secure environment variable configurations.)*
 
-## React Compiler
+## 🧠 Core Logic & Architecture
+*(To be written: Details on React state management, routing flow, Service Worker offline caching strategies, Firebase authentication, and database schemas.)*
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## 🚀 Running the Project Locally
 
-## Expanding the ESLint configuration
+```bash
+# Install all dependencies
+npm install
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+# Start the Vite development server
+npm run dev
+```

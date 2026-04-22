@@ -1,326 +1,1114 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { IoMdArrowBack } from 'react-icons/io';
+import { motion, AnimatePresence } from 'framer-motion';
+import { 
+  Share2, Bookmark, Search, TrendingUp, Leaf, Droplet, TrendingDown, 
+  Calendar, Clock, Eye, Heart, ChevronDown, Filter, X as CloseIcon
+} from 'lucide-react';
 
+// ===== CATEGORY CONFIGURATION FOR FARMERS =====
+const FARMING_CATEGORIES = [
+  {
+    id: 'agriculture',
+    name: 'Agriculture News',
+    icon: '🌾',
+    query: 'agriculture OR farming OR crops OR farmers OR cultivation OR yield',
+    color: '#2ECC71',
+    description: 'Latest farming techniques & crop updates'
+  },
+  {
+    id: 'market',
+    name: 'Market Rates',
+    icon: '📊',
+    query: 'agriculture prices OR market rates OR crop prices OR mandi OR wholesale',
+    color: '#3498DB',
+    description: 'Current commodity prices & market trends'
+  },
+  {
+    id: 'weather',
+    name: 'Weather & Season',
+    icon: '🌦️',
+    query: 'weather forecast India OR monsoon OR rainfall OR climate farming',
+    color: '#F39C12',
+    description: 'Weather predictions & seasonal guidance'
+  },
+  {
+    id: 'schemes',
+    name: 'Government Schemes',
+    icon: '📋',
+    query: 'PM-KISAN OR subsidy OR government scheme farmers OR agricultural support',
+    color: '#E74C3C',
+    description: 'Subsidies, loans & farmer welfare programs'
+  },
+  {
+    id: 'equipment',
+    name: 'Agri-Tech & Equipment',
+    icon: '⚙️',
+    query: 'agricultural equipment OR farming machinery OR agri-tech OR irrigation OR drones',
+    color: '#9B59B6',
+    description: 'Modern farming tools & technology'
+  },
+  {
+    id: 'organic',
+    name: 'Organic Farming',
+    icon: '🍃',
+    query: 'organic farming OR natural farming OR pesticide OR fertilizer OR sustainable agriculture',
+    color: '#16A085',
+    description: 'Organic & sustainable farming practices'
+  },
+  {
+    id: 'all',
+    name: 'All News',
+    icon: '📰',
+    query: 'agriculture OR farming OR crops OR farmers India',
+    color: '#95A5A6',
+    description: 'Latest updates from all sectors'
+  }
+];
+
+// ===== MAIN COMPONENT =====
 const NewsUpdates = () => {
   const navigate = useNavigate();
   
-  // We now store the two categories in separate states
-  const [agriNews, setAgriNews] = useState([]);
-  const [otherNews, setOtherNews] = useState([]);
-  
+  // State Management
+  const [articles, setArticles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [activeApi, setActiveApi] = useState(''); 
-  const [activeCategory, setActiveCategory] = useState('agriculture');
   const [page, setPage] = useState(1);
   const [nextPageToken, setNextPageToken] = useState(null);
-  const [fetchingMore, setFetchingMore] = useState(false);
+  const [imageKey, setImageKey] = useState('image');
+  const [apiSource, setApiSource] = useState('Loading...');
+  const [selectedCategory, setSelectedCategory] = useState(FARMING_CATEGORIES[0]);
+  const [searchInput, setSearchInput] = useState('');
+  const [savedArticles, setSavedArticles] = useState([]);
+  const [showSaved, setShowSaved] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
+  const [sortBy, setSortBy] = useState('recent'); // recent, trending, mostRead
 
+  // Load saved articles from localStorage
   useEffect(() => {
-    fetchNewsData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeCategory]); // Refetches or loads from cache whenever you switch tabs
+    const saved = localStorage.getItem('savedNews');
+    if (saved) setSavedArticles(JSON.parse(saved));
+  }, []);
 
-  const fetchNewsData = async (isLoadMore = false) => {
-    if (isLoadMore) setFetchingMore(true);
-    else setLoading(true);
+  // Fetch News
+  const fetchNews = useCallback(async (isLoadMore = false) => {
+    setLoading(true);
     setError(null);
 
-    // --- CACHE CHECK: Validate Daily Expiration ---
-    const today = new Date().toDateString();
-    if (!isLoadMore) {
-      const cacheDate = sessionStorage.getItem('farmcap_news_date');
-      
-      if (cacheDate !== today) {
-        // It's a new day! Clear the old cache
-        sessionStorage.removeItem('farmcap_agri_news');
-        sessionStorage.removeItem('farmcap_other_news');
-        sessionStorage.setItem('farmcap_news_date', today);
-      } else {
-        // Same day, use cache if available
-        const cachedAgri = sessionStorage.getItem('farmcap_agri_news');
-        const cachedOther = sessionStorage.getItem('farmcap_other_news');
-        
-        const parsedAgri = cachedAgri ? JSON.parse(cachedAgri) : [];
-        const parsedOther = cachedOther ? JSON.parse(cachedOther) : [];
-        
-        if (parsedAgri.length > 0) setAgriNews(parsedAgri);
-        if (parsedOther.length > 0) setOtherNews(parsedOther);
-        
-        // If the currently requested category already has data, we can safely skip the API call
-        if ((activeCategory === 'agriculture' && parsedAgri.length > 0) || 
-            (activeCategory === 'other' && parsedOther.length > 0)) {
-          setLoading(false);
-          return;
-        }
-      }
-    }
-
-    const gnewsKey = import.meta.env.VITE_GNEWS_API_KEY;
-    const newsDataKey = import.meta.env.VITE_NEWSDATA_API_KEY;
-
-    if (!gnewsKey || !newsDataKey) {
-      setError("API keys are missing. Check your .env file.");
-      setLoading(false);
-      setFetchingMore(false);
-      return;
-    }
-
-    // --- DYNAMIC QUERY: Changes based on the active tab so "Load More" always works ---
-    const queryStr = activeCategory === 'agriculture' 
-      ? '"agriculture" OR "farming" OR "farmers" OR crops OR "agri-tech" OR mandi'
-      : 'India OR "rural development" OR economy OR "current affairs" OR weather';
-      
-    const searchQuery = encodeURIComponent(queryStr);
-    
     try {
-      // ATTEMPT 1: Primary API (GNews)
-      const gnewsUrl = `https://gnews.io/api/v4/search?q=${searchQuery}&country=in&lang=en&max=10&page=${isLoadMore ? page + 1 : 1}&apikey=${gnewsKey}`;
-      const gnewsResponse = await fetch(gnewsUrl);
-      
-      if (!gnewsResponse.ok) throw new Error('GNews limit reached or failed.'); 
+      const query = searchInput || selectedCategory.query;
 
-      const data = await gnewsResponse.json();
-      processAndSortNews(data.articles, 'image', 'GNews (India Edition)', isLoadMore);
-      if (isLoadMore) setPage(prev => prev + 1);
+      const response = await fetch('/api/NewsUpdates', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          searchQuery: query,
+          isLoadMore,
+          page: isLoadMore ? page + 1 : 1,
+          nextPageToken
+        })
+      });
 
-    } catch (primaryError) {
-      console.warn("Primary API failed, switching to backup...", primaryError.message);
+      const data = await response.json();
 
-      try {
-        // ATTEMPT 2: Fallback API (NewsData.io)
-        // Added &image=1 to specifically request articles with cover images
-        let newsDataUrl = `https://newsdata.io/api/1/news?apikey=${newsDataKey}&q=${searchQuery}&country=in&language=en&size=10&image=1`;
-        if (isLoadMore && nextPageToken) {
-          newsDataUrl += `&page=${nextPageToken}`;
-        }
-        const newsDataResponse = await fetch(newsDataUrl);
-
-        if (!newsDataResponse.ok) throw new Error('All feeds unavailable.');
-
-        const data = await newsDataResponse.json();
-        setNextPageToken(data.nextPage); // Save for next pagination
-        processAndSortNews(data.results, 'image_url', 'NewsData (India Backup)', isLoadMore);
-
-      } catch (backupError) {
-        setError(backupError.message);
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to fetch news');
       }
+
+      setImageKey(data.imageKey);
+      setApiSource(data.source);
+      setNextPageToken(data.nextPageToken);
+
+      const newArticles = data.articles || [];
+
+      if (isLoadMore) {
+        setArticles(prev => [...prev, ...newArticles]);
+        setPage(prev => prev + 1);
+      } else {
+        setArticles(newArticles);
+        setPage(1);
+      }
+    } catch (err) {
+      console.error('News fetch error:', err);
+      setError(err.message);
     } finally {
       setLoading(false);
-      setFetchingMore(false);
+    }
+  }, [selectedCategory, searchInput, page, nextPageToken]);
+
+  // Initial Load
+  useEffect(() => {
+    setArticles([]);
+    setPage(1);
+    fetchNews(false);
+  }, [selectedCategory]);
+
+  // Handle Search
+  const handleSearch = (e) => {
+    e.preventDefault();
+    if (searchInput.trim()) {
+      setArticles([]);
+      setPage(1);
+      fetchNews(false);
     }
   };
 
-  // --- THE SORTING ENGINE ---
-  const processAndSortNews = (articles, imageKey, apiName, append = false) => {
-    const tempAgri = [];
-    const tempOther = [];
+  // Toggle Save Article
+  const toggleSave = (article) => {
+    const isAlreadySaved = savedArticles.some(a => a.url === article.url || a.link === article.url);
     
-    if (!articles) return;
-
-    // Keywords to determine if an article is strictly agricultural
-    const agriKeywords = /agricultur|farm|crop|harvest|seed|tractor|irrigation|fertilizer|pest|mandi|agri-tech|subsidy|kisan/i;
-
-    articles.forEach(article => {
-      // Normalize the data format
-      const formattedArticle = {
-        title: article.title,
-        description: article.description,
-        url: article.url || article.link,
-        image: article[imageKey] || null, // No fallback fake images anymore
-        publishedAt: article.publishedAt || article.pubDate,
-        source: article.source?.name || article.source_id || 'Agri Update'
-      };
-
-      // Check the title and description against our keywords
-      const textToAnalyze = `${formattedArticle.title} ${formattedArticle.description}`;
-      
-      if (agriKeywords.test(textToAnalyze)) {
-        tempAgri.push(formattedArticle);
-      } else {
-        tempOther.push(formattedArticle);
-      }
-    });
-
-    // Smartly merge the states so switching tabs to fetch doesn't wipe existing cache from the other tab
-    setAgriNews(prev => {
-      let updated;
-      if (append) updated = [...prev, ...tempAgri];
-      else if (activeCategory === 'agriculture') updated = tempAgri;
-      else updated = [...prev, ...tempAgri];
-      
-      sessionStorage.setItem('farmcap_agri_news', JSON.stringify(updated));
-      return updated;
-    });
-
-    setOtherNews(prev => {
-      let updated;
-      if (append) updated = [...prev, ...tempOther];
-      else if (activeCategory === 'other') updated = tempOther;
-      else updated = [...prev, ...tempOther];
-      
-      sessionStorage.setItem('farmcap_other_news', JSON.stringify(updated));
-      return updated;
-    });
-
-    setActiveApi(apiName);
+    if (isAlreadySaved) {
+      const updated = savedArticles.filter(a => a.url !== article.url && a.link !== article.url);
+      setSavedArticles(updated);
+      localStorage.setItem('savedNews', JSON.stringify(updated));
+    } else {
+      const updated = [...savedArticles, article];
+      setSavedArticles(updated);
+      localStorage.setItem('savedNews', JSON.stringify(updated));
+    }
   };
 
-  // Determine which list to show based on the active tab
-  const currentNewsList = activeCategory === 'agriculture' ? agriNews : otherNews;
+  // Share Article
+  const shareArticle = (article) => {
+    const text = `Check this farming news: ${article.title}\n${article.url || article.link}`;
+    
+    if (navigator.share) {
+      navigator.share({
+        title: 'Farming News',
+        text: text,
+      }).catch(err => console.log('Share failed:', err));
+    } else {
+      // Fallback: Copy to clipboard
+      navigator.clipboard.writeText(text);
+      alert('Link copied to clipboard!');
+    }
+  };
+
+  // Calculate Reading Time
+  const getReadingTime = (text) => {
+    if (!text) return '2 min';
+    const words = text.split(' ').length;
+    const minutes = Math.ceil(words / 200);
+    return `${minutes} min`;
+  };
+
+  // Format Time
+  const formatTime = (dateString) => {
+    if (!dateString) return 'Recent';
+    
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now - date;
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+    if (diffHours < 1) return 'Just now';
+    if (diffHours < 24) return `${diffHours}h ago`;
+    if (diffDays < 7) return `${diffDays}d ago`;
+
+    const options = { month: 'short', day: 'numeric', year: diffDays > 30 ? 'numeric' : undefined };
+    return new Date(dateString).toLocaleDateString('en-IN', options);
+  };
+
+  // Get Credibility Badge
+  const getSourceBadge = (source) => {
+    const trustedSources = ['BBC', 'Reuters', 'AP', 'The Hindu', 'Indian Express', 'Hindustan Times'];
+    const isTrusted = trustedSources.some(s => source?.includes(s));
+    
+    return {
+      color: isTrusted ? '#27AE60' : '#3498DB',
+      label: isTrusted ? '✓ Verified' : '📰 News',
+      trusted: isTrusted
+    };
+  };
+
+  // Render Article Card
+  const renderArticleCard = (article, index, isSaved = false) => {
+    const title = article.title || 'Untitled';
+    const desc = article.description || article.content || 'Read more on the original source...';
+    const link = article.url || article.link;
+    const date = article.publishedAt || article.pubDate;
+    const sourceName = article.source?.name || article.source_id || 'Agri News';
+    const img = article[imageKey] || 'https://images.unsplash.com/photo-1592982537447-7440770cbfc9?q=80&w=1000&auto=format&fit=crop';
+    
+    const isSavedArticle = savedArticles.some(a => (a.url || a.link) === (article.url || article.link));
+    const sourceInfo = getSourceBadge(sourceName);
+    const readingTime = getReadingTime(desc);
+
+    return (
+      <motion.div
+        key={`${article.url || article.link}-${index}`}
+        style={styles.card}
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -20 }}
+        transition={{ delay: index * 0.05 }}
+        whileHover={{ y: -8, boxShadow: '0 20px 40px rgba(0,0,0,0.4)' }}
+      >
+        {/* Image with Overlay */}
+        <div style={styles.imageContainer}>
+          <img
+            src={img}
+            alt={title}
+            style={styles.image}
+            onError={(e) => {
+              e.target.src = 'https://images.unsplash.com/photo-1592982537447-7440770cbfc9?q=80&w=1000&auto=format&fit=crop';
+            }}
+          />
+          <div style={styles.imageOverlay}>
+            <span style={{ ...styles.categoryTag, backgroundColor: selectedCategory.color }}>
+              {selectedCategory.icon} {selectedCategory.name}
+            </span>
+          </div>
+        </div>
+
+        {/* Content */}
+        <div style={styles.content}>
+          {/* Meta Information */}
+          <div style={styles.metaRow}>
+            <div style={styles.metaLeft}>
+              <span style={{ ...styles.sourceBadge, color: sourceInfo.color, borderColor: sourceInfo.color }}>
+                {sourceInfo.label}
+              </span>
+              <span style={styles.metaText}>
+                <Clock size={14} style={{ marginRight: '4px' }} /> {readingTime} read
+              </span>
+            </div>
+            <span style={styles.timeAgo}>{formatTime(date)}</span>
+          </div>
+
+          {/* Title */}
+          <h3 style={styles.cardTitle}>{title}</h3>
+
+          {/* Description */}
+          <p style={styles.desc}>{desc}</p>
+
+          {/* Action Buttons & Footer */}
+          <div style={styles.cardFooter}>
+            <div style={styles.actions}>
+              <motion.button
+                style={{
+                  ...styles.actionBtn,
+                  backgroundColor: isSavedArticle ? '#E74C3C' : 'rgba(255,255,255,0.1)'
+                }}
+                onClick={() => toggleSave(article)}
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.95 }}
+                title={isSavedArticle ? 'Remove from saved' : 'Save for later'}
+              >
+                <Bookmark size={16} fill={isSavedArticle ? 'currentColor' : 'none'} />
+              </motion.button>
+
+              <motion.button
+                style={styles.actionBtn}
+                onClick={() => shareArticle(article)}
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.95 }}
+                title="Share news"
+              >
+                <Share2 size={16} />
+              </motion.button>
+            </div>
+
+            <motion.a
+              href={link}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={styles.readMoreBtn}
+              whileHover={{ paddingRight: '20px' }}
+              whileTap={{ scale: 0.98 }}
+            >
+              Read Article →
+            </motion.a>
+          </div>
+        </div>
+      </motion.div>
+    );
+  };
 
   return (
-    <div style={{ padding: '20px', background: 'linear-gradient(135deg, #f0f9ff 0%, #e1f5fe 100%)', minHeight: '100vh', fontFamily: 'system-ui, sans-serif' }}>
-      
-      {/* Header Section */}
-      <div style={{ 
-        display: 'flex', 
-        alignItems: 'center', 
-        justifyContent: 'space-between',
-        marginBottom: '25px',
-        background: 'white',
-        padding: '16px 20px',
-        borderRadius: '24px',
-        boxShadow: '0 10px 25px rgba(2, 136, 209, 0.1)',
-        border: '1px solid rgba(2, 136, 209, 0.1)'
-      }}>
-        <button 
-          onClick={() => navigate('/agri-insights', { state: { explored: true } })} 
-          style={{ background: '#f0f9ff', border: 'none', cursor: 'pointer', padding: '10px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: '0.2s' }}
-        >
-          <IoMdArrowBack size={24} color="#0288d1" />
-        </button>
-        <div style={{ textAlign: 'center' }}>
-          <h1 style={{ color: '#0288d1', margin: '0', fontSize: '20px', fontWeight: '800' }}>News Updates 🇮🇳</h1>
-          {!loading && !error && activeApi && (
-            <div style={{ fontSize: '11px', color: '#888', fontWeight: '600', marginTop: '4px', letterSpacing: '0.5px' }}>Powered by {activeApi}</div>
-          )}
-        </div>
-        <div style={{ width: '44px' }} />
-      </div>
-      
-      {/* Category Toggle Card */}
-      <div style={{ 
-        display: 'flex', 
-        justifyContent: 'center', 
-        marginBottom: '25px', 
-        background: 'white', 
-        padding: '6px', 
-        borderRadius: '16px', 
-        boxShadow: '0 4px 15px rgba(2, 136, 209, 0.08)', 
-        border: '1px solid rgba(2, 136, 209, 0.1)' 
-      }}>
-        <button
-          onClick={() => setActiveCategory('agriculture')}
-          style={{
-            flex: 1, padding: '10px', borderRadius: '12px', border: 'none', cursor: 'pointer',
-            fontWeight: 'bold', fontSize: '14px', transition: 'all 0.3s ease',
-            background: activeCategory === 'agriculture' ? '#0288d1' : 'transparent',
-            color: activeCategory === 'agriculture' ? 'white' : '#555'
-          }}>
-          🌾 Agriculture
-        </button>
-        <button
-          onClick={() => setActiveCategory('other')}
-          style={{
-            flex: 1, padding: '10px', borderRadius: '12px', border: 'none', cursor: 'pointer',
-            fontWeight: 'bold', fontSize: '14px', transition: 'all 0.3s ease',
-            background: activeCategory === 'other' ? '#0288d1' : 'transparent',
-            color: activeCategory === 'other' ? 'white' : '#555'
-          }}>
-          📰 General Info
-        </button>
+    <>
+      {/* Background */}
+      <div style={styles.bg}>
+        <div style={styles.overlay} />
       </div>
 
-      {/* State Management: Loading & Error */}
-      {loading && (
-        <div style={{ textAlign: 'center', color: '#0288d1', padding: '40px 0' }}>
-          <div style={{ fontSize: '40px', marginBottom: '10px' }}>📰</div>
-          <p style={{ fontWeight: '600', fontSize: '16px' }}>Harvesting the latest updates...</p>
+      <div style={styles.page}>
+        {/* HEADER */}
+        <div style={styles.header}>
+          <button style={styles.backBtn} onClick={() => navigate(-1)} title="Go back">
+            <CloseIcon size={24} />
+          </button>
+          <div style={styles.headerContent}>
+            <h1 style={styles.mainTitle}>🌾 Farming News</h1>
+            <p style={styles.subtitle}>Latest updates for Indian farmers</p>
+          </div>
+          <motion.button
+            style={styles.savedBtn}
+            onClick={() => setShowSaved(!showSaved)}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            title="View saved articles"
+          >
+            <Bookmark size={20} fill={showSaved ? 'currentColor' : 'none'} />
+            <span style={styles.savedCount}>{savedArticles.length}</span>
+          </motion.button>
         </div>
-      )}
-      
-      {error && (
-        <div style={{ background: '#ffebee', color: '#c62828', padding: '15px', borderRadius: '8px', marginBottom: '20px' }}>
-          <p style={{ margin: 0 }}>{error}</p>
-        </div>
-      )}
 
-      {/* News Feed Container */}
-      {!loading && !error && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-          {currentNewsList.length === 0 ? (
-            <div style={{ textAlign: 'center', color: '#666', padding: '20px' }}>
-              <p>No specific news found for this category right now.</p>
-              <p style={{ fontSize: '12px' }}>Try checking the other tab!</p>
-            </div>
-          ) : (
-            currentNewsList.map((article, index) => (
-              <a 
-                key={index} 
-                href={article.url} 
-                target="_blank" 
-                rel="noopener noreferrer"
-                style={{ textDecoration: 'none', color: 'inherit' }}
+        {/* SEARCH & FILTERS */}
+        <div style={styles.controlPanel}>
+          {/* Search Bar */}
+          <form onSubmit={handleSearch} style={styles.searchContainer}>
+            <Search size={20} style={styles.searchIcon} />
+            <input
+              type="text"
+              placeholder="Search farming news... (e.g., 'mandi rates', 'irrigation', 'subsidy')"
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              style={styles.searchInput}
+            />
+            {searchInput && (
+              <motion.button
+                type="button"
+                style={styles.clearBtn}
+                onClick={() => setSearchInput('')}
+                whileTap={{ scale: 0.95 }}
               >
-                <div style={{ 
-                  background: 'white', 
-                  borderRadius: '20px', 
-                  overflow: 'hidden', 
-                  boxShadow: '0 8px 20px rgba(0,0,0,0.06)',
-                  transition: 'transform 0.2s ease',
-                  border: '1px solid rgba(2, 136, 209, 0.1)'
-                }}>
-                  {/* ONLY show image if the URL genuinely exists */}
-                  {article.image && (
-                    <img 
-                      src={article.image} 
-                      alt="News Thumbnail" 
-                      onError={(e) => { e.target.style.display = 'none'; }} // Instantly hide if the image fails to load
-                      style={{ width: '100%', height: '180px', objectFit: 'cover' }} 
-                    />
-                  )}
-                  
-                  <div style={{ padding: '15px' }}>
-                    <div style={{ marginBottom: '10px' }}>
-                      <span style={{ background: '#e8f5e9', color: '#2e7d32', padding: '4px 10px', borderRadius: '12px', fontSize: '10px', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{article.source}</span>
-                    </div>
-                    <h2 style={{ fontSize: '17px', color: '#111', margin: '0 0 10px 0', lineHeight: '1.4', fontWeight: '700' }}>
-                      {article.title}
-                    </h2>
-                    <p style={{ fontSize: '13px', color: '#555', margin: '0 0 15px 0', lineHeight: '1.5' }}>
-                      {article.description ? `${article.description.substring(0, 120)}...` : 'Click to read the full story.'}
-                    </p>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12px', color: '#999' }}>
-                      <span>{new Date(article.publishedAt).toLocaleDateString()}</span>
-                      <span style={{ color: '#0288d1', fontWeight: 'bold' }}>Read full story →</span>
-                    </div>
+                <CloseIcon size={18} />
+              </motion.button>
+            )}
+          </form>
+
+          {/* Filter Toggle */}
+          <motion.button
+            style={styles.filterBtn}
+            onClick={() => setShowFilters(!showFilters)}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+          >
+            <Filter size={20} /> {showFilters ? 'Hide' : 'Filter'}
+          </motion.button>
+        </div>
+
+        {/* CATEGORY FILTER */}
+        {showFilters && (
+          <motion.div
+            style={styles.filterPanel}
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+          >
+            <div style={styles.categoryGrid}>
+              {FARMING_CATEGORIES.map((category) => (
+                <motion.button
+                  key={category.id}
+                  style={{
+                    ...styles.categoryBtn,
+                    backgroundColor: selectedCategory.id === category.id
+                      ? `${category.color}20`
+                      : 'rgba(255,255,255,0.05)',
+                    borderColor: selectedCategory.id === category.id ? category.color : 'rgba(255,255,255,0.1)',
+                  }}
+                  onClick={() => {
+                    setSelectedCategory(category);
+                    setShowFilters(false);
+                  }}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <span style={styles.categoryIcon}>{category.icon}</span>
+                  <div style={styles.categoryInfo}>
+                    <div style={styles.categoryName}>{category.name}</div>
+                    <div style={styles.categoryDesc}>{category.description}</div>
                   </div>
+                </motion.button>
+              ))}
+            </div>
+          </motion.div>
+        )}
+
+        {/* MAIN CONTENT */}
+        <div style={styles.stage}>
+          <AnimatePresence>
+            {/* Showing Saved Articles */}
+            {showSaved && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                style={styles.savedSection}
+              >
+                <div style={styles.savedHeader}>
+                  <h2 style={styles.savedTitle}>📚 Saved Articles ({savedArticles.length})</h2>
+                  <motion.button
+                    style={styles.closeBtn}
+                    onClick={() => setShowSaved(false)}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    <CloseIcon size={24} />
+                  </motion.button>
                 </div>
-              </a>
-            ))
-          )}
-          
-          {/* Load More Button */}
-          {currentNewsList.length > 0 && (
-            <button 
-              onClick={() => fetchNewsData(true)}
-              disabled={fetchingMore}
-              style={{
-                padding: '14px', background: '#0288d1', color: 'white', border: 'none', 
-                borderRadius: '16px', fontWeight: 'bold', fontSize: '14px', 
-                cursor: fetchingMore ? 'not-allowed' : 'pointer', marginTop: '10px',
-                boxShadow: '0 4px 15px rgba(2, 136, 209, 0.2)'
-              }}
+
+                {savedArticles.length === 0 ? (
+                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={styles.emptyState}>
+                    <Bookmark size={48} style={{ opacity: 0.3, marginBottom: '16px' }} />
+                    <p style={styles.emptyText}>No saved articles yet.</p>
+                    <p style={{ ...styles.emptyText, fontSize: '13px', opacity: 0.6 }}>
+                      Tap the bookmark icon to save news for later reading.
+                    </p>
+                  </motion.div>
+                ) : (
+                  <div style={styles.grid}>
+                    {savedArticles.map((article, index) => renderArticleCard(article, index, true))}
+                  </div>
+                )}
+              </motion.div>
+            )}
+
+            {/* Error State */}
+            {error && !showSaved && (
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={styles.errorBox}>
+                <div style={styles.errorContent}>
+                  <p style={styles.errorText}>⚠️ {error}</p>
+                  <motion.button
+                    style={styles.retryBtn}
+                    onClick={() => fetchNews(false)}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    🔄 Try Again
+                  </motion.button>
+                </div>
+              </motion.div>
+            )}
+
+            {/* No Articles */}
+            {articles.length === 0 && !loading && !error && !showSaved && (
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={styles.emptyState}>
+                <Leaf size={48} style={{ opacity: 0.3, marginBottom: '16px' }} />
+                <p style={styles.emptyText}>No news found in this category</p>
+                <p style={{ ...styles.emptyText, fontSize: '13px', opacity: 0.6 }}>
+                  Try a different category or search term
+                </p>
+              </motion.div>
+            )}
+
+            {/* Articles Grid */}
+            {articles.length > 0 && !showSaved && (
+              <div style={styles.grid}>
+                {articles.map((article, index) => renderArticleCard(article, index))}
+              </div>
+            )}
+          </AnimatePresence>
+
+          {/* Loading State */}
+          {loading && !showSaved && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              style={styles.loadingContainer}
             >
-              {fetchingMore ? 'Loading more news...' : 'Load More News ↻'}
-            </button>
+              {[1, 2, 3].map((i) => (
+                <motion.div
+                  key={i}
+                  style={styles.skeletonCard}
+                  animate={{ opacity: [0.5, 1, 0.5] }}
+                  transition={{ repeat: Infinity, duration: 2, delay: i * 0.2 }}
+                />
+              ))}
+              <p style={styles.loadingText}>📡 Fetching latest farming news...</p>
+            </motion.div>
+          )}
+
+          {/* Load More Button */}
+          {articles.length > 0 && !loading && !error && !showSaved && (
+            <motion.button
+              style={styles.loadMoreBtn}
+              onClick={() => fetchNews(true)}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              📰 Load More News
+            </motion.button>
           )}
         </div>
-      )}
-    </div>
+
+        {/* Footer Info */}
+        {articles.length > 0 && !showSaved && (
+          <motion.div
+            style={styles.footerInfo}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.3 }}
+          >
+            <p style={styles.footerText}>
+              Powered by {apiSource} • {articles.length} articles loaded • 🇮🇳 India Edition
+            </p>
+          </motion.div>
+        )}
+      </div>
+    </>
   );
+};
+
+
+// ===== ENHANCED STYLES FOR MAXIMUM UI/UX =====
+const styles = {
+  // ===== LAYOUT =====
+  bg: {
+    position: 'fixed',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 0,
+    backgroundImage: 'linear-gradient(135deg, #1a472a 0%, #0f1419 50%, #1a2332 100%)',
+    backgroundSize: 'cover',
+    backgroundPosition: 'center',
+  },
+  overlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 1,
+    backgroundImage: 'linear-gradient(rgba(46, 204, 113, 0.02) 1px, transparent 1px), linear-gradient(90deg, rgba(46, 204, 113, 0.02) 1px, transparent 1px)',
+    backgroundSize: '40px 40px',
+  },
+  page: {
+    position: 'relative',
+    zIndex: 10,
+    padding: '16px',
+    minHeight: '100dvh',
+    overflowY: 'auto',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+    color: 'white',
+    paddingBottom: '60px',
+  },
+
+  // ===== HEADER =====
+  header: {
+    background: 'linear-gradient(135deg, rgba(20,20,20,0.9), rgba(46,204,113,0.1))',
+    backdropFilter: 'blur(30px)',
+    WebkitBackdropFilter: 'blur(30px)',
+    width: '100%',
+    maxWidth: '600px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: '18px 20px',
+    borderRadius: '28px',
+    marginBottom: '20px',
+    border: '1px solid rgba(46, 204, 113, 0.2)',
+    position: 'sticky',
+    top: '10px',
+    zIndex: 50,
+    boxSizing: 'border-box',
+    gap: '12px',
+  },
+  backBtn: {
+    background: 'rgba(255,255,255,0.08)',
+    border: 'none',
+    color: 'white',
+    width: '40px',
+    height: '40px',
+    borderRadius: '50%',
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    transition: 'all 0.3s',
+    flexShrink: 0,
+  },
+  headerContent: {
+    flex: 1,
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '2px',
+  },
+  mainTitle: {
+    margin: 0,
+    fontSize: '24px',
+    fontWeight: '700',
+    background: 'linear-gradient(135deg, #2ECC71 0%, #27AE60 100%)',
+    backgroundClip: 'text',
+    WebkitBackgroundClip: 'text',
+    color: 'transparent',
+  },
+  subtitle: {
+    margin: 0,
+    fontSize: '12px',
+    color: 'rgba(255,255,255,0.6)',
+    fontWeight: '500',
+  },
+  savedBtn: {
+    background: 'rgba(230, 126, 34, 0.2)',
+    border: '1px solid rgba(230, 126, 34, 0.4)',
+    color: '#E67E22',
+    width: '44px',
+    height: '44px',
+    borderRadius: '50%',
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
+    transition: 'all 0.3s',
+    flexShrink: 0,
+  },
+  savedCount: {
+    position: 'absolute',
+    top: '-4px',
+    right: '-4px',
+    background: '#E74C3C',
+    color: 'white',
+    width: '20px',
+    height: '20px',
+    borderRadius: '50%',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontSize: '11px',
+    fontWeight: 'bold',
+  },
+
+  // ===== CONTROL PANEL =====
+  controlPanel: {
+    width: '100%',
+    maxWidth: '600px',
+    display: 'flex',
+    gap: '12px',
+    marginBottom: '16px',
+    boxSizing: 'border-box',
+  },
+  searchContainer: {
+    flex: 1,
+    position: 'relative',
+    display: 'flex',
+    alignItems: 'center',
+  },
+  searchIcon: {
+    position: 'absolute',
+    left: '16px',
+    color: 'rgba(255,255,255,0.4)',
+    pointerEvents: 'none',
+    zIndex: 2,
+  },
+  searchInput: {
+    width: '100%',
+    background: 'rgba(20,20,20,0.8)',
+    border: '1px solid rgba(46, 204, 113, 0.3)',
+    color: 'white',
+    padding: '12px 16px 12px 44px',
+    borderRadius: '16px',
+    fontSize: '14px',
+    outline: 'none',
+    transition: 'all 0.3s',
+    boxSizing: 'border-box',
+  },
+  clearBtn: {
+    position: 'absolute',
+    right: '8px',
+    background: 'rgba(255,255,255,0.1)',
+    border: 'none',
+    color: 'white',
+    width: '28px',
+    height: '28px',
+    borderRadius: '50%',
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    transition: 'all 0.2s',
+  },
+  filterBtn: {
+    background: 'linear-gradient(135deg, rgba(52, 152, 219, 0.3), rgba(46, 204, 113, 0.3))',
+    border: '1px solid rgba(52, 152, 219, 0.4)',
+    color: 'white',
+    padding: '12px 16px',
+    borderRadius: '16px',
+    fontSize: '14px',
+    fontWeight: '600',
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    transition: 'all 0.3s',
+    flexShrink: 0,
+  },
+
+  // ===== FILTER PANEL =====
+  filterPanel: {
+    width: '100%',
+    maxWidth: '600px',
+    background: 'rgba(20,20,20,0.85)',
+    border: '1px solid rgba(46, 204, 113, 0.2)',
+    borderRadius: '20px',
+    padding: '16px',
+    marginBottom: '16px',
+    boxSizing: 'border-box',
+    backdropFilter: 'blur(20px)',
+  },
+  categoryGrid: {
+    display: 'grid',
+    gridTemplateColumns: '1fr 1fr',
+    gap: '10px',
+    width: '100%',
+  },
+  categoryBtn: {
+    background: 'rgba(255,255,255,0.05)',
+    border: '1.5px solid rgba(255,255,255,0.1)',
+    color: 'white',
+    padding: '12px',
+    borderRadius: '14px',
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '12px',
+    transition: 'all 0.3s',
+    fontSize: '13px',
+  },
+  categoryIcon: {
+    fontSize: '18px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    minWidth: '24px',
+  },
+  categoryInfo: {
+    textAlign: 'left',
+    flex: 1,
+  },
+  categoryName: {
+    fontWeight: '600',
+    fontSize: '12px',
+    marginBottom: '2px',
+  },
+  categoryDesc: {
+    fontSize: '10px',
+    opacity: 0.6,
+  },
+
+  // ===== MAIN STAGE =====
+  stage: {
+    width: '100%',
+    maxWidth: '600px',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: '16px',
+    boxSizing: 'border-box',
+  },
+  grid: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '16px',
+    width: '100%',
+  },
+
+  // ===== ARTICLE CARD =====
+  card: {
+    background: 'linear-gradient(135deg, rgba(15,15,20,0.9), rgba(20,40,35,0.4))',
+    backdropFilter: 'blur(20px)',
+    WebkitBackdropFilter: 'blur(20px)',
+    borderRadius: '18px',
+    overflow: 'hidden',
+    border: '1px solid rgba(46, 204, 113, 0.15)',
+    boxShadow: '0 10px 30px rgba(0,0,0,0.3)',
+    display: 'flex',
+    flexDirection: 'column',
+    transition: 'all 0.3s',
+  },
+  imageContainer: {
+    position: 'relative',
+    width: '100%',
+    height: '180px',
+    overflow: 'hidden',
+    backgroundColor: 'rgba(0,0,0,0.2)',
+  },
+  image: {
+    width: '100%',
+    height: '100%',
+    objectFit: 'cover',
+    transition: 'transform 0.4s',
+  },
+  imageOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    background: 'linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.4) 100%)',
+    padding: '12px',
+    display: 'flex',
+    flexDirection: 'column',
+    justifyContent: 'flex-start',
+  },
+  categoryTag: {
+    alignSelf: 'flex-start',
+    color: 'white',
+    padding: '6px 12px',
+    borderRadius: '12px',
+    fontSize: '11px',
+    fontWeight: 'bold',
+    backdropFilter: 'blur(10px)',
+    textTransform: 'uppercase',
+    letterSpacing: '0.5px',
+  },
+  content: {
+    padding: '16px',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '10px',
+    flex: 1,
+  },
+  metaRow: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    fontSize: '12px',
+    gap: '8px',
+    flexWrap: 'wrap',
+  },
+  metaLeft: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '12px',
+  },
+  sourceBadge: {
+    padding: '4px 10px',
+    borderRadius: '8px',
+    fontSize: '11px',
+    fontWeight: '600',
+    border: '1px solid currentColor',
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '4px',
+    backgroundColor: 'rgba(255,255,255,0.05)',
+  },
+  metaText: {
+    display: 'flex',
+    alignItems: 'center',
+    color: 'rgba(255,255,255,0.5)',
+    fontSize: '11px',
+  },
+  timeAgo: {
+    color: 'rgba(255,255,255,0.4)',
+    fontSize: '11px',
+    fontWeight: '500',
+  },
+  cardTitle: {
+    margin: 0,
+    fontSize: '15px',
+    fontWeight: '700',
+    lineHeight: '1.5',
+    color: 'white',
+    display: '-webkit-box',
+    WebkitLineClamp: 2,
+    WebkitBoxOrient: 'vertical',
+    overflow: 'hidden',
+  },
+  desc: {
+    margin: 0,
+    fontSize: '13px',
+    color: 'rgba(255,255,255,0.65)',
+    lineHeight: '1.5',
+    display: '-webkit-box',
+    WebkitLineClamp: 2,
+    WebkitBoxOrient: 'vertical',
+    overflow: 'hidden',
+  },
+  cardFooter: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 'auto',
+    paddingTop: '12px',
+    borderTop: '1px solid rgba(46, 204, 113, 0.1)',
+    gap: '12px',
+  },
+  actions: {
+    display: 'flex',
+    gap: '8px',
+  },
+  actionBtn: {
+    background: 'rgba(255,255,255,0.1)',
+    border: 'none',
+    color: '#2ECC71',
+    width: '36px',
+    height: '36px',
+    borderRadius: '10px',
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    transition: 'all 0.2s',
+    fontSize: '16px',
+  },
+  readMoreBtn: {
+    background: 'linear-gradient(135deg, #2ECC71 0%, #27AE60 100%)',
+    color: 'white',
+    textDecoration: 'none',
+    padding: '8px 14px',
+    borderRadius: '10px',
+    fontWeight: '600',
+    fontSize: '12px',
+    transition: 'all 0.3s',
+    marginLeft: 'auto',
+    textAlign: 'center',
+    border: 'none',
+    cursor: 'pointer',
+  },
+
+  // ===== SAVED SECTION =====
+  savedSection: {
+    width: '100%',
+    maxWidth: '600px',
+    borderRadius: '20px',
+    background: 'rgba(20,20,20,0.9)',
+    border: '2px solid rgba(230, 126, 34, 0.3)',
+    overflow: 'hidden',
+  },
+  savedHeader: {
+    padding: '16px',
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    borderBottom: '1px solid rgba(230, 126, 34, 0.2)',
+    background: 'rgba(230, 126, 34, 0.1)',
+  },
+  savedTitle: {
+    margin: 0,
+    fontSize: '18px',
+    fontWeight: '700',
+    color: '#E67E22',
+  },
+  closeBtn: {
+    background: 'rgba(255,255,255,0.1)',
+    border: 'none',
+    color: 'white',
+    width: '36px',
+    height: '36px',
+    borderRadius: '50%',
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    transition: 'all 0.2s',
+  },
+
+  // ===== EMPTY STATES =====
+  emptyState: {
+    width: '100%',
+    maxWidth: '600px',
+    padding: '60px 20px',
+    textAlign: 'center',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: '20px',
+    background: 'rgba(20,20,20,0.6)',
+    border: '1px dashed rgba(46, 204, 113, 0.2)',
+  },
+  emptyText: {
+    margin: '8px 0',
+    fontSize: '14px',
+    color: 'rgba(255,255,255,0.7)',
+  },
+
+  // ===== ERROR & LOADING STATES =====
+  errorBox: {
+    width: '100%',
+    maxWidth: '600px',
+    padding: '20px',
+    borderRadius: '16px',
+    background: 'rgba(231, 76, 60, 0.15)',
+    border: '1px solid rgba(231, 76, 60, 0.3)',
+    backdropFilter: 'blur(20px)',
+  },
+  errorContent: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: '16px',
+    textAlign: 'center',
+  },
+  errorText: {
+    margin: 0,
+    fontSize: '14px',
+    color: '#FF6B6B',
+    fontWeight: '500',
+  },
+  retryBtn: {
+    background: 'linear-gradient(135deg, #E74C3C 0%, #C0392B 100%)',
+    color: 'white',
+    border: 'none',
+    padding: '10px 20px',
+    borderRadius: '10px',
+    fontWeight: '600',
+    fontSize: '13px',
+    cursor: 'pointer',
+    transition: 'all 0.3s',
+  },
+  loadingContainer: {
+    width: '100%',
+    maxWidth: '600px',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '16px',
+    alignItems: 'center',
+    padding: '40px 20px',
+  },
+  skeletonCard: {
+    width: '100%',
+    height: '200px',
+    borderRadius: '16px',
+    background: 'linear-gradient(90deg, rgba(46,204,113,0.1), rgba(46,204,113,0.2), rgba(46,204,113,0.1))',
+    backgroundSize: '200% 100%',
+  },
+  loadingText: {
+    fontSize: '13px',
+    color: '#2ECC71',
+    fontWeight: '600',
+    marginTop: '10px',
+  },
+
+  // ===== BUTTONS =====
+  loadMoreBtn: {
+    background: 'linear-gradient(135deg, #2ECC71 0%, #27AE60 100%)',
+    color: 'white',
+    border: 'none',
+    padding: '14px 28px',
+    borderRadius: '14px',
+    fontWeight: '700',
+    fontSize: '14px',
+    cursor: 'pointer',
+    marginTop: '20px',
+    boxShadow: '0 8px 20px rgba(46, 204, 113, 0.3)',
+    transition: 'all 0.3s',
+  },
+
+  // ===== FOOTER =====
+  footerInfo: {
+    width: '100%',
+    maxWidth: '600px',
+    padding: '16px',
+    textAlign: 'center',
+    background: 'rgba(20,20,20,0.5)',
+    borderTop: '1px solid rgba(46, 204, 113, 0.1)',
+  },
+  footerText: {
+    margin: 0,
+    fontSize: '11px',
+    color: 'rgba(255,255,255,0.4)',
+    fontWeight: '500',
+  }
 };
 
 export default NewsUpdates;

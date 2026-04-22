@@ -1,11 +1,7 @@
 // src/Utilities/AIBrain.js
+import axios from 'axios';
 
-// 1. API Keys mapped exactly to your environment variables
-const GROQ_KEY = import.meta.env.VITE_GROQ_KEY; // Your Groq API Key
-const GEMINI_KEY = import.meta.env.VITE_GEMINI_KEY; // Your Google AI Studio API Key
-const OPENROUTER_KEY = import.meta.env.VITE_OPENROUTER_KEY; // Your OpenRouter API Key
-
-// 2. The Fallback Matrices (Separated by capability for robust execution)
+// 1. The Fallback Matrices (Separated by capability for robust execution)
 
 // --- ISOLATED MODEL TIERS ---
 const GEMINI_MODELS = [
@@ -110,143 +106,32 @@ const GENERAL_MODELS = [...new Map(
     [...DIRECTOR_MODELS, ...WRITER_POOLS.flat()].map(model => [model.id, model])
 ).values()];
 
-// Helper to clean base64 image strings for APIs
-const cleanBase64 = (base64String) => base64String ? base64String.replace(/^data:image\/(png|jpeg|jpg);base64,/, '') : null;
-
-// 3. CORE WATERFALL ENGINE
-// Runs parallel logic with error trapping: if JSON fails or model crashes, jumps to next model.
+// 2. CORE WATERFALL ENGINE
+// Keeps the fallback loop on the client, but executes the actual prompt securely on the server!
 const fetchWithFallback = async (systemPrompt, userText, modelMatrix, options = {}) => {
-    const { imageBase64 = null, temperature = 0.7, requireJson = false, minLength = 0 } = options;
+    const { imageBase64 = null } = options;
     const requiresVision = imageBase64 !== null;
     const validModels = modelMatrix.filter(model => requiresVision ? model.vision === true : true);
 
     for (const model of validModels) {
         console.log(`[AIBrain Engine] 🔄 Trying ${model.provider.toUpperCase()} : ${model.id}...`);
         try {
-            let resultText = "";
-
-            if (model.provider === 'gemini') {
-                // Add a gentle reminder for JSON output if requested
-                const enforcedPrompt = requireJson ? `${systemPrompt}\n\nYou MUST respond with ONLY a raw JSON object/array. No markdown formatting, no conversational text.` : systemPrompt;
-
-                // SEPARATE SYSTEM & USER PROMPTS: This is a more robust way to send prompts to Gemini models.
-                const userParts = [{ text: userText }];
-                if (requiresVision) {
-                    userParts.push({ inlineData: { mimeType: "image/jpeg", data: cleanBase64(imageBase64) } });
-                }
-
-                const reqBody = {
-                    contents: [{ role: 'user', parts: userParts }],
-                    systemInstruction: {
-                        parts: [{ text: enforcedPrompt }]
-                    },
-                    generationConfig: { maxOutputTokens: 8192, temperature: temperature }
-                };
-
-                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model.id}:generateContent?key=${GEMINI_KEY}`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(reqBody)
-                });
-
-                if (!response.ok) throw new Error(`Gemini API Error: ${response.status}`);
-                const data = await response.json();
-                if (!data.candidates || !data.candidates[0].content) {
-                    throw new Error("Blocked by safety filters or empty return.");
-                }
-                resultText = data.candidates[0].content.parts[0].text;
-            } 
-            else if (model.provider === 'groq') {
-                // Remove the strict 'json_object' format flag as it causes 400 Bad Request errors on models like DeepSeek. 
-                // Rely instead on our robust regex extraction below.
-                const enforcedPrompt = requireJson ? `${systemPrompt}\n\nYou MUST respond with ONLY a raw JSON object/array. No markdown formatting, no conversational text.` : systemPrompt;
-                
-                let messages = [{ role: "system", content: enforcedPrompt }];
-                if (requiresVision) {
-                    messages.push({
-                        role: "user",
-                        content: [
-                            { type: "text", text: userText },
-                            { type: "image_url", image_url: { url: imageBase64 } }
-                        ]
-                    });
-                } else {
-                    messages.push({ role: "user", content: userText });
-                }
-                
-                // FIX: Let Groq use its default max tokens. Explicitly setting it can cause 400 errors on some models.
-                // This respects the user's request to "not keep any limits".
-                const reqBody = { model: model.id, messages: messages, temperature: temperature };
-                // Only add max_tokens if it's not a vision model, as a precaution.
-                if (!requiresVision) reqBody.max_tokens = 8192;
-
-                const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-                    method: 'POST',
-                    headers: { 'Authorization': `Bearer ${GROQ_KEY}`, 'Content-Type': 'application/json' },
-                    body: JSON.stringify(reqBody)
-                });
-
-                if (!response.ok) throw new Error(`Groq API Error: ${response.status}`);
-                const data = await response.json();
-                resultText = data.choices[0].message.content;
+            const response = await axios.post('/api/AIBrain', {
+                action: 'fetchCompletion',
+                model: model,
+                systemPrompt,
+                userText,
+                options
+            });
+            
+            if (response.data && response.data.success) {
+                console.log(`[AIBrain Engine] ✅ SUCCESS! ${model.id} generated ${response.data.data.length} characters!`);
+                return { success: true, data: response.data.data, modelUsed: model.id };
+            } else {
+                throw new Error(response.data.error || "Unknown backend error");
             }
-            else if (model.provider === 'openrouter') {
-                // OpenRouter uses the exact same OpenAI schema as Groq
-                const enforcedPrompt = requireJson ? `${systemPrompt}\n\nYou MUST respond with ONLY a raw JSON object/array. No markdown formatting, no conversational text.` : systemPrompt;
-                
-                let messages = [{ role: "system", content: enforcedPrompt }];
-                if (requiresVision) {
-                    messages.push({
-                        role: "user",
-                        content: [
-                            { type: "text", text: userText },
-                            { type: "image_url", image_url: { url: imageBase64 } }
-                        ]
-                    });
-                } else {
-                    messages.push({ role: "user", content: userText });
-                }
-                
-                // Increased to 8192 to allow for maximum length content generation
-                const reqBody = { model: model.id, messages: messages, max_tokens: 8192, temperature: temperature };
-
-                const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-                    method: 'POST',
-                    headers: { 
-                        'Authorization': `Bearer ${OPENROUTER_KEY}`, 
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(reqBody)
-                });
-
-                if (!response.ok) throw new Error(`OpenRouter API Error: ${response.status}`);
-                const data = await response.json();
-                resultText = data.choices[0].message.content;
-            }
-
-            // Robust Auto-clean JSON format extraction
-            if (requireJson) {
-                try {
-                    let cleanedJSON = resultText.replace(/```(?:json)?/gi, '').replace(/```/gi, '').trim();
-                    // Safely extract just the JSON structure even if the model ignored our "no conversational text" rule
-                    const jsonMatch = cleanedJSON.match(/\{[\s\S]*\}|\[[\s\S]*\]/);
-                    if (jsonMatch) {
-                        cleanedJSON = jsonMatch[0];
-                    }
-                    JSON.parse(cleanedJSON); // Validates string
-                    resultText = cleanedJSON;
-                } catch(e) {
-                    throw new Error("Model failed to output valid JSON framework. Falling back.");
-                }
-            } else if (minLength > 0 && resultText.length < minLength) {
-                throw new Error(`Output too short: Generated ${resultText.length} chars, expected ${minLength}.`);
-            }
-
-            console.log(`[AIBrain Engine] ✅ SUCCESS! ${model.id} generated ${resultText.length} characters!`);
-            return { success: true, data: resultText, modelUsed: model.id };
-
         } catch (error) {
-            const errMsg = error.message || "";
+            const errMsg = error.response?.data?.error || error.message || "";
             const isRateLimit = errMsg.includes('429');
             const isDeadOrBad = errMsg.includes('404') || errMsg.includes('400');
 
@@ -265,7 +150,7 @@ const fetchWithFallback = async (systemPrompt, userText, modelMatrix, options = 
 
 
 // ======================================================================
-// 4. EDUCATIONAL BOOK TRACK (Planner - Worker Pattern)
+// 3. EDUCATIONAL BOOK TRACK (Planner - Worker Pattern)
 // ======================================================================
 export const generateEducationalBook = async (topic, numChapters, style, onProgress) => {
     try {
@@ -385,7 +270,7 @@ export const generateEducationalBook = async (topic, numChapters, style, onProgr
 };
 
 // ======================================================================
-// 5. STORY BOOK TRACK (Continuous One-Shot Generation)
+// 4. STORY BOOK TRACK (Continuous One-Shot Generation)
 // ======================================================================
 export const generateStoryBook = async (topic, length, style) => {
     try {
@@ -424,7 +309,7 @@ export const extendStory = async (previousContext, nextDirection) => {
 };
 
 // ======================================================================
-// 6. LEGACY GENERAL PROCESSOR (For basic tasks & Vision)
+// 5. LEGACY GENERAL PROCESSOR (For basic tasks & Vision)
 // ======================================================================
 export const processWithFarmBrain = async (systemPrompt, userText = "", imageBase64 = null) => {
     try {
@@ -436,40 +321,26 @@ export const processWithFarmBrain = async (systemPrompt, userText = "", imageBas
 }
 
 // ======================================================================
-// 7. IMAGE GENERATION ENGINE
+// 6. IMAGE GENERATION ENGINE
 // ======================================================================
 export const generateImageWithFarmBrain = async (prompt) => {
     for (const model of IMAGE_MODELS) {
         console.log(`[AIBrain Image] Trying ${model.provider.toUpperCase()} : ${model.id}`);
         try {
-            let base64Image = "";
-            if (model.provider === 'gemini') {
-                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model.id}:predict?key=${GEMINI_KEY}`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        instances: [{ prompt: prompt }],
-                        parameters: { sampleCount: 1 }
-                    })
-                });
+            const response = await axios.post('/api/AIBrain', {
+                action: 'generateImage',
+                model: model,
+                prompt: prompt
+            });
 
-                if (!response.ok) throw new Error(`Gemini API Error: ${response.status}`);
-                const data = await response.json();
-                
-                if (data.predictions && data.predictions.length > 0) {
-                    const b64Data = data.predictions[0].bytesBase64Encoded;
-                    const mimeType = data.predictions[0].mimeType || 'image/jpeg';
-                    base64Image = `data:${mimeType};base64,${b64Data}`;
-                } else {
-                     throw new Error(`Gemini API Error: No image returned`);
-                }
+            if (response.data && response.data.success) {
+                console.log(`[AIBrain Image] Success! Generated by ${model.id}`);
+                return { success: true, data: response.data.data, modelUsed: model.id };
+            } else {
+                throw new Error(response.data.error || "Image generation failed");
             }
-
-            console.log(`[AIBrain Image] Success! Generated by ${model.id}`);
-            return { success: true, data: base64Image, modelUsed: model.id };
-
         } catch (error) {
-            console.warn(`[AIBrain Image] Model ${model.id} failed. Error: ${error.message}. Falling back...`);
+            console.warn(`[AIBrain Image] Model ${model.id} failed. Error: ${error.response?.data?.error || error.message}. Falling back...`);
             continue; 
         }
     }

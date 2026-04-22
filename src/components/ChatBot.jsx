@@ -7,6 +7,7 @@ import React, {
 } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import axios from 'axios';
 import { Menu, X, Trash2, Edit2, Mic, Image as ImageIcon, ArrowRight, RefreshCw, Volume2, VolumeX, Copy, Sparkles, PanelLeft, MessageSquarePlus, ArrowDown, Plus, Type, Check, Square, Download } from 'lucide-react';
 
 const ImageEditor = ({ imageUrl, onSave, onCancel }) => {
@@ -124,25 +125,13 @@ function ChatBot() {
   // SECTION 1: SECURE ENVIRONMENT CONFIGURATION & DIAGNOSTICS
   // ===============================================================================================
   
-  const GROQ_KEY = import.meta.env.VITE_GROQ_KEY;
-  const GEMINI_KEY = import.meta.env.VITE_GEMINI_KEY; 
-  const HF_KEY = import.meta.env.VITE_HF_KEY; 
-  const OPENROUTER_KEY = import.meta.env.VITE_OPENROUTER_KEY;
-
   // 🛠️ SYSTEM BOOT SEQUENCE
   useEffect(() => {
     console.group("🚀 FARM BUDDY: GENESIS KERNEL INITIALIZED");
     console.log("Kernel Version: v107.0 (Titanium)");
-    
-    const status = {
-        GROQ: GROQ_KEY ? "🟢 ONLINE" : "🔴 OFFLINE",
-        GEMINI: GEMINI_KEY ? "🟢 ONLINE" : "🔴 OFFLINE",
-        HF: HF_KEY ? "🟢 ONLINE" : "🔴 OFFLINE",
-        OPENROUTER: OPENROUTER_KEY ? "🟢 ONLINE" : "🔴 OFFLINE"
-    };
-    console.table(status);
+    console.log("Status: Secure Vercel Backend Connected");
     console.groupEnd();
-  }, [GROQ_KEY, GEMINI_KEY, HF_KEY, OPENROUTER_KEY]);
+  }, []);
 
 
   // ===============================================================================================
@@ -871,18 +860,14 @@ function ChatBot() {
     // 🎨 GEN-AI Check
     if (text.toLowerCase().startsWith("generate an image") || text.toLowerCase().startsWith("draw") || text.toLowerCase().startsWith("create an image")) {
         try {
-            if (!HF_KEY) throw new Error("Missing Hugging Face API Key");
-            const res = await fetch("https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-xl-base-1.0", {
-                method: "POST",
-                headers: { Authorization: `Bearer ${HF_KEY}`, "Content-Type": "application/json", "x-use-cache": "false" },
-                body: JSON.stringify({ inputs: text }),
-            });
-            if (!res.ok) throw new Error(`Generation Failed: ${res.status}`);
-            const imageBlob = await res.blob();
-            const imageUrl = URL.createObjectURL(imageBlob);
-            addMessage({ text: `🎨 **Generated Image for:**\n"${text}"`, sender: "bot", image: imageUrl, timestamp: new Date().toLocaleTimeString() });
+            const response = await axios.post('/api/ChatBot', { action: 'generateImage', text: text });
+            if (response.data && response.data.success) {
+                addMessage({ text: `🎨 **Generated Image for:**\n"${text}"`, sender: "bot", image: response.data.imageBase64, timestamp: new Date().toLocaleTimeString() });
+            } else {
+                throw new Error(response.data.error || "Generation Failed");
+            }
             setIsLoading(false); setIsTyping(false);
-            return; 
+            return;
         } catch(e) { console.error("Image Gen Error:", e); }
     }
 
@@ -914,115 +899,31 @@ function ChatBot() {
     // 🚀 PARALLEL BATCH EXECUTION
     const fetchModel = async (model) => {
       try {
-        if (model.provider === 'gemini') {
-          if (!GEMINI_KEY) throw new Error("Gemini Key Missing");
-          const url = `https://generativelanguage.googleapis.com/v1beta/models/${model.id}:generateContent?key=${GEMINI_KEY}`;
-          const parts = hasFile 
-            ? [{ text: `SYSTEM: ${systemInstruction} \nUSER REQUEST: ${text}` }, { inline_data: { mime_type: mType || "image/jpeg", data: rBase64 } }] 
-            : [{ text: `SYSTEM: ${systemInstruction}\nUSER REQUEST: ${text}` }];
-          
-          const payload = { contents: [{ parts: parts }] };
-          if (model.id.match(/1\.5|2\.0|2\.5|3\./)) payload.tools = [{ googleSearch: {} }];
+        const response = await axios.post('/api/ChatBot', {
+          action: 'chat',
+          model: model,
+          text: text,
+          rBase64: rBase64,
+          mType: mType,
+          systemInstruction: systemInstruction
+        }, { signal });
 
-          const res = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload), signal });
-          if (!res.ok) { const err = await res.json(); throw new Error(`${res.status}: ${err.error?.message || 'Unknown Error'}`); }
-          const data = await res.json();
-          let modelResponse = data.candidates?.[0]?.content?.parts?.[0]?.text;
-          if (!modelResponse) throw new Error("Empty response");
-          
-          const metadata = data.candidates?.[0]?.groundingMetadata;
-          if (metadata?.webSearchQueries?.length > 0) {
-              console.log(`[${model.id}] Search Queries:`, metadata.webSearchQueries);
-              modelResponse += "\n\n---\n**🔍 Google Search Grounding:**\n";
-              metadata.webSearchQueries.forEach(query => { modelResponse += `- *Searched: "${query}"*\n`; });
-              if (metadata.groundingChunks) {
-                  const sources = [];
-                  metadata.groundingChunks.forEach(chunk => {
-                      if (chunk.web?.uri) sources.push({ title: chunk.web.title || chunk.web.uri, url: chunk.web.uri });
-                  });
-                  const uniqueSources = Array.from(new Map(sources.map(s => [s.url, s])).values());
-                  if (uniqueSources.length > 0) {
-                      modelResponse += "\n**Sources:**\n";
-                      uniqueSources.forEach((source, i) => {
-                          let secureUrl = source.url;
-                          try { 
-                              const urlObj = new URL(source.url);
-                              if (urlObj.protocol === 'http:') urlObj.protocol = 'https:';
-                              secureUrl = urlObj.toString();
-                          } catch(e){}
-                          // Safely format as a clickable markdown link
-                          modelResponse += `${i + 1}. ${source.title}\n`;
-                      });
-                  }
-              }
-          }
-          return modelResponse;
+        const data = response.data;
+        if (!data || data.error) throw new Error(data?.error || 'Backend Error');
 
-        } else if (model.provider === 'groq') {
-          if (!GROQ_KEY) throw new Error("Groq Key Missing");
-          let payload;
-          if (hasFile && model.vision && dUrl && isImage) { 
-              const mergedContent = `${systemInstruction}\n\nUSER REQUEST: ${text}`;
-              payload = [{ role: "user", content: [{ type: "text", text: mergedContent }, { type: "image_url", image_url: { url: dUrl } }] }]; 
-          } else if (hasFile && !isImage) {
-              throw new Error("Groq does not support PDF processing.");
-          } else { 
-              payload = [{ role: "system", content: systemInstruction }, { role: "user", content: text }]; 
-          }
-          const res = await fetch("https://api.groq.com/openai/v1/chat/completions", { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${GROQ_KEY}` }, body: JSON.stringify({ model: model.id, messages: payload }), signal });
-          const data = await res.json();
-          if (data.error) throw new Error(`Groq ${data.error.message}`);
-          const modelResponse = data.choices?.[0]?.message?.content;
-          if (!modelResponse) throw new Error("Empty response");
-          return modelResponse;
-
-        } else if (model.provider === 'openrouter') {
-          if (!OPENROUTER_KEY) throw new Error("OpenRouter Key Missing");
-          let payload;
-          if (hasFile && model.vision && dUrl && isImage) { 
-              const mergedContent = `${systemInstruction}\n\nUSER REQUEST: ${text}`;
-              payload = [{ role: "user", content: [{ type: "text", text: mergedContent }, { type: "image_url", image_url: { url: dUrl } }] }]; 
-          } else if (hasFile && !isImage) {
-              throw new Error("OpenRouter free models may not process raw PDFs, skipping.");
-          } else { 
-              payload = [{ role: "system", content: systemInstruction }, { role: "user", content: text }]; 
-          }
-          const res = await fetch("https://openrouter.ai/api/v1/chat/completions", { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${OPENROUTER_KEY}` }, body: JSON.stringify({ model: model.id, messages: payload }), signal });
-          const data = await res.json();
-          if (data.error) throw new Error(`OpenRouter ${data.error.message}`);
-          const modelResponse = data.choices?.[0]?.message?.content;
-          if (!modelResponse) throw new Error("Empty response");
-          return modelResponse;
-
-        } else if (model.provider === 'hf') {
-          if (!HF_KEY) throw new Error("HF Key Missing");
-          if (hasFile && !isImage) throw new Error("HuggingFace vision models require images, skipping PDF.");
-          const fetchHF = async () => {
-              const res = await fetch(dUrl);
-              const blob = await res.blob();
-              return fetch(`https://api-inference.huggingface.co/models/${model.id}`, { method: "POST", headers: { Authorization: `Bearer ${HF_KEY}` }, body: blob, signal });
-          };
-          let res = await fetchHF();
-          if (res.status === 503) { await new Promise(r => setTimeout(r, 5000)); res = await fetchHF(); }
-          if (!res.ok) { throw new Error(`HF ${res.status}`); }
-          const data = await res.json();
-          if (Array.isArray(data) && data[0].label) {
-            const disease = data[0].label; 
-            if (!text.includes("detected:")) {
-                 return { _isRecursive: true, payload: `Detected: "${disease}". Detailed cure?` }; 
-            } else { 
-                 return `🔍 **Diagnosis:** ${disease}\n\n${text}`; 
-            }
-          }
-          throw new Error("Unrecognized HF response");
+        if (data._isRecursive) {
+          return { _isRecursive: true, payload: data.payload };
         }
+        
+        return data.data;
       } catch (e) {
-          if (e.name === 'AbortError') {
+          if (e.name === 'AbortError' || e.code === 'ERR_CANCELED') {
               debugLog += `${model.id} (Stopped by user); `;
               throw e;
           }
           
-          const isRateLimit = e.message && (e.message.includes("429") || e.message.includes("quota"));
+          const errMsg = e.response?.data?.error || e.message || "";
+          const isRateLimit = errMsg.includes("429") || errMsg.includes("quota");
           if (isRateLimit) {
               console.warn(`Rate limit hit for ${model.id}.`);
               debugLog += `${model.id} (429); `;

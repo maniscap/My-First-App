@@ -8,8 +8,7 @@ import {
 } from 'lucide-react';
 import L from 'leaflet'; 
 import 'leaflet/dist/leaflet.css';
-
-const TOMTOM_KEY = import.meta.env.VITE_TOMTOM_API_KEY;
+import axios from 'axios';
 
 // --- CUSTOM ICONS ---
 const gpsIcon = L.divIcon({
@@ -184,11 +183,9 @@ const UserLocation = () => {
   };
 
   const fetchAddressFromCoords = async (lat, lng) => {
-    if (!TOMTOM_KEY) return { name: "Key Missing", city: "", full: "" };
     try {
-        const url = `https://api.tomtom.com/search/2/reverseGeocode/${lat},${lng}.json?key=${TOMTOM_KEY}&radius=50`; 
-        const res = await fetch(url);
-        const data = await res.json();
+        const res = await axios.post('/api/UserLocation', { action: 'reverseGeocode', lat, lng });
+        const data = res.data;
         if (data.addresses && data.addresses.length > 0) {
             const addr = data.addresses[0].address;
             return { 
@@ -206,11 +203,10 @@ const UserLocation = () => {
   };
 
   const searchPlaces = async (query) => {
-    if (!query || query.length < 2 || !TOMTOM_KEY) return [];
+    if (!query || query.length < 2) return [];
     try {
-        const url = `https://api.tomtom.com/search/2/search/${encodeURIComponent(query)}.json?key=${TOMTOM_KEY}&countrySet=IN&limit=10&typeahead=true`;
-        const res = await fetch(url);
-        const data = await res.json();
+        const res = await axios.post('/api/UserLocation', { action: 'search', query });
+        const data = res.data;
         return data.results.map(place => ({
             id: place.id,
             name: place.poi ? place.poi.name : (place.address.municipality || place.address.freeformAddress),
@@ -223,14 +219,12 @@ const UserLocation = () => {
   };
 
   const fetchSmartNearbyPlaces = async (lat, lng) => {
-    if (!TOMTOM_KEY) return [];
     const cats = "7320,7321,9361,9376,7373"; 
     const radii = [500, 1000, 3000];
     for (let r of radii) {
         try {
-            const url = `https://api.tomtom.com/search/2/nearbySearch/.json?lat=${lat}&lon=${lng}&radius=${r}&limit=15&categorySet=${cats}&key=${TOMTOM_KEY}`;
-            const res = await fetch(url);
-            const data = await res.json();
+            const res = await axios.post('/api/UserLocation', { action: 'nearby', lat, lng, radius: r, categorySet: cats });
+            const data = res.data;
             if (data.results && data.results.length >= 5) {
                 return data.results.map(place => ({
                     id: place.id,

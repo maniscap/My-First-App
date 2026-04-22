@@ -110,7 +110,7 @@ function App() {
             {/* --- AGRI INSIGHTS & SUB-PAGES --- */}
             <Route path="/agri-insights" element={<AgriInsights />} />
             <Route path="/market-rates" element={<MarketRates />} /> 
-            <Route path="/news" element={<NewsUpdates />} />         
+            <Route path="/NewsUpdates" element={<NewsUpdates />} />         
             <Route path="/library" element={<DigitalLibrary />} />   
             <Route path="/modern-tech" element={<ModernTech />} />
             

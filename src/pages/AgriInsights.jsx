@@ -24,7 +24,7 @@ const AgriInsights = () => {
 
   const nodes = [
     { id: 1, title: 'Market Pulse', icon: '📈', desc: 'Live Mandi Rates & Trends', route: '/market-rates', angle: -45, color: '#00E676' }, // GREEN
-    { id: 2, title: 'Agri News', icon: '📰', desc: 'Global Farming Updates', route: '/news', angle: -135, color: '#00BFFF' }, // SKY BLUE
+    { id: 2, title: 'Agri News', icon: '📰', desc: 'Global Farming Updates', route: '/NewsUpdates', angle: -135, color: '#00BFFF' }, // SKY BLUE
     { id: 3, title: 'Library', icon: '📚', desc: 'Expert Guides & Manuals', route: '/library', angle: 135, color: '#9D00FF' }, // VIOLET
     { id: 4, title: 'Modern Tech', icon: '🚀', desc: 'Drones & AI Precision', route: '/modern-tech', angle: 45, color: '#FF9800' } // ORANGE
   ];

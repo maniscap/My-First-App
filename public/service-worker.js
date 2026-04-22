@@ -4,7 +4,7 @@
 
 // VERSION CONTROL: Increment these versions to force a complete cache reset.
 // This is the "Master Reset Switch" for the application.
-const CACHE_VERSION = 6;
+const CACHE_VERSION = 9;
 const CACHE_NAME = `farmcap-core-v${CACHE_VERSION}`; 
 const DYNAMIC_CACHE = `farmcap-dynamic-images-v${CACHE_VERSION}`;
 
@@ -79,6 +79,31 @@ self.addEventListener('fetch', (event) => {
   // Only intercept normal GET requests. Ignore POST, PUT, DELETE, etc.
   if (event.request.method !== 'GET') return;
 
+  const url = new URL(event.request.url);
+
+  // ------------------------------------------------------------------------
+  // BYPASS RULE: Ignore Vite Dev Server, Manifest, APIs, and Extensions
+  // ------------------------------------------------------------------------
+  if (
+    url.pathname.includes('manifest.json') ||
+    url.pathname.includes('/api/') ||
+    url.pathname.startsWith('/src/') ||
+    url.pathname.startsWith('/@') ||
+    url.pathname.startsWith('/node_modules/') ||
+    url.protocol === 'chrome-extension:' ||
+    url.hostname.includes('gnews.io') ||
+    url.hostname.includes('newsdata.io') ||
+    url.hostname.includes('newsapi.org') ||
+    url.hostname.includes('unsplash.com') ||
+    url.hostname.includes('pexels.com') ||
+    url.hostname.includes('wallpaperaccess.com') ||
+    url.hostname.includes('openstreetmap.org') || // Block GPS map tiles from caching!
+    url.hostname.includes('radio-browser.info') || // Block Radio API station images
+    url.hostname.includes('shoutcast.com')
+  ) {
+    return; // Let the browser handle these natively
+  }
+
   // ------------------------------------------------------------------------
   // RULE A: HTML / NAVIGATION LOGIC -> NETWORK FIRST
   // ------------------------------------------------------------------------
@@ -140,12 +165,8 @@ self.addEventListener('fetch', (event) => {
   // ------------------------------------------------------------------------
   // RULE C: EVERYTHING ELSE (API Calls, Scripts) -> PASS THROUGH
   // ------------------------------------------------------------------------
-  // For all other requests, just try to fetch them normally without caching. 
-  event.respondWith(
-    fetch(event.request).catch(() => {
-      console.log(`[FarmCap SW] Network request failed for: ${event.request.url}`);
-    })
-  );
+  // By simply returning, we force the browser to handle the request natively.
+  return;
 });
 // ============================================================================
 // END OF SERVICE WORKER

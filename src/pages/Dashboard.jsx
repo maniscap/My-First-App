@@ -129,10 +129,13 @@ function Dashboard() {
 
   const fetchLiveWeather = async (query) => {
       try {
-          const apiKey = import.meta.env.VITE_WEATHER_KEY;
           if(!query || query.includes('undefined')) return;
-          const url = `https://api.weatherapi.com/v1/forecast.json?key=${apiKey}&q=${query}&days=1&aqi=no&alerts=no`;
-          const response = await axios.get(url);
+          
+          const response = await axios.post('/api/Dashboard', {
+              query: query,
+              days: 1,
+              aqi: 'no'
+          });
           setWeatherData(response.data);
           
           const assetUrl = getAssetLogic(response.data) || getBackgroundImage(response.data.current.condition.text);

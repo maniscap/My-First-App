@@ -78,19 +78,18 @@ const ModernTech = () => {
       }
 
       try {
-        const API_KEY = import.meta.env.VITE_YOUTUBE_KEY;
-        if (!API_KEY) throw new Error("VITE_YOUTUBE_KEY missing in .env file");
-
-        const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(activeTech.searchQuery)}&type=video&key=${API_KEY}&maxResults=4&relevanceLanguage=hi`;
-        
-        const response = await axios.get(url);
+        const response = await axios.post('/api/ModernTech', {
+          searchQuery: activeTech.searchQuery,
+          maxResults: 4
+        });
         const videoData = response.data.items;
         
         setVideos(videoData);
         sessionStorage.setItem(cacheKey, JSON.stringify(videoData));
       } catch (err) {
         console.error("YouTube Fetch Error:", err);
-        setError("Failed to load videos. Please try again later.");
+        const backendError = err.response?.data?.details || err.response?.data?.error || err.message;
+        setError(`API Error: ${backendError}`);
       } finally {
         setLoading(false);
       }
