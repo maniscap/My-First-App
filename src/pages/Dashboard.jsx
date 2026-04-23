@@ -234,7 +234,7 @@ function Dashboard() {
       <div style={bentoGrid}>
         
         <Link to="/market-rates" style={cardLink}>
-           <div className="glass-card" style={{...cardStyle, backgroundImage: "url('https://images.unsplash.com/photo-1611162616305-c69b3fa7fbe0?q=80&w=500')"}}>
+           <div className="glass-card" style={{...cardStyle, backgroundImage: "url('https://img.freepik.com/premium-photo/graph-with-green-arrow-pointing-up-top-it_884497-464.jpg')"}}>
               <div style={cardTopOverlay}>
                  <div><h3 style={cardTitle}>Market Pulse</h3><p style={cardSubtitle}>Mandi Rates</p></div>
                  <div style={whiteIconBox}><TrendingUp size={28} color="white"/></div>
@@ -243,7 +243,7 @@ function Dashboard() {
         </Link>
 
         <Link to="/NewsUpdates" style={cardLink}>
-           <div className="glass-card" style={{...cardStyle, backgroundImage: "url('https://images.unsplash.com/photo-1504711434969-e33886168f5c?q=80&w=500')"}}>
+           <div className="glass-card" style={{...cardStyle, backgroundImage: "url('https://static.vecteezy.com/system/resources/previews/011/643/706/non_2x/business-newspaper-isolated-on-white-background-daily-newspaper-mock-up-concept-photo.jpg')"}}>
               <div style={cardTopOverlay}>
                  <div><h3 style={cardTitle}>Agri News</h3><p style={cardSubtitle}>Daily Updates</p></div>
                  <div style={whiteIconBox}><Newspaper size={28} color="white"/></div>
@@ -252,7 +252,7 @@ function Dashboard() {
         </Link>
 
         <Link to="/library" style={cardLink}>
-           <div className="glass-card" style={{...cardStyle, backgroundImage: "url('https://images.unsplash.com/photo-1532012197267-da84d127e765?q=80&w=500')"}}>
+           <div className="glass-card" style={{...cardStyle, backgroundImage: "url('https://static.vecteezy.com/system/resources/thumbnails/023/256/819/small_2x/happy-farmer-is-standing-in-his-pepper-plantation-photo.jpg')"}}>
               <div style={cardTopOverlay}>
                  <div><h3 style={cardTitle}>Library</h3><p style={cardSubtitle}>Expert Guides</p></div>
                  <div style={whiteIconBox}><BookOpen size={28} color="white"/></div>
@@ -261,7 +261,7 @@ function Dashboard() {
         </Link>
 
         <Link to="/modern-tech" style={cardLink}>
-           <div className="glass-card" style={{...cardStyle, backgroundImage: "url('https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?q=80&w=500')"}}>
+           <div className="glass-card" style={{...cardStyle, backgroundImage: "url('https://img.freepik.com/premium-photo/smart-agriculture-specialist-monitoring-drone-data_1280275-166272.jpg')"}}>
               <div style={cardTopOverlay}>
                  <div><h3 style={cardTitle}>Modern Tech</h3><p style={cardSubtitle}>Drones & AI</p></div>
                  <div style={whiteIconBox}><Rocket size={28} color="white"/></div>
@@ -346,7 +346,8 @@ function Dashboard() {
                      position: 'absolute',
                      top: 0,
                      left: 0,
-                     zIndex: -1 
+                     zIndex: -1,
+                     filter: 'brightness(1.15)'
                  }} 
                />
               
@@ -405,10 +406,10 @@ const bentoGrid = { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px'
 const cardLink = { textDecoration: 'none', color: 'white', display: 'block', width: '100%', height: '100%' };
 const cardStyle = { borderRadius: '18px', height: '185px', position: 'relative', overflow: 'hidden', backgroundSize: 'cover', backgroundPosition: 'center', border: '1px solid rgba(255,255,255,0.15)' };
 const wideCardStyle = { gridColumn: 'span 2', height: '180px', borderRadius: '18px', position: 'relative', overflow: 'hidden', backgroundSize: 'cover', backgroundPosition: 'center', border: '1px solid rgba(255,255,255,0.15)' };
-const cardTopOverlay = { position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', padding: '15px', background: 'linear-gradient(to bottom, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.2) 100%)', color: 'white', textAlign: 'left', boxSizing: 'border-box', zIndex: 1 };
+const cardTopOverlay = { position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', padding: '15px', background: 'linear-gradient(to bottom, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0.05) 100%)', color: 'white', textAlign: 'left', boxSizing: 'border-box', zIndex: 1 };
 const whiteIconBox = { filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))' };
-const cardTitle = { margin: '0 0 4px 0', fontSize: '17px', fontWeight: '700', textShadow: '0 2px 4px rgba(0,0,0,0.5)' };
-const cardSubtitle = { margin: 0, fontSize: '13px', opacity: 0.9, fontWeight: '500', textShadow: '0 1px 2px rgba(0,0,0,0.5)' };
-const darkOverlay = { position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.3)', zIndex: 1 }; 
+const cardTitle = { margin: '0 0 4px 0', fontSize: '17px', fontWeight: '700', textShadow: '0 2px 6px rgba(0,0,0,0.8)' };
+const cardSubtitle = { margin: 0, fontSize: '13px', opacity: 0.9, fontWeight: '500', textShadow: '0 1px 4px rgba(0,0,0,0.8)' };
+const darkOverlay = { position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.15)', zIndex: 1 }; 
 
 export default Dashboard;
