@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios'; 
 import LocationSheet from '../components/LocationSheet'; 
 import BottomNavigation from '../components/BottomNavigation'; 
-import { ChevronDown, Radio, Map, Briefcase } from 'lucide-react'; 
+import { ChevronDown, Radio, Map, Briefcase, TrendingUp, Newspaper, BookOpen, Rocket } from 'lucide-react'; 
 
 // --- WEATHER IMAGE ASSETS (URLs) ---
 const weatherImages = {
@@ -233,11 +233,38 @@ function Dashboard() {
       {/* 2. BENTO GRID */}
       <div style={bentoGrid}>
         
-        <Link to="/agri-insights" style={cardLink}>
-           <div className="glass-card" style={{...cardStyle, backgroundImage: "url('https://img.freepik.com/premium-photo/smart-farming-digital-technology-agriculture-app_974729-144300.jpg')"}}>
+        <Link to="/market-rates" style={cardLink}>
+           <div className="glass-card" style={{...cardStyle, backgroundImage: "url('https://images.unsplash.com/photo-1611162616305-c69b3fa7fbe0?q=80&w=500')"}}>
               <div style={cardTopOverlay}>
-                 <div><h3 style={cardTitle}>Agri-Insights</h3><p style={cardSubtitle}>Rates & Guides</p></div>
-                 <div style={whiteIconBox}><svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg></div>
+                 <div><h3 style={cardTitle}>Market Pulse</h3><p style={cardSubtitle}>Mandi Rates</p></div>
+                 <div style={whiteIconBox}><TrendingUp size={28} color="white"/></div>
+              </div>
+           </div>
+        </Link>
+
+        <Link to="/NewsUpdates" style={cardLink}>
+           <div className="glass-card" style={{...cardStyle, backgroundImage: "url('https://images.unsplash.com/photo-1504711434969-e33886168f5c?q=80&w=500')"}}>
+              <div style={cardTopOverlay}>
+                 <div><h3 style={cardTitle}>Agri News</h3><p style={cardSubtitle}>Daily Updates</p></div>
+                 <div style={whiteIconBox}><Newspaper size={28} color="white"/></div>
+              </div>
+           </div>
+        </Link>
+
+        <Link to="/library" style={cardLink}>
+           <div className="glass-card" style={{...cardStyle, backgroundImage: "url('https://images.unsplash.com/photo-1532012197267-da84d127e765?q=80&w=500')"}}>
+              <div style={cardTopOverlay}>
+                 <div><h3 style={cardTitle}>Library</h3><p style={cardSubtitle}>Expert Guides</p></div>
+                 <div style={whiteIconBox}><BookOpen size={28} color="white"/></div>
+              </div>
+           </div>
+        </Link>
+
+        <Link to="/modern-tech" style={cardLink}>
+           <div className="glass-card" style={{...cardStyle, backgroundImage: "url('https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?q=80&w=500')"}}>
+              <div style={cardTopOverlay}>
+                 <div><h3 style={cardTitle}>Modern Tech</h3><p style={cardSubtitle}>Drones & AI</p></div>
+                 <div style={whiteIconBox}><Rocket size={28} color="white"/></div>
               </div>
            </div>
         </Link>

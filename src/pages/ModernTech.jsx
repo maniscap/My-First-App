@@ -103,7 +103,7 @@ const ModernTech = () => {
         <div style={styles.appWrapper}>
           {/* TOP HEADER */}
           <div style={styles.topBar}>
-            <button style={styles.iconBtn} onClick={() => navigate('/agri-insights')}>
+            <button style={styles.iconBtn} onClick={() => navigate('/dashboard')}>
                <IoMdArrowBack size={24} color="#fff" />
             </button>
             <div style={styles.locationText}>

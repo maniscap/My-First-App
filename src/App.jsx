@@ -5,7 +5,6 @@ import { getAuth, onAuthStateChanged } from 'firebase/auth';
 // --- IMPORT PAGES ---
 import Dashboard from './pages/Dashboard';
 import Service from './pages/Service';
-import AgriInsights from './pages/AgriInsights';
 import MarketRates from './pages/MarketRates'; 
 import NewsUpdates from './pages/NewsUpdates';       
 import DigitalLibrary from './pages/DigitalLibrary'; 
@@ -108,7 +107,6 @@ function App() {
             <Route path="/profile" element={<Profile />} />
             
             {/* --- AGRI INSIGHTS & SUB-PAGES --- */}
-            <Route path="/agri-insights" element={<AgriInsights />} />
             <Route path="/market-rates" element={<MarketRates />} /> 
             <Route path="/NewsUpdates" element={<NewsUpdates />} />         
             <Route path="/library" element={<DigitalLibrary />} />   

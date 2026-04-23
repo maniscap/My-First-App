@@ -337,7 +337,7 @@ const NewsUpdates = () => {
       <div style={styles.page}>
         {/* HEADER */}
         <div style={styles.header}>
-          <button style={styles.backBtn} onClick={() => navigate(-1)} title="Go back">
+          <button style={styles.backBtn} onClick={() => navigate('/dashboard')} title="Go back">
             <CloseIcon size={24} />
           </button>
           <div style={styles.headerContent}>

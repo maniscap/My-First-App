@@ -256,7 +256,7 @@ const MarketRates = () => {
       {/* HEADER */}
       <div style={styles.headerContainer}>
         <div style={styles.glassCapsuleHeader}>
-          <button onClick={() => navigate('/agri-insights', { state: { explored: true } })} style={styles.iconBtn}>
+          <button onClick={() => navigate('/dashboard')} style={styles.iconBtn}>
             <IoMdArrowBack size={20} color="#10b981"/>
           </button>
           <div style={{textAlign:'center'}}>
