@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { IoMdArrowBack, IoMdClose } from 'react-icons/io';
-import { FaFileInvoice, FaChartArea, FaMapMarkerAlt, FaShieldAlt, FaExternalLinkAlt, FaInfoCircle, FaChevronRight } from 'react-icons/fa';
+import { IoMdArrowBack, IoMdClose, IoMdSearch } from 'react-icons/io';
+import { FaFileInvoice, FaChartArea, FaMapMarkerAlt, FaShieldAlt, FaExternalLinkAlt, FaInfoCircle, FaChevronRight, FaStar, FaClock, FaFilter, FaArrowRight } from 'react-icons/fa';
 
 // --- DATA STRUCTURE: PASTE YOUR LINKS HERE ---
 const MARKET_REPORTS = [
@@ -78,13 +78,27 @@ const containerVariants = {
   hidden: { opacity: 0 },
   show: {
     opacity: 1,
-    transition: { staggerChildren: 0.1 }
+    transition: { staggerChildren: 0.08, delayChildren: 0.1 }
   }
 };
 
 const itemVariants = {
   hidden: { opacity: 0, y: 20 },
-  show: { opacity: 1, y: 0 }
+  show: { 
+    opacity: 1, 
+    y: 0, 
+    transition: { duration: 0.5, ease: [0.4, 0, 0.2, 1] } 
+  }
+};
+
+const cardHoverVariants = {
+  rest: { y: 0, scale: 1 },
+  hover: { y: -4, scale: 1.02, transition: { duration: 0.3, ease: 'easeOut' } }
+};
+
+const iconVariants = {
+  rest: { rotate: 0 },
+  hover: { rotate: 10, transition: { duration: 0.3 } }
 };
 
 // Shared images to be used for both the top banner and the bookshelf
@@ -96,41 +110,77 @@ const BOOK_COVERS = [
 ];
 
 // --- NEW: GLASS BOOKSHELF COMPONENT ---
-const Bookshelf = ({ items, onLinkClick }) => {
+const Bookshelf = ({ items, onLinkClick, favorites, onToggleFavorite }) => {
   const GAP = 12;
 
   return (
     <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column' }}>
       <div className="hide-scrollbar" style={{ width: '100%', height: '100%', overflowY: 'auto', overflowX: 'hidden' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: `${GAP}px`, width: '100%', paddingBottom: '120px' }}>
-            {items.map((item, idx) => (
-              <motion.div
-                key={idx}
-                onClick={() => onLinkClick(item)}
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                style={{ 
-                  ...styles.book, 
-                  width: '100%', 
-                  flexShrink: 0, 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  justifyContent: 'space-between',
-                  padding: '20px 15px',
-                  background: 'linear-gradient(135deg, rgba(30, 30, 35, 0.8) 0%, rgba(15, 15, 20, 0.6) 100%)',
-                  boxShadow: '0 8px 20px -5px rgba(0, 0, 0, 0.3)',
-                  boxSizing: 'border-box'
-                }}
-              >
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', flex: 1, paddingRight: '15px' }}>
-                  {item.isNew && <span style={{...styles.newBadge, position: 'static', marginBottom: '8px'}}>NEW</span>}
-                  <h3 style={{...styles.openBookTitle, WebkitLineClamp: 3, margin: 0, fontSize: '15px'}}>{item.name}</h3>
-                </div>
-                <div style={{ background: 'rgba(16, 185, 129, 0.1)', padding: '12px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                    <FaExternalLinkAlt size={16} color="#10b981" />
-                </div>
-              </motion.div>
-            ))}
+            {items.map((item, idx) => {
+              const isFavorited = favorites.some(fav => fav.name === item.name && fav.url === item.url);
+              return (
+                <motion.div
+                  key={idx}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: idx * 0.05, duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
+                  whileHover={{ x: 8, transition: { duration: 0.2 } }}
+                  onClick={() => onLinkClick(item)}
+                  style={{ 
+                    ...styles.book, 
+                    width: '100%', 
+                    flexShrink: 0, 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'space-between',
+                    padding: '18px 20px',
+                  }}
+                >
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', flex: 1, paddingRight: '15px' }}>
+                    {item.isNew && <span style={{...styles.newBadge, position: 'static', marginBottom: '8px'}}>NEW</span>}
+                    <h3 style={{...styles.openBookTitle, WebkitLineClamp: 3, margin: 0, fontSize: '14px'}}>{item.name}</h3>
+                  </div>
+                  <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                    <motion.button
+                      whileHover={{ scale: 1.15 }}
+                      whileTap={{ scale: 0.85 }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onToggleFavorite(item);
+                      }}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        cursor: 'pointer',
+                        padding: '8px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}
+                    >
+                      <FaStar size={16} color={isFavorited ? "#fbbf24" : "#64748b"} />
+                    </motion.button>
+                    <motion.div 
+                      style={{ 
+                        background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(6, 182, 212, 0.1) 100%)', 
+                        padding: '10px', 
+                        borderRadius: '10px', 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        justifyContent: 'center', 
+                        flexShrink: 0,
+                        border: '1px solid rgba(16, 185, 129, 0.2)',
+                        boxShadow: 'inset 0 1px 0 rgba(255, 255, 255, 0.08)'
+                      }}
+                      whileHover={{ scale: 1.05 }}
+                    >
+                        <FaExternalLinkAlt size={14} color="#10b981" />
+                    </motion.div>
+                  </div>
+                </motion.div>
+              );
+            })}
           </div>
       </div>
     </div>
@@ -143,6 +193,27 @@ const MarketRates = () => {
   const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
   const [currentBannerIndex, setCurrentBannerIndex] = useState(0);
   const [activeCategory, setActiveCategory] = useState(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [favorites, setFavorites] = useState(() => {
+    const saved = localStorage.getItem('marketRatesFavorites');
+    return saved ? JSON.parse(saved) : [];
+  });
+  const [recentItems, setRecentItems] = useState(() => {
+    const saved = localStorage.getItem('marketRatesRecent');
+    return saved ? JSON.parse(saved) : [];
+  });
+  const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
+  const [showRecentOnly, setShowRecentOnly] = useState(false);
+
+  // Save favorites to localStorage
+  useEffect(() => {
+    localStorage.setItem('marketRatesFavorites', JSON.stringify(favorites));
+  }, [favorites]);
+
+  // Save recent items to localStorage
+  useEffect(() => {
+    localStorage.setItem('marketRatesRecent', JSON.stringify(recentItems));
+  }, [recentItems]);
 
   useEffect(() => {
     const style = document.createElement('style');
@@ -159,11 +230,31 @@ const MarketRates = () => {
     return () => clearInterval(interval);
   }, []);
 
+  const toggleFavorite = (item) => {
+    setFavorites(prev => {
+      const isAlreadyFavorited = prev.some(fav => fav.name === item.name && fav.url === item.url);
+      if (isAlreadyFavorited) {
+        return prev.filter(fav => !(fav.name === item.name && fav.url === item.url));
+      } else {
+        return [...prev, item];
+      }
+    });
+  };
+
+  const addToRecent = (item) => {
+    setRecentItems(prev => {
+      const filtered = prev.filter(rec => !(rec.name === item.name && rec.url === item.url));
+      return [item, ...filtered].slice(0, 10); // Keep only 10 recent items
+    });
+  };
+
   const handleLinkClick = (report) => {
     if (!report.url) {
       alert("URL not yet configured for: " + report.name);
       return;
     }
+
+    addToRecent(report);
 
     // Trigger the 3-second intercept modal
     setTransitionState({ isActive: true, reportName: report.name });
@@ -174,6 +265,53 @@ const MarketRates = () => {
       // Hide the modal so they are back in Farmcap when they close the new tab
       setTransitionState({ isActive: false, reportName: "" });
     }, 3000);
+  };
+
+  // Filter logic
+  const getFilteredCategories = () => {
+    let allItems = [];
+    const allCategories = [...MARKET_REPORTS, ...TREND_REPORTS];
+
+    allCategories.forEach(cat => {
+      const items = cat.items || [];
+      items.forEach(item => {
+        allItems.push({ ...item, category: cat.title || cat.category, categoryIcon: cat.icon });
+      });
+    });
+
+    let filtered = allItems;
+
+    if (showFavoritesOnly) {
+      filtered = filtered.filter(item => favorites.some(fav => fav.name === item.name && fav.url === item.url));
+    }
+
+    if (showRecentOnly) {
+      filtered = filtered.filter(item => recentItems.some(rec => rec.name === item.name && rec.url === item.url));
+    }
+
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(item => 
+        item.name.toLowerCase().includes(query) || 
+        (item.category && item.category.toLowerCase().includes(query))
+      );
+    }
+
+    return filtered;
+  };
+
+  const filteredItems = useMemo(() => getFilteredCategories(), [searchQuery, showFavoritesOnly, showRecentOnly, favorites, recentItems]);
+
+  // Helper function to highlight matching text
+  const highlightText = (text, query) => {
+    if (!query.trim()) return text;
+    
+    const parts = text.split(new RegExp(`(${query})`, 'gi'));
+    return parts.map((part, idx) => 
+      part.toLowerCase() === query.toLowerCase() 
+        ? <span key={idx} style={{ background: 'rgba(251, 191, 36, 0.6)', color: '#fff', padding: '2px 4px', borderRadius: '4px', fontWeight: '600' }}>{part}</span>
+        : part
+    );
   };
 
   return (
@@ -224,9 +362,11 @@ const MarketRates = () => {
         )}
       </AnimatePresence>
 
+
+
       {/* FULL PAGE CATEGORY VIEW FOR BOOKSHELF */}
       <AnimatePresence>
-        {activeCategory && (
+        {activeCategory && !searchQuery && !showFavoritesOnly && !showRecentOnly && (
           <motion.div 
             initial={{ opacity: 0, x: "100%" }} 
             animate={{ opacity: 1, x: 0 }} 
@@ -247,7 +387,12 @@ const MarketRates = () => {
               <p style={{color: '#94a3b8', marginBottom: '20px', fontSize: '14px', textAlign: 'center', lineHeight: '1.5'}}>
                 Scroll up and down to explore all <strong style={{color: '#fff'}}>{activeCategory.items.length}</strong> reports.<br/>Tap an item to expand it.
               </p>
-              <Bookshelf items={activeCategory.items} onLinkClick={handleLinkClick} />
+              <Bookshelf 
+                items={activeCategory.items} 
+                onLinkClick={handleLinkClick}
+                favorites={favorites}
+                onToggleFavorite={toggleFavorite}
+              />
             </div>
           </motion.div>
         )}
@@ -267,7 +412,150 @@ const MarketRates = () => {
         </div>
       </div>
 
+      {/* SEARCH BAR */}
+      <motion.div 
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        style={styles.searchContainer}
+      >
+        <div style={styles.searchInputWrapper}>
+          <IoMdSearch size={18} color="#71717a" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
+          <input
+            type="text"
+            placeholder="Search reports..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            style={styles.searchInput}
+          />
+          {searchQuery && (
+            <motion.button
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
+              onClick={() => setSearchQuery("")}
+              style={styles.clearBtn}
+            >
+              <IoMdClose size={16} color="#71717a" />
+            </motion.button>
+          )}
+        </div>
+
+        {/* FILTER BUTTONS */}
+        <div style={styles.filterButtonsContainer}>
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => setShowFavoritesOnly(!showFavoritesOnly)}
+            style={{
+              ...styles.filterButton,
+              background: showFavoritesOnly ? 'rgba(251, 191, 36, 0.3)' : 'rgba(255,255,255,0.05)',
+              borderColor: showFavoritesOnly ? 'rgba(251, 191, 36, 0.5)' : 'rgba(255,255,255,0.1)',
+              color: showFavoritesOnly ? '#fbbf24' : '#a1a1aa'
+            }}
+          >
+            <FaStar size={14} />
+            <span>{favorites.length}</span>
+          </motion.button>
+
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => setShowRecentOnly(!showRecentOnly)}
+            style={{
+              ...styles.filterButton,
+              background: showRecentOnly ? 'rgba(16, 185, 129, 0.3)' : 'rgba(255,255,255,0.05)',
+              borderColor: showRecentOnly ? 'rgba(16, 185, 129, 0.5)' : 'rgba(255,255,255,0.1)',
+              color: showRecentOnly ? '#10b981' : '#a1a1aa'
+            }}
+          >
+            <FaClock size={14} />
+            <span>{recentItems.length}</span>
+          </motion.button>
+        </div>
+      </motion.div>
+
       <div style={styles.scrollContent}>
+        
+        {/* SEARCH RESULTS / FILTER RESULTS VIEW */}
+        {(searchQuery || showFavoritesOnly || showRecentOnly) && (
+          <motion.div 
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            style={{marginBottom: '30px'}}
+          >
+            <div style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px', paddingTop: '8px'}}>
+              <h3 style={{...styles.sectionTitle, margin: 0}}>
+                {showFavoritesOnly ? `Favorites (${filteredItems.length})` : showRecentOnly ? `Recently Viewed (${filteredItems.length})` : `Search Results (${filteredItems.length})`}
+              </h3>
+              {(searchQuery || showFavoritesOnly || showRecentOnly) && (
+                <motion.button
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
+                  onClick={() => {
+                    setSearchQuery("");
+                    setShowFavoritesOnly(false);
+                    setShowRecentOnly(false);
+                  }}
+                  style={{background: 'none', border: 'none', color: '#10b981', cursor: 'pointer', fontSize: '12px', fontWeight: '600'}}
+                >
+                  Clear
+                </motion.button>
+              )}
+            </div>
+            {filteredItems.length > 0 ? (
+              <motion.div variants={containerVariants} initial="hidden" animate="show">
+                {filteredItems.map((item, idx) => (
+                  <motion.button
+                    key={`${item.name}-${idx}`}
+                    variants={itemVariants}
+                    whileHover="hover"
+                    initial="rest"
+                    animate="rest"
+                    onClick={() => handleLinkClick(item)}
+                    style={{...styles.categoryCard, width: '100%', marginBottom: '10px'}}
+                  >
+                    <div style={styles.cardContent}>
+                      <motion.div 
+                        style={{...styles.cardIconBox, background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.2) 0%, rgba(168, 85, 247, 0.1) 100%)'}}
+                        variants={iconVariants}
+                      >
+                        <FaFileInvoice size={18} color="#60a5fa" />
+                      </motion.div>
+                      <div style={{ flex: 1, textAlign: 'left' }}>
+                        <h3 style={{...styles.cardTitleText, marginBottom: '4px'}}>{highlightText(item.name, searchQuery)}</h3>
+                        <p style={{...styles.cardSubtext, margin: 0}}>{item.category}</p>
+                      </div>
+                      <div style={{display: 'flex', gap: '8px', alignItems: 'center'}}>
+                        {item.isNew && <span style={{fontSize: '10px', background: '#10b981', color: '#000', padding: '3px 8px', borderRadius: '12px', fontWeight: '700'}}>NEW</span>}
+                        <motion.button
+                          whileHover={{ scale: 1.2 }}
+                          whileTap={{ scale: 0.8 }}
+                          onClick={(e) => { e.stopPropagation(); toggleFavorite(item); }}
+                          style={{background: 'none', border: 'none', cursor: 'pointer'}}
+                        >
+                          <FaStar size={14} color={favorites.some(f => f.name === item.name && f.url === item.url) ? '#fbbf24' : '#64748b'} />
+                        </motion.button>
+                        <FaExternalLinkAlt size={12} color="#94a3b8" />
+                      </div>
+                    </div>
+                  </motion.button>
+                ))}
+              </motion.div>
+            ) : (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                style={{textAlign: 'center', padding: '30px 20px', color: '#64748b'}}
+              >
+                <p style={{fontSize: '14px', margin: 0}}>No results found</p>
+              </motion.div>
+            )}
+          </motion.div>
+        )}
+
+        {/* MAIN CONTENT - SHOW ONLY WHEN NOT SEARCHING/FILTERING */}
+        {!searchQuery && !showFavoritesOnly && !showRecentOnly && (
+          <>
         
         {/* HOARDING / BANNER SECTION */}
         <motion.div variants={containerVariants} initial="hidden" animate="show" style={styles.hoardingContainer}>
@@ -290,26 +578,118 @@ const MarketRates = () => {
             </div>
           </div>
         </motion.div>
+
+        {/* FAVORITES SECTION */}
+        {favorites.length > 0 && (
+          <motion.div variants={containerVariants} initial="hidden" animate="show" style={styles.section}>
+            <motion.div 
+              style={styles.sectionHeader}
+              whileHover={{ x: 5 }}
+            >
+              <FaStar size={20} color="#fbbf24" />
+              <h2 style={styles.sectionTitle}>Saved Favorites ({favorites.length})</h2>
+            </motion.div>
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => setShowFavoritesOnly(true)}
+              style={{...styles.categoryCard, width: '100%'}}
+            >
+              <div style={styles.cardContent}>
+                <motion.div 
+                  style={{...styles.cardIconBox, background: 'linear-gradient(135deg, rgba(251, 191, 36, 0.2) 0%, rgba(251, 191, 36, 0.1) 100%)'}}
+                  whileHover={{ scale: 1.1, rotate: 5 }}
+                >
+                  <FaStar size={18} color="#fbbf24" />
+                </motion.div>
+                <div style={{ flex: 1 }}>
+                  <h3 style={styles.cardTitleText}>View All Favorites</h3>
+                  <p style={styles.cardSubtext}>Quick access to saved reports</p>
+                </div>
+                <motion.div whileHover={{ x: 4 }}>
+                  <FaChevronRight style={{marginLeft: 'auto'}} color="#cbd5e1" size={16} />
+                </motion.div>
+              </div>
+            </motion.button>
+          </motion.div>
+        )}
+
+        {/* RECENT SECTION */}
+        {recentItems.length > 0 && (
+          <motion.div variants={containerVariants} initial="hidden" animate="show" style={styles.section}>
+            <motion.div 
+              style={styles.sectionHeader}
+              whileHover={{ x: 5 }}
+            >
+              <FaClock size={20} color="#3b82f6" />
+              <h2 style={styles.sectionTitle}>Recently Viewed ({recentItems.length})</h2>
+            </motion.div>
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => setShowRecentOnly(true)}
+              style={{...styles.categoryCard, width: '100%'}}
+            >
+              <div style={styles.cardContent}>
+                <motion.div 
+                  style={{...styles.cardIconBox, background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.2) 0%, rgba(59, 130, 246, 0.1) 100%)'}}
+                  whileHover={{ scale: 1.1, rotate: -5 }}
+                >
+                  <FaClock size={18} color="#3b82f6" />
+                </motion.div>
+                <div style={{ flex: 1 }}>
+                  <h3 style={styles.cardTitleText}>View Recent Reports</h3>
+                  <p style={styles.cardSubtext}>Your recently accessed links</p>
+                </div>
+                <motion.div whileHover={{ x: 4 }}>
+                  <FaChevronRight style={{marginLeft: 'auto'}} color="#cbd5e1" size={16} />
+                </motion.div>
+              </div>
+            </motion.button>
+          </motion.div>
+        )}
         
         {/* SECTION 1: PRICE & ARRIVAL REPORTS */}
         <motion.div variants={containerVariants} initial="hidden" animate="show" style={styles.section}>
           <div style={styles.sectionHeader}>
             <FaFileInvoice size={20} color="#10b981" />
             <h2 style={styles.sectionTitle}>Prices & Arrival Reports</h2>
+            <span style={{ marginLeft: 'auto', fontSize: '12px', color: '#71717a', background: 'rgba(255,255,255,0.05)', padding: '4px 8px', borderRadius: '4px' }}>
+              {MARKET_REPORTS.reduce((acc, group) => acc + group.items.length, 0)} reports
+            </span>
           </div>
           {MARKET_REPORTS.map((group, idx) => {
             return (
               <motion.div
                 key={`market-${idx}`}
-                whileHover={{ scale: 1.02 }}
+                variants={itemVariants}
+                whileHover="hover"
                 whileTap={{ scale: 0.98 }}
+                initial="rest"
                 style={styles.categoryCard}
                 onClick={() => setActiveCategory(group)}
               >
               <div style={styles.cardContent}>
-                <div style={styles.cardIconBox}>{group.icon}</div>
-                <h3 style={styles.cardTitleText}>{group.title}</h3>
-                <FaChevronRight style={{marginLeft: 'auto'}} color="#a1a1aa" size={14} />
+                <motion.div 
+                  style={styles.cardIconBox}
+                  variants={iconVariants}
+                  initial="rest"
+                  whileHover="hover"
+                >
+                  {group.icon}
+                </motion.div>
+                <div style={{ flex: 1 }}>
+                  <h3 style={styles.cardTitleText}>{group.title}</h3>
+                  <p style={styles.cardSubtext}>{group.items.length} reports available</p>
+                </div>
+                <motion.div 
+                  style={{ marginLeft: 'auto', color: '#cbd5e1' }}
+                  animate={{ x: 0 }}
+                  whileHover={{ x: 4 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <FaChevronRight size={16} />
+                </motion.div>
               </div>
               </motion.div>
             );
@@ -321,21 +701,43 @@ const MarketRates = () => {
           <div style={styles.sectionHeader}>
             <FaChartArea size={20} color="#3b82f6" />
             <h2 style={styles.sectionTitle}>Price Trend Reports</h2>
+            <span style={{ marginLeft: 'auto', fontSize: '12px', color: '#71717a', background: 'rgba(255,255,255,0.05)', padding: '4px 8px', borderRadius: '4px' }}>
+              {TREND_REPORTS.reduce((acc, group) => acc + group.items.length, 0)} reports
+            </span>
           </div>
           
           {TREND_REPORTS.map((group, idx) => {
             return (
               <motion.div
                 key={`trend-${idx}`}
-                whileHover={{ scale: 1.02 }}
+                variants={itemVariants}
+                whileHover="hover"
                 whileTap={{ scale: 0.98 }}
+                initial="rest"
                 style={styles.categoryCard}
                 onClick={() => setActiveCategory(group)}
               >
               <div style={styles.cardContent}>
-                <div style={styles.cardIconBox}>{group.icon}</div>
-                <h3 style={styles.cardTitleText}>{group.category}</h3>
-                <FaChevronRight style={{marginLeft: 'auto'}} color="#a1a1aa" size={14} />
+                <motion.div 
+                  style={styles.cardIconBox}
+                  variants={iconVariants}
+                  initial="rest"
+                  whileHover="hover"
+                >
+                  {group.icon}
+                </motion.div>
+                <div style={{ flex: 1 }}>
+                  <h3 style={styles.cardTitleText}>{group.category}</h3>
+                  <p style={styles.cardSubtext}>{group.items.length} reports available</p>
+                </div>
+                <motion.div 
+                  style={{ marginLeft: 'auto', color: '#cbd5e1' }}
+                  animate={{ x: 0 }}
+                  whileHover={{ x: 4 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <FaChevronRight size={16} />
+                </motion.div>
               </div>
               </motion.div>
             );
@@ -344,6 +746,7 @@ const MarketRates = () => {
 
         {/* SECTION 3: INFO TRIGGER BUTTON */}
         <motion.button 
+          variants={itemVariants}
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
           onClick={() => setIsInfoModalOpen(true)} 
@@ -353,6 +756,8 @@ const MarketRates = () => {
           <span>About Agmarknet & Farmcap</span>
         </motion.button>
 
+        </>
+        )}
       </div>
 
       {/* INFO FULL VIEW */}
@@ -460,25 +865,27 @@ const MarketRates = () => {
 const styles = {
   page: { 
     height: '100vh', 
-    background: 'url("https://img.freepik.com/premium-photo/concept-growing-crops-using-ai-farming-system-uses-artificial-intelligence-optimize-work_1006821-4087.jpg?w=2000") center/cover no-repeat fixed', 
-    color: '#e2e8f0', 
-    fontFamily: '"Inter", -apple-system, sans-serif', 
+    background: '#111111',
+    color: '#f0f4f8', 
+    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif', 
     overflow: 'hidden', 
     display: 'flex', 
     flexDirection: 'column',
     position: 'relative',
-    boxSizing: 'border-box'
+    boxSizing: 'border-box',
+    textShadow: '0 2px 8px rgba(0,0,0,0.3)'
   },
   pageOverlay: {
     position: 'absolute',
     top: 0, left: 0, right: 0, bottom: 0,
-    background: 'rgba(0, 0, 0, 0.45)',
-    backdropFilter: 'blur(20px)',
-    WebkitBackdropFilter: 'blur(20px)',
-    zIndex: 0
+    background: 'radial-gradient(circle at 20% 50%, rgba(168, 85, 247, 0.1) 0%, transparent 50%), radial-gradient(circle at 80% 80%, rgba(59, 130, 246, 0.1) 0%, transparent 50%)',
+    backdropFilter: 'blur(40px)',
+    WebkitBackdropFilter: 'blur(40px)',
+    zIndex: 0,
+    pointerEvents: 'none'
   },
   headerContainer: { 
-    padding: '20px 20px 10px 20px', 
+    padding: '24px 20px 16px 20px', 
     position: 'relative',
     zIndex: 1,
     width: '100%',
@@ -488,69 +895,356 @@ const styles = {
     display: 'flex', 
     justifyContent: 'space-between', 
     alignItems: 'center',
-    background: 'rgba(255, 255, 255, 0.05)',
-    backdropFilter: 'blur(20px)',
-    WebkitBackdropFilter: 'blur(20px)',
-    border: '1px solid rgba(255, 255, 255, 0.15)',
-    borderRadius: '40px',
-    padding: '8px 15px',
-    boxShadow: '0 8px 32px rgba(0,0,0,0.3)'
+    background: 'rgba(255, 255, 255, 0.03)',
+    backdropFilter: 'blur(30px)',
+    WebkitBackdropFilter: 'blur(30px)',
+    border: '1px solid rgba(255, 255, 255, 0.08)',
+    borderRadius: '20px',
+    padding: '12px 16px',
+    boxShadow: 'inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 10px 40px rgba(0, 0, 0, 0.2)'
   },
-  title: { fontSize: '18px', margin: 0, fontWeight: '700', letterSpacing: '0.2px', color: '#ffffff' },
-  subtitle: { fontSize: '12px', color: '#a7f3d0', margin: '4px 0 0 0', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px', textShadow: '0 1px 4px rgba(0,0,0,0.6)' },
-  iconBtn: { background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', cursor: 'pointer', width: '40px', height: '40px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0, color: '#f8fafc' },
+  title: { fontSize: '20px', margin: 0, fontWeight: '600', letterSpacing: '-0.3px', color: '#ffffff' },
+  subtitle: { fontSize: '12px', color: '#10b981', margin: '6px 0 0 0', fontWeight: '500', textTransform: 'uppercase', letterSpacing: '0.8px' },
+  iconBtn: { 
+    background: 'rgba(255, 255, 255, 0.05)', 
+    border: '1px solid rgba(255, 255, 255, 0.08)', 
+    cursor: 'pointer', 
+    width: '40px', 
+    height: '40px', 
+    borderRadius: '12px', 
+    display: 'flex', 
+    alignItems: 'center', 
+    justifyContent: 'center', 
+    padding: 0, 
+    color: '#f0f4f8',
+    transition: 'all 0.3s ease',
+    backdropFilter: 'blur(10px)'
+  },
+  
+  // SEARCH & FILTER STYLES
+  searchContainer: { 
+    padding: '16px 20px 12px 20px',
+    position: 'relative',
+    zIndex: 1,
+    width: '100%',
+    boxSizing: 'border-box',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '14px'
+  },
+  searchInputWrapper: {
+    position: 'relative',
+    display: 'flex',
+    alignItems: 'center',
+    background: 'transparent',
+    backdropFilter: 'blur(12px) saturate(120%) brightness(110%)',
+    WebkitBackdropFilter: 'blur(12px) saturate(120%) brightness(110%)',
+    border: '1px solid rgba(255, 255, 255, 0.1)',
+    borderTop: '1px solid rgba(255, 255, 255, 0.3)',
+    borderLeft: '1px solid rgba(255, 255, 255, 0.2)',
+    borderRadius: '16px',
+    transition: 'all 0.3s ease',
+    boxShadow: 'inset 0 1px 1px rgba(255, 255, 255, 0.3), 0 4px 15px rgba(0, 0, 0, 0.1)'
+  },
+  searchInput: {
+    flex: 1,
+    background: 'transparent',
+    border: 'none',
+    padding: '12px 14px 12px 40px',
+    color: '#ffffff',
+    fontSize: '15px',
+    fontWeight: '500',
+    outline: 'none',
+    fontFamily: 'inherit'
+  },
+  clearBtn: {
+    background: 'none',
+    border: 'none',
+    cursor: 'pointer',
+    padding: '8px 12px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    color: '#94a3b8'
+  },
+  filterButtonsContainer: {
+    display: 'flex',
+    gap: '12px',
+    width: '100%'
+  },
+  filterButton: {
+    flex: 1,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '8px',
+    padding: '10px 14px',
+    background: 'transparent',
+    backdropFilter: 'blur(12px) saturate(120%) brightness(110%)',
+    WebkitBackdropFilter: 'blur(12px) saturate(120%) brightness(110%)',
+    border: '1px solid rgba(255, 255, 255, 0.1)',
+    borderTop: '1px solid rgba(255, 255, 255, 0.3)',
+    borderLeft: '1px solid rgba(255, 255, 255, 0.2)',
+    borderRadius: '12px',
+    color: '#cbd5e1',
+    fontSize: '13px',
+    fontWeight: '600',
+    cursor: 'pointer',
+    transition: 'all 0.3s ease',
+    boxShadow: 'inset 0 1px 1px rgba(255, 255, 255, 0.3), 0 4px 15px rgba(0, 0, 0, 0.1)'
+  },
+
   scrollContent: { flex: 1, overflowY: 'auto', padding: '20px', position: 'relative', zIndex: 1, width: '100%', boxSizing: 'border-box' },
   
-  section: { marginBottom: '35px' },
-  sectionHeader: { display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' },
-  sectionTitle: { fontSize: '13px', fontWeight: '700', margin: 0, color: '#a1a1aa', textTransform: 'uppercase', letterSpacing: '1px' },
+  section: { marginBottom: '36px' },
+  sectionHeader: { display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' },
+  sectionTitle: { fontSize: '13px', fontWeight: '700', margin: 0, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '1.2px' },
   
-  categoryCard: { position: 'relative', padding: '20px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.1)', borderTop: '1px solid rgba(255,255,255,0.2)', borderLeft: '1px solid rgba(255,255,255,0.2)', cursor: 'pointer', marginBottom: '15px', overflow: 'hidden', boxShadow: '0 8px 32px rgba(0,0,0,0.3)', background: 'linear-gradient(135deg, rgba(30, 30, 35, 0.8) 0%, rgba(15, 15, 20, 0.6) 100%)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', width: '100%', boxSizing: 'border-box' },
-  cardContent: { position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', gap: '15px', width: '100%' },
-  cardIconBox: { width: '44px', height: '44px', borderRadius: '10px', background: 'rgba(255,255,255,0.1)', backdropFilter: 'blur(10px)', display: 'flex', alignItems: 'center', justifyContent: 'center' },
-  cardTitleText: { fontSize: '15px', fontWeight: '700', color: '#ffffff', margin: 0 },
+  categoryCard: { 
+    position: 'relative', 
+    padding: '20px', 
+    borderRadius: '24px', 
+    background: 'transparent',
+    backdropFilter: 'blur(12px) saturate(120%) brightness(110%)',
+    WebkitBackdropFilter: 'blur(12px) saturate(120%) brightness(110%)',
+    border: '1px solid rgba(255, 255, 255, 0.1)',
+    borderTop: '1px solid rgba(255, 255, 255, 0.3)',
+    borderLeft: '1px solid rgba(255, 255, 255, 0.2)',
+    boxShadow: 'inset 0 1px 1px rgba(255, 255, 255, 0.3), 0 8px 32px rgba(0, 0, 0, 0.15)',
+    cursor: 'pointer', 
+    marginBottom: '14px', 
+    overflow: 'hidden', 
+    width: '100%', 
+    boxSizing: 'border-box',
+    transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)'
+  },
+  cardContent: { position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', gap: '14px', width: '100%' },
+  cardIconBox: { 
+    width: '48px', 
+    height: '48px', 
+    borderRadius: '12px', 
+    background: 'linear-gradient(135deg, rgba(168, 85, 247, 0.2) 0%, rgba(59, 130, 246, 0.1) 100%)',
+    backdropFilter: 'blur(10px)', 
+    display: 'flex', 
+    alignItems: 'center', 
+    justifyContent: 'center', 
+    flexShrink: 0,
+    border: '1px solid rgba(255, 255, 255, 0.1)',
+    boxShadow: 'inset 0 1px 0 rgba(255, 255, 255, 0.1)'
+  },
+  cardTitleText: { fontSize: '16px', fontWeight: '600', color: '#ffffff', margin: 0 },
+  cardSubtext: { fontSize: '13px', color: '#94a3b8', margin: '4px 0 0 0' },
   
   // HOARDING STYLES
-  hoardingContainer: { width: '100%', height: '180px', borderRadius: '16px', overflow: 'hidden', position: 'relative', marginBottom: '35px', border: '1px solid rgba(255,255,255,0.15)', boxShadow: '0 8px 32px rgba(0,0,0,0.3)', boxSizing: 'border-box' },
+  hoardingContainer: { 
+    width: '100%', 
+    height: '200px', 
+    borderRadius: '24px', 
+    overflow: 'hidden', 
+    position: 'relative', 
+    marginBottom: '36px', 
+    border: '1px solid rgba(255, 255, 255, 0.08)',
+    boxShadow: 'inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 20px 60px rgba(0, 0, 0, 0.3)',
+    boxSizing: 'border-box' 
+  },
   hoardingImage: { width: '100%', height: '100%', objectFit: 'cover' },
-  hoardingOverlay: { position: 'absolute', inset: 0, background: 'linear-gradient(to right, rgba(9,9,11,0.8) 0%, rgba(9,9,11,0.1) 100%)', display: 'flex', alignItems: 'center', padding: '20px', boxSizing: 'border-box' },
-  hoardingText: { color: 'white', fontSize: '24px', fontWeight: '800', lineHeight: '1.2' },
+  hoardingOverlay: { 
+    position: 'absolute', 
+    inset: 0, 
+    background: 'linear-gradient(to right, rgba(15, 23, 42, 0.9) 0%, rgba(15, 23, 42, 0.5) 60%, transparent 100%)',
+    display: 'flex', 
+    alignItems: 'center', 
+    padding: '32px', 
+    boxSizing: 'border-box' 
+  },
+  hoardingText: { color: 'white', fontSize: '28px', fontWeight: '700', lineHeight: '1.3', letterSpacing: '-0.5px' },
 
   // BOOKSHELF STYLES
-  book: { position: 'relative', borderRadius: '16px', cursor: 'pointer', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.1)', borderTop: '1px solid rgba(255,255,255,0.2)', borderLeft: '1px solid rgba(255,255,255,0.2)', flexShrink: 0, backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', boxSizing: 'border-box' },
-  openBookTitle: { margin: '0 0 10px 0', color: 'white', fontSize: '16px', fontWeight: '700', lineHeight: '1.2', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' },
+  book: { 
+    position: 'relative', 
+    borderRadius: '20px', 
+    cursor: 'pointer', 
+    overflow: 'hidden', 
+    background: 'transparent',
+    backdropFilter: 'blur(12px) saturate(120%) brightness(110%)',
+    WebkitBackdropFilter: 'blur(12px) saturate(120%) brightness(110%)',
+    border: '1px solid rgba(255, 255, 255, 0.1)',
+    borderTop: '1px solid rgba(255, 255, 255, 0.3)',
+    borderLeft: '1px solid rgba(255, 255, 255, 0.2)',
+    boxShadow: 'inset 0 1px 1px rgba(255, 255, 255, 0.3), 0 8px 32px rgba(0, 0, 0, 0.15)',
+    flexShrink: 0, 
+    boxSizing: 'border-box',
+    transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)'
+  },
+  openBookTitle: { margin: '0 0 10px 0', color: 'white', fontSize: '15px', fontWeight: '600', lineHeight: '1.3', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' },
   
-  newBadge: { position: 'absolute', top: '15px', right: '15px', background: '#ef4444', color: '#fff', fontSize: '9px', fontWeight: '800', padding: '4px 8px', borderRadius: '4px', letterSpacing: '0.5px' },
+  newBadge: { position: 'absolute', top: '12px', right: '12px', background: 'linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%)', color: '#fff', fontSize: '10px', fontWeight: '700', padding: '6px 10px', borderRadius: '8px', letterSpacing: '0.5px', boxShadow: '0 4px 15px rgba(255, 107, 107, 0.4)' },
   
-  infoTriggerBtn: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', width: '100%', padding: '16px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', color: '#a1a1aa', fontSize: '14px', fontWeight: '600', cursor: 'pointer', marginTop: '10px' },
-  infoModalOverlay: { position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)', zIndex: 2000, display: 'flex', justifyContent: 'flex-end' },
-  infoModalContent: { background: 'rgba(20, 20, 25, 0.65)', backdropFilter: 'blur(25px)', WebkitBackdropFilter: 'blur(25px)', borderLeft: '1px solid rgba(255,255,255,0.1)', padding: '20px', width: '100%', maxWidth: '400px', height: '100%', display: 'flex', flexDirection: 'column', boxSizing: 'border-box', boxShadow: '-10px 0 30px rgba(0,0,0,0.5)' },
-  infoModalTitle: { fontSize: '17px', fontWeight: '700', margin: 0, color: '#ffffff' },
-  infoModalScroll: { flex: 1, overflowY: 'auto', paddingRight: '5px' },
+  infoTriggerBtn: { 
+    display: 'flex', 
+    alignItems: 'center', 
+    justifyContent: 'center', 
+    gap: '10px', 
+    width: '100%', 
+    padding: '16px', 
+    background: 'transparent',
+    backdropFilter: 'blur(12px) saturate(120%) brightness(110%)',
+    WebkitBackdropFilter: 'blur(12px) saturate(120%) brightness(110%)',
+    border: '1px solid rgba(255, 255, 255, 0.1)',
+    borderTop: '1px solid rgba(255, 255, 255, 0.3)',
+    borderLeft: '1px solid rgba(255, 255, 255, 0.2)',
+    borderRadius: '14px', 
+    color: '#cbd5e1', 
+    fontSize: '14px', 
+    fontWeight: '600', 
+    cursor: 'pointer', 
+    marginTop: '12px',
+    transition: 'all 0.3s ease',
+    boxShadow: 'inset 0 1px 1px rgba(255, 255, 255, 0.3), 0 4px 15px rgba(0, 0, 0, 0.1)'
+  },
+  
+  infoModalOverlay: { 
+    position: 'fixed', 
+    top: 0, 
+    left: 0, 
+    width: '100%', 
+    height: '100%', 
+    background: 'rgba(0, 0, 0, 0.5)', 
+    backdropFilter: 'blur(10px)', 
+    WebkitBackdropFilter: 'blur(10px)', 
+    zIndex: 2000, 
+    display: 'flex', 
+    justifyContent: 'flex-end' 
+  },
+  infoModalContent: { 
+    background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 27, 60, 0.95) 100%)',
+    backdropFilter: 'blur(30px)', 
+    WebkitBackdropFilter: 'blur(30px)', 
+    borderLeft: '1px solid rgba(255, 255, 255, 0.08)',
+    padding: '24px', 
+    width: '100%', 
+    maxWidth: '420px', 
+    height: '100%', 
+    display: 'flex', 
+    flexDirection: 'column', 
+    boxSizing: 'border-box', 
+    boxShadow: 'inset 1px 0 0 rgba(255, 255, 255, 0.08), -20px 0 60px rgba(0, 0, 0, 0.4)' 
+  },
+  infoModalTitle: { fontSize: '18px', fontWeight: '700', margin: 0, color: '#ffffff' },
+  infoModalScroll: { flex: 1, overflowY: 'auto', paddingRight: '8px', marginTop: '16px' },
 
-  infoCard: { background: 'rgba(255,255,255,0.05)', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)', padding: '20px', borderRadius: '12px', marginBottom: '20px', border: '1px solid rgba(255,255,255,0.1)' },
-  cardHeader: { margin: '0 0 15px 0', fontSize: '14px', color: '#10b981', fontWeight: '700' },
-  textBlock: { marginBottom: '15px' },
-  highlightText: { fontSize: '12px', color: '#38bdf8', fontWeight: '600', display: 'block', marginBottom: '4px' },
-  paragraph: { fontSize: '13px', color: '#a1a1aa', lineHeight: '1.6', margin: 0 },
-  bulletList: { margin: '8px 0 0 0', paddingLeft: '20px', color: '#a1a1aa', fontSize: '13px' },
-  bulletItem: { marginBottom: '6px', lineHeight: '1.5' },
-  primaryLinkBtn: { background: '#10b981', color: '#09090b', border: 'none', padding: '12px', borderRadius: '8px', fontSize: '13px', fontWeight: '700', cursor: 'pointer', width: '100%', marginTop: '10px' },
-  secondaryLinkBtn: { background: 'rgba(255,255,255,0.1)', border: 'none', color: '#f8fafc', padding: '12px', borderRadius: '8px', fontSize: '13px', fontWeight: '600', cursor: 'pointer', width: '100%', marginTop: '10px' },
+  infoCard: { 
+    background: 'transparent',
+    backdropFilter: 'blur(12px) saturate(120%) brightness(110%)',
+    WebkitBackdropFilter: 'blur(12px) saturate(120%) brightness(110%)',
+    padding: '20px', 
+    borderRadius: '16px', 
+    marginBottom: '16px', 
+    border: '1px solid rgba(255, 255, 255, 0.1)',
+    borderTop: '1px solid rgba(255, 255, 255, 0.3)',
+    borderLeft: '1px solid rgba(255, 255, 255, 0.2)',
+    boxShadow: 'inset 0 1px 1px rgba(255, 255, 255, 0.3), 0 8px 32px rgba(0, 0, 0, 0.15)'
+  },
+  cardHeader: { margin: '0 0 16px 0', fontSize: '14px', color: '#38bdf8', fontWeight: '700', letterSpacing: '0.2px' },
+  textBlock: { marginBottom: '16px' },
+  highlightText: { fontSize: '12px', color: '#60a5fa', fontWeight: '700', display: 'block', marginBottom: '6px', letterSpacing: '0.3px', textTransform: 'uppercase' },
+  paragraph: { fontSize: '13px', color: '#cbd5e1', lineHeight: '1.7', margin: 0 },
+  bulletList: { margin: '8px 0 0 0', paddingLeft: '20px', color: '#cbd5e1', fontSize: '13px' },
+  bulletItem: { marginBottom: '8px', lineHeight: '1.6' },
+  primaryLinkBtn: { 
+    background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+    color: '#ffffff', 
+    border: 'none', 
+    padding: '12px', 
+    borderRadius: '10px', 
+    fontSize: '13px', 
+    fontWeight: '700', 
+    cursor: 'pointer', 
+    width: '100%', 
+    marginTop: '12px',
+    transition: 'all 0.3s ease',
+    boxShadow: '0 4px 15px rgba(16, 185, 129, 0.3)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '8px'
+  },
+  secondaryLinkBtn: { 
+    background: 'rgba(255, 255, 255, 0.08)',
+    border: '1px solid rgba(255, 255, 255, 0.1)',
+    color: '#f0f4f8', 
+    padding: '12px', 
+    borderRadius: '10px', 
+    fontSize: '13px', 
+    fontWeight: '600', 
+    cursor: 'pointer', 
+    width: '100%', 
+    marginTop: '12px',
+    transition: 'all 0.3s ease',
+    backdropFilter: 'blur(10px)'
+  },
 
-  modalOverlay: { position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(9,9,11,0.9)', backdropFilter: 'blur(4px)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px', boxSizing: 'border-box' },
-  modalContent: { background: '#18181b', border: '1px solid #27272a', borderRadius: '20px', padding: '30px', width: '100%', maxWidth: '400px', textAlign: 'center', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.5)', boxSizing: 'border-box' },
-  modalTitle: { fontSize: '20px', fontWeight: '700', color: '#ffffff', margin: '0 0 10px 0' },
-  modalText: { fontSize: '14px', color: '#a1a1aa', margin: '0 0 20px 0', lineHeight: '1.5' },
-  modalReportName: { background: '#09090b', padding: '16px', borderRadius: '12px', fontSize: '14px', fontWeight: '600', color: '#10b981', marginBottom: '25px', border: '1px solid #27272a' },
-  loaderLine: { width: '100%', height: '4px', background: '#27272a', borderRadius: '2px', overflow: 'hidden', marginBottom: '15px' },
-  loaderFill: { height: '100%', background: '#10b981' },
-  modalFooterText: { fontSize: '11px', color: '#71717a', textTransform: 'uppercase', letterSpacing: '1px', fontWeight: '600', margin: 0 },
+  modalOverlay: { 
+    position: 'fixed', 
+    top: 0, 
+    left: 0, 
+    width: '100%', 
+    height: '100%', 
+    background: 'rgba(0, 0, 0, 0.6)', 
+    backdropFilter: 'blur(8px)', 
+    zIndex: 1000, 
+    display: 'flex', 
+    alignItems: 'center', 
+    justifyContent: 'center', 
+    padding: '20px', 
+    boxSizing: 'border-box' 
+  },
+  modalContent: { 
+    background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.98) 0%, rgba(30, 27, 60, 0.98) 100%)',
+    border: '1px solid rgba(255, 255, 255, 0.1)',
+    borderRadius: '24px', 
+    padding: '36px 32px', 
+    width: '100%', 
+    maxWidth: '380px', 
+    textAlign: 'center', 
+    boxShadow: 'inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 20px 60px rgba(0, 0, 0, 0.4)',
+    boxSizing: 'border-box',
+    backdropFilter: 'blur(20px)'
+  },
+  modalTitle: { fontSize: '22px', fontWeight: '700', color: '#ffffff', margin: '0 0 12px 0' },
+  modalText: { fontSize: '14px', color: '#cbd5e1', margin: '0 0 24px 0', lineHeight: '1.6' },
+  modalReportName: { 
+    background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(6, 182, 212, 0.1) 100%)',
+    padding: '16px', 
+    borderRadius: '12px', 
+    fontSize: '14px', 
+    fontWeight: '600', 
+    color: '#10b981', 
+    marginBottom: '28px', 
+    border: '1px solid rgba(16, 185, 129, 0.2)',
+    boxShadow: 'inset 0 1px 0 rgba(255, 255, 255, 0.05)'
+  },
+  loaderLine: { width: '100%', height: '3px', background: 'rgba(255, 255, 255, 0.1)', borderRadius: '2px', overflow: 'hidden', marginBottom: '16px' },
+  loaderFill: { height: '100%', background: 'linear-gradient(to right, #10b981, #06b6d4)' },
+  modalFooterText: { fontSize: '11px', color: '#64748b', textTransform: 'uppercase', letterSpacing: '1.2px', fontWeight: '700', margin: 0 },
 
-  // NEW FULL PAGE OVERLAY STYLES
-  fullPageOverlay: { position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(25px)', WebkitBackdropFilter: 'blur(25px)', zIndex: 500, display: 'flex', flexDirection: 'column', boxSizing: 'border-box' },
-  fullPageTitle: { fontSize: '17px', fontWeight: '700', color: '#fff', margin: 0 },
-  fullPageContent: { flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'flex-start', alignItems: 'center', padding: '20px', paddingTop: '10px', overflow: 'hidden', width: '100%', boxSizing: 'border-box' }
+  // FULL PAGE OVERLAY STYLES
+  fullPageOverlay: { 
+    position: 'fixed', 
+    top: 0, 
+    left: 0, 
+    width: '100%', 
+    height: '100%', 
+    background: 'linear-gradient(135deg, #0f172a 0%, #1a1f3a 50%, #0d1628 100%)',
+    backdropFilter: 'blur(40px)', 
+    WebkitBackdropFilter: 'blur(40px)', 
+    zIndex: 500, 
+    display: 'flex', 
+    flexDirection: 'column', 
+    boxSizing: 'border-box' 
+  },
+  fullPageTitle: { fontSize: '18px', fontWeight: '700', color: '#fff', margin: 0 },
+  fullPageContent: { flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'flex-start', alignItems: 'center', padding: '20px', paddingTop: '12px', overflow: 'hidden', width: '100%', boxSizing: 'border-box' }
 };
 
 export default MarketRates;

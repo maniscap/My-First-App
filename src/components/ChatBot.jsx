@@ -206,6 +206,15 @@ function ChatBot() {
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [showScrollBtn, setShowScrollBtn] = useState(false); 
   const [showSidebar, setShowSidebar] = useState(false); 
+  const [isExpanded, setIsExpanded] = useState(true);
+
+  // Auto-collapse the ChatBot floating button after 3.5 seconds
+  useEffect(() => {
+      const timer = setTimeout(() => {
+          setIsExpanded(false);
+      }, 3500);
+      return () => clearTimeout(timer);
+  }, []);
 
   // Session & History Persistence
   const [sessions, setSessions] = useState(() => {
@@ -626,13 +635,13 @@ function ChatBot() {
   // ===============================================================================================
   // SECTION 6: BOUNDARY-PROTECTED DRAGGABLE UI & TERMS LOGIC
   // ===============================================================================================
-  const [position, setPosition] = useState({ x: window.innerWidth - 100, y: window.innerHeight - 100 });
+  const [position, setPosition] = useState({ x: 20, y: window.innerHeight - 100 });
   const [isDragging, setIsDragging] = useState(false);
   const dragOffset = useRef({ x: 0, y: 0 });
 
   const handleMouseDown = (e) => {
     setIsDragging(false);
-    dragOffset.current = { x: e.clientX - position.x, y: e.clientY - position.y };
+    dragOffset.current = { x: (window.innerWidth - e.clientX) - position.x, y: e.clientY - position.y };
     document.addEventListener('mousemove', handleMouseMove);
     document.addEventListener('mouseup', handleMouseUp);
   };
@@ -641,12 +650,12 @@ function ChatBot() {
     setIsDragging(true); 
     e.preventDefault();
     
-    let newX = e.clientX - dragOffset.current.x;
+    let newX = (window.innerWidth - e.clientX) - dragOffset.current.x;
     let newY = e.clientY - dragOffset.current.y;
     
     const screenWidth = window.innerWidth;
     const screenHeight = window.innerHeight;
-    const capsuleWidth = 160; 
+    const capsuleWidth = isExpanded ? 145 : 50; 
     const capsuleHeight = 50;
     const padding = 10;
 
@@ -666,18 +675,18 @@ function ChatBot() {
   const handleTouchStart = (e) => {
     setIsDragging(false);
     const touch = e.touches[0];
-    dragOffset.current = { x: touch.clientX - position.x, y: touch.clientY - position.y };
+    dragOffset.current = { x: (window.innerWidth - touch.clientX) - position.x, y: touch.clientY - position.y };
   };
 
   const handleTouchMove = (e) => {
     setIsDragging(true);
     const touch = e.touches[0];
-    let newX = touch.clientX - dragOffset.current.x;
+    let newX = (window.innerWidth - touch.clientX) - dragOffset.current.x;
     let newY = touch.clientY - dragOffset.current.y;
     
     const screenWidth = window.innerWidth;
     const screenHeight = window.innerHeight;
-    const capsuleWidth = 160;
+    const capsuleWidth = isExpanded ? 145 : 50;
     const capsuleHeight = 50;
     const padding = 10;
 
@@ -1383,10 +1392,12 @@ function ChatBot() {
 
       {/* FLOATING CAPSULE */}
       {!isOpen && (
-        <div onMouseDown={handleMouseDown} onClick={handleClickButton} onTouchStart={handleTouchStart} onTouchMove={handleTouchMove} className="premium-glow-capsule" style={{ ...styles.floatCapsule, left: `${position.x}px`, top: `${position.y}px` }}>
-            <div className="glow-content">
-                <Sparkles size={20} color="#fff" strokeWidth={2} />
-                <span style={{fontWeight:'600', color:'white', fontSize:'15px', letterSpacing:'0.5px'}}>Farm Buddy</span>
+        <div onMouseDown={handleMouseDown} onClick={handleClickButton} onTouchStart={handleTouchStart} onTouchMove={handleTouchMove} className={`gemini-bot-button ${isExpanded ? 'expanded' : 'collapsed'}`} style={{ ...styles.floatCapsule, right: `${position.x}px`, top: `${position.y}px`, width: isExpanded ? '145px' : '50px', height: '50px' }}>
+            <div style={{ ...styles.geminiBotInner, width: isExpanded ? '141px' : '46px', height: '46px', borderRadius: isExpanded ? '23px' : '12px' }}>
+                <Sparkles size={20} color="#fff" style={{ flexShrink: 0 }} />
+                <span style={{ color: '#fff', fontSize: '13px', fontWeight: '500', letterSpacing: '0.2px', whiteSpace: 'nowrap', overflow: 'hidden', opacity: isExpanded ? 1 : 0, width: isExpanded ? '100px' : '0px', marginLeft: isExpanded ? '6px' : '0px', transition: 'all 0.5s cubic-bezier(0.2, 0.8, 0.2, 1)' }}>
+                    Ask Farm Buddy
+                </span>
             </div>
         </div>
       )}
@@ -1402,13 +1413,14 @@ function ChatBot() {
         @keyframes fadeOutUp { to { opacity: 0; transform: translateY(-20px); } } 
         @keyframes pulseGlow { 0% { opacity: 0.3; } 100% { opacity: 0.8; } }
 
-        /* GOOGLE AI STUDIO FULL BORDER GLOW */
-        @keyframes fullBorderGlow { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
-        .premium-glow-capsule { border-radius: 50px; background: #000; box-shadow: 0 10px 30px rgba(0,0,0,0.5); overflow: hidden; transition: transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1); }
-        .premium-glow-capsule::before { content: ''; position: absolute; inset: 0; border-radius: 50px; background: linear-gradient(90deg, rgba(74, 222, 128, 0.3), #4ade80, rgba(96, 165, 250, 0.8), #4ade80, rgba(74, 222, 128, 0.3)); background-size: 200% 100%; animation: fullBorderGlow 3s ease infinite; z-index: 0; }
-        .premium-glow-capsule::before { content: ''; position: absolute; inset: 0; border-radius: 50px; background: linear-gradient(90deg, rgba(74, 222, 128, 0.3), #4ade80, #60a5fa, #d946ef, #4ade80, rgba(74, 222, 128, 0.3)); background-size: 200% 100%; animation: fullBorderGlow 3s ease infinite; z-index: 0; }
-        .premium-glow-capsule::after { content: ''; position: absolute; inset: 2px; background: #141416; border-radius: 50px; z-index: 1; box-shadow: inset 0 1px 2px rgba(255,255,255,0.15); }
-        .glow-content { position: relative; z-index: 2; display: flex; align-items: center; gap: 10px; padding: 12px 24px; pointer-events: auto; }
+        /* THIN ROTATING GLOW BOT BUTTON */
+        @keyframes spinCenter { from { transform: translate(-50%, -50%) rotate(0deg); } to { transform: translate(-50%, -50%) rotate(360deg); } }
+        @keyframes slowPulse { 0%, 100% { box-shadow: 0 0 4px rgba(0, 191, 255, 0.4); opacity: 0.85; } 50% { box-shadow: 0 0 12px rgba(50, 205, 50, 0.7); opacity: 1; } }
+        .gemini-bot-button { transition: all 0.5s cubic-bezier(0.2, 0.8, 0.2, 1); position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center; padding: 1.5px; animation: slowPulse 4s ease-in-out infinite; }
+        .gemini-bot-button::before { content: ''; position: absolute; top: 50%; left: 50%; width: 200px; height: 200px; background: conic-gradient(from 0deg, transparent 40%, #00bfff 50%, #00bfff 60%, #ffffff 70%, #ffffff 80%, #32cd32 90%, #32cd32 100%); transform-origin: 0 0; animation: spinCenter 7s linear infinite; z-index: -1; }
+        .gemini-bot-button:active { transform: scale(0.95); }
+        .gemini-bot-button.expanded { border-radius: 30px; }
+        .gemini-bot-button.collapsed { border-radius: 16px; }
 
         /* AUTO-EXPANDING TEXTAREA PLACEHOLDER */
         .gemini-textarea::placeholder { color: rgba(255,255,255,0.5); transition: color 0.3s ease; }
@@ -1482,6 +1494,7 @@ const styles = {
     },
 
     floatCapsule: { position: 'fixed', zIndex: 10000, touchAction: 'none', pointerEvents: 'auto', userSelect: 'none', cursor: 'move' },
+    geminiBotInner: { position: 'relative', background: '#09090b', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2, transition: 'all 0.5s cubic-bezier(0.2, 0.8, 0.2, 1)', overflow: 'hidden' },
     
     // ✏️ EDIT UI STYLES
     editRow: { display:'flex', gap:'5px', width:'100%' },

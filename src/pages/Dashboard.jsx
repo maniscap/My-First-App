@@ -4,6 +4,8 @@ import axios from 'axios';
 import LocationSheet from '../components/LocationSheet'; 
 import BottomNavigation from '../components/BottomNavigation'; 
 import { ChevronDown, Radio, Map, Briefcase, TrendingUp, Newspaper, BookOpen, Rocket } from 'lucide-react'; 
+import { motion, AnimatePresence } from 'framer-motion';
+import { useSwipeable } from 'react-swipeable';
 
 // --- WEATHER IMAGE ASSETS (URLs) ---
 const weatherImages = {
@@ -47,7 +49,10 @@ function Dashboard() {
   // Weather & UI State
   const [weatherData, setWeatherData] = useState(null);
   const [weatherImage, setWeatherImage] = useState(weatherImages.clearDay); 
-  const [globalSearch, setGlobalSearch] = useState('');
+  const [activeTab, setActiveTab] = useState('AgriInsights');
+  const [direction, setDirection] = useState(1); // 1 for right, -1 for left
+  
+  const TABS = ['AgriInsights', 'Agri commerce', 'tools and utils'];
   
   // Location State
   const [userLocation, setUserLocation] = useState('Select Location'); 
@@ -126,6 +131,26 @@ function Dashboard() {
     return () => window.removeEventListener('storage', loadData);
 
   }, []);
+
+  // --- TAB & SWIPE LOGIC ---
+  const changeTab = (newTab) => {
+    const currentIndex = TABS.indexOf(activeTab);
+    const newIndex = TABS.indexOf(newTab);
+    setDirection(newIndex > currentIndex ? 1 : -1);
+    setActiveTab(newTab);
+  };
+
+  const swipeHandlers = useSwipeable({
+    onSwipedLeft: () => {
+      const idx = TABS.indexOf(activeTab);
+      if (idx < TABS.length - 1) changeTab(TABS[idx + 1]);
+    },
+    onSwipedRight: () => {
+      const idx = TABS.indexOf(activeTab);
+      if (idx > 0) changeTab(TABS[idx - 1]);
+    },
+    trackMouse: true
+  });
 
   const fetchLiveWeather = async (query) => {
       try {
@@ -221,119 +246,149 @@ function Dashboard() {
            </div>
            <Link to="/profile" style={profileCircle}><span style={{fontSize:'24px'}}>🧢</span></Link>
         </div>
-        
-        <div style={searchBar}>
-           <span style={{fontSize:'18px', color:'rgba(255,255,255,0.7)', marginRight:'10px'}}>🔍</span>
-           <input type="text" placeholder="Search 'cotton', 'workers'..." style={searchInput} value={globalSearch} onChange={(e) => setGlobalSearch(e.target.value)} />
-        </div>
       </div>
 
       <div style={heroSection}><h1 style={fadedHeroTitle}>Growing Smarter Together</h1></div>
 
-      {/* 2. BENTO GRID */}
-      <div style={bentoGrid}>
-        
-        <Link to="/market-rates" style={cardLink}>
-           <div className="glass-card" style={{...cardStyle, backgroundImage: "url('https://img.freepik.com/premium-photo/graph-with-green-arrow-pointing-up-top-it_884497-464.jpg')"}}>
-              <div style={cardTopOverlay}>
-                 <div><h3 style={cardTitle}>Market Pulse</h3><p style={cardSubtitle}>Mandi Rates</p></div>
-                 <div style={whiteIconBox}><TrendingUp size={28} color="white"/></div>
-              </div>
-           </div>
-        </Link>
+      {/* 2. SEGMENTED CAPSULE TABS */}
+      <div style={capsuleContainerWrapper}>
+        <div style={capsuleContainer}>
+           <button onClick={() => changeTab('AgriInsights')} style={activeTab === 'AgriInsights' ? activeTabStyle : inactiveTabStyle}>AgriInsights</button>
+           <button onClick={() => changeTab('Agri commerce')} style={activeTab === 'Agri commerce' ? activeTabStyle : inactiveTabStyle}>Agri Commerce</button>
+           <button onClick={() => changeTab('tools and utils')} style={activeTab === 'tools and utils' ? activeTabStyle : inactiveTabStyle}>Tools & Utils</button>
+        </div>
+      </div>
 
-        <Link to="/NewsUpdates" style={cardLink}>
-           <div className="glass-card" style={{...cardStyle, backgroundImage: "url('https://static.vecteezy.com/system/resources/previews/011/643/706/non_2x/business-newspaper-isolated-on-white-background-daily-newspaper-mock-up-concept-photo.jpg')"}}>
-              <div style={cardTopOverlay}>
-                 <div><h3 style={cardTitle}>Agri News</h3><p style={cardSubtitle}>Daily Updates</p></div>
-                 <div style={whiteIconBox}><Newspaper size={28} color="white"/></div>
-              </div>
-           </div>
-        </Link>
+      {/* 3. SWIPEABLE BENTO GRID AREA */}
+      <div {...swipeHandlers} style={{ overflowX: 'hidden', width: '100%', minHeight: '350px' }}>
+        <AnimatePresence mode="wait">
+          <motion.div 
+            key={activeTab}
+            initial={{ opacity: 0, x: direction * 50 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: direction * -50 }}
+            transition={{ duration: 0.25, ease: "easeInOut" }}
+            style={bentoGrid}
+          >
 
-        <Link to="/library" style={cardLink}>
-           <div className="glass-card" style={{...cardStyle, backgroundImage: "url('https://static.vecteezy.com/system/resources/thumbnails/023/256/819/small_2x/happy-farmer-is-standing-in-his-pepper-plantation-photo.jpg')"}}>
-              <div style={cardTopOverlay}>
-                 <div><h3 style={cardTitle}>Library</h3><p style={cardSubtitle}>Expert Guides</p></div>
-                 <div style={whiteIconBox}><BookOpen size={28} color="white"/></div>
-              </div>
-           </div>
-        </Link>
+        {activeTab === 'AgriInsights' && (
+          <>
+            <Link to="/market-rates" style={cardLink}>
+               <div className="glass-card" style={{...cardStyle, backgroundImage: "url('https://img.freepik.com/premium-photo/graph-with-green-arrow-pointing-up-top-it_884497-464.jpg')"}}>
+                  <div style={cardTopOverlay}>
+                     <div><h3 style={cardTitle}>Market Pulse</h3><p style={cardSubtitle}>Mandi Rates</p></div>
+                     <div style={whiteIconBox}><TrendingUp size={28} color="white"/></div>
+                  </div>
+               </div>
+            </Link>
 
-        <Link to="/modern-tech" style={cardLink}>
-           <div className="glass-card" style={{...cardStyle, backgroundImage: "url('https://img.freepik.com/premium-photo/smart-agriculture-specialist-monitoring-drone-data_1280275-166272.jpg')"}}>
-              <div style={cardTopOverlay}>
-                 <div><h3 style={cardTitle}>Modern Tech</h3><p style={cardSubtitle}>Drones & AI</p></div>
-                 <div style={whiteIconBox}><Rocket size={28} color="white"/></div>
-              </div>
-           </div>
-        </Link>
+            <Link to="/NewsUpdates" style={cardLink}>
+               <div className="glass-card" style={{...cardStyle, backgroundImage: "url('https://static.vecteezy.com/system/resources/previews/011/643/706/non_2x/business-newspaper-isolated-on-white-background-daily-newspaper-mock-up-concept-photo.jpg')"}}>
+                  <div style={cardTopOverlay}>
+                     <div><h3 style={cardTitle}>Agri News</h3><p style={cardSubtitle}>Daily Updates</p></div>
+                     <div style={whiteIconBox}><Newspaper size={28} color="white"/></div>
+                  </div>
+               </div>
+            </Link>
 
-        <Link to="/service" style={cardLink}>
-           <div className="glass-card" style={{...cardStyle, backgroundImage: "url('https://th.bing.com/th/id/R.e2c73dbf8a8f512a95ee3a2ec35f5d72?rik=DuUew48QLbwHzw&riu=http%3a%2f%2fvnmanpower.com%2fupload_images%2fimages%2fall%2ffarm-workers-from-vmst.jpg&ehk=s1NXBhEe0wVXkZGBnlrnXcEoGY1R4UtFvQ9kW7HVQ0Y%3d&risl=&pid=ImgRaw&r=0')"}}>
-              <div style={cardTopOverlay}>
-                 <div><h3 style={cardTitle}>Service Hub</h3><p style={cardSubtitle}>Machinery&Workers</p></div>
-                 <div style={whiteIconBox}><svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12h3l1-3h4l1 3h8"/><circle cx="6" cy="17" r="3"/><circle cx="18" cy="17" r="3"/><path d="M15 5h4l2 7h-6z"/></svg></div>
-              </div>
-           </div>
-        </Link>
+            <Link to="/library" style={cardLink}>
+               <div className="glass-card" style={{...cardStyle, backgroundImage: "url('https://static.vecteezy.com/system/resources/thumbnails/023/256/819/small_2x/happy-farmer-is-standing-in-his-pepper-plantation-photo.jpg')"}}>
+                  <div style={cardTopOverlay}>
+                     <div><h3 style={cardTitle}>Library</h3><p style={cardSubtitle}>Expert Guides</p></div>
+                     <div style={whiteIconBox}><BookOpen size={28} color="white"/></div>
+                  </div>
+               </div>
+            </Link>
 
-        <Link to="/business" style={cardLink}>
-           <div className="glass-card" style={{...cardStyle, backgroundImage: "url('https://www.deere.ca/assets/images/region-4/products/harvesting/cornhead-R4A057928_RRD_1-1920x1080.jpg')"}}>
-              <div style={cardTopOverlay}>
-                 <div><h3 style={cardTitle}>Business Zone</h3><p style={cardSubtitle}>Sell Harvest</p></div>
-                 <div style={whiteIconBox}><svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/><path d="M19 5H5"/></svg></div>
-              </div>
-           </div>
-        </Link>
+            <Link to="/modern-tech" style={cardLink}>
+               <div className="glass-card" style={{...cardStyle, backgroundImage: "url('https://img.freepik.com/premium-photo/smart-agriculture-specialist-monitoring-drone-data_1280275-166272.jpg')"}}>
+                  <div style={cardTopOverlay}>
+                     <div><h3 style={cardTitle}>Modern Tech</h3><p style={cardSubtitle}>Drones & AI</p></div>
+                     <div style={whiteIconBox}><Rocket size={28} color="white"/></div>
+                  </div>
+               </div>
+            </Link>
+          </>
+        )}
 
-        <Link to="/farm-fresh" style={cardLink}>
-           <div className="glass-card" style={{...cardStyle, backgroundImage: "url('https://images.unsplash.com/photo-1542838132-92c53300491e?q=80&w=500')"}}>
-              <div style={cardTopOverlay}>
-                 <div><h3 style={cardTitle}>Farm Fresh</h3><p style={cardSubtitle}>Daily Essentials</p></div>
-                 <div style={whiteIconBox}><svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 11-1 9"/><path d="m19 11-4-7"/><path d="M2 11h20"/><path d="m3.5 11 1.6 7.4a2 2 0 0 0 2 1.6h9.8a2 2 0 0 0 2-1.6l1.7-7.4"/><path d="M4.5 15.5h15"/><path d="m5 11 4-7"/><path d="m9 11 1 9"/></svg></div>
-              </div>
-           </div>
-        </Link>
+        {activeTab === 'Agri commerce' && (
+          <>
+            <Link to="/service" style={cardLink}>
+               <div className="glass-card" style={{...cardStyle, backgroundImage: "url('https://th.bing.com/th/id/R.e2c73dbf8a8f512a95ee3a2ec35f5d72?rik=DuUew48QLbwHzw&riu=http%3a%2f%2fvnmanpower.com%2fupload_images%2fimages%2fall%2ffarm-workers-from-vmst.jpg&ehk=s1NXBhEe0wVXkZGBnlrnXcEoGY1R4UtFvQ9kW7HVQ0Y%3d&risl=&pid=ImgRaw&r=0')"}}>
+                  <div style={cardTopOverlay}>
+                     <div><h3 style={cardTitle}>Service Hub</h3><p style={cardSubtitle}>Machinery&Workers</p></div>
+                     <div style={whiteIconBox}><svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12h3l1-3h4l1 3h8"/><circle cx="6" cy="17" r="3"/><circle cx="18" cy="17" r="3"/><path d="M15 5h4l2 7h-6z"/></svg></div>
+                  </div>
+               </div>
+            </Link>
 
-        <Link to="/expenditure" style={cardLink}>
-           <div className="glass-card" style={{...cardStyle, backgroundImage: "url('https://img.freepik.com/premium-photo/agronomist-with-tablet-taking-sample-his-crops-ar-23-v-61-job-id-619beb4c01e54b488b59fcdc87c74efc_1204450-66335.jpg')"}}>
-              <div style={cardTopOverlay}>
-                 <div><h3 style={{...cardTitle}}>Crop Exp.</h3><p style={cardSubtitle}>Track Expenses</p></div>
-                 <div style={whiteIconBox}><svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line></svg></div>
-              </div>
-           </div>
-        </Link>
+            <Link to="/business" style={cardLink}>
+               <div className="glass-card" style={{...cardStyle, backgroundImage: "url('https://www.deere.ca/assets/images/region-4/products/harvesting/cornhead-R4A057928_RRD_1-1920x1080.jpg')"}}>
+                  <div style={cardTopOverlay}>
+                     <div><h3 style={cardTitle}>Business Zone</h3><p style={cardSubtitle}>Sell Harvest</p></div>
+                     <div style={whiteIconBox}><svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/><path d="M19 5H5"/></svg></div>
+                  </div>
+               </div>
+            </Link>
 
-        <Link to="/radio" style={cardLink}>
-           <div className="glass-card" style={{...cardStyle, backgroundImage: "url('https://images.unsplash.com/photo-1478737270239-2f02b77fc618?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D ')"}}>
-              <div style={cardTopOverlay}>
-                 <div><h3 style={cardTitle}>Farm Radio</h3><p style={cardSubtitle}>News & Songs</p></div>
-                 <div style={whiteIconBox}><Radio size={28} color="white"/></div>
-              </div>
-           </div>
-        </Link>
+            <Link to="/farm-fresh" style={cardLink}>
+               <div className="glass-card" style={{...cardStyle, backgroundImage: "url('https://images.unsplash.com/photo-1542838132-92c53300491e?q=80&w=500')"}}>
+                  <div style={cardTopOverlay}>
+                     <div><h3 style={cardTitle}>Farm Fresh</h3><p style={cardSubtitle}>Daily Essentials</p></div>
+                     <div style={whiteIconBox}><svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 11-1 9"/><path d="m19 11-4-7"/><path d="M2 11h20"/><path d="m3.5 11 1.6 7.4a2 2 0 0 0 2 1.6h9.8a2 2 0 0 0 2-1.6l1.7-7.4"/><path d="M4.5 15.5h15"/><path d="m5 11 4-7"/><path d="m9 11 1 9"/></svg></div>
+                  </div>
+               </div>
+            </Link>
 
-        <Link to="/freelancing" style={cardLink}>
-           <div className="glass-card" style={{...cardStyle, backgroundImage: "url('https://img.freepik.com/premium-photo/farmers-shake-hands-cornfield-partnership-agreement_875825-141614.jpg')"}}>
-              <div style={cardTopOverlay}>
-                 <div><h3 style={cardTitle}>Freelancing</h3><p style={cardSubtitle}>Hire & Work</p></div>
-                 <div style={whiteIconBox}><Briefcase size={28} color="white"/></div>
-              </div>
-           </div>
-        </Link>
+            <Link to="/freelancing" style={cardLink}>
+               <div className="glass-card" style={{...cardStyle, backgroundImage: "url('https://img.freepik.com/premium-photo/farmers-shake-hands-cornfield-partnership-agreement_875825-141614.jpg')"}}>
+                  <div style={cardTopOverlay}>
+                     <div><h3 style={cardTitle}>Freelancing</h3><p style={cardSubtitle}>Hire & Work</p></div>
+                     <div style={whiteIconBox}><Briefcase size={28} color="white"/></div>
+                  </div>
+               </div>
+            </Link>
+          </>
+        )}
 
-        <Link to="/gps-measurement" style={cardLink}>
-           <div className="glass-card" style={{...cardStyle, backgroundImage: "url('https://static.eos.com/wp-content/uploads/2021/06/interface-tablet.jpg')"}}>
-              <div style={cardTopOverlay}>
-                 <div><h3 style={cardTitle}>GPS Area</h3><p style={cardSubtitle}>Measure Land</p></div>
-                 <div style={whiteIconBox}><Map size={28} color="white"/></div>
-              </div>
-           </div>
-        </Link>
+        {activeTab === 'tools and utils' && (
+          <>
+            <Link to="/expenditure" style={cardLink}>
+               <div className="glass-card" style={{...cardStyle, backgroundImage: "url('https://img.freepik.com/premium-photo/agronomist-with-tablet-taking-sample-his-crops-ar-23-v-61-job-id-619beb4c01e54b488b59fcdc87c74efc_1204450-66335.jpg')"}}>
+                  <div style={cardTopOverlay}>
+                     <div><h3 style={{...cardTitle}}>Crop Exp.</h3><p style={cardSubtitle}>Track Expenses</p></div>
+                     <div style={whiteIconBox}><svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line></svg></div>
+                  </div>
+               </div>
+            </Link>
 
-        {/* --- ROW 5: Weather (Wide) --- */}
-        <Link to="/weather" style={{...cardLink, gridColumn: 'span 2'}}>
+            <Link to="/gps-measurement" style={cardLink}>
+               <div className="glass-card" style={{...cardStyle, backgroundImage: "url('https://static.eos.com/wp-content/uploads/2021/06/interface-tablet.jpg')"}}>
+                  <div style={cardTopOverlay}>
+                     <div><h3 style={cardTitle}>GPS Area</h3><p style={cardSubtitle}>Measure Land</p></div>
+                     <div style={whiteIconBox}><Map size={28} color="white"/></div>
+                  </div>
+               </div>
+            </Link>
+
+            <Link to="/radio" style={cardLink}>
+               <div className="glass-card" style={{...cardStyle, backgroundImage: "url('https://images.unsplash.com/photo-1478737270239-2f02b77fc618?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D ')"}}>
+                  <div style={cardTopOverlay}>
+                     <div><h3 style={cardTitle}>Farm Radio</h3><p style={cardSubtitle}>News & Songs</p></div>
+                     <div style={whiteIconBox}><Radio size={28} color="white"/></div>
+                  </div>
+               </div>
+            </Link>
+          </>
+        )}
+
+          </motion.div>
+        </AnimatePresence>
+      </div>
+
+      {/* 4. WEATHER BANNER (Always Visible) */}
+      <div style={weatherContainer}>
+        <Link to="/weather" style={{...cardLink, display: 'block'}}>
            <div className="glass-card" style={{...wideCardStyle, position: 'relative', overflow: 'hidden'}}>
               
               <img 
@@ -376,7 +431,6 @@ function Dashboard() {
               </div>
            </div>
         </Link>
-
       </div>
 
       <BottomNavigation />
@@ -393,16 +447,14 @@ function Dashboard() {
 }
 
 // --- STYLES ---
-const pageStyle = { position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', backgroundSize: 'cover', backgroundPosition: 'center', backgroundColor: 'black', overflowY: 'auto' };
+const pageStyle = { position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', backgroundSize: 'cover', backgroundPosition: 'center', backgroundColor: 'black', overflowY: 'auto', touchAction: 'pan-y', overscrollBehavior: 'none' };
 const headerWrapper = { padding: '25px 20px 0 20px' };
 const topRow = { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px' };
 const locationClickableArea = { display:'flex', flexDirection:'column', justifyContent:'center', cursor: 'pointer' };
 const profileCircle = { width: '48px', height: '48px', borderRadius: '50%', background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(10px)', display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none', border: '1px solid rgba(255,255,255,0.25)' };
-const searchBar = { background: 'rgba(0, 0, 0, 0.2)', backdropFilter: 'blur(10px)', borderRadius: '12px', padding: '12px 15px', display: 'flex', alignItems: 'center', border: '1px solid rgba(255,255,255,0.1)' };
-const searchInput = { border: 'none', outline: 'none', background: 'transparent', fontSize: '16px', width: '100%', color: 'white', '::placeholder': { color: 'rgba(255,255,255,0.5)' } };
 const heroSection = { padding: '0 20px', marginTop: '25px', marginBottom: '20px' };
 const fadedHeroTitle = { fontSize: '1.4rem', margin: 0, fontWeight: '800', letterSpacing: '1px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', background: 'linear-gradient(to right, #ffffff 0%, #e0e0e0 50%, rgba(255,255,255,0.2) 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', display: 'inline-block', textTransform: 'uppercase' };
-const bentoGrid = { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', padding: '0 20px 100px 20px', maxWidth: '1000px', margin: '0 auto' };
+const bentoGrid = { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', padding: '0 20px 10px 20px', maxWidth: '1000px', margin: '0 auto' };
 const cardLink = { textDecoration: 'none', color: 'white', display: 'block', width: '100%', height: '100%' };
 const cardStyle = { borderRadius: '18px', height: '185px', position: 'relative', overflow: 'hidden', backgroundSize: 'cover', backgroundPosition: 'center', border: '1px solid rgba(255,255,255,0.15)' };
 const wideCardStyle = { gridColumn: 'span 2', height: '180px', borderRadius: '18px', position: 'relative', overflow: 'hidden', backgroundSize: 'cover', backgroundPosition: 'center', border: '1px solid rgba(255,255,255,0.15)' };
@@ -411,5 +463,10 @@ const whiteIconBox = { filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))' };
 const cardTitle = { margin: '0 0 4px 0', fontSize: '17px', fontWeight: '700', textShadow: '0 2px 6px rgba(0,0,0,0.8)' };
 const cardSubtitle = { margin: 0, fontSize: '13px', opacity: 0.9, fontWeight: '500', textShadow: '0 1px 4px rgba(0,0,0,0.8)' };
 const darkOverlay = { position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.15)', zIndex: 1 }; 
+const weatherContainer = { padding: '0 20px 100px 20px', maxWidth: '1000px', margin: '0 auto' };
+const capsuleContainerWrapper = { padding: '0 20px', maxWidth: '1000px', margin: '0 auto 20px auto' };
+const capsuleContainer = { display: 'flex', background: 'rgba(0, 0, 0, 0.3)', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)', borderRadius: '30px', padding: '5px', border: '1px solid rgba(255,255,255,0.1)' };
+const activeTabStyle = { flex: 1, background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', color: 'white', border: 'none', padding: '12px 5px', borderRadius: '25px', fontSize: '14px', fontWeight: '700', cursor: 'pointer', textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', boxShadow: '0 4px 10px rgba(16, 185, 129, 0.3)', transition: 'all 0.3s ease' };
+const inactiveTabStyle = { flex: 1, background: 'transparent', color: '#f8fafc', border: 'none', padding: '12px 5px', borderRadius: '25px', fontSize: '14px', fontWeight: '600', cursor: 'pointer', textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', transition: 'all 0.3s ease' };
 
 export default Dashboard;
