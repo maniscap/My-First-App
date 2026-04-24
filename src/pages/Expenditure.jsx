@@ -170,15 +170,34 @@ function Expenditure() {
 
   return (
     <div style={styles.page}>
+      <style>{`
+        @keyframes pulseGlow {
+          0% { box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.7); transform: scale(1); }
+          50% { box-shadow: 0 0 0 15px rgba(76, 175, 80, 0); transform: scale(1.05); }
+          100% { box-shadow: 0 0 0 0 rgba(76, 175, 80, 0); transform: scale(1); }
+        }
+        .fab-glow {
+          animation: pulseGlow 2s infinite;
+        }
+      `}</style>
       {/* Header */}
-      <div style={styles.header}>
-        <button onClick={() => navigate('/dashboard')} style={styles.backBtn}><IoMdArrowBack size={24} /></button>
-        <h2 style={styles.title}>Crop Expenditure</h2>
+      <div style={styles.headerContainer}>
+        <div style={styles.glassCapsuleHeader}>
+          <button onClick={() => navigate('/dashboard')} style={styles.backBtn}><IoMdArrowBack size={24} /></button>
+          <h2 style={styles.title}>Crop Expenditure</h2>
+          <div style={{width: '24px'}}></div>
+        </div>
       </div>
 
       {/* List Container */}
       <div style={styles.listContainer}>
-        {folders.length === 0 ? <p style={{textAlign:'center', color:'#666', marginTop:'50px'}}>No crops added yet.</p> : folders.map(f => {
+        {folders.length === 0 ? (
+            <div style={styles.emptyState}>
+                <div style={styles.emptyIcon}>🌾</div>
+                <div style={styles.emptyTitle}>No Crops Added</div>
+                <div style={styles.emptyText}>Click the glowing <strong>+</strong> button below to create your first crop expenditure file.</div>
+            </div>
+        ) : folders.map(f => {
             const rev = f.harvestDetails?.totalRevenue || 0;
             const exp = (f.totalAmount || 0) + (f.leaseCostTotal || 0); // Include Lease in expense view
             const net = rev - exp;
@@ -242,7 +261,7 @@ function Expenditure() {
         })}
       </div>
 
-      <button onClick={() => setShowModal(true)} style={styles.fab}><IoMdAdd size={28} /></button>
+      <button onClick={() => setShowModal(true)} style={styles.fab} className="fab-glow"><IoMdAdd size={28} /></button>
 
       {/* CREATE / EDIT MODAL */}
       {showModal && (
@@ -319,10 +338,15 @@ function Expenditure() {
 
 const styles = {
   page: { minHeight: '100vh', background: '#0f1215', color: 'white', fontFamily: 'sans-serif', padding: '20px', paddingBottom:'80px' },
-  header: { display: 'flex', alignItems: 'center', marginBottom: '20px' },
-  backBtn: { background: 'none', border: 'none', color: 'white', cursor: 'pointer', marginRight: '15px' },
-  title: { margin: 0, fontSize: '22px' },
+  headerContainer: { marginBottom: '25px' },
+  glassCapsuleHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255, 255, 255, 0.05)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '30px', padding: '12px 20px', boxShadow: '0 4px 15px rgba(0, 0, 0, 0.2)', width: '100%', boxSizing: 'border-box' },
+  backBtn: { background: 'none', border: 'none', color: 'white', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center' },
+  title: { margin: 0, fontSize: '18px', fontWeight: 'bold' },
   listContainer: { display: 'flex', flexDirection: 'column', gap: '15px' },
+  emptyState: { display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', marginTop:'80px', color:'rgba(255,255,255,0.5)', textAlign:'center', padding: '0 20px' },
+  emptyIcon: { fontSize:'60px', marginBottom:'15px', opacity:0.8 },
+  emptyTitle: { fontSize:'20px', fontWeight:'bold', color:'white', marginBottom:'10px' },
+  emptyText: { fontSize:'14px', lineHeight:'1.5', maxWidth:'280px' },
   card: { background: '#1A1A1C', borderRadius: '16px', padding: '20px', position: 'relative', border: '1px solid #333', cursor:'pointer' },
   cardProfit: { background: 'linear-gradient(135deg, #052e16 0%, #1A1A1C 100%)', borderRadius: '16px', padding: '20px', position: 'relative', border: '1px solid #14532d', cursor:'pointer' },
   cardLoss: { background: 'linear-gradient(135deg, #450a0a 0%, #1A1A1C 100%)', borderRadius: '16px', padding: '20px', position: 'relative', border: '1px solid #7f1d1d', cursor:'pointer' },

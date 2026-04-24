@@ -17,11 +17,12 @@ const FloatingCalculator = () => {
   // Start fully visible on screen
   const [position, setPosition] = useState({ x: window.innerWidth - 100, y: window.innerHeight - 200 });
   const [isOpen, setIsOpen] = useState(false);
+  const [closedPosition, setClosedPosition] = useState(null);
   const [mode, setMode] = useState('calc'); 
   
   // --- SIZING STATE ---
-  const [presetIndex, setPresetIndex] = useState(1); 
-  const presets = [0.85, 1];
+  const [presetIndex, setPresetIndex] = useState(0); 
+  const presets = [0.8, 1];
   const [customScale, setCustomScale] = useState(null); 
   const scale = customScale || presets[presetIndex];
 
@@ -148,7 +149,7 @@ const FloatingCalculator = () => {
           position: 'fixed', left: position.x, top: position.y, zIndex: 9999,
           touchAction: 'none', 
           transform: `scale(${isOpen ? scale : 1})`,
-          transformOrigin: 'top right', 
+          transformOrigin: 'top left', 
           transition: (isDragging.current || isResizing.current) ? 'none' : 'transform 0.2s cubic-bezier(0.19, 1, 0.22, 1)',
       }}
       onPointerDown={handleDragStart}
@@ -158,7 +159,17 @@ const FloatingCalculator = () => {
       {/* 🟠 1. CLOSED ICON (RESTORED OLD DOT GRID LOGO) */}
       {!isOpen && (
           <div 
-              onClick={() => !isDragging.current && setIsOpen(true)}
+              onClick={() => {
+                  if (!isDragging.current) {
+                      setClosedPosition(position); // Save the resting spot
+                      const currentScale = customScale || presets[presetIndex];
+                      setPosition({
+                          x: Math.max(10, (window.innerWidth - 320 * currentScale) / 2),
+                          y: Math.max(10, (window.innerHeight - 500 * currentScale) / 2)
+                      });
+                      setIsOpen(true);
+                  }
+              }}
               style={{
                   width: '60px', height: '60px', borderRadius: '14px',
                   background: '#000', boxShadow: '0 8px 20px rgba(0,0,0,0.4)',
@@ -208,7 +219,11 @@ const FloatingCalculator = () => {
                        }}>
                            {presetIndex === 0 ? <FaCompressAlt size={12}/> : <FaExpandAlt size={12}/>}
                        </div>
-                       <div onClick={(e) => {e.stopPropagation(); setIsOpen(false)}} style={{
+                       <div onClick={(e) => {
+                           e.stopPropagation(); 
+                           if (closedPosition) setPosition(closedPosition); // Snap back to edge
+                           setIsOpen(false);
+                       }} style={{
                            cursor:'pointer', background:'#333', borderRadius:'50%', width:'30px', height:'30px',
                            display:'flex', alignItems:'center', justifyContent:'center', color:'#fff'
                        }}><IoMdClose size={20}/></div>
@@ -250,9 +265,15 @@ const Dot = ({ color }) => (
 // 🧮 CALCULATOR VIEW (SUPER POWERED)
 // ==========================================
 const CalculatorView = () => {
-    const [input, setInput] = useState('0');
-    const [history, setHistory] = useState('');
-    const [isResult, setIsResult] = useState(false);
+    const [input, setInput] = useState(() => localStorage.getItem('farmBuddy_calcInput') || '0');
+    const [history, setHistory] = useState(() => localStorage.getItem('farmBuddy_calcHistory') || '');
+    const [isResult, setIsResult] = useState(() => localStorage.getItem('farmBuddy_calcIsResult') === 'true');
+
+    useEffect(() => {
+        localStorage.setItem('farmBuddy_calcInput', input);
+        localStorage.setItem('farmBuddy_calcHistory', history);
+        localStorage.setItem('farmBuddy_calcIsResult', isResult);
+    }, [input, history, isResult]);
 
     // Dynamic Font Scaling
     const getFontSize = (text) => {

@@ -4,7 +4,7 @@ import { getAuth, onAuthStateChanged } from 'firebase/auth';
 
 // --- IMPORT PAGES ---
 import Dashboard from './pages/Dashboard';
-import HireMachinery from './pages/HireMachinery';
+import RentMachinery from './pages/RentMachinery';
 import HireWorkers from './pages/HireWorkers';
 import MarketRates from './pages/MarketRates'; 
 import NewsUpdates from './pages/NewsUpdates';       
@@ -113,7 +113,7 @@ function App() {
             <Route path="/library" element={<DigitalLibrary />} />   
             <Route path="/modern-tech" element={<ModernTech />} />
             
-            <Route path="/service" element={<HireMachinery />} />
+            <Route path="/rent-machinery" element={<RentMachinery />} />
             <Route path="/hire-workers" element={<HireWorkers />} />
             <Route path="/business" element={<Business />} />
             <Route path="/farm-fresh" element={<FarmFresh />} />

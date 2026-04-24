@@ -155,7 +155,7 @@ const ModernTech = () => {
                      {activeTech.benefits}
                   </div>
 
-                <button onClick={() => navigate('/service')} style={styles.actionBtn}>
+                <button onClick={() => navigate('/rent-machinery')} style={styles.actionBtn}>
                       {activeTech.actionText}
                 </button>
             </div>

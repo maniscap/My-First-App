@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { db } from '../firebase';
 import { collection, getDocs } from 'firebase/firestore';
 
-function Service() {
+function RentMachinery() {
   const [bgImage, setBgImage] = useState('');
   const dayBg = 'https://images.unsplash.com/photo-1625246333195-78d9c38ad449?q=80&w=2940&auto=format&fit=crop';
   const nightBg = 'https://images.unsplash.com/photo-1504333638930-c8787321eee0?q=80&w=2070&auto=format&fit=crop';
@@ -174,4 +174,4 @@ const resetBtn = { padding:'8px 15px', marginTop:'10px', borderRadius:'20px', bo
 const sellerBanner = { background: 'rgba(230, 81, 0, 0.15)', border: '1px solid rgba(230, 81, 0, 0.4)', borderRadius: '16px', padding: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', color: 'white', backdropFilter: 'blur(5px)' };
 const sellerBtn = { background: '#E65100', color: '#fff', padding: '10px 16px', borderRadius: '12px', textDecoration: 'none', fontWeight: 'bold', fontSize: '13px', boxShadow: '0 4px 10px rgba(230, 81, 0, 0.3)', flexShrink: 0, marginLeft: '10px' };
 
-export default Service;
+export default RentMachinery;
