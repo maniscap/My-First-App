@@ -314,9 +314,9 @@ function Dashboard() {
         {activeTab === 'Agri commerce' && (
           <>
             <Link to="/service" style={cardLink}>
-               <div className="glass-card" style={{...cardStyle, backgroundImage: "url('https://th.bing.com/th/id/R.e2c73dbf8a8f512a95ee3a2ec35f5d72?rik=DuUew48QLbwHzw&riu=http%3a%2f%2fvnmanpower.com%2fupload_images%2fimages%2fall%2ffarm-workers-from-vmst.jpg&ehk=s1NXBhEe0wVXkZGBnlrnXcEoGY1R4UtFvQ9kW7HVQ0Y%3d&risl=&pid=ImgRaw&r=0')"}}>
+               <div className="glass-card" style={{...cardStyle, backgroundImage: "url('https://images.unsplash.com/photo-1589923188900-85dae523342b?q=80&w=500')"}}>
                   <div style={cardTopOverlay}>
-                     <div><h3 style={cardTitle}>Service Hub</h3><p style={cardSubtitle}>Machinery&Workers</p></div>
+                     <div><h3 style={cardTitle}>Rent Machinery</h3><p style={cardSubtitle}>Tractors & Tools</p></div>
                      <div style={whiteIconBox}><svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12h3l1-3h4l1 3h8"/><circle cx="6" cy="17" r="3"/><circle cx="18" cy="17" r="3"/><path d="M15 5h4l2 7h-6z"/></svg></div>
                   </div>
                </div>
@@ -340,10 +340,19 @@ function Dashboard() {
                </div>
             </Link>
 
+            <Link to="/hire-workers" style={cardLink}>
+               <div className="glass-card" style={{...cardStyle, backgroundImage: "url('https://th.bing.com/th/id/R.e2c73dbf8a8f512a95ee3a2ec35f5d72?rik=DuUew48QLbwHzw&riu=http%3a%2f%2fvnmanpower.com%2fupload_images%2fimages%2fall%2ffarm-workers-from-vmst.jpg&ehk=s1NXBhEe0wVXkZGBnlrnXcEoGY1R4UtFvQ9kW7HVQ0Y%3d&risl=&pid=ImgRaw&r=0')"}}>
+                  <div style={cardTopOverlay}>
+                     <div><h3 style={cardTitle}>Hire Workers</h3><p style={cardSubtitle}>Farm Labor</p></div>
+                     <div style={whiteIconBox}><Briefcase size={28} color="white"/></div>
+                  </div>
+               </div>
+            </Link>
+
             <Link to="/freelancing" style={cardLink}>
                <div className="glass-card" style={{...cardStyle, backgroundImage: "url('https://img.freepik.com/premium-photo/farmers-shake-hands-cornfield-partnership-agreement_875825-141614.jpg')"}}>
                   <div style={cardTopOverlay}>
-                     <div><h3 style={cardTitle}>Freelancing</h3><p style={cardSubtitle}>Hire & Work</p></div>
+                     <div><h3 style={cardTitle}>Freelancing</h3><p style={cardSubtitle}>Agri Experts</p></div>
                      <div style={whiteIconBox}><Briefcase size={28} color="white"/></div>
                   </div>
                </div>

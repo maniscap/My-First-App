@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { db } from '../firebase';
-import { collection, addDoc, getDocs } from 'firebase/firestore';
+import { collection, getDocs } from 'firebase/firestore';
 
 function Business() {
   const [bgImage, setBgImage] = useState('');
@@ -14,20 +14,13 @@ function Business() {
     else setBgImage(dayBg);
   }, []);
 
-  const [activeTab, setActiveTab] = useState('sell');
-  const [showForm, setShowForm] = useState(false);
   const [crops, setCrops] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [isLoadingLoc, setIsLoadingLoc] = useState(false);
   
   // User Location State
   const [userLat, setUserLat] = useState(null);
   const [userLng, setUserLng] = useState(null);
   const [userLocName, setUserLocName] = useState('');
-
-  const [newPost, setNewPost] = useState({ 
-    crop: '', qty: '', price: '', seller: '', phone: '', location: '', lat: null, lng: null, image: '' 
-  });
 
   // 1. Get User Location (From Dashboard Memory)
   useEffect(() => {
@@ -61,6 +54,8 @@ function Business() {
     // If no user location set, show everything
     if (!userLocName && !userLat) return true;
 
+    const itemLocString = typeof item.location === 'object' ? `${item.location.locality || ''}, ${item.location.city || ''}` : item.location || '';
+
     // CHECK 1: Distance (Priority)
     if (userLat && userLng && item.lat && item.lng) {
       const R = 6371; // Earth radius km
@@ -75,10 +70,9 @@ function Business() {
     }
 
     // CHECK 2: Name Match (Fallback)
-    // "Nandikotkur" should match "Nandikotkur, AP"
-    if (userLocName && item.location) {
+    if (userLocName && itemLocString) {
       const u = userLocName.toLowerCase();
-      const i = item.location.toLowerCase();
+      const i = itemLocString.toLowerCase();
       if (i.includes(u) || u.includes(i)) return true;
     }
 
@@ -95,41 +89,19 @@ function Business() {
   };
 
   const openWhatsApp = (item) => {
-    const msg = `Hi ${item.seller}, I am interested in buying *${item.qty} of ${item.crop}* (₹${item.price}). My location is *${userLocName || "nearby"}*. Can we discuss delivery?`;
-    window.open(`https://wa.me/91${item.phone}?text=${encodeURIComponent(msg)}`, '_blank');
-  };
-
-  const getLocation = () => {
-    if (!navigator.geolocation) { alert("GPS not supported"); return; }
-    setIsLoadingLoc(true);
-    navigator.geolocation.getCurrentPosition(async (position) => {
-      const lat = position.coords.latitude;
-      const lon = position.coords.longitude;
-      try {
-        const response = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=en`);
-        const data = await response.json();
-        setNewPost(prev => ({ ...prev, location: `${data.locality || data.city}, ${data.principalSubdivision}`, lat: lat, lng: lon }));
-      } catch (error) { alert("Address lookup failed."); setNewPost(prev => ({ ...prev, lat: lat, lng: lon })); }
-      setIsLoadingLoc(false);
-    }, () => { alert("Check GPS settings."); setIsLoadingLoc(false); }, {enableHighAccuracy:true});
-  };
-
-  const handleImageUpload = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      if (file.size > 1024 * 1024) { alert("Image too large! Max 1MB."); return; }
-      const reader = new FileReader();
-      reader.onloadend = () => setNewPost({ ...newPost, image: reader.result });
-      reader.readAsDataURL(file);
+    const phone = item.sellerContact || item.phone;
+    const seller = item.sellerName || item.seller || 'Seller';
+    const title = item.title || item.crop || 'crop';
+    const qty = item.quantity || item.qty || '';
+    const price = item.price || item.rate || 'negotiable';
+    const qtyText = qty ? `*${qty} of ${title}*` : `*${title}*`;
+    const msg = `Hi ${seller}, I am interested in buying ${qtyText} (₹${price}). My location is *${userLocName || "nearby"}*. Can we discuss delivery?`;
+    
+    if (!phone) {
+       alert("Seller contact number not provided.");
+       return;
     }
-  };
-
-  const handlePost = async (e) => {
-    e.preventDefault();
-    try {
-      await addDoc(collection(db, "crops"), { ...newPost, createdAt: new Date() });
-      window.location.reload(); // Refresh to see new item
-    } catch (error) { alert("Error saving."); }
+    window.open(`https://wa.me/91${phone}?text=${encodeURIComponent(msg)}`, '_blank');
   };
 
   return (
@@ -144,61 +116,37 @@ function Business() {
           </div>
         )}
 
-        <div style={{ display: 'flex', justifyContent: 'center', gap: '15px', marginBottom: '20px' }}>
-          <button onClick={() => setActiveTab('sell')} style={activeTab === 'sell' ? activeBtn : inactiveBtn}>🌾 Sell Crop</button>
-          <button onClick={() => setActiveTab('buy')} style={activeTab === 'buy' ? activeBtn : inactiveBtn}>🛒 Buy</button>
+        {/* SELLER REDIRECT BANNER */}
+        <div style={sellerBanner}>
+            <div>
+                <div style={{fontWeight: 'bold', fontSize: '14px', marginBottom: '4px'}}>Want to sell your harvest?</div>
+                <div style={{fontSize: '12px', opacity: 0.9}}>List your bulk crops in the Seller Profile.</div>
+            </div>
+            <Link to="/profile" style={sellerBtn}>Go to Profile ➔</Link>
         </div>
-
-        {activeTab === 'sell' && (
-          <>
-            {!showForm && <button onClick={() => setShowForm(true)} style={postBtn}>➕ Sell Your Crop</button>}
-            
-            {showForm && (
-              <div style={glassCard}>
-                <h3 style={{marginTop:0, color:'#FBC02D'}}>List Bulk Crop</h3>
-                <form onSubmit={handlePost} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                  <div style={uploadBox}>
-                    <label style={{cursor:'pointer', fontSize:'14px', color:'#FBC02D', fontWeight:'bold'}}>
-                      📷 Upload Crop Photo
-                      <input type="file" accept="image/*" onChange={handleImageUpload} style={{display:'none'}} />
-                    </label>
-                    {newPost.image && <img src={newPost.image} alt="Preview" style={previewImg} />}
-                  </div>
-                  <input type="text" placeholder="Crop Name (e.g. Cotton)" required style={inputStyle} value={newPost.crop} onChange={(e) => setNewPost({...newPost, crop: e.target.value})} />
-                  <div style={{display:'flex', gap:'10px'}}>
-                    <input type="text" placeholder="Qty" required style={inputStyle} value={newPost.qty} onChange={(e) => setNewPost({...newPost, qty: e.target.value})} />
-                    <input type="text" placeholder="Price (₹)" required style={inputStyle} value={newPost.price} onChange={(e) => setNewPost({...newPost, price: e.target.value})} />
-                  </div>
-                  <input type="text" placeholder="Seller Name" required style={inputStyle} value={newPost.seller} onChange={(e) => setNewPost({...newPost, seller: e.target.value})} />
-                  <input type="tel" placeholder="Phone Number" required style={inputStyle} value={newPost.phone} onChange={(e) => setNewPost({...newPost, phone: e.target.value})} />
-                  <div style={{ display: 'flex', gap: '10px' }}>
-                    <input type="text" placeholder="Location" required style={{...inputStyle, flex: 1}} value={newPost.location} onChange={(e) => setNewPost({...newPost, location: e.target.value})} />
-                    <button type="button" onClick={getLocation} style={locBtn}>{isLoadingLoc ? "⏳" : "📍 GPS"}</button>
-                  </div>
-                  <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
-                    <button type="submit" style={submitBtn}>✅ Post</button>
-                    <button type="button" onClick={() => setShowForm(false)} style={cancelBtn}>❌ Cancel</button>
-                  </div>
-                </form>
-              </div>
-            )}
 
             <div style={{ display: 'grid', gap: '15px' }}>
               {loading ? <p style={{textAlign:'center', color:'white'}}>⏳ Loading Market...</p> : 
                 filteredCrops.length > 0 ? (
                   filteredCrops.map((item) => (
                     <div key={item.id} style={glassItem}>
-                      {item.image ? (<img src={item.image} alt="Crop" style={itemImg} />) : (<div style={placeholderImg}>🌾</div>)}
+                  {item.image || item.photo ? (<img src={item.image || item.photo} alt="Crop" style={itemImg} />) : (<div style={placeholderImg}>🌾</div>)}
                       <div style={{flex: 1}}>
-                        <h3 style={{ margin: '0 0 5px 0', color: '#FBC02D' }}>{item.crop}</h3>
-                        <p style={{fontSize: '13px', margin:'2px 0'}}>Qty: <strong>{item.qty}</strong> • <span style={{color:'lightgreen'}}>₹{item.price}</span></p>
-                        <p style={{ fontSize: '11px', color: '#ddd' }}>📍 {item.location}</p>
+                    <h3 style={{ margin: '0 0 5px 0', color: '#FBC02D' }}>{item.title || item.crop}</h3>
+                    <p style={{fontSize: '13px', margin:'2px 0'}}>
+                        {(item.quantity || item.qty) ? `Qty: ${item.quantity || item.qty} • ` : ''}
+                        <span style={{color:'lightgreen'}}>₹{item.price || item.rate}</span>
+                    </p>
+                    {item.grade && <p style={{ fontSize: '11px', color: '#aaa', margin: '2px 0' }}>Grade: {item.grade}</p>}
+                    <p style={{ fontSize: '11px', color: '#ddd' }}>
+                        📍 {typeof item.location === 'object' ? `${item.location.locality || ''}, ${item.location.city || ''}` : item.location}
+                    </p>
                         <div style={{marginTop:'8px', display:'flex', gap:'8px'}}>
                            <button onClick={() => openDirections(item.lat, item.lng)} style={smallActionBtn}>📍 Direct</button>
                            <button onClick={() => openWhatsApp(item)} style={smallActionBtn}>💬 Chat</button>
                         </div>
                       </div>
-                      <a href={`tel:${item.phone}`} style={callBtn}>📞</a>
+                  <a href={`tel:${item.sellerContact || item.phone}`} style={callBtn}>📞</a>
                     </div>
                   ))
                 ) : (
@@ -209,10 +157,6 @@ function Business() {
                 )
               }
             </div>
-          </>
-        )}
-        
-        {activeTab === 'buy' && <div style={glassCard}><p style={{textAlign:'center', color:'black'}}>🛒 Buyer Marketplace coming soon...</p></div>}
       </div>
     </div>
   );
@@ -228,17 +172,10 @@ const glassCard = { backgroundColor: 'rgba(255, 255, 255, 0.95)', padding: '20px
 const glassItem = { backgroundColor: 'rgba(255, 255, 255, 0.15)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.2)', padding: '12px', borderRadius: '15px', display: 'flex', alignItems: 'center', boxShadow: '0 4px 10px rgba(0,0,0,0.2)', color: 'white' };
 const itemImg = { width:'80px', height:'80px', borderRadius:'10px', objectFit:'cover', marginRight:'15px', border:'1px solid rgba(255,255,255,0.5)' };
 const placeholderImg = { width:'80px', height:'80px', borderRadius:'10px', background:'rgba(255,255,255,0.1)', marginRight:'15px', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'30px' };
-const previewImg = { display:'block', margin:'10px auto', width:'80px', height:'80px', objectFit:'cover', borderRadius:'8px' };
-const uploadBox = { border:'1px dashed #ccc', padding:'10px', borderRadius:'8px', textAlign:'center', backgroundColor:'rgba(255,255,255,0.2)' };
-const inputStyle = { padding: '12px', borderRadius: '8px', border: '1px solid #ccc', width: '100%', boxSizing: 'border-box', fontSize: '16px' };
-const activeBtn = { padding: '10px 20px', backgroundColor: '#FBC02D', color: 'black', border: 'none', borderRadius: '20px', fontWeight: 'bold', cursor: 'pointer' };
-const inactiveBtn = { padding: '10px 20px', backgroundColor: 'rgba(255,255,255,0.3)', color: 'white', border: '1px solid white', borderRadius: '20px', cursor: 'pointer' };
-const postBtn = { width: '100%', padding: '15px', backgroundColor: 'white', color: '#FBC02D', border: 'none', borderRadius: '10px', marginBottom: '20px', cursor: 'pointer', fontWeight: 'bold', boxShadow: '0 4px 10px rgba(0,0,0,0.2)', fontSize: '16px' };
-const submitBtn = { flex: 1, padding: '12px', backgroundColor: '#2E7D32', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' };
-const cancelBtn = { flex: 1, padding: '12px', backgroundColor: '#d32f2f', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' };
-const locBtn = { padding: '10px', backgroundColor: '#2196F3', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer' };
 const callBtn = { textDecoration: 'none', padding: '10px', backgroundColor: '#28a745', color: 'white', borderRadius: '50%', fontSize: '18px', width:'40px', height:'40px', display:'flex', alignItems:'center', justifyContent:'center', boxShadow: '0 4px 10px rgba(0,0,0,0.2)', marginLeft: '10px' };
 const smallActionBtn = { padding: '5px 10px', fontSize: '11px', borderRadius: '15px', border: 'none', background: 'rgba(255,255,255,0.2)', color: 'white', cursor: 'pointer' };
 const resetBtn = { padding:'8px 15px', marginTop:'10px', borderRadius:'20px', border:'none', cursor:'pointer', background:'white', color:'black', fontWeight:'bold' };
+const sellerBanner = { background: 'rgba(251, 192, 45, 0.15)', border: '1px solid rgba(251, 192, 45, 0.4)', borderRadius: '16px', padding: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', color: 'white', backdropFilter: 'blur(5px)' };
+const sellerBtn = { background: '#FBC02D', color: '#000', padding: '10px 16px', borderRadius: '12px', textDecoration: 'none', fontWeight: 'bold', fontSize: '13px', boxShadow: '0 4px 10px rgba(251, 192, 45, 0.3)', flexShrink: 0, marginLeft: '10px' };
 
 export default Business;

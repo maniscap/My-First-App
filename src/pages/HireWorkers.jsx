@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { db } from '../firebase';
 import { collection, getDocs } from 'firebase/firestore';
 
-function Freelancing() {
+function HireWorkers() {
   const [bgImage, setBgImage] = useState('');
   const dayBg = 'https://images.unsplash.com/photo-1625246333195-78d9c38ad449?q=80&w=2940&auto=format&fit=crop';
   const nightBg = 'https://images.unsplash.com/photo-1504333638930-c8787321eee0?q=80&w=2070&auto=format&fit=crop';
@@ -14,7 +14,7 @@ function Freelancing() {
     else setBgImage(dayBg);
   }, []);
 
-  const [services, setServices] = useState([]);
+  const [workers, setWorkers] = useState([]);
   const [loading, setLoading] = useState(true);
   
   // User Location State
@@ -34,15 +34,15 @@ function Freelancing() {
 
   // 2. Fetch Data
   useEffect(() => {
-    const fetchServices = async () => {
+    const fetchWorkers = async () => {
       try {
         const querySnapshot = await getDocs(collection(db, "services")); 
         const list = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        setServices(list);
+        setWorkers(list);
         setLoading(false);
       } catch (error) { console.error("Error:", error); setLoading(false); }
     };
-    fetchServices();
+    fetchWorkers();
   }, []);
 
   // 3. HAVERSINE DISTANCE FORMULA
@@ -59,10 +59,10 @@ function Freelancing() {
   };
 
   // 4. SMART RADIUS FILTER (50km)
-  const filteredServices = services.filter(item => {
-    // 4a. Match Category (Buyer View for Freelancing/Consultants)
-    const isExpert = item.serviceType === 'consulting' || item.category === 'consulting' || item.category === 'freelance';
-    if (!isExpert) return false;
+  const filteredWorkers = workers.filter(item => {
+    // 4a. Match Category (Buyer View for Labor/Workers)
+    const isLabor = item.serviceType === 'labor' || item.category === 'labor';
+    if (!isLabor) return false;
     
     // 4b. Safe Location String Fallback
     const itemLocString = typeof item.location === 'object' ? `${item.location.locality || ''}, ${item.location.city || ''}` : item.location || '';
@@ -90,13 +90,13 @@ function Freelancing() {
 
   const openWhatsApp = (item) => {
     const phone = item.sellerContact || item.phone;
-    const name = item.sellerName || item.name || 'Seller';
-    const title = item.title || item.name || 'consulting services';
+    const name = item.sellerName || item.name || 'Worker';
+    const title = item.title || item.name || 'farm labor';
     const price = item.price || item.rate || 'negotiable';
-    const msg = `Hi ${name}, I am interested in your ${title} at ₹${price}. My location is ${userLocName || "nearby"}. Can we discuss further?`;
+    const msg = `Hi ${name}, I am interested in hiring you for ${title} at ₹${price}. My location is ${userLocName || "nearby"}. Are you available?`;
     
     if (!phone) {
-       alert("Seller contact number not provided.");
+       alert("Contact number not provided.");
        return;
     }
     window.open(`https://wa.me/91${phone}?text=${encodeURIComponent(msg)}`, '_blank');
@@ -106,33 +106,34 @@ function Freelancing() {
     <div style={{...pageStyle, backgroundImage: `url('${bgImage}')`}}>
       <div style={contentContainer}>
         <Link to="/dashboard" style={backLink}>⬅ Dashboard</Link>
-        <h1 style={titleStyle}>💼 Agri Freelancers</h1>
+        <h1 style={titleStyle}>👷‍♀️ Hire Workers</h1>
         
         {/* RADIUS BADGE */}
         {userLocName && (
           <div style={filterBadge}>
-            📍 Showing experts within <strong>50km</strong> of {userLocName}
+            📍 Showing workers within <strong>50km</strong> of {userLocName}
           </div>
         )}
 
         {/* SELLER REDIRECT BANNER */}
         <div style={sellerBanner}>
             <div>
-                <div style={{fontWeight: 'bold', fontSize: '14px', marginBottom: '4px'}}>Are you an Agri Expert?</div>
-                <div style={{fontSize: '12px', opacity: 0.9}}>List your consulting services in the Seller Profile.</div>
+                <div style={{fontWeight: 'bold', fontSize: '14px', marginBottom: '4px'}}>Looking for farm work?</div>
+                <div style={{fontSize: '12px', opacity: 0.9}}>List your labor services in the Seller Profile.</div>
             </div>
             <Link to="/profile" style={sellerBtn}>Go to Profile ➔</Link>
         </div>
 
         <div style={{ display: 'grid', gap: '15px' }}>
-          {loading ? <p style={{textAlign:'center', color:'white'}}>⏳ Loading Experts...</p> : 
-            filteredServices.length > 0 ? (
-              filteredServices.map((item) => (
+          {loading ? <p style={{textAlign:'center', color:'white'}}>⏳ Loading Workers...</p> : 
+            filteredWorkers.length > 0 ? (
+              filteredWorkers.map((item) => (
                 <div key={item.id} style={glassItem}>
-                  {item.image || item.photo ? (<img src={item.image || item.photo} alt="Service" style={itemImg} />) : (<div style={placeholderImg}>💼</div>)}
+                  {item.image || item.photo ? (<img src={item.image || item.photo} alt="Worker" style={itemImg} />) : (<div style={placeholderImg}>👷‍♀️</div>)}
                   <div style={{flex: 1}}>
                     <h3 style={{ margin: '0 0 5px 0', color: '#2196F3' }}>{item.title || item.name}</h3>
                     <p style={{fontSize: '13px', margin:'2px 0'}}>Rate: <span style={{ color: 'lightgreen', fontWeight: 'bold' }}>₹{item.price || item.rate}</span></p>
+                    {item.laborCount && <p style={{ fontSize: '11px', color: '#aaa', margin: '2px 0' }}>Persons Available: {item.laborCount}</p>}
                     <p style={{ fontSize: '11px', color: '#ddd' }}>
                         📍 {typeof item.location === 'object' ? `${item.location.locality || ''}, ${item.location.city || ''}` : item.location}
                     </p>
@@ -146,7 +147,7 @@ function Freelancing() {
               ))
             ) : (
               <div style={{textAlign:'center', color:'white', opacity:0.7, padding:'20px'}}>
-                <p>No experts found within 50km of <strong>{userLocName}</strong>.</p>
+                <p>No workers found within 50km of <strong>{userLocName}</strong>.</p>
                 <button onClick={() => setUserLocName('')} style={resetBtn}>🌍 Show All Locations</button>
               </div>
             )
@@ -155,7 +156,7 @@ function Freelancing() {
       </div>
     </div>
   );
-  }
+}
 
 // STYLES
 const pageStyle = { position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', backgroundSize: 'cover', backgroundPosition: 'center', backgroundColor: 'black', overflowY: 'auto' };
@@ -172,4 +173,4 @@ const resetBtn = { padding:'8px 15px', marginTop:'10px', borderRadius:'20px', bo
 const sellerBanner = { background: 'rgba(33, 150, 243, 0.15)', border: '1px solid rgba(33, 150, 243, 0.4)', borderRadius: '16px', padding: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', color: 'white', backdropFilter: 'blur(5px)' };
 const sellerBtn = { background: '#2196F3', color: '#fff', padding: '10px 16px', borderRadius: '12px', textDecoration: 'none', fontWeight: 'bold', fontSize: '13px', boxShadow: '0 4px 10px rgba(33, 150, 243, 0.3)', flexShrink: 0, marginLeft: '10px' };
 
-export default Freelancing;
+export default HireWorkers;
