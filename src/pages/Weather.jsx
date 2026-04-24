@@ -1,15 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
   WiHumidity, WiThermometer, WiRain, WiBarometer, WiTime3 
 } from 'react-icons/wi';
 import { 
-  IoMdAdd, IoMdSearch, IoMdClose, IoMdNavigate, IoMdArrowBack, IoMdRefresh
+  IoMdAdd, IoMdSearch, IoMdClose, IoMdNavigate, IoMdArrowBack, IoMdRefresh, IoMdTrendingUp
 } from 'react-icons/io';
-import { MdLocationOn, MdDelete, MdGpsFixed, MdLocationOff } from 'react-icons/md';
-import { FaMaskFace } from 'react-icons/fa6'; 
-import { FaWind } from 'react-icons/fa';
+import { MdLocationOn, MdDelete, MdGpsFixed, MdLocationOff, MdVisibility, MdWaterDrop } from 'react-icons/md';
+import { FaMaskFace, FaLeaf } from 'react-icons/fa6'; 
+import { FaWind, FaEye } from 'react-icons/fa';
 
 // --- COMPREHENSIVE WEATHER IMAGE LIBRARY ---
 const weatherImages = {
@@ -546,21 +547,44 @@ const Weather = () => {
       </div>
       
       {savedWeatherList.length > 1 && (
-          <div style={styles.dotsContainer}>
+          <motion.div 
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              style={styles.dotsContainer}
+          >
               {savedWeatherList.map((_, idx) => (
-                  <div key={idx} style={{...styles.dot, width: idx === currentIndex ? '18px' : '6px', opacity: idx === currentIndex ? 1 : 0.4, background: idx === currentIndex ? '#fff' : '#aaa'}}></div>
+                  <motion.div 
+                      key={idx}
+                      layoutId={`dot-${idx}`}
+                      style={{...styles.dot, width: idx === currentIndex ? '18px' : '6px', opacity: idx === currentIndex ? 1 : 0.4, background: idx === currentIndex ? '#fff' : '#aaa'}}
+                      whileHover={{ scale: 1.2 }}
+                      onClick={() => setCurrentIndex(idx)}
+                  ></motion.div>
               ))}
-          </div>
+          </motion.div>
       )}
 
       {/* MANAGER MODAL */}
+      <AnimatePresence>
       {showCityManager && (
-          <div style={styles.modalOverlay}>
+          <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.3 }}
+              style={styles.modalOverlay}>
               <div style={styles.modalContent}>
                   
                   {/* --- NEW STYLED SEARCH OVERLAY --- */}
+                  <AnimatePresence mode="wait">
                   {showSearchOverlay ? (
-                      <div style={styles.searchOverlay}>
+                      <motion.div 
+                          key="search-overlay"
+                          initial={{ opacity: 0, x: 20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          exit={{ opacity: 0, x: 20 }}
+                          transition={{ duration: 0.2 }}
+                          style={styles.searchOverlay}>
                           <div style={styles.searchHeader}>
                               <IoMdArrowBack size={24} onClick={handleCloseSearchOverlay} style={{cursor:'pointer', color: '#ccc'}} />
                               <input 
@@ -625,9 +649,15 @@ const Weather = () => {
                                   </div>
                               ))}
                           </div>
-                      </div>
+                      </motion.div>
                   ) : (
-                      <>
+                      <motion.div
+                          key="city-manager"
+                          initial={{ opacity: 0, x: -20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          exit={{ opacity: 0, x: -20 }}
+                          transition={{ duration: 0.2 }}
+                      >
                           <div style={styles.modalHeader}>
                               <h3>Manage cities</h3>
                               <button onClick={handleCloseCityManager} style={styles.closeModal}><IoMdClose size={24}/></button>
@@ -655,16 +685,27 @@ const Weather = () => {
                                   </div>
                               ))}
                           </div>
-                      </>
+                      </motion.div>
                   )}
+                  </AnimatePresence>
               </div>
-          </div>
+          </motion.div>
       )}
+      </AnimatePresence>
 
       {/* MAIN CONTENT */}
       {isEmpty ? (
-        <div style={styles.emptyStateWrapper}>
-            <div style={styles.emptyStateCard}>
+        <motion.div 
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.4 }}
+            style={styles.emptyStateWrapper}
+        >
+            <motion.div 
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1, duration: 0.4 }}
+                style={styles.emptyStateCard}>
                 <div style={styles.emptyStateIconBg}>
                     <MdLocationOff size={56} color="#ff6b6b" />
                 </div>
@@ -678,30 +719,70 @@ const Weather = () => {
                 <button onClick={handleOpenCityManager} style={styles.manualSearchBtn}>
                     <IoMdSearch size={20} /> Search Manually
                 </button>
-            </div>
-        </div>
+            </motion.div>
+        </motion.div>
       ) : (
       <div id="weather-scroll-content" style={styles.scrollContent}>
-          <div style={styles.hero}>
-              <div style={styles.tempWrapper}>
+          <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+              style={styles.hero}
+          >
+              <motion.div 
+                  initial={{ scale: 0.8 }}
+                  animate={{ scale: 1 }}
+                  transition={{ delay: 0.1, type: 'spring', bounce: 0.4 }}
+                  style={styles.tempWrapper}
+              >
                   <h1 style={styles.bigTemp}>{getTemp(current.temp_c)}</h1>
                   <span style={styles.celcius}>°{unit}</span>
-              </div>
-              <p style={styles.condition}>
+              </motion.div>
+              <motion.p 
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.2 }}
+                  style={styles.condition}
+              >
                   {current.is_day === 0 ? current.condition.text.replace(/Sunny/gi, 'Clear') : current.condition.text}
-              </p>
-          <div style={{...styles.aqiPill, background: 'transparent' }}>
+              </motion.p>
+              <motion.div 
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.3 }}
+                  whileHover={{ scale: 1.05 }}
+                  style={{...styles.aqiPill, background: 'transparent', cursor: 'pointer' }}
+              >
                   <FaMaskFace /> Air Quality: {aqiInfo.text}
-              </div>
-          </div>
+              </motion.div>
+          </motion.div>
 
-          <div style={styles.glassSection}>
+          <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4, duration: 0.5 }}
+              style={styles.glassSection}
+          >
               <div style={styles.sectionHeader}>
                   <span>Forecast</span>
-                  <button onClick={() => setShowFullForecast(!showFullForecast)} style={styles.capsuleBtn}>{showFullForecast ? 'Show Less' : `${forecast.forecastday.length}-Day Forecast`}</button>
+                  <motion.button 
+                      whileHover={{ scale: 1.08 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => setShowFullForecast(!showFullForecast)} 
+                      style={styles.capsuleBtn}
+                  >
+                      {showFullForecast ? 'Show Less' : `${forecast.forecastday.length}-Day Forecast`}
+                  </motion.button>
               </div>
-              {visibleDays.map((day, i) => (
-                  <div key={i} style={styles.dailyRow}>
+              <motion.div layout>
+                  {visibleDays.map((day, i) => (
+                      <motion.div 
+                          key={i}
+                          initial={{ opacity: 0, x: -20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: 0.45 + i * 0.08 }}
+                          style={styles.dailyRow}
+                      >
                       <span style={styles.dayName}>{i === 0 ? 'Today' : new Date(day.date).toLocaleDateString('en-US', {weekday:'short'})}</span>
                       <div style={styles.iconGroup}>
                           <img src={day.day.condition.icon} style={{width:'28px'}} alt=""/>
@@ -711,15 +792,31 @@ const Weather = () => {
                           <span style={{fontWeight:'600'}}>{getTemp(day.day.maxtemp_c)}°</span>
                           <span style={{opacity:0.6}}>{getTemp(day.day.mintemp_c)}°</span>
                       </div>
-                  </div>
-              ))}
-          </div>
+                  </motion.div>
+                  ))}
+              </motion.div>
+          </motion.div>
 
-          <div style={styles.glassSection}>
-              <p style={{fontSize:'12px', opacity:0.7, marginBottom:'15px', display:'flex', alignItems:'center', gap:'5px', fontWeight:'600', letterSpacing:'0.5px'}}>
+          <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.5 + visibleDays.length * 0.08, duration: 0.5 }}
+              style={styles.glassSection}
+          >
+              <motion.p 
+                  style={{fontSize:'12px', opacity:0.7, marginBottom:'15px', display:'flex', alignItems:'center', gap:'5px', fontWeight:'600', letterSpacing:'0.5px'}}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+              >
                   <WiTime3 size={18}/> 24-HOUR FORECAST
-              </p>
-              <div className="no-swipe" style={styles.hourlyScroll}>
+              </motion.p>
+              <motion.div 
+                  className="no-swipe" 
+                  style={styles.hourlyScroll}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.55 + visibleDays.length * 0.08 }}
+              >
                   {next24Hours.map((h, i) => (
                       <div key={i} style={styles.hourItem}>
                           {/* Extracts just the "HH:mm" from "YYYY-MM-DD HH:mm" safely! */}
@@ -728,12 +825,21 @@ const Weather = () => {
                           <span style={{fontWeight:'bold'}}>{getTemp(h.temp_c)}°</span>
                       </div>
                   ))}
-              </div>
-          </div>
+              </motion.div>
+          </motion.div>
 
-          <div style={styles.gridContainer}>
-              <div style={styles.leftColumn}>
-                  <div style={styles.modernCard}>
+          <motion.div 
+              style={styles.gridContainer}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.6 + visibleDays.length * 0.08, duration: 0.5 }}
+          >
+              <motion.div style={styles.leftColumn}>
+                  <motion.div 
+                      style={styles.modernCard}
+                      whileHover={{ scale: 1.05, y: -5 }}
+                      transition={{ type: 'spring', bounce: 0.3 }}
+                  >
                       <div style={styles.cardLabel}><FaWind/> Wind</div>
                       <div style={styles.compassContainer}>
                           <div style={styles.compassCircle}>
@@ -744,8 +850,12 @@ const Weather = () => {
                                  <div style={styles.windSpeed}>{unit === 'C' ? current.wind_kph : current.wind_mph} <span style={{fontSize:'12px'}}>{unit === 'C' ? 'km/h' : 'mph'}</span></div>
                           <div style={{fontSize:'11px', opacity:0.7, marginTop:'4px', fontWeight:'600'}}>{current.wind_dir} Wind</div>
                       </div>
-                  </div>
-                  <div style={styles.modernCard}>
+                  </motion.div>
+                  <motion.div 
+                      style={styles.modernCard}
+                      whileHover={{ scale: 1.05, y: -5 }}
+                      transition={{ type: 'spring', bounce: 0.3 }}
+                  >
                       <div style={styles.cardLabel}>Sun & Moon</div>
                       <div style={styles.sunArcWrapper}>
                           <div style={styles.sunArc}></div>
@@ -767,11 +877,16 @@ const Weather = () => {
                       <div style={{textAlign:'center', fontSize:'11px', marginTop:'8px', opacity:0.7}}>
                           Sunset: {forecast.forecastday[0].astro.sunset} <br/> Moon: {forecast.forecastday[0].astro.moon_phase}
                       </div>
-                  </div>
-              </div>
+                  </motion.div>
+              </motion.div>
 
-              <div style={styles.rightColumn}>
-                  <div style={styles.modernBigCard}>
+              <motion.div style={styles.rightColumn}>
+                  <motion.div 
+                      style={styles.modernBigCard}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ delay: 0.65 + visibleDays.length * 0.08 }}
+                  >
                       <div style={styles.detailItem}>
                           <div style={styles.cardLabel}><WiHumidity size={22}/> Humidity</div>
                           <div style={styles.cardValue}>{current.humidity}%</div>
@@ -792,10 +907,16 @@ const Weather = () => {
                            <div style={styles.cardValue}>{current.pressure_mb}</div>
                            <div style={{fontSize:'12px', opacity:0.7, marginTop:'2px'}}>hPa</div>
                       </div>
-                  </div>
-              </div>
+                  </motion.div>
+              </motion.div>
 
-              <div style={styles.fullWidthCard}>
+              <motion.div 
+                  style={styles.fullWidthCard}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.7 + visibleDays.length * 0.08 }}
+                  whileHover={{ scale: 1.02 }}
+              >
                     <div style={{display:'flex', alignItems:'center', gap:'10px'}}>
                         <div style={styles.cardLabel}><WiRain size={24}/> Chance of Rain</div>
                         <div style={{textAlign:'right', marginLeft:'auto'}}>
@@ -815,8 +936,46 @@ const Weather = () => {
                          forecast.forecastday[0].day.daily_chance_of_rain < 70 ? "You might need an umbrella." :
                          "High chance of rain. Plan accordingly."}
                     </div>
+              </motion.div>
+          </motion.div>
+
+          {/* ADVANCED INSIGHTS SECTION */}
+          <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.8 + visibleDays.length * 0.08, duration: 0.5 }}
+              style={styles.glassSection}
+          >
+              <div style={styles.sectionHeader}>
+                  <span style={{display:'flex', alignItems:'center', gap:'8px'}}>✨ Advanced Insights</span>
               </div>
-          </div>
+              <motion.div 
+                  style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:'12px'}}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.85 + visibleDays.length * 0.08 }}
+              >
+                  {/* Visibility */}
+                  <motion.div 
+                      style={styles.modernCard}
+                      whileHover={{ scale: 1.05, y: -5 }}
+                  >
+                      <div style={styles.cardLabel}><MdVisibility size={20}/> Visibility</div>
+                      <div style={styles.cardValue}>{(current.vis_km || 10).toFixed(1)} km</div>
+                      <div style={{fontSize:'11px', opacity:0.7, marginTop:'4px'}}>Clear conditions</div>
+                  </motion.div>
+                  
+                  {/* Dew Point */}
+                  <motion.div 
+                      style={styles.modernCard}
+                      whileHover={{ scale: 1.05, y: -5 }}
+                  >
+                      <div style={styles.cardLabel}><MdWaterDrop size={20}/> Dew Point</div>
+                      <div style={styles.cardValue}>{getTemp(current.dewpoint_c || 15)}°</div>
+                      <div style={{fontSize:'11px', opacity:0.7, marginTop:'4px'}}>{current.humidity > 70 ? 'High moisture' : 'Comfortable'}</div>
+                  </motion.div>
+              </motion.div>
+          </motion.div>
 
           <div style={{height:'100px'}}></div>
       </div>

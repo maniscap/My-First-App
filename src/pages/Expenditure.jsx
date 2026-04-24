@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { IoMdAdd, IoMdArrowBack, IoMdMore, IoMdClose } from 'react-icons/io';
+import { motion, AnimatePresence } from 'framer-motion';
 
 // --- 🌾 EXTENDED CROP ICON LIBRARY (INDIAN CONTEXT) ---
 const getAutoEmoji = (name) => {
@@ -168,6 +169,21 @@ function Expenditure() {
   // Helper for UI calculation display
   const calculatedLease = (parseFloat(formData.acres) || 0) * (parseFloat(formData.leaseAmount) || 0);
 
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    show: { opacity: 1, transition: { staggerChildren: 0.08, delayChildren: 0.1 } }
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    show: { opacity: 1, y: 0, transition: { duration: 0.5, ease: [0.4, 0, 0.2, 1] } }
+  };
+
+  const cardHoverVariants = {
+    rest: { y: 0, scale: 1 },
+    hover: { y: -4, scale: 1.02, transition: { duration: 0.3, ease: 'easeOut' } }
+  };
+
   return (
     <div style={styles.page}>
       <style>{`
@@ -179,24 +195,43 @@ function Expenditure() {
         .fab-glow {
           animation: pulseGlow 2s infinite;
         }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
       `}</style>
+
+      {/* THICK BACKGROUND OVERLAY */}
+      <div style={styles.pageOverlay}></div>
+      
       {/* Header */}
       <div style={styles.headerContainer}>
         <div style={styles.glassCapsuleHeader}>
-          <button onClick={() => navigate('/dashboard')} style={styles.backBtn}><IoMdArrowBack size={24} /></button>
+          <motion.button 
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
+            onClick={() => navigate('/dashboard')} 
+            style={styles.backBtn}
+          >
+            <IoMdArrowBack size={24} />
+          </motion.button>
           <h2 style={styles.title}>Crop Expenditure</h2>
           <div style={{width: '24px'}}></div>
         </div>
       </div>
 
       {/* List Container */}
-      <div style={styles.listContainer}>
+      <motion.div 
+        style={styles.listContainer}
+        variants={containerVariants}
+        initial="hidden"
+        animate="show"
+        className="hide-scrollbar"
+      >
         {folders.length === 0 ? (
-            <div style={styles.emptyState}>
+            <motion.div style={styles.emptyState} initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
                 <div style={styles.emptyIcon}>🌾</div>
                 <div style={styles.emptyTitle}>No Crops Added</div>
                 <div style={styles.emptyText}>Click the glowing <strong>+</strong> button below to create your first crop expenditure file.</div>
-            </div>
+            </motion.div>
         ) : folders.map(f => {
             const rev = f.harvestDetails?.totalRevenue || 0;
             const exp = (f.totalAmount || 0) + (f.leaseCostTotal || 0); // Include Lease in expense view
@@ -204,7 +239,15 @@ function Expenditure() {
             const isCompleted = f.status === 'completed';
 
             return (
-              <div key={f.id} onClick={() => navigate(`/expenditure/${f.id}`)} style={isCompleted ? (net >=0 ? styles.cardProfit : styles.cardLoss) : styles.card}>
+              <motion.div 
+                key={f.id} 
+                variants={itemVariants}
+                whileHover="hover"
+                initial="rest"
+                animate="rest"
+                onClick={() => navigate(`/expenditure/${f.id}`)} 
+                style={isCompleted ? (net >=0 ? styles.cardProfit : styles.cardLoss) : styles.card}
+              >
                 
                 <div style={styles.cardContentRow}>
                     <div style={{display:'flex', alignItems:'center', gap:'15px', flex:1}}>
@@ -256,17 +299,37 @@ function Expenditure() {
                         )}
                     </div>
                 )}
-              </div>
+              </motion.div>
             );
         })}
-      </div>
+      </motion.div>
 
-      <button onClick={() => setShowModal(true)} style={styles.fab} className="fab-glow"><IoMdAdd size={28} /></button>
+      <motion.button 
+        whileHover={{ scale: 1.1 }}
+        whileTap={{ scale: 0.9 }}
+        onClick={() => setShowModal(true)} 
+        style={styles.fab} 
+        className="fab-glow"
+      >
+        <IoMdAdd size={28} />
+      </motion.button>
 
       {/* CREATE / EDIT MODAL */}
-      {showModal && (
-        <div style={styles.modalOverlay}>
-          <div style={styles.modalContent}>
+      <AnimatePresence>
+        {showModal && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            style={styles.modalOverlay}
+          >
+            <motion.div 
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.9, y: 20 }}
+              transition={{ type: 'spring', bounce: 0.3 }}
+              style={styles.modalContent}
+            >
             <div style={styles.modalHeader}>
                 <h3 style={{color:'white', margin:0}}>{editingId ? 'Edit Details' : 'Start New Crop'}</h3>
                 <button onClick={closeModal} style={styles.closeBtn}><IoMdClose size={24}/></button>
@@ -328,53 +391,300 @@ function Expenditure() {
                 <option value="rainfed">☁️ Rain-fed (Dependency)</option>
             </select>
 
-            <button onClick={handleSave} style={styles.saveBtn}>{editingId ? 'Save Changes' : 'Create Folder'}</button>
-          </div>
-        </div>
-      )}
+            <motion.button 
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={handleSave} 
+              style={styles.saveBtn}
+            >
+              {editingId ? 'Save Changes' : 'Create Folder'}
+            </motion.button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
 
 const styles = {
-  page: { minHeight: '100vh', background: '#0f1215', color: 'white', fontFamily: 'sans-serif', padding: '20px', paddingBottom:'80px' },
-  headerContainer: { marginBottom: '25px' },
-  glassCapsuleHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255, 255, 255, 0.05)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '30px', padding: '12px 20px', boxShadow: '0 4px 15px rgba(0, 0, 0, 0.2)', width: '100%', boxSizing: 'border-box' },
-  backBtn: { background: 'none', border: 'none', color: 'white', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center' },
-  title: { margin: 0, fontSize: '18px', fontWeight: 'bold' },
-  listContainer: { display: 'flex', flexDirection: 'column', gap: '15px' },
+  page: { 
+    minHeight: '100vh', 
+    background: '#111111', 
+    color: 'white', 
+    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif', 
+    padding: '20px', 
+    paddingBottom:'80px',
+    display: 'flex',
+    flexDirection: 'column',
+    position: 'relative',
+    overflow: 'hidden',
+    boxSizing: 'border-box',
+    textShadow: '0 2px 8px rgba(0,0,0,0.3)'
+  },
+  pageOverlay: {
+    position: 'absolute',
+    top: 0, left: 0, right: 0, bottom: 0,
+    background: 'radial-gradient(circle at 20% 50%, rgba(76, 175, 80, 0.08) 0%, transparent 50%), radial-gradient(circle at 80% 80%, rgba(59, 130, 246, 0.08) 0%, transparent 50%)',
+    backdropFilter: 'blur(40px)',
+    WebkitBackdropFilter: 'blur(40px)',
+    zIndex: 0,
+    pointerEvents: 'none'
+  },
+  headerContainer: { marginBottom: '25px', position: 'relative', zIndex: 1 },
+  glassCapsuleHeader: { 
+    display: 'flex', 
+    justifyContent: 'space-between', 
+    alignItems: 'center', 
+    background: 'transparent',
+    backdropFilter: 'blur(12px) saturate(120%) brightness(110%)',
+    WebkitBackdropFilter: 'blur(12px) saturate(120%) brightness(110%)',
+    border: '1px solid rgba(255, 255, 255, 0.1)',
+    borderTop: '1px solid rgba(255, 255, 255, 0.3)',
+    borderLeft: '1px solid rgba(255, 255, 255, 0.2)',
+    borderRadius: '20px', 
+    padding: '12px 16px', 
+    boxShadow: 'inset 0 1px 1px rgba(255, 255, 255, 0.3), 0 8px 32px rgba(0, 0, 0, 0.15)',
+    width: '100%', 
+    boxSizing: 'border-box' 
+  },
+  backBtn: { background: 'none', border: 'none', color: 'white', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', transition: 'all 0.3s ease' },
+  title: { margin: 0, fontSize: '18px', fontWeight: '600', letterSpacing: '-0.3px', color: '#ffffff' },
+  listContainer: { 
+    display: 'flex', 
+    flexDirection: 'column', 
+    gap: '15px',
+    position: 'relative',
+    zIndex: 1,
+    flex: 1,
+    overflowY: 'auto'
+  },
   emptyState: { display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', marginTop:'80px', color:'rgba(255,255,255,0.5)', textAlign:'center', padding: '0 20px' },
   emptyIcon: { fontSize:'60px', marginBottom:'15px', opacity:0.8 },
   emptyTitle: { fontSize:'20px', fontWeight:'bold', color:'white', marginBottom:'10px' },
   emptyText: { fontSize:'14px', lineHeight:'1.5', maxWidth:'280px' },
-  card: { background: '#1A1A1C', borderRadius: '16px', padding: '20px', position: 'relative', border: '1px solid #333', cursor:'pointer' },
-  cardProfit: { background: 'linear-gradient(135deg, #052e16 0%, #1A1A1C 100%)', borderRadius: '16px', padding: '20px', position: 'relative', border: '1px solid #14532d', cursor:'pointer' },
-  cardLoss: { background: 'linear-gradient(135deg, #450a0a 0%, #1A1A1C 100%)', borderRadius: '16px', padding: '20px', position: 'relative', border: '1px solid #7f1d1d', cursor:'pointer' },
+  card: { 
+    background: 'transparent', 
+    backdropFilter: 'blur(12px) saturate(120%) brightness(110%)',
+    WebkitBackdropFilter: 'blur(12px) saturate(120%) brightness(110%)',
+    borderRadius: '20px', 
+    padding: '20px', 
+    position: 'relative', 
+    border: '1px solid rgba(255, 255, 255, 0.1)',
+    borderTop: '1px solid rgba(255, 255, 255, 0.3)',
+    borderLeft: '1px solid rgba(255, 255, 255, 0.2)',
+    boxShadow: 'inset 0 1px 1px rgba(255, 255, 255, 0.3), 0 8px 32px rgba(0, 0, 0, 0.15)',
+    cursor:'pointer',
+    transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)'
+  },
+  cardProfit: { 
+    background: 'transparent',
+    backdropFilter: 'blur(12px) saturate(120%) brightness(110%)',
+    WebkitBackdropFilter: 'blur(12px) saturate(120%) brightness(110%)',
+    borderRadius: '20px', 
+    padding: '20px', 
+    position: 'relative', 
+    border: '1px solid rgba(76, 175, 80, 0.3)',
+    borderTop: '1px solid rgba(76, 175, 80, 0.5)',
+    borderLeft: '1px solid rgba(76, 175, 80, 0.3)',
+    boxShadow: 'inset 0 1px 1px rgba(76, 175, 80, 0.2), 0 8px 32px rgba(76, 175, 80, 0.1)',
+    cursor:'pointer',
+    transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)'
+  },
+  cardLoss: { 
+    background: 'transparent',
+    backdropFilter: 'blur(12px) saturate(120%) brightness(110%)',
+    WebkitBackdropFilter: 'blur(12px) saturate(120%) brightness(110%)',
+    borderRadius: '20px', 
+    padding: '20px', 
+    position: 'relative', 
+    border: '1px solid rgba(255, 107, 107, 0.3)',
+    borderTop: '1px solid rgba(255, 107, 107, 0.5)',
+    borderLeft: '1px solid rgba(255, 107, 107, 0.3)',
+    boxShadow: 'inset 0 1px 1px rgba(255, 107, 107, 0.2), 0 8px 32px rgba(255, 107, 107, 0.1)',
+    cursor:'pointer',
+    transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)'
+  },
   cardContentRow: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' },
-  emojiBox: { fontSize: '32px', background: 'rgba(255,255,255,0.05)', width: '50px', height: '50px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '12px' },
+  emojiBox: { 
+    fontSize: '32px', 
+    background: 'transparent',
+    backdropFilter: 'blur(10px)',
+    WebkitBackdropFilter: 'blur(10px)',
+    width: '50px', 
+    height: '50px', 
+    display: 'flex', 
+    alignItems: 'center', 
+    justifyContent: 'center', 
+    borderRadius: '12px',
+    border: '1px solid rgba(255, 255, 255, 0.1)',
+    boxShadow: 'inset 0 1px 1px rgba(255, 255, 255, 0.2)'
+  },
   cardTitle: { margin: '0 0 5px 0', fontSize: '18px', fontWeight: 'bold' },
   pillContainer: { display: 'flex', gap: '5px', flexWrap: 'wrap' },
   pill: { fontSize:'11px', background:'rgba(255,255,255,0.1)', padding:'4px 8px', borderRadius:'6px', color:'#ccc' },
   divider: { height:'1px', background:'rgba(255,255,255,0.1)', margin:'15px 0' },
   statusBadge: { fontSize:'11px', background:'rgba(255,255,255,0.2)', padding:'4px 8px', borderRadius:'4px' },
-  menuBtn: { background:'transparent', border:'none', cursor:'pointer', padding:'5px' },
-  dropdown: { position:'absolute', top:'50px', right:'20px', background:'#222', padding:'5px', borderRadius:'12px', boxShadow:'0 5px 20px rgba(0,0,0,0.5)', zIndex:10, border:'1px solid #333', minWidth:'120px' },
-  menuItem: { color:'white', fontSize:'14px', cursor:'pointer', padding:'10px 15px', borderBottom:'1px solid #333' },
-  fab: { position: 'fixed', bottom: '20px', right: '20px', width: '60px', height: '60px', borderRadius: '50%', background: '#4CAF50', color: 'white', border: 'none', boxShadow: '0 4px 15px rgba(76, 175, 80, 0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', zIndex:50 },
-  modalOverlay: { position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, backdropFilter:'blur(5px)' },
-  modalContent: { background: '#1A1A1C', padding: '25px', borderRadius: '24px', width: '90%', maxWidth: '360px', border:'1px solid #333', boxShadow:'0 20px 50px rgba(0,0,0,0.5)' },
+  menuBtn: { background:'transparent', border:'none', cursor:'pointer', padding:'5px', transition: 'all 0.2s ease' },
+  dropdown: { 
+    position:'absolute', 
+    top:'50px', 
+    right:'20px', 
+    background: 'transparent',
+    backdropFilter: 'blur(12px) saturate(120%) brightness(110%)',
+    WebkitBackdropFilter: 'blur(12px) saturate(120%) brightness(110%)',
+    padding:'8px', 
+    borderRadius:'12px', 
+    boxShadow:'inset 0 1px 1px rgba(255, 255, 255, 0.3), 0 8px 32px rgba(0, 0, 0, 0.15)',
+    zIndex:10, 
+    border:'1px solid rgba(255, 255, 255, 0.1)',
+    borderTop: '1px solid rgba(255, 255, 255, 0.3)',
+    minWidth:'120px' 
+  },
+  menuItem: { 
+    color:'white', 
+    fontSize:'14px', 
+    cursor:'pointer', 
+    padding:'10px 15px', 
+    borderRadius: '8px',
+    borderBottom:'none',
+    transition: 'all 0.2s ease'
+  },
+  fab: { position: 'fixed', bottom: '20px', right: '20px', width: '60px', height: '60px', borderRadius: '50%', background: '#4CAF50', color: 'white', border: 'none', boxShadow: '0 4px 15px rgba(76, 175, 80, 0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', zIndex:50, transition: 'all 0.3s ease' },
+  modalOverlay: { 
+    position: 'fixed', 
+    top: 0, 
+    left: 0, 
+    width: '100%', 
+    height: '100%', 
+    background: 'rgba(0,0,0,0.2)', 
+    backdropFilter:'blur(30px) saturate(150%) brightness(115%)',
+    WebkitBackdropFilter:'blur(30px) saturate(150%) brightness(115%)',
+    display: 'flex', 
+    alignItems: 'center', 
+    justifyContent: 'center', 
+    zIndex: 100
+  },
+  modalContent: { 
+    background: 'rgba(0, 0, 0, 0.2)', 
+    backdropFilter:'blur(30px) saturate(150%) brightness(115%)',
+    WebkitBackdropFilter:'blur(30px) saturate(150%) brightness(115%)',
+    padding: '25px', 
+    borderRadius: '28px', 
+    width: '90%', 
+    maxWidth: '360px', 
+    border:'1px solid rgba(255, 255, 255, 0.1)',
+    borderTop: '1px solid rgba(255, 255, 255, 0.3)',
+    borderLeft: '1px solid rgba(255, 255, 255, 0.2)',
+    boxShadow:'inset 0 1px 1px rgba(255, 255, 255, 0.3), 0 8px 32px rgba(0, 0, 0, 0.15)',
+    boxSizing: 'border-box'
+  },
   modalHeader: { display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'20px' },
-  modalEmojiBox: { fontSize:'36px', width:'60px', height:'60px', background:'rgba(255,255,255,0.05)', display:'flex', alignItems:'center', justifyContent:'center', borderRadius:'12px', marginBottom:'15px' },
-  closeBtn: { background:'transparent', border:'none', color:'#666', cursor:'pointer' },
-  label: { display:'block', fontSize:'12px', color:'#888', marginBottom:'6px', marginLeft:'2px' },
-  input: { width: '100%', padding: '14px', borderRadius: '12px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', marginBottom: '0', boxSizing:'border-box', fontSize:'16px' },
-  select: { width: '100%', padding: '14px', borderRadius: '12px', background: '#111', border: '1px solid #333', color: 'white', marginBottom: '15px', fontSize:'14px' },
-  toggle: { flex:1, padding:'12px', borderRadius:'10px', background:'transparent', border:'1px solid #333', color:'#666', cursor:'pointer', fontSize:'14px' },
-  toggleActive: { flex:1, padding:'12px', borderRadius:'10px', background:'#2E7D32', border:'1px solid #2E7D32', color:'white', fontWeight:'bold', cursor:'pointer', fontSize:'14px' },
-  leaseInputContainer: { display:'flex', alignItems:'center', background:'rgba(255,255,255,0.05)', borderRadius:'12px', padding:'0 15px', border:'1px solid rgba(255,255,255,0.1)' },
-  leaseInput: { flex:1, background:'transparent', border:'none', color:'white', padding:'14px', fontSize:'16px', outline:'none' },
-  totalLeaseBox: { marginTop:'10px', background:'rgba(76,175,80,0.1)', padding:'12px', borderRadius:'10px', display:'flex', justifyContent:'space-between', alignItems:'center', border:'1px solid rgba(76,175,80,0.2)' },
-  saveBtn: { width:'100%', padding: '16px', borderRadius: '14px', background: '#4CAF50', color: 'white', border: 'none', fontWeight:'bold', cursor:'pointer', fontSize:'16px', marginTop:'10px' }
+  modalEmojiBox: { 
+    fontSize:'36px', 
+    width:'60px', 
+    height:'60px', 
+    background:'transparent',
+    backdropFilter:'blur(10px)',
+    WebkitBackdropFilter:'blur(10px)',
+    display:'flex', 
+    alignItems:'center', 
+    justifyContent:'center', 
+    borderRadius:'12px',
+    border: '1px solid rgba(255, 255, 255, 0.1)',
+    boxShadow: 'inset 0 1px 1px rgba(255, 255, 255, 0.2)',
+    marginBottom:'15px' 
+  },
+  closeBtn: { background:'transparent', border:'none', color:'#94a3b8', cursor:'pointer', transition: 'all 0.2s ease' },
+  label: { display:'block', fontSize:'12px', color:'#94a3b8', marginBottom:'6px', marginLeft:'2px', fontWeight: '500' },
+  input: { 
+    width: '100%', 
+    padding: '14px', 
+    borderRadius: '12px', 
+    background: 'transparent',
+    backdropFilter: 'blur(10px)',
+    WebkitBackdropFilter: 'blur(10px)',
+    border: '1px solid rgba(255,255,255,0.1)',
+    borderTop: '1px solid rgba(255,255,255,0.2)',
+    color: 'white', 
+    marginBottom: '0', 
+    boxSizing:'border-box', 
+    fontSize:'16px',
+    transition: 'all 0.3s ease'
+  },
+  select: { 
+    width: '100%', 
+    padding: '14px', 
+    borderRadius: '12px', 
+    background: 'transparent',
+    backdropFilter: 'blur(10px)',
+    WebkitBackdropFilter: 'blur(10px)',
+    border: '1px solid rgba(255,255,255,0.1)',
+    borderTop: '1px solid rgba(255,255,255,0.2)',
+    color: 'white', 
+    marginBottom: '15px', 
+    fontSize:'14px',
+    transition: 'all 0.3s ease'
+  },
+  toggle: { 
+    flex:1, 
+    padding:'12px', 
+    borderRadius:'10px', 
+    background:'transparent', 
+    border:'1px solid rgba(255,255,255,0.1)', 
+    color:'#64748b', 
+    cursor:'pointer', 
+    fontSize:'14px',
+    transition: 'all 0.3s ease',
+    backdropFilter: 'blur(10px)'
+  },
+  toggleActive: { 
+    flex:1, 
+    padding:'12px', 
+    borderRadius:'10px', 
+    background: 'linear-gradient(135deg, rgba(76, 175, 80, 0.2) 0%, rgba(76, 175, 80, 0.1) 100%)',
+    border: '1px solid rgba(76, 175, 80, 0.4)', 
+    color:'#4CAF50', 
+    fontWeight:'bold', 
+    cursor:'pointer', 
+    fontSize:'14px',
+    transition: 'all 0.3s ease',
+    backdropFilter: 'blur(10px)'
+  },
+  leaseInputContainer: { 
+    display:'flex', 
+    alignItems:'center', 
+    background:'transparent',
+    backdropFilter: 'blur(10px)',
+    WebkitBackdropFilter: 'blur(10px)',
+    borderRadius:'12px', 
+    padding:'0 15px', 
+    border:'1px solid rgba(255,255,255,0.1)',
+    borderTop: '1px solid rgba(255,255,255,0.2)'
+  },
+  leaseInput: { 
+    flex:1, 
+    background:'transparent', 
+    border:'none', 
+    color:'white', 
+    padding:'14px', 
+    fontSize:'16px', 
+    outline:'none'
+  },
+  totalLeaseBox: { 
+    marginTop:'10px', 
+    background:'transparent',
+    backdropFilter: 'blur(10px)',
+    WebkitBackdropFilter: 'blur(10px)',
+    padding:'12px', 
+    borderRadius:'10px', 
+    display:'flex', 
+    justifyContent:'space-between', 
+    alignItems:'center', 
+    border:'1px solid rgba(76, 175, 80, 0.3)',
+    borderTop: '1px solid rgba(76, 175, 80, 0.5)'
+  },
+  saveBtn: { width:'100%', padding: '16px', borderRadius: '14px', background: '#4CAF50', color: 'white', border: 'none', fontWeight:'bold', cursor:'pointer', fontSize:'16px', marginTop:'10px', transition: 'all 0.3s ease' }
 };
 
 export default Expenditure;

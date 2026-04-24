@@ -4,7 +4,7 @@ import { getAuth, onAuthStateChanged } from 'firebase/auth';
 
 // --- IMPORT PAGES ---
 import Dashboard from './pages/Dashboard';
-import RentMachinery from './pages/RentMachinery';
+import RentMachinery from './pages/HireMachinery';
 import HireWorkers from './pages/HireWorkers';
 import MarketRates from './pages/MarketRates'; 
 import NewsUpdates from './pages/NewsUpdates';       

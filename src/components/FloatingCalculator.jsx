@@ -2,7 +2,8 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { IoMdClose, IoMdCalendar, IoMdCalculator } from 'react-icons/io';
 import { FaBackspace, FaExpandAlt, FaCompressAlt, FaChevronLeft, FaChevronRight } from 'react-icons/fa';
-import { MdAspectRatio } from 'react-icons/md'; 
+import { MdAspectRatio } from 'react-icons/md';
+import { motion } from 'framer-motion';
 import { evaluate } from 'mathjs';
 
 const FloatingCalculator = () => {
@@ -156,12 +157,16 @@ const FloatingCalculator = () => {
       onTouchStart={handleDragStart}
     >
       
-      {/* 🟠 1. CLOSED ICON (RESTORED OLD DOT GRID LOGO) */}
+      {/* 🟠 1. CLOSED ICON - LIQUID GLASS PREMIUM */}
       {!isOpen && (
-          <div 
+          <motion.div 
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.8, opacity: 0 }}
+              transition={{ type: 'spring', bounce: 0.5 }}
               onClick={() => {
                   if (!isDragging.current) {
-                      setClosedPosition(position); // Save the resting spot
+                      setClosedPosition(position);
                       const currentScale = customScale || presets[presetIndex];
                       setPosition({
                           x: Math.max(10, (window.innerWidth - 320 * currentScale) / 2),
@@ -170,11 +175,18 @@ const FloatingCalculator = () => {
                       setIsOpen(true);
                   }
               }}
+              whileHover={{ scale: 1.08 }}
+              whileTap={{ scale: 0.95 }}
               style={{
-                  width: '60px', height: '60px', borderRadius: '14px',
-                  background: '#000', boxShadow: '0 8px 20px rgba(0,0,0,0.4)',
+                  width: '60px', height: '60px', borderRadius: '18px',
+                  background: 'transparent',
+                  backdropFilter: 'blur(20px)',
+                  WebkitBackdropFilter: 'blur(20px)',
+                  boxShadow: 'inset 0 1px 1px rgba(255,255,255,0.3), 0 8px 32px rgba(0,0,0,0.3)',
                   cursor: 'pointer', position:'relative', overflow:'hidden',
-                  border: '1px solid rgba(255,255,255,0.15)',
+                  border: '1px solid rgba(255, 255, 255, 0.2)',
+                  borderTop: '1px solid rgba(255, 255, 255, 0.4)',
+                  borderLeft: '1px solid rgba(255, 255, 255, 0.3)',
                   display: 'flex', flexDirection:'column', alignItems:'center', justifyContent:'center'
               }}
           >
@@ -184,49 +196,97 @@ const FloatingCalculator = () => {
                  <Dot color="#333" /><Dot color="#333" /><Dot color="#333" /><Dot color="#FF9F0A" />
                  <div style={{background:'#333', borderRadius:'3px', gridColumn:'span 2', height:'5px'}}></div><Dot color="#333" /><Dot color="#FF9F0A" />
               </div>
-          </div>
+          </motion.div>
       )}
 
-      {/* 📱 2. OPEN WIDGET */}
+      {/* 📱 2. OPEN WIDGET - LIQUID GLASS PREMIUM */}
       {isOpen && (
-          <div style={{
-              width: '320px', minHeight: '500px',
-              background: '#000000', borderRadius: '35px', 
-              padding: '20px 20px 35px 20px',
-              boxShadow: '0 50px 100px rgba(0,0,0,0.9), 0 0 0 1px #333',
-              display: 'flex', flexDirection: 'column', gap: '15px', overflow: 'hidden',
-              position: 'relative' 
-          }}>
+          <motion.div 
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              transition={{ type: 'spring', bounce: 0.3 }}
+              style={{
+                  width: '320px', minHeight: '500px',
+                  background: 'rgba(0, 0, 0, 0.3)',
+                  backdropFilter: 'blur(30px) saturate(150%) brightness(115%)',
+                  WebkitBackdropFilter: 'blur(30px) saturate(150%) brightness(115%)',
+                  borderRadius: '35px', 
+                  padding: '20px 20px 35px 20px',
+                  boxShadow: 'inset 0 1px 1px rgba(255, 255, 255, 0.3), 0 8px 32px rgba(0, 0, 0, 0.2), 0 50px 100px rgba(0,0,0,0.5)',
+                  display: 'flex', flexDirection: 'column', gap: '15px', overflow: 'hidden',
+                  position: 'relative',
+                  border: '1px solid rgba(255, 255, 255, 0.1)',
+                  borderTop: '1px solid rgba(255, 255, 255, 0.2)',
+                  borderLeft: '1px solid rgba(255, 255, 255, 0.15)'
+              }}>
               {/* Header */}
               <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', padding:'0 5px'}}>
                    {/* Mode Switch */}
-                   <div style={{display:'flex', background:'#1C1C1E', borderRadius:'12px', padding:'3px', border: '1px solid #333'}}>
-                       <div onClick={(e) => {e.stopPropagation(); setMode('calc')}} style={{
-                             padding:'8px 14px', borderRadius:'10px', cursor:'pointer',
-                             background: mode === 'calc' ? '#636366' : 'transparent', color: mode === 'calc' ? 'white' : '#888', transition:'0.2s'
-                         }}><IoMdCalculator size={18}/></div>
-                       <div onClick={(e) => {e.stopPropagation(); setMode('calendar')}} style={{
-                             padding:'8px 14px', borderRadius:'10px', cursor:'pointer',
-                             background: mode === 'calendar' ? '#636366' : 'transparent', color: mode === 'calendar' ? 'white' : '#888', transition:'0.2s'
-                         }}><IoMdCalendar size={18}/></div>
-                   </div>
+                   <motion.div 
+                       whileHover={{ scale: 1.02 }}
+                       style={{display:'flex', background:'transparent', backdropFilter: 'blur(10px)', borderRadius:'12px', padding:'3px', border: '1px solid rgba(255,255,255,0.15)'}}
+                   >
+                       <motion.div 
+                           whileHover={{ backgroundColor: 'rgba(99, 99, 102, 0.8)' }}
+                           onClick={(e) => {e.stopPropagation(); setMode('calc')}} 
+                           style={{
+                               padding:'8px 14px', borderRadius:'10px', cursor:'pointer',
+                               background: mode === 'calc' ? 'rgba(99, 99, 102, 0.6)' : 'transparent', 
+                               color: mode === 'calc' ? 'white' : '#888', 
+                               transition:'0.2s',
+                               backdropFilter: mode === 'calc' ? 'blur(10px)' : 'none'
+                           }}
+                       >
+                           <IoMdCalculator size={18}/>
+                       </motion.div>
+                       <motion.div 
+                           whileHover={{ backgroundColor: 'rgba(99, 99, 102, 0.8)' }}
+                           onClick={(e) => {e.stopPropagation(); setMode('calendar')}} 
+                           style={{
+                               padding:'8px 14px', borderRadius:'10px', cursor:'pointer',
+                               background: mode === 'calendar' ? 'rgba(99, 99, 102, 0.6)' : 'transparent', 
+                               color: mode === 'calendar' ? 'white' : '#888', 
+                               transition:'0.2s',
+                               backdropFilter: mode === 'calendar' ? 'blur(10px)' : 'none'
+                           }}
+                       >
+                           <IoMdCalendar size={18}/>
+                       </motion.div>
+                   </motion.div>
                    
                    {/* Window Controls */}
                    <div style={{display:'flex', gap:'10px', alignItems:'center'}}>
-                       <div onClick={(e) => {e.stopPropagation(); cyclePreset()}} style={{
-                           cursor:'pointer', color:'#666', display:'flex', alignItems:'center', gap:'2px',
-                           background:'rgba(255,255,255,0.1)', padding:'6px 10px', borderRadius:'10px'
-                       }}>
+                       <motion.div 
+                           whileHover={{ scale: 1.1 }}
+                           whileTap={{ scale: 0.9 }}
+                           onClick={(e) => {e.stopPropagation(); cyclePreset()}} 
+                           style={{
+                               cursor:'pointer', color:'#94a3b8', display:'flex', alignItems:'center', gap:'2px',
+                               background:'transparent', backdropFilter: 'blur(10px)', padding:'6px 10px', borderRadius:'10px',
+                               border: '1px solid rgba(255,255,255,0.1)',
+                               transition: 'all 0.2s ease'
+                           }}
+                       >
                            {presetIndex === 0 ? <FaCompressAlt size={12}/> : <FaExpandAlt size={12}/>}
-                       </div>
-                       <div onClick={(e) => {
-                           e.stopPropagation(); 
-                           if (closedPosition) setPosition(closedPosition); // Snap back to edge
-                           setIsOpen(false);
-                       }} style={{
-                           cursor:'pointer', background:'#333', borderRadius:'50%', width:'30px', height:'30px',
-                           display:'flex', alignItems:'center', justifyContent:'center', color:'#fff'
-                       }}><IoMdClose size={20}/></div>
+                       </motion.div>
+                       <motion.div 
+                           whileHover={{ scale: 1.1, backgroundColor: 'rgba(255, 100, 100, 0.3)' }}
+                           whileTap={{ scale: 0.9 }}
+                           onClick={(e) => {
+                               e.stopPropagation(); 
+                               if (closedPosition) setPosition(closedPosition);
+                               setIsOpen(false);
+                           }} 
+                           style={{
+                               cursor:'pointer', background:'transparent', backdropFilter: 'blur(10px)', borderRadius:'50%', width:'30px', height:'30px',
+                               display:'flex', alignItems:'center', justifyContent:'center', color:'#fff',
+                               border: '1px solid rgba(255,255,255,0.1)',
+                               transition: 'all 0.2s ease'
+                           }}
+                       >
+                           <IoMdClose size={20}/>
+                       </motion.div>
                    </div>
               </div>
 
@@ -250,7 +310,7 @@ const FloatingCalculator = () => {
               >
                   <MdAspectRatio size={24} color="#666" style={{transform:'rotate(90deg)'}} />
               </div>
-          </div>
+          </motion.div>
       )}
     </div>
   );
@@ -342,35 +402,62 @@ const CalculatorView = () => {
 
     return (
         <>
-            {/* DISPLAY SCREEN */}
-            <div 
+            {/* DISPLAY SCREEN - LIQUID GLASS */}
+            <motion.div 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.4 }}
                 onPointerDown={(e) => e.target.tagName !== 'INPUT' && e.stopPropagation()} 
                 style={{
                     textAlign: 'right', 
-                    padding:'20px 10px', 
+                    padding:'20px 15px', 
                     flex: 1, 
                     display: 'flex', 
                     flexDirection: 'column', 
                     justifyContent: 'flex-end',
-                    minHeight: '120px'
+                    minHeight: '120px',
+                    background: 'transparent',
+                    backdropFilter: 'blur(10px)',
+                    borderRadius: '20px',
+                    border: '1px solid rgba(255,255,255,0.1)',
+                    borderTop: '1px solid rgba(255,255,255,0.15)',
+                    marginBottom: '10px',
+                    boxShadow: 'inset 0 1px 1px rgba(255,255,255,0.1)'
                 }}
             >
-                <div style={{height: '24px', color: '#888', fontSize: '16px', marginBottom:'5px', overflow:'hidden'}}>{history}</div>
-                <div style={{
-                    color: 'white', 
-                    fontSize: getFontSize(input), 
-                    fontWeight: '300', 
-                    lineHeight: '1.1',
-                    wordBreak: 'break-all',
-                    whiteSpace: 'pre-wrap', 
-                    transition: 'font-size 0.1s ease'
-                }}>
+                <motion.div 
+                    key={`history-${history}`}
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    style={{height: '24px', color: '#888', fontSize: '16px', marginBottom:'5px', overflow:'hidden'}}
+                >
+                    {history}
+                </motion.div>
+                <motion.div 
+                    key={`input-${input}`}
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    style={{
+                        color: 'white', 
+                        fontSize: getFontSize(input), 
+                        fontWeight: '300', 
+                        lineHeight: '1.1',
+                        wordBreak: 'break-all',
+                        whiteSpace: 'pre-wrap', 
+                        transition: 'font-size 0.1s ease'
+                    }}
+                >
                     {input}
-                </div>
-            </div>
+                </motion.div>
+            </motion.div>
 
             {/* KEYPAD */}
-            <div style={{display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '14px', paddingBottom:'10px'}}>
+            <motion.div 
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1, duration: 0.3 }}
+                style={{display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '14px', paddingBottom:'10px'}}
+            >
                 <Btn label="AC" bg="#A5A5A5" color="black" onClick={() => handleTap('AC')} />
                 <Btn icon={<FaBackspace size={22}/>} bg="#A5A5A5" color="black" onClick={() => handleTap('DEL')} />
                 <Btn label="%" bg="#A5A5A5" color="black" onClick={() => handleTap('%')} />
@@ -390,7 +477,7 @@ const CalculatorView = () => {
                 <Btn label="0" span={2} align="left" onClick={() => handleTap('0')} />
                 <Btn label="." onClick={() => handleTap('.')} />
                 <Btn label="=" bg="#FF9F0A" onClick={() => handleTap('=')} />
-            </div>
+            </motion.div>
         </>
     );
 };
@@ -497,54 +584,84 @@ const CalendarView = () => {
     };
 
     return (
-        <div style={{animation:'fadeIn 0.3s'}}>
-            <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', padding:'10px 0', borderBottom:'1px solid #333', marginBottom:'10px'}}>
-                <button onPointerDown={(e) => e.stopPropagation()} onClick={() => changeMonth(-1)} style={{background:'none', border:'none', color:'#FF9F0A', cursor:'pointer', padding:'5px'}}><FaChevronLeft size={18}/></button>
+        <motion.div style={{animation:'fadeIn 0.3s'}} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }}>
+            <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', padding:'10px 0', borderBottom:'1px solid rgba(255,255,255,0.1)', marginBottom:'10px'}}>
+                <motion.button 
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.9 }}
+                    onPointerDown={(e) => e.stopPropagation()} 
+                    onClick={() => changeMonth(-1)} 
+                    style={{background:'transparent', border:'none', color:'#FF9F0A', cursor:'pointer', padding:'5px', transition: 'all 0.2s ease'}}
+                >
+                    <FaChevronLeft size={18}/>
+                </motion.button>
                 <div style={{fontSize:'18px', fontWeight:'600', color:'white'}}>
                     {months[viewDate.getMonth()]} <span style={{color:'#888', fontWeight:'400'}}>{viewDate.getFullYear()}</span>
                 </div>
-                <button onPointerDown={(e) => e.stopPropagation()} onClick={() => changeMonth(1)} style={{background:'none', border:'none', color:'#FF9F0A', cursor:'pointer', padding:'5px'}}><FaChevronRight size={18}/></button>
+                <motion.button 
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.9 }}
+                    onPointerDown={(e) => e.stopPropagation()} 
+                    onClick={() => changeMonth(1)} 
+                    style={{background:'transparent', border:'none', color:'#FF9F0A', cursor:'pointer', padding:'5px', transition: 'all 0.2s ease'}}
+                >
+                    <FaChevronRight size={18}/>
+                </motion.button>
             </div>
             {renderDays()}
-            <div style={{marginTop:'25px', padding:'15px', background:'#1C1C1E', borderRadius:'16px'}}>
+            <motion.div 
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1 }}
+                style={{marginTop:'25px', padding:'15px', background:'transparent', backdropFilter: 'blur(10px)', borderRadius:'16px', border: '1px solid rgba(255,255,255,0.1)', borderTop: '1px solid rgba(255,255,255,0.2)'}}
+            >
                 <div style={{color:'#FF9F0A', fontSize:'12px', fontWeight:'700', textTransform:'uppercase', marginBottom:'5px'}}>
                     {selectedDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
                 </div>
                 <div style={{color:'white', fontSize:'15px', fontWeight:'500'}}>
                     {getEventForSelected()}
                 </div>
-            </div>
-        </div>
+            </motion.div>
+        </motion.div>
     );
 };
 
 // ==========================================
-// 🔘 BUTTON COMPONENT
+// 🔘 BUTTON COMPONENT - LIQUID GLASS
 // ==========================================
 const Btn = ({ label, onClick, color = 'white', span, icon, bg = '#333333', align }) => {
     return (
-        <button
+        <motion.button
+            whileHover={{ scale: 1.05, backgroundColor: bg === '#FF9F0A' ? '#FFA500' : 'rgba(100,100,100,0.6)' }}
+            whileTap={{ scale: 0.95 }}
             onPointerDown={(e) => { e.stopPropagation(); }} 
             onClick={onClick}
             style={{
                 gridColumn: span ? `span ${span}` : 'span 1',
                 height: '65px', 
-                borderRadius: '50px', 
-                border: 'none',
-                background: bg, 
+                borderRadius: '18px', 
+                border: '1px solid rgba(255,255,255,0.15)',
+                borderTop: '1px solid rgba(255,255,255,0.25)',
+                borderLeft: '1px solid rgba(255,255,255,0.2)',
+                background: bg === '#FF9F0A' 
+                    ? 'linear-gradient(135deg, rgba(255, 159, 10, 0.3) 0%, rgba(255, 159, 10, 0.15) 100%)'
+                    : 'transparent',
+                backdropFilter: 'blur(10px)',
+                WebkitBackdropFilter: 'blur(10px)',
                 color: color, 
                 fontSize: label === 'AC' ? '22px' : '32px', 
-                fontWeight: '400',
+                fontWeight: '500',
                 cursor: 'pointer', 
                 display: 'flex', alignItems: 'center', 
                 justifyContent: align === 'left' ? 'flex-start' : 'center',
                 paddingLeft: align === 'left' ? '28px' : '0',
                 userSelect: 'none',
-                active: { opacity: 0.7 } 
+                boxShadow: 'inset 0 1px 1px rgba(255,255,255,0.15)',
+                transition: 'all 0.2s ease'
             }}
         >
             {icon || label}
-        </button>
+        </motion.button>
     );
 };
 
