@@ -325,7 +325,7 @@ function Dashboard() {
             <Link to="/business" style={cardLink}>
                <div className="glass-card" style={{...cardStyle, backgroundImage: "url('https://www.deere.ca/assets/images/region-4/products/harvesting/cornhead-R4A057928_RRD_1-1920x1080.jpg')"}}>
                   <div style={cardTopOverlay}>
-                     <div><h3 style={cardTitle}>Business Zone</h3><p style={cardSubtitle}>Sell Harvest</p></div>
+                     <div><h3 style={cardTitle}>Business Zone</h3><p style={cardSubtitle}>Buy Harvest</p></div>
                      <div style={whiteIconBox}><svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/><path d="M19 5H5"/></svg></div>
                   </div>
                </div>
@@ -352,7 +352,7 @@ function Dashboard() {
             <Link to="/freelancing" style={cardLink}>
                <div className="glass-card" style={{...cardStyle, backgroundImage: "url('https://img.freepik.com/premium-photo/farmers-shake-hands-cornfield-partnership-agreement_875825-141614.jpg')"}}>
                   <div style={cardTopOverlay}>
-                     <div><h3 style={cardTitle}>Freelancing</h3><p style={cardSubtitle}>Agri Experts</p></div>
+                     <div><h3 style={cardTitle}>Freelancing</h3><p style={cardSubtitle}>Hire Professionals & Experts</p></div>
                      <div style={whiteIconBox}><Briefcase size={28} color="white"/></div>
                   </div>
                </div>
