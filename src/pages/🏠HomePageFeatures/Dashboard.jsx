@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios'; 
-import LocationSheet from '../components/LocationSheet'; 
-import BottomNavigation from '../components/BottomNavigation'; 
+import LocationSheet from '../../🔧components/LocationSheet'; 
+import BottomNavigation from '../../🔧components/BottomNavigation'; 
 import { ChevronDown, Radio, Map, Briefcase, TrendingUp, Newspaper, BookOpen, Rocket } from 'lucide-react'; 
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSwipeable } from 'react-swipeable';

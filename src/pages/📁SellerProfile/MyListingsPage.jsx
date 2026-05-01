@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { doc, collection, query, where, getDocs, setDoc, deleteDoc } from 'firebase/firestore'; 
-import { db } from '../firebase'; 
+import { db } from '../../firebase'; 
 // 🚨 IMPORT THE NEW DEDICATED FORM PAGE
-import ListingFormPage from './ListingFormPage';
+import ListingFormPage from '../ListingFormPage';
 
 // --- STYLING HELPERS (Simplified List View Styles) ---
 const pageStyle = { position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: '#f8f8f8', display:'flex', justifyContent:'center', overflowY:'auto' };

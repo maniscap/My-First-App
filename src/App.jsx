@@ -3,35 +3,37 @@ import { Routes, Route, Link, useLocation, Navigate } from 'react-router-dom';
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
 
 // --- IMPORT PAGES ---
-import Dashboard from './pages/Dashboard';
-import RentMachinery from './pages/HireMachinery';
-import HireWorkers from './pages/HireWorkers';
-import MarketRates from './pages/MarketRates'; 
-import NewsUpdates from './pages/NewsUpdates';       
-import DigitalLibrary from './pages/DigitalLibrary'; 
-import Business from './pages/Business';
-import Login from './pages/Login';
-import Profile from './pages/Profile';
-import Admin from './pages/Admin';
-import FarmFresh from './pages/FarmFresh';
-import Weather from './pages/Weather';
-import SearchResults from './pages/SearchResults';
-import Expenditure from './pages/Expenditure';
-import CropExpenses from './pages/CropExpenses'; 
-import UserLocation from './pages/UserLocation'; 
-import ModernTech from './pages/ModernTech';
+import Dashboard from './pages/🏠HomePageFeatures/Dashboard';
+import MarketRates from './pages/📁AgriInsights/MarketRates'; 
+import NewsUpdates from './pages/📁AgriInsights/NewsUpdates';       
+import DigitalLibrary from './pages/📁AgriInsights/DigitalLibrary'; 
+import Login from './pages/🪪Authentication&Terms/Login';
+import Profile from './pages/📁Profile/Profile';
+import Admin from './pages/🔰AdminPage/Admin';
+import Weather from './pages/📁Tools&utils/Weather';
+import SearchResults from './pages/🏠HomePageFeatures/SearchResults';
+import Expenditure from './pages/📁Tools&utils/Expenditure';
+import CropExpenses from './pages/📁Tools&utils/CropExpenses'; 
+import UserLocation from './pages/🏠HomePageFeatures/UserLocation'; 
+import ModernTech from './pages/📁AgriInsights/ModernTech';
 
 // --- NEW PAGES ---
-import Radio from './pages/Radio';
-import Freelancing from './pages/Freelancing';
+import Radio from './pages/📁Tools&utils/Radio';
+
+// --- AGRICOMMERCE PAGES ---
+import RentMachinery from './pages/📁AgriCommerce/HireMachinery';
+import HireWorkers from './pages/📁AgriCommerce/HireWorkers';
+import Business from './pages/📁AgriCommerce/Business';
+import FarmFresh from './pages/📁AgriCommerce/FarmFresh';
+import Freelancing from './pages/📁AgriCommerce/Freelancing';
 
 // --- FIXED IMPORT ---
-import GPSMeasurement from './pages/GPSMeasurement';
+import GPSMeasurement from './pages/📁Tools&utils/GPSMeasurement';
 
 // --- IMPORT COMPONENTS ---
-import ChatBot from './components/ChatBot';
-import FloatingCalculator from './components/FloatingCalculator'; 
-import SplashScreen from './components/SplashScreen';
+import ChatBot from './🔧components/ChatBot';
+import FloatingCalculator from './🔧components/FloatingCalculator'; 
+import SplashScreen from './🔧components/SplashScreen';
 
 function App() {
   const location = useLocation();

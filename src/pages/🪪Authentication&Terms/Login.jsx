@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { auth, googleProvider } from '../firebase'; 
+import { auth, googleProvider } from '../../firebase'; 
 import { 
   signInWithPopup, 
   signInWithPhoneNumber,

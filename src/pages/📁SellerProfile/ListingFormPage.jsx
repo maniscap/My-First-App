@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { doc, collection, setDoc } from 'firebase/firestore'; 
-import { db } from '../firebase'; 
+import { db } from '../../firebase'; 
 
 // --- STYLING HELPERS (Form specific styles) ---
 const pageStyle = { position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: '#f8f8f8', display:'flex', justifyContent:'center', overflowY:'auto' };
