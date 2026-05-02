@@ -50,6 +50,25 @@ const getInitialState = () => {
     return 'Maharashtra';
 };
 
+const getSavedFilters = () => {
+    try {
+        const saved = JSON.parse(localStorage.getItem('radio_filters'));
+        if (saved && saved.state && saved.language) {
+            return { search: '', state: saved.state, language: saved.language };
+        }
+    } catch (e) {}
+    return { search: '', state: getInitialState(), language: 'Hindi' };
+};
+
+const getSavedStation = () => {
+    try {
+        const saved = JSON.parse(localStorage.getItem('radio_selected_station'));
+        return saved || null;
+    } catch (e) {
+        return null;
+    }
+};
+
 // --- PREMIUM HAPTIC ENGINE ---
 const triggerHaptic = (type = 'light') => {
     try {
@@ -119,12 +138,27 @@ const Radio = () => {
   const [customTimerMins, setCustomTimerMins] = useState('');
   const [activeSelect, setActiveSelect] = useState(null);
   const [isBuffering, setIsBuffering] = useState(false);
-  const [isMuted, setIsMuted] = useState(globalAudio.muted);
-  
+  const [isMuted, setIsMuted] = useState(() => {
+      const saved = localStorage.getItem('radio_muted');
+      return saved !== null ? JSON.parse(saved) : globalAudio.muted;
+  });
+  const [volume, setVolume] = useState(() => {
+      const saved = localStorage.getItem('radio_volume');
+      return saved ? parseFloat(saved) : 0.75;
+  });
+
   const [viewMode, setViewMode] = useState('all'); // 'all', 'favorites', 'recents'
-  const [filters, setFilters] = useState({ search: '', state: getInitialState(), language: 'Hindi' });
-  
+  const [filters, setFilters] = useState(getSavedFilters());
+
   const stationsRef = useRef([]);
+
+  useEffect(() => {
+      const savedStation = getSavedStation();
+      if (savedStation) {
+          globalCurrentStation = savedStation;
+          setSelectedStation(savedStation);
+      }
+  }, []);
 
   useEffect(() => {
     const onPopState = (e) => {
@@ -168,8 +202,8 @@ const Radio = () => {
   }, [filteredStations]);
 
   // --- PLAYER STATE ---
-  const [selectedStation, setSelectedStation] = useState(globalCurrentStation);
-  const [isPlaying, setIsPlaying] = useState(!globalAudio.paused); 
+  const [selectedStation, setSelectedStation] = useState(getSavedStation() || globalCurrentStation);
+  const [isPlaying, setIsPlaying] = useState(!globalAudio.paused);
 
   // --- BACK NAVIGATION LOGIC ---
   const handleBack = () => {
@@ -198,7 +232,15 @@ const Radio = () => {
         e.stopPropagation();
         e.preventDefault();
     }
-    
+
+    if (!selectedStation) {
+        const nextStation = filteredStations[0] || allStations[0];
+        if (nextStation) {
+            playStation(nextStation);
+        }
+        return;
+    }
+
     if (isPlaying) {
         setIsPlaying(false);
         globalAudio.pause();
@@ -210,7 +252,7 @@ const Radio = () => {
             playPromise.catch(error => {
                 if (error.name !== 'AbortError') {
                     console.error("Playback failed:", error);
-                    setIsPlaying(false); 
+                    setIsPlaying(false);
                     toast.error("Stream connection failed");
                 }
             });
@@ -652,12 +694,13 @@ const Radio = () => {
 
   const shareStation = () => {
       if (selectedStation) {
-          const text = `Listening to ${selectedStation.name} on FarmCap Radio!`;
+          const url = selectedStation.url_resolved || selectedStation.url || window.location.href;
+          const text = `Listening to ${selectedStation.name} on FarmCap Radio! ${url}`;
           if (navigator.share) {
-              navigator.share({ title: 'FarmCap Radio', text: text, url: window.location.href });
+              navigator.share({ title: 'FarmCap Radio', text: text, url });
           } else {
               navigator.clipboard.writeText(text);
-              toast.success("Station copied!", { theme: "dark", autoClose: 1000 });
+              toast.success("Station info copied!", { theme: "dark", autoClose: 1400 });
           }
       }
   };
@@ -665,6 +708,24 @@ const Radio = () => {
   const uniqueStatesList = useMemo(() => Object.keys(STATE_LOCATIONS).sort(), []);
   const uniqueLangList = INDIAN_LANGUAGES;
   
+  useEffect(() => {
+      localStorage.setItem('radio_filters', JSON.stringify({ state: filters.state, language: filters.language }));
+  }, [filters.state, filters.language]);
+
+  useEffect(() => {
+      localStorage.setItem('radio_selected_station', JSON.stringify(selectedStation || {}));
+  }, [selectedStation]);
+
+  useEffect(() => {
+      localStorage.setItem('radio_muted', JSON.stringify(isMuted));
+      globalAudio.muted = isMuted;
+  }, [isMuted]);
+
+  useEffect(() => {
+      localStorage.setItem('radio_volume', volume.toString());
+      globalAudio.volume = volume;
+  }, [volume]);
+
   const activeColor = getStationColor(selectedStation?.name);
   const isTimerUrgent = remainingTime > 0 && remainingTime <= 60;
 
@@ -679,7 +740,7 @@ const Radio = () => {
             <button onClick={handleBack} style={styles.glassBtn}><IoMdArrowBack size={22}/></button>
             <div style={{textAlign:'center'}}>
                 <div style={styles.logoText}>FARMCAP <span style={{color:'#4ade80'}}>Radio</span></div>
-                <div style={styles.subText}>{hasFetched ? `${filteredStations.length} Signals Active` : 'Awaiting Calibration...'}</div>
+                <div style={styles.subText}>{hasFetched ? `${filteredStations.length} / ${allStations.length} active stations` : 'Awaiting Calibration...'}</div>
             </div>
             <div style={{display:'flex', gap:10}}>
                 {hasFetched && (
@@ -694,6 +755,17 @@ const Radio = () => {
                     {viewMode === 'favorites' ? <IoMdHeart size={20} color="#fff"/> : <IoMdHeartEmpty size={20} color="#fff"/>}
                 </button>
             </div>
+        </div>
+
+        <div style={styles.viewModeRow}>
+            <button onClick={() => setViewMode('all')} style={{...styles.viewModeBtn, background: viewMode === 'all' ? 'rgba(74,222,128,0.2)' : 'rgba(255,255,255,0.08)'}}>All</button>
+            <button onClick={() => setViewMode('favorites')} style={{...styles.viewModeBtn, background: viewMode === 'favorites' ? 'rgba(239,68,68,0.2)' : 'rgba(255,255,255,0.08)'}}>Favorites</button>
+            <button onClick={() => setViewMode('recents')} style={{...styles.viewModeBtn, background: viewMode === 'recents' ? 'rgba(59,130,246,0.2)' : 'rgba(255,255,255,0.08)'}}>Recents</button>
+        </div>
+
+        <div style={styles.headerBadgeRow}>
+            {selectedStation && <span style={styles.badge}>{selectedStation.type || 'Live'} station</span>}
+            {hasFetched && <span style={styles.badge}>{filteredStations.length} stations shown</span>}
         </div>
 
         {/* SEARCH (ONLY SHOW IF FETCHED) */}
@@ -901,6 +973,22 @@ const Radio = () => {
                       <button onClick={playNext} style={styles.glassCircleBtn}><IoMdSkipForward size={22}/></button>
                   </div>
 
+                  <div style={styles.playerMetaRow}>
+                      <div style={{display:'flex', gap:10, flexWrap:'wrap', alignItems:'center'}}>
+                          <span style={styles.badge}>{selectedStation?.type || 'Live'}</span>
+                          <span style={styles.badge}>{selectedStation?.bitrate ? `${selectedStation.bitrate} kbps` : 'Live Stream'}</span>
+                      </div>
+                      <button onClick={shareStation} style={styles.glassPillBtn}>
+                          <IoMdShare size={16} style={{marginRight: 8}} /> Share
+                      </button>
+                  </div>
+
+                  <div style={styles.volumeRow}>
+                      <IoMdVolumeOff size={18} color="rgba(255,255,255,0.7)" />
+                      <input type="range" min="0" max="1" step="0.01" value={volume} onChange={(e) => setVolume(parseFloat(e.target.value))} style={styles.volumeSlider} />
+                      <IoMdVolumeHigh size={18} color="rgba(255,255,255,0.7)" />
+                  </div>
+
                   {/* Added Row: Sleep Timer */}
                   <div style={{display:'flex', justifyContent:'center', marginTop:'5px', position:'relative'}}>
                        <button onClick={() => setShowTimerMenu(!showTimerMenu)} className={isTimerUrgent ? "timer-urgent-anim" : ""} style={{...styles.glassPillBtn, color: isTimerUrgent ? '#fff' : (remainingTime ? '#000' : '#fff'), background: isTimerUrgent ? '#ef4444' : (remainingTime ? '#fff' : 'transparent'), borderColor: isTimerUrgent ? '#f87171' : 'rgba(255, 255, 255, 0.3)', boxShadow: isTimerUrgent ? '0 0 20px rgba(239, 68, 68, 0.8), inset 0 2px 5px rgba(255,255,255,0.4)' : styles.glassPillBtn.boxShadow}}>
@@ -1070,6 +1158,13 @@ const styles = {
   liveTrackFill: { height: '100%', borderRadius: 2 },
 
   mainControlsArea: { display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '25px', padding: '0' },
+  playerMetaRow: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', flexWrap: 'wrap' },
+  volumeRow: { display: 'flex', alignItems: 'center', gap: '12px', marginTop: '10px', padding: '0 8px' },
+  volumeSlider: { flex: 1, accentColor: '#4ade80', cursor: 'pointer', width: '100%' },
+  viewModeRow: { display: 'flex', justifyContent: 'center', gap: '8px', flexWrap: 'wrap', marginTop: '14px' },
+  viewModeBtn: { padding: '10px 16px', borderRadius: '999px', border: '1px solid rgba(255,255,255,0.12)', color: '#fff', fontWeight: '700', cursor: 'pointer', transition: 'all 0.2s' },
+  headerBadgeRow: { display: 'flex', justifyContent: 'center', gap: '10px', flexWrap: 'wrap', marginTop: '10px' },
+  badge: { background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '999px', padding: '8px 14px', fontSize: '12px', fontWeight: '700', letterSpacing: '0.4px', color: '#e5e7eb' },
   playBtnGlass: { width: '64px', height: '64px', borderRadius: '50%', background: 'transparent', backdropFilter: 'blur(12px) saturate(120%) brightness(110%)', WebkitBackdropFilter: 'blur(12px) saturate(120%) brightness(110%)', border: '1px solid rgba(255, 255, 255, 0.1)', borderTop: '1px solid rgba(255, 255, 255, 0.3)', borderLeft: '1px solid rgba(255, 255, 255, 0.2)', boxShadow: 'inset 0 1px 1px rgba(255, 255, 255, 0.3), 0 8px 32px rgba(0, 0, 0, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transform: 'scale(1)', transition: 'all 0.2s' },
   
   timerMenu: { position: 'absolute', bottom: '130%', left: '50%', transform: 'translateX(-50%)', background: 'transparent', backdropFilter: 'blur(12px) saturate(120%) brightness(110%)', WebkitBackdropFilter: 'blur(12px) saturate(120%) brightness(110%)', padding: '20px', borderRadius: '24px', width: '240px', border: '1px solid rgba(255, 255, 255, 0.1)', borderTop: '1px solid rgba(255, 255, 255, 0.3)', borderLeft: '1px solid rgba(255, 255, 255, 0.2)', boxShadow: 'inset 0 1px 1px rgba(255, 255, 255, 0.3), 0 8px 32px rgba(0, 0, 0, 0.15)', zIndex: 60, boxSizing: 'border-box' },

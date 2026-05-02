@@ -1,27 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { motion } from 'framer-motion';
 
-const treeVariants = {
-  hidden: { opacity: 0, scale: 0.88 },
-  visible: { opacity: 1, scale: 1, transition: { duration: 0.9, ease: 'easeOut' } },
-};
-
-const ringVariants = {
-  pulse: {
-    scale: [1, 1.04, 1],
-    opacity: [0.15, 0.42, 0.15],
-    transition: { duration: 3.4, ease: 'easeInOut', repeat: Infinity },
-  },
-};
-
-const leafVariants = {
-  hidden: { scale: 0.2, opacity: 0 },
-  visible: (i) => ({
-    scale: 1,
-    opacity: 1,
-    transition: { duration: 0.8, ease: 'easeOut', delay: 0.8 + i * 0.12 },
-  }),
-};
+// Floating cinematic snow particles
+const dustParticles = Array.from({ length: 80 }).map((_, i) => ({
+  id: i,
+  size: Math.random() * 3 + 1.5,
+  left: `${Math.random() * 100}vw`,
+  drift: Math.random() * 40 - 20,
+  dur: Math.random() * 5 + 4,
+  delay: Math.random() * 4,
+}));
 
 const SplashScreen = () => {
 
@@ -46,224 +34,263 @@ const SplashScreen = () => {
     });
   }, []);
 
-  // --- TYPEWRITER STATE ---
-  const brandName = "FARMCAP";
-  const [typedBrand, setTypedBrand] = useState('');
-  const [typingStarted, setTypingStarted] = useState(false);
-
-  // Delay the start of the animation + typing
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setTypingStarted(true);
-    }, 1500); // Start typing after 1.5s
-    return () => clearTimeout(timer);
-  }, []);
-
-  // Typewriter effect logic
-  useEffect(() => {
-    if (typingStarted && typedBrand.length < brandName.length) {
-      const timeoutId = setTimeout(() => {
-        setTypedBrand(brandName.slice(0, typedBrand.length + 1));
-      }, 150); // Typing speed in ms
-      return () => clearTimeout(timeoutId);
-    }
-  }, [typingStarted, typedBrand]);
+  // Cinematic spotlight configuration: flicker on, then continuously sweep
+  const flickerOpacity = [0, 0.6, 0.1, 0.9];
+  const opacityTransition = { duration: 1.2, times: [0, 0.15, 0.3, 1], ease: "easeOut", delay: 0.8 };
+  
+  const sweepRotate = [0, 45, -45, 0]; // Wide angles so the text becomes completely invisible
+  const rotateTransition = { duration: 10, repeat: Infinity, ease: "easeInOut", delay: 2.5 };
 
   return (
     <div style={styles.container}>
-      <motion.div
-        style={styles.glowRing}
-        animate="pulse"
-        variants={ringVariants}
-      />
+      {/* LAYER 0.5: Cinematic Dust Particles */}
+      <div style={styles.dustLayer}>
+        {dustParticles.map((p) => (
+          <motion.div
+            key={p.id}
+            style={{
+              position: 'absolute',
+              left: p.left,
+              bottom: '-5vh',
+              width: `${p.size}px`,
+              height: `${p.size}px`,
+              backgroundColor: '#ffffff',
+              borderRadius: '50%',
+              boxShadow: '0 0 6px rgba(255,255,255,0.9)',
+            }}
+            animate={{
+              y: ['0vh', '-110vh'],
+              x: [0, p.drift, -p.drift, 0],
+              opacity: [0, 0.9, 0.9, 0]
+            }}
+            transition={{
+              duration: p.dur,
+              repeat: Infinity,
+              delay: p.delay,
+              ease: "linear"
+            }}
+          />
+        ))}
+      </div>
 
-      <motion.div
-        style={styles.treeWrapper}
-        initial="hidden"
-        animate="visible"
-        variants={treeVariants}
+      {/* LAYER 1 & 2: Static Content (100% Invisible in the dark until light hits) */}
+      <motion.div 
+        style={styles.contentWrapper}
+        initial={{ scale: 0.95, y: 15 }}
+        animate={{ scale: 1, y: 0 }}
+        transition={{ duration: 12, ease: "easeOut" }}
       >
-        <svg width="220" height="220" viewBox="0 0 220 220" style={styles.svgContainer}>
-          <defs>
-            <linearGradient id="treeGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#86efac" />
-              <stop offset="100%" stopColor="#22c55e" />
-            </linearGradient>
-            <filter id="treeGlow" x="-40%" y="-40%" width="180%" height="180%">
-              <feGaussianBlur in="SourceGraphic" stdDeviation="5" result="blur" />
-              <feMerge>
-                <feMergeNode in="blur" />
-                <feMergeNode in="SourceGraphic" />
-              </feMerge>
-            </filter>
-          </defs>
-
-          <motion.path
-            d="M110 195 C110 195, 108 135, 110 94"
-            stroke="#d9f99d"
-            strokeWidth="12"
-            strokeLinecap="round"
-            initial={{ pathLength: 0, opacity: 0 }}
-            animate={{ pathLength: 1, opacity: 1 }}
-            transition={{ duration: 1.1, ease: 'easeInOut' }}
-          />
-
-          <motion.path
-            d="M110 90 C110 90, 96 80, 90 66"
-            fill="none"
-            stroke="url(#treeGradient)"
-            strokeWidth="10"
-            strokeLinecap="round"
-            initial={{ pathLength: 0, opacity: 0 }}
-            animate={{ pathLength: 1, opacity: 1 }}
-            transition={{ duration: 0.9, delay: 0.6, ease: 'easeOut' }}
-          />
-
-          <motion.path
-            d="M110 90 C110 90, 124 80, 130 66"
-            fill="none"
-            stroke="url(#treeGradient)"
-            strokeWidth="10"
-            strokeLinecap="round"
-            initial={{ pathLength: 0, opacity: 0 }}
-            animate={{ pathLength: 1, opacity: 1 }}
-            transition={{ duration: 0.9, delay: 0.7, ease: 'easeOut' }}
-          />
-
-          {[0, 1, 2, 3, 4].map((index) => (
-            <motion.circle
-              key={index}
-              cx={92 + index * 7}
-              cy={62 - (index % 2) * 10}
-              r="12"
-              fill="url(#treeGradient)"
-              style={{ filter: 'url(#treeGlow)' }}
-              custom={index}
-              variants={leafVariants}
-              initial="hidden"
-              animate="visible"
-            />
-          ))}
-
-          <motion.line
-            x1="60"
-            y1="199"
-            x2="160"
-            y2="199"
-            stroke="#4ade80"
-            strokeWidth="6"
-            strokeLinecap="round"
-            initial={{ pathLength: 0, opacity: 0 }}
-            animate={{ pathLength: 1, opacity: 1 }}
-            transition={{ duration: 0.9, delay: 0.9, ease: 'easeOut' }}
-          />
-        </svg>
+        {/* 3D TEXT WITH EMOJI & TAGLINE */}
+        <div style={styles.textContainer}>
+          <motion.h1 
+            style={styles.dabur3DTitle}
+            initial={{ opacity: 0, y: 30, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            transition={{ duration: 1.5, delay: 0.8, ease: "easeOut" }}
+          >
+            🧢 FARM<span style={styles.dabur3DGreen}>CAP</span>
+          </motion.h1>
+          <motion.p 
+            style={styles.subText}
+            initial={{ letterSpacing: '0.05em', opacity: 0, y: 10 }}
+            animate={{ letterSpacing: '0.2em', opacity: 1, y: 0 }}
+            transition={{ 
+              opacity: { duration: 1.5, delay: 1.2, ease: "easeOut" },
+              y: { duration: 1.5, delay: 1.2, ease: "easeOut" },
+              letterSpacing: { duration: 10, ease: "easeOut" }
+            }}
+          >
+            — GROWING SMARTER TOGETHER —
+          </motion.p>
+        </div>
       </motion.div>
 
-      <div style={styles.textContainer}>
-        <motion.h1
-          style={styles.brandTitle}
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.9, delay: 0.8, ease: 'easeOut' }}
+      {/* LAYER 3: THE DARKNESS MULTIPLY MASK (Hides everything outside the light beam) */}
+      <div style={styles.maskLayer}>
+        <motion.div 
+          style={styles.multiplyCone}
+          initial={{ opacity: 0, rotate: 0 }}
+          animate={{ opacity: flickerOpacity, rotate: sweepRotate }}
+          transition={{ opacity: opacityTransition, rotate: rotateTransition }}
+        />
+        {/* Forces the bottom of the screen to remain pitch black so light doesn't leak down */}
+        <div style={styles.darknessFloor} />
+      </div>
+
+      {/* LAYER 3.5: VOLUMETRIC LIGHT RAYS (The visible, dusty beam cutting through the air) */}
+      <div style={styles.rayLayer}>
+        <motion.div 
+          style={styles.rayCone}
+          initial={{ opacity: 0, rotate: 0 }}
+          animate={{ opacity: flickerOpacity, rotate: sweepRotate }}
+          transition={{ opacity: opacityTransition, rotate: rotateTransition }}
+        />
+      </div>
+
+      {/* LAYER 4: The Physical Spotlight Fixture (Visible above mask) */}
+      <div style={styles.fixtureWrapper}>
+        <div style={styles.fixtureMount}></div>
+        <motion.div 
+          style={styles.fixtureBody}
+          initial={{ rotate: 0 }}
+          animate={{ rotate: sweepRotate }}
+          transition={rotateTransition}
         >
-          <span>{typedBrand.slice(0, 4)}</span>
-          <span style={styles.capHighlight}>{typedBrand.slice(4)}</span>
-          {typedBrand.length < brandName.length && (
-            <motion.span
-              style={styles.cursor}
-              animate={{ opacity: [0, 1, 0] }}
-              transition={{ duration: 0.75, repeat: Infinity }}
-            >
-              |
-            </motion.span>
-          )}
-        </motion.h1>
-        {typedBrand.length === brandName.length && (
-          <motion.p
-            style={styles.subText}
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 1.05, ease: 'easeOut' }}
-          >
-            MODERN FARMING PLATFORM
-          </motion.p>
-        )}
+          <motion.div 
+            style={styles.fixtureBulb} 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: flickerOpacity }}
+            transition={opacityTransition}
+          />
+        </motion.div>
       </div>
     </div>
   );
 };
 
-// --- STYLES OBJECT (No Tailwind Required) ---
 const styles = {
   container: {
-    backgroundColor: '#050816',
+    backgroundColor: '#000000',
     display: 'flex',
     flexDirection: 'column',
     height: '100vh',
     width: '100%',
     alignItems: 'center',
     justifyContent: 'center',
-    overflow: 'hidden',
     position: 'relative',
-    fontFamily: '"SF Pro Display", "Inter", sans-serif',
-    color: '#f8fafc',
+    overflow: 'hidden',
+    fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif',
   },
-  glowRing: {
+  dustLayer: {
     position: 'absolute',
-    width: '360px',
-    height: '360px',
-    borderRadius: '50%',
-    background: 'radial-gradient(circle, rgba(34,197,94,0.22) 0%, rgba(34,197,94,0) 68%)',
-    zIndex: 1,
-  },
-  treeWrapper: {
-    zIndex: 2,
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: '24px',
-    width: '240px',
-    height: '240px',
-  },
-  svgContainer: {
+    inset: 0,
+    zIndex: 5,
     pointerEvents: 'none',
-    width: '100%',
-    height: '100%',
   },
-  textContainer: {
-    zIndex: 2,
+  fixtureWrapper: {
+    position: 'absolute',
+    top: 0,
+    left: '50%',
+    transform: 'translateX(-50%)',
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
-    marginTop: '12px',
-    textAlign: 'center',
+    zIndex: 60, // Keep fixture visible above the darkness mask
   },
-  brandTitle: {
-    fontSize: '3.8rem',
-    fontWeight: '700',
-    letterSpacing: '0.18em',
-    color: '#f8fafc',
-    margin: 0,
-    padding: 0,
+  fixtureMount: {
+    width: '16px',
+    height: '14px',
+    background: 'linear-gradient(to bottom, #0a0a0a, #333)',
+    borderBottomLeftRadius: '4px',
+    borderBottomRightRadius: '4px',
+    boxShadow: '0 2px 5px rgba(0,0,0,0.5)',
+  },
+  fixtureBody: {
+    width: '34px',
+    height: '45px',
+    background: 'linear-gradient(90deg, #111 0%, #444 50%, #111 100%)',
+    borderTopLeftRadius: '8px',
+    borderTopRightRadius: '8px',
+    borderBottomLeftRadius: '2px',
+    borderBottomRightRadius: '2px',
+    position: 'relative',
+    display: 'flex',
+    justifyContent: 'center',
+    transformOrigin: 'top center',
+    boxShadow: '0 5px 15px rgba(0,0,0,0.8)',
+  },
+  fixtureBulb: {
+    position: 'absolute',
+    bottom: '-2px',
+    width: '26px',
+    height: '6px',
+    background: '#ffffff',
+    borderRadius: '50%',
+    boxShadow: '0 0 15px 3px rgba(255, 255, 255, 0.7), 0 0 30px 10px rgba(255, 255, 255, 0.3)',
+    zIndex: 62,
+  },
+  maskLayer: {
+    position: 'fixed',
+    inset: 0,
+    backgroundColor: '#000000',
+    mixBlendMode: 'multiply',
+    pointerEvents: 'none',
+    zIndex: 50,
+    overflow: 'hidden'
+  },
+  darknessFloor: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    width: '100%',
+    height: '35vh',
+    background: 'linear-gradient(to top, #000000 0%, #000000 50%, transparent 100%)',
+  },
+  multiplyCone: {
+    position: 'absolute',
+    top: 0,
+    left: '-100vw',
+    width: '300vw',
+    height: '200vh',
+    transformOrigin: 'top center',
+    // Pitch black outside, bright pure white inside the beam. Multiply mode hides content perfectly.
+    background: 'conic-gradient(at 50% 0%, #000000 0deg, #000000 147deg, #ffffff 155deg, #ffffff 205deg, #000000 213deg, #000000 360deg)',
+  },
+  rayLayer: {
+    position: 'fixed',
+    inset: 0,
+    mixBlendMode: 'screen',
+    pointerEvents: 'none',
+    zIndex: 51,
+    overflow: 'hidden',
+    // Sharp fade out below the text so the beam doesn't continue infinitely
+    WebkitMaskImage: 'linear-gradient(to bottom, rgba(0,0,0,1) 50%, rgba(0,0,0,0) 75%)',
+    maskImage: 'linear-gradient(to bottom, rgba(0,0,0,1) 50%, rgba(0,0,0,0) 75%)',
+  },
+  rayCone: {
+    position: 'absolute',
+    top: 0,
+    left: '-100vw',
+    width: '300vw',
+    height: '200vh',
+    transformOrigin: 'top center',
+    // Beautiful, translucent glowing white rays in the air
+    background: 'conic-gradient(at 50% 0%, transparent 0deg, transparent 147deg, rgba(255,255,255,0.02) 150deg, rgba(255,255,255,0.2) 157deg, rgba(255,255,255,0.2) 203deg, rgba(255,255,255,0.02) 210deg, transparent 213deg, transparent 360deg)',
+  },
+  contentWrapper: {
+    zIndex: 10,
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    marginTop: '30px', // Push content down slightly so beam catches it beautifully
+  },
+  textContainer: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: '40px',
+  },
+  dabur3DTitle: {
+    fontSize: '2.8rem',
+    fontWeight: '900',
+    fontFamily: '"Georgia", "Times New Roman", serif',
     lineHeight: 1,
+    color: '#ffffff',
+    margin: 0,
+    letterSpacing: '0.05em',
+    textShadow: '0px 1px 0px #ccc, 0px 2px 0px #bbb, 0px 3px 0px #aaa, 0px 4px 0px #999, 0px 5px 0px #888, 0px 12px 15px rgba(0,0,0,0.8)',
   },
-  capHighlight: {
-    color: '#7cfc00',
-    textShadow: '0 0 18px rgba(124, 252, 0, 0.24)',
-  },
-  cursor: {
-    fontWeight: '600',
-    color: '#a7f3d0',
+  dabur3DGreen: {
+    color: '#22c55e',
+    textShadow: '0px 1px 0px #16a34a, 0px 2px 0px #15803d, 0px 3px 0px #166534, 0px 4px 0px #14532d, 0px 5px 0px #064e3b, 0px 12px 15px rgba(0,0,0,0.8)',
     marginLeft: '6px',
   },
   subText: {
-    fontSize: '0.95rem',
-    color: '#cbd5e1',
-    fontWeight: '500',
-    letterSpacing: '0.18em',
-    margin: '18px 0 0 0',
-    textTransform: 'uppercase',
+    color: '#ffffff',
+    fontSize: '0.65rem',
+    fontWeight: '700',
+    margin: 0,
+    textShadow: '0 2px 4px rgba(0,0,0,0.8)',
   },
 };
 
