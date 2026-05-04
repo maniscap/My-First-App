@@ -660,9 +660,19 @@ export const PinMenu = ({ onBack, onStartManual, onStartGPS }) => ( <><div style
 // --- FILE MANAGER (Updated Card) ---
 export const FileManager = ({ onClose, files = [], onDelete, onEdit, onPreview }) => { 
     const handleShare = async (file) => { if (navigator.share) { try { let shareData = { title: file.details.title, text: `Location: ${file.details.title}` }; if (file.details.photo) { const blob = await (await fetch(file.details.photo)).blob(); const imageFile = new File([blob], "geo-tag.jpg", { type: blob.type }); if (navigator.canShare && navigator.canShare({ files: [imageFile] })) { shareData.files = [imageFile]; } } await navigator.share(shareData); } catch (err) { console.log("Share cancelled"); } } else { alert("Sharing not supported."); } }; 
+    const handleExportAll = () => {
+        if (files.length === 0) return alert("No files to export.");
+        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(files, null, 2));
+        const downloadAnchorNode = document.createElement('a');
+        downloadAnchorNode.setAttribute("href", dataStr);
+        downloadAnchorNode.setAttribute("download", "FarmCap_GPS_Records_" + new Date().toISOString().split('T')[0] + ".json");
+        document.body.appendChild(downloadAnchorNode);
+        downloadAnchorNode.click();
+        downloadAnchorNode.remove();
+    };
     return ( 
         <div style={styles.fullScreenWhite}> 
-            <div style={styles.saveHeader}><button onClick={onClose} style={styles.iconBtnWhite}><FiArrowLeft size={24}/></button><span style={styles.headerTitleGold}>Saved Records</span><div style={{width: 24}}></div></div> 
+            <div style={styles.saveHeader}><button onClick={onClose} style={styles.iconBtnWhite}><FiArrowLeft size={24}/></button><span style={styles.headerTitleGold}>Saved Records</span><button onClick={handleExportAll} style={styles.iconBtnWhite} title="Export All"><FiDownload size={24}/></button></div> 
             <div style={styles.listContainer}> 
                 {files.length === 0 ? <div style={{textAlign:'center', color:'#666', marginTop:50}}>No files saved yet.</div> : files.map((file, i) => ( 
                     <div key={i} style={styles.fileItem} onClick={() => onPreview(file)}> 
@@ -722,9 +732,17 @@ export const SaveScreen = ({ poiData, setPoiData, onBack, onSave, onOpenGroupBtn
     const formattedDate = currentTime.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }); 
     const formattedTime = currentTime.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}); 
     
+    const handleSave = () => {
+        if (!poiData.title || !poiData.title.trim()) {
+            alert("Please enter a title before saving.");
+            return;
+        }
+        onSave(poiData);
+    };
+
     return ( 
         <div style={styles.fullScreenWhite}> 
-            <div style={styles.saveHeader}><button onClick={onBack} style={styles.iconBtnWhite}><FiArrowLeft size={24}/></button><span style={styles.headerTitleGold}>Save POI</span><button onClick={() => onSave(poiData)} style={styles.headerTextBtn}>SAVE</button></div> 
+            <div style={styles.saveHeader}><button onClick={onBack} style={styles.iconBtnWhite}><FiArrowLeft size={24}/></button><span style={styles.headerTitleGold}>Save POI</span><button onClick={handleSave} style={styles.headerTextBtn}>SAVE</button></div> 
             <div style={styles.formContainer}> 
                 <div style={styles.inputGroup}><label style={styles.inputLabel}>Title</label><div style={styles.fieldContainer}><input type="text" style={styles.inputField} placeholder="Enter title" value={poiData.title} onChange={(e) => setPoiData({...poiData, title: e.target.value})}/></div></div> 
                 <div style={styles.inputGroup}><label style={styles.inputLabel}>Description</label><div style={styles.fieldContainer}><input type="text" style={styles.inputField} placeholder="Optional description" value={poiData.description} onChange={(e) => setPoiData({...poiData, description: e.target.value})}/></div></div> 

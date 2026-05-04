@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { IoMdAdd, IoMdArrowBack, IoMdMore, IoMdClose } from 'react-icons/io';
+import { IoMdAdd, IoMdArrowBack, IoMdMore, IoMdClose, IoMdDownload } from 'react-icons/io';
 import { motion, AnimatePresence } from 'framer-motion';
 
 // --- 🌾 EXTENDED CROP ICON LIBRARY (INDIAN CONTEXT) ---
@@ -129,6 +129,18 @@ function Expenditure() {
     closeModal();
   };
 
+  const exportData = () => {
+      const allBills = JSON.parse(localStorage.getItem('farmBuddy_bills') || '[]');
+      const data = { folders, bills: allBills };
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(data, null, 2));
+      const downloadAnchorNode = document.createElement('a');
+      downloadAnchorNode.setAttribute("href", dataStr);
+      downloadAnchorNode.setAttribute("download", "FarmBuddy_Expenditure_Backup_" + new Date().toISOString().split('T')[0] + ".json");
+      document.body.appendChild(downloadAnchorNode);
+      downloadAnchorNode.click();
+      downloadAnchorNode.remove();
+  };
+
   const deleteFolder = (e, id) => {
       e.stopPropagation();
       if(window.confirm("Delete this crop folder completely?")) {
@@ -214,7 +226,15 @@ function Expenditure() {
             <IoMdArrowBack size={24} />
           </motion.button>
           <h2 style={styles.title}>Crop Expenditure</h2>
-          <div style={{width: '24px'}}></div>
+          <motion.button 
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
+            onClick={exportData} 
+            style={styles.backBtn}
+            title="Export Data Backup"
+          >
+            <IoMdDownload size={24} />
+          </motion.button>
         </div>
       </div>
 
@@ -347,7 +367,7 @@ function Expenditure() {
             <div style={{display:'flex', gap:'10px'}}>
                 <div style={{flex:1}}>
                     <label style={styles.label}>Acres</label>
-                    <input type="number" placeholder="0.0" style={styles.input} value={formData.acres} onChange={e => setFormData({...formData, acres: e.target.value})}/>
+                    <input type="number" min="0" step="0.1" placeholder="0.0" style={styles.input} value={formData.acres} onChange={e => setFormData({...formData, acres: e.target.value})}/>
                 </div>
                 <div style={{flex:1}}>
                     <label style={styles.label}>Season</label>
@@ -371,7 +391,7 @@ function Expenditure() {
                         <label style={styles.label}>Lease Amount (Per Acre)</label>
                         <div style={styles.leaseInputContainer}>
                             <span style={{color:'#4CAF50', fontWeight:'bold'}}>₹</span>
-                            <input type="number" placeholder="Ex: 25000" style={styles.leaseInput} value={formData.leaseAmount} onChange={e => setFormData({...formData, leaseAmount: e.target.value})}/>
+                            <input type="number" min="0" placeholder="Ex: 25000" style={styles.leaseInput} value={formData.leaseAmount} onChange={e => setFormData({...formData, leaseAmount: e.target.value})}/>
                         </div>
                         
                         {/* AUTO CALCULATED TOTAL LEASE DISPLAY */}
