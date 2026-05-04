@@ -1,20 +1,65 @@
 import React, { useEffect } from 'react';
 import { motion } from 'framer-motion';
 
-// Floating cinematic snow particles
-const dustParticles = Array.from({ length: 80 }).map((_, i) => ({
+// Minimal floating particles
+const fireflies = Array.from({ length: 50 }).map((_, i) => ({
   id: i,
-  size: Math.random() * 3 + 1.5,
+  size: Math.random() * 3 + 1,
   left: `${Math.random() * 100}vw`,
-  drift: Math.random() * 40 - 20,
-  dur: Math.random() * 5 + 4,
-  delay: Math.random() * 4,
+  bottom: `${Math.random() * -20 - 10}vh`,
+  xOffset: Math.random() * 40 - 20,
+  duration: Math.random() * 8 + 6,
+  delay: Math.random() * 5,
+  opacity: Math.random() * 0.4 + 0.1,
 }));
+
+// Custom growing sprout animation
+const GrowingSprout = ({ size = 52, color = "#4ade80", strokeWidth = 1.5 }) => {
+  const stemVariants = {
+    hidden: { pathLength: 0, opacity: 0 },
+    visible: {
+      pathLength: 1,
+      opacity: 1,
+      transition: { duration: 1.2, ease: "easeInOut" }
+    }
+  };
+
+  const leafVariants = {
+    hidden: { pathLength: 0, opacity: 0 },
+    visible: {
+      pathLength: 1,
+      opacity: 1,
+      transition: { duration: 1.2, ease: "easeOut", delay: 0.6 }
+    }
+  };
+
+  return (
+    <motion.svg
+      xmlns="http://www.w3.org/2000/svg"
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke={color}
+      strokeWidth={strokeWidth}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      initial="hidden"
+      animate="visible"
+    >
+      {/* Dirt and Stem */}
+      <motion.path d="M7 20h10" variants={stemVariants} />
+      <motion.path d="M10 20c5.5-2.5.8-6.4 3-10" variants={stemVariants} />
+      {/* Left and Right Leaves */}
+      <motion.path d="M9.5 9.4c1.1.8 1.8 2.2 2.3 3.7-2 .4-3.5.4-4.8-.3-1.2-.6-2.3-1.9-3-4.2 2.8-.5 4.4 0 5.5.8z" variants={leafVariants} />
+      <motion.path d="M14.1 6a7 7 0 0 0-1.1 4c1.9-.1 3.3-.6 4.3-1.4 1-1 1.6-2.3 1.7-4.6-2.7.1-4 1-4.9 2z" variants={leafVariants} />
+    </motion.svg>
+  );
+};
 
 const SplashScreen = () => {
 
   useEffect(() => {
-    // 100% exact URL matches from Dashboard.jsx to guarantee cache hits
     const imagesToPreload = [
       'https://images.unsplash.com/photo-1625246333195-78d9c38ad449?q=80&w=2940&auto=format&fit=crop', // Day BG
       'https://images.unsplash.com/photo-1652454159675-11ead6275680?q=80&w=1170&auto=format&fit=crop', // Night BG
@@ -34,115 +79,75 @@ const SplashScreen = () => {
     });
   }, []);
 
-  // Cinematic spotlight configuration: flicker on, then continuously sweep
-  const flickerOpacity = [0, 0.6, 0.1, 0.9];
-  const opacityTransition = { duration: 1.2, times: [0, 0.15, 0.3, 1], ease: "easeOut", delay: 0.8 };
-  
-  const sweepRotate = [0, 45, -45, 0]; // Wide angles so the text becomes completely invisible
-  const rotateTransition = { duration: 10, repeat: Infinity, ease: "easeInOut", delay: 2.5 };
-
   return (
     <div style={styles.container}>
-      {/* LAYER 0.5: Cinematic Dust Particles */}
-      <div style={styles.dustLayer}>
-        {dustParticles.map((p) => (
+
+      {/* LAYER 1: Floating Particles */}
+      <div style={styles.particlesContainer}>
+        {fireflies.map((f) => (
           <motion.div
-            key={p.id}
+            key={f.id}
             style={{
               position: 'absolute',
-              left: p.left,
-              bottom: '-5vh',
-              width: `${p.size}px`,
-              height: `${p.size}px`,
+              left: f.left,
+              bottom: f.bottom,
+              width: `${f.size}px`,
+              height: `${f.size}px`,
               backgroundColor: '#ffffff',
               borderRadius: '50%',
-              boxShadow: '0 0 6px rgba(255,255,255,0.9)',
             }}
             animate={{
               y: ['0vh', '-110vh'],
-              x: [0, p.drift, -p.drift, 0],
-              opacity: [0, 0.9, 0.9, 0]
+              x: [0, f.xOffset, -f.xOffset, 0],
+              opacity: [0, f.opacity, f.opacity, 0]
             }}
             transition={{
-              duration: p.dur,
+              duration: f.duration,
               repeat: Infinity,
-              delay: p.delay,
-              ease: "linear"
+              delay: f.delay,
+              ease: "easeInOut"
             }}
           />
         ))}
       </div>
 
-      {/* LAYER 1 & 2: Static Content (100% Invisible in the dark until light hits) */}
-      <motion.div 
-        style={styles.contentWrapper}
-        initial={{ scale: 0.95, y: 15 }}
-        animate={{ scale: 1, y: 0 }}
-        transition={{ duration: 12, ease: "easeOut" }}
-      >
-        {/* 3D TEXT WITH EMOJI & TAGLINE */}
-        <div style={styles.textContainer}>
-          <motion.h1 
-            style={styles.dabur3DTitle}
-            initial={{ opacity: 0, y: 30, scale: 0.9 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            transition={{ duration: 1.5, delay: 0.8, ease: "easeOut" }}
-          >
-            🧢 FARM<span style={styles.dabur3DGreen}>CAP</span>
-          </motion.h1>
-          <motion.p 
-            style={styles.subText}
-            initial={{ letterSpacing: '0.05em', opacity: 0, y: 10 }}
-            animate={{ letterSpacing: '0.2em', opacity: 1, y: 0 }}
-            transition={{ 
-              opacity: { duration: 1.5, delay: 1.2, ease: "easeOut" },
-              y: { duration: 1.5, delay: 1.2, ease: "easeOut" },
-              letterSpacing: { duration: 10, ease: "easeOut" }
-            }}
-          >
-            — GROWING SMARTER TOGETHER —
-          </motion.p>
-        </div>
-      </motion.div>
-
-      {/* LAYER 3: THE DARKNESS MULTIPLY MASK (Hides everything outside the light beam) */}
-      <div style={styles.maskLayer}>
-        <motion.div 
-          style={styles.multiplyCone}
-          initial={{ opacity: 0, rotate: 0 }}
-          animate={{ opacity: flickerOpacity, rotate: sweepRotate }}
-          transition={{ opacity: opacityTransition, rotate: rotateTransition }}
-        />
-        {/* Forces the bottom of the screen to remain pitch black so light doesn't leak down */}
-        <div style={styles.darknessFloor} />
-      </div>
-
-      {/* LAYER 3.5: VOLUMETRIC LIGHT RAYS (The visible, dusty beam cutting through the air) */}
-      <div style={styles.rayLayer}>
-        <motion.div 
-          style={styles.rayCone}
-          initial={{ opacity: 0, rotate: 0 }}
-          animate={{ opacity: flickerOpacity, rotate: sweepRotate }}
-          transition={{ opacity: opacityTransition, rotate: rotateTransition }}
-        />
-      </div>
-
-      {/* LAYER 4: The Physical Spotlight Fixture (Visible above mask) */}
-      <div style={styles.fixtureWrapper}>
-        <div style={styles.fixtureMount}></div>
-        <motion.div 
-          style={styles.fixtureBody}
-          initial={{ rotate: 0 }}
-          animate={{ rotate: sweepRotate }}
-          transition={rotateTransition}
+      {/* LAYER 2: Main Content */}
+      <div style={styles.content}>
+        
+        <motion.div
+          initial={{ scale: 0.5, opacity: 0, rotate: -15 }}
+          animate={{ scale: 1, opacity: 1, rotate: 0 }}
+          transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1] }}
+          style={styles.iconWrapper}
         >
-          <motion.div 
-            style={styles.fixtureBulb} 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: flickerOpacity }}
-            transition={opacityTransition}
-          />
+          <GrowingSprout size={64} color="#4ade80" strokeWidth={1.5} />
         </motion.div>
+
+        <motion.h1
+          style={styles.title}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 1, delay: 0.4, ease: "easeOut" }}
+        >
+          🧢 FARM<span style={styles.titleHighlight}>CAP</span>
+        </motion.h1>
+
+        <motion.div
+          style={styles.divider}
+          initial={{ width: 0, opacity: 0 }}
+          animate={{ width: '60px', opacity: 1 }}
+          transition={{ duration: 0.8, delay: 0.7, ease: "easeOut" }}
+        />
+
+        <motion.p
+          style={styles.subtitle}
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 1.5, delay: 0.9, ease: "easeOut" }}
+        >
+          GROWING SMARTER TOGETHER
+        </motion.p>
+
       </div>
     </div>
   );
@@ -150,7 +155,7 @@ const SplashScreen = () => {
 
 const styles = {
   container: {
-    backgroundColor: '#000000',
+    backgroundColor: '#020617', // Very dark slate, almost black
     display: 'flex',
     flexDirection: 'column',
     height: '100vh',
@@ -159,138 +164,50 @@ const styles = {
     justifyContent: 'center',
     position: 'relative',
     overflow: 'hidden',
-    fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif',
+    fontFamily: '"SF Pro Display", -apple-system, BlinkMacSystemFont, "Inter", sans-serif',
   },
-  dustLayer: {
+  particlesContainer: {
     position: 'absolute',
     inset: 0,
-    zIndex: 5,
+    zIndex: 1,
     pointerEvents: 'none',
   },
-  fixtureWrapper: {
-    position: 'absolute',
-    top: 0,
-    left: '50%',
-    transform: 'translateX(-50%)',
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    zIndex: 60, // Keep fixture visible above the darkness mask
-  },
-  fixtureMount: {
-    width: '16px',
-    height: '14px',
-    background: 'linear-gradient(to bottom, #0a0a0a, #333)',
-    borderBottomLeftRadius: '4px',
-    borderBottomRightRadius: '4px',
-    boxShadow: '0 2px 5px rgba(0,0,0,0.5)',
-  },
-  fixtureBody: {
-    width: '34px',
-    height: '45px',
-    background: 'linear-gradient(90deg, #111 0%, #444 50%, #111 100%)',
-    borderTopLeftRadius: '8px',
-    borderTopRightRadius: '8px',
-    borderBottomLeftRadius: '2px',
-    borderBottomRightRadius: '2px',
-    position: 'relative',
-    display: 'flex',
-    justifyContent: 'center',
-    transformOrigin: 'top center',
-    boxShadow: '0 5px 15px rgba(0,0,0,0.8)',
-  },
-  fixtureBulb: {
-    position: 'absolute',
-    bottom: '-2px',
-    width: '26px',
-    height: '6px',
-    background: '#ffffff',
-    borderRadius: '50%',
-    boxShadow: '0 0 15px 3px rgba(255, 255, 255, 0.7), 0 0 30px 10px rgba(255, 255, 255, 0.3)',
-    zIndex: 62,
-  },
-  maskLayer: {
-    position: 'fixed',
-    inset: 0,
-    backgroundColor: '#000000',
-    mixBlendMode: 'multiply',
-    pointerEvents: 'none',
-    zIndex: 50,
-    overflow: 'hidden'
-  },
-  darknessFloor: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    width: '100%',
-    height: '35vh',
-    background: 'linear-gradient(to top, #000000 0%, #000000 50%, transparent 100%)',
-  },
-  multiplyCone: {
-    position: 'absolute',
-    top: 0,
-    left: '-100vw',
-    width: '300vw',
-    height: '200vh',
-    transformOrigin: 'top center',
-    // Pitch black outside, bright pure white inside the beam. Multiply mode hides content perfectly.
-    background: 'conic-gradient(at 50% 0%, #000000 0deg, #000000 147deg, #ffffff 155deg, #ffffff 205deg, #000000 213deg, #000000 360deg)',
-  },
-  rayLayer: {
-    position: 'fixed',
-    inset: 0,
-    mixBlendMode: 'screen',
-    pointerEvents: 'none',
-    zIndex: 51,
-    overflow: 'hidden',
-    // Sharp fade out below the text so the beam doesn't continue infinitely
-    WebkitMaskImage: 'linear-gradient(to bottom, rgba(0,0,0,1) 50%, rgba(0,0,0,0) 75%)',
-    maskImage: 'linear-gradient(to bottom, rgba(0,0,0,1) 50%, rgba(0,0,0,0) 75%)',
-  },
-  rayCone: {
-    position: 'absolute',
-    top: 0,
-    left: '-100vw',
-    width: '300vw',
-    height: '200vh',
-    transformOrigin: 'top center',
-    // Beautiful, translucent glowing white rays in the air
-    background: 'conic-gradient(at 50% 0%, transparent 0deg, transparent 147deg, rgba(255,255,255,0.02) 150deg, rgba(255,255,255,0.2) 157deg, rgba(255,255,255,0.2) 203deg, rgba(255,255,255,0.02) 210deg, transparent 213deg, transparent 360deg)',
-  },
-  contentWrapper: {
+  content: {
     zIndex: 10,
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
-    marginTop: '30px', // Push content down slightly so beam catches it beautifully
+    justifyContent: 'center',
   },
-  textContainer: {
+  iconWrapper: {
+    marginBottom: '24px',
     display: 'flex',
-    flexDirection: 'column',
     alignItems: 'center',
-    gap: '40px',
+    justifyContent: 'center',
   },
-  dabur3DTitle: {
-    fontSize: '2.8rem',
-    fontWeight: '900',
-    fontFamily: '"Georgia", "Times New Roman", serif',
-    lineHeight: 1,
+  title: {
+    fontSize: '3.5rem',
+    fontWeight: '800',
     color: '#ffffff',
-    margin: 0,
-    letterSpacing: '0.05em',
-    textShadow: '0px 1px 0px #ccc, 0px 2px 0px #bbb, 0px 3px 0px #aaa, 0px 4px 0px #999, 0px 5px 0px #888, 0px 12px 15px rgba(0,0,0,0.8)',
+    margin: '0',
+    letterSpacing: '0.02em',
   },
-  dabur3DGreen: {
-    color: '#22c55e',
-    textShadow: '0px 1px 0px #16a34a, 0px 2px 0px #15803d, 0px 3px 0px #166534, 0px 4px 0px #14532d, 0px 5px 0px #064e3b, 0px 12px 15px rgba(0,0,0,0.8)',
-    marginLeft: '6px',
+  titleHighlight: {
+    color: '#4ade80',
   },
-  subText: {
-    color: '#ffffff',
-    fontSize: '0.65rem',
-    fontWeight: '700',
+  divider: {
+    height: '2px',
+    background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent)',
+    margin: '1.5rem 0 1rem 0',
+    borderRadius: '2px',
+  },
+  subtitle: {
+    color: '#94a3b8',
+    fontSize: '0.8rem',
+    fontWeight: '600',
     margin: 0,
-    textShadow: '0 2px 4px rgba(0,0,0,0.8)',
+    textTransform: 'uppercase',
+    letterSpacing: '0.25em',
   },
 };
 
