@@ -1393,12 +1393,13 @@ function ChatBot() {
       {/* FLOATING CAPSULE */}
       {!isOpen && (
         <div onMouseDown={handleMouseDown} onClick={handleClickButton} onTouchStart={handleTouchStart} onTouchMove={handleTouchMove} className={`gemini-bot-button ${isExpanded ? 'expanded' : 'collapsed'}`} style={{ ...styles.floatCapsule, right: `${position.x}px`, top: `${position.y}px`, width: isExpanded ? '145px' : '50px', height: '50px' }}>
-            <div style={{ ...styles.geminiBotInner, width: isExpanded ? '141px' : '46px', height: '46px', borderRadius: isExpanded ? '23px' : '12px' }}>
+            <div style={{ ...styles.geminiBotInner, width: '100%', height: '100%', borderRadius: isExpanded ? '25px' : '16px' }}>
                 <Sparkles size={20} color="#fff" style={{ flexShrink: 0 }} />
                 <span style={{ color: '#fff', fontSize: '13px', fontWeight: '500', letterSpacing: '0.2px', whiteSpace: 'nowrap', overflow: 'hidden', opacity: isExpanded ? 1 : 0, width: isExpanded ? '100px' : '0px', marginLeft: isExpanded ? '6px' : '0px', transition: 'all 0.5s cubic-bezier(0.2, 0.8, 0.2, 1)' }}>
                     Ask Farm Buddy
                 </span>
             </div>
+            <div className="snake-border"></div>
         </div>
       )}
       
@@ -1413,14 +1414,31 @@ function ChatBot() {
         @keyframes fadeOutUp { to { opacity: 0; transform: translateY(-20px); } } 
         @keyframes pulseGlow { 0% { opacity: 0.3; } 100% { opacity: 0.8; } }
 
-        /* THIN ROTATING GLOW BOT BUTTON */
-        @keyframes spinCenter { from { transform: translate(-50%, -50%) rotate(0deg); } to { transform: translate(-50%, -50%) rotate(360deg); } }
-        @keyframes slowPulse { 0%, 100% { box-shadow: 0 0 4px rgba(0, 191, 255, 0.4); opacity: 0.85; } 50% { box-shadow: 0 0 12px rgba(50, 205, 50, 0.7); opacity: 1; } }
-        .gemini-bot-button { transition: all 0.5s cubic-bezier(0.2, 0.8, 0.2, 1); position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center; padding: 1.5px; animation: slowPulse 4s ease-in-out infinite; }
-        .gemini-bot-button::before { content: ''; position: absolute; top: 50%; left: 50%; width: 200px; height: 200px; background: conic-gradient(from 0deg, transparent 40%, #00bfff 50%, #00bfff 60%, #ffffff 70%, #ffffff 80%, #32cd32 90%, #32cd32 100%); transform-origin: 0 0; animation: spinCenter 7s linear infinite; z-index: -1; }
+        /* 3D TRANSPARENT BOT BUTTON & SNAKE BORDER */
+        @keyframes slowPulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.02); } }
+        @keyframes spinCenter { 100% { transform: rotate(360deg); } }
+        .gemini-bot-button { transition: width 0.5s cubic-bezier(0.2, 0.8, 0.2, 1), border-radius 0.5s cubic-bezier(0.2, 0.8, 0.2, 1), transform 0.2s ease-out; position: relative; display: flex; align-items: center; justify-content: center; animation: slowPulse 4s ease-in-out infinite; box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2); }
         .gemini-bot-button:active { transform: scale(0.95); }
-        .gemini-bot-button.expanded { border-radius: 30px; }
+        .gemini-bot-button.expanded { border-radius: 25px; }
         .gemini-bot-button.collapsed { border-radius: 16px; }
+        
+        .snake-border {
+            position: absolute;
+            inset: 0;
+            border-radius: inherit;
+            padding: 3px;
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor;
+            mask-composite: exclude;
+            overflow: hidden;
+            z-index: 3;
+            pointer-events: none;
+        }
+        .snake-border::before {
+            content: ''; position: absolute; top: 50%; left: 50%; width: 300px; height: 300px; margin-top: -150px; margin-left: -150px;
+            background: conic-gradient(transparent 50%, #ff3b30 70%, #ffcc00 85%, #4ade80 100%);
+            animation: spinCenter 2s linear infinite;
+        }
 
         /* AUTO-EXPANDING TEXTAREA PLACEHOLDER */
         .gemini-textarea::placeholder { color: rgba(255,255,255,0.5); transition: color 0.3s ease; }
@@ -1494,7 +1512,22 @@ const styles = {
     },
 
     floatCapsule: { position: 'fixed', zIndex: 10000, touchAction: 'none', pointerEvents: 'auto', userSelect: 'none', cursor: 'move' },
-    geminiBotInner: { position: 'relative', background: '#09090b', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2, transition: 'all 0.5s cubic-bezier(0.2, 0.8, 0.2, 1)', overflow: 'hidden' },
+    geminiBotInner: { 
+        position: 'relative', 
+        background: 'transparent',
+        backdropFilter: 'blur(6px) saturate(120%)',
+        WebkitBackdropFilter: 'blur(6px) saturate(120%)',
+        border: '1px solid rgba(255, 255, 255, 0.08)',
+        borderTop: '1px solid rgba(255, 255, 255, 0.25)',
+        borderLeft: '1px solid rgba(255, 255, 255, 0.15)',
+        boxShadow: 'inset 0 1px 1px rgba(255, 255, 255, 0.25), inset 0 -1px 2px rgba(0, 0, 0, 0.1)',
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'center', 
+        zIndex: 2, 
+        transition: 'all 0.5s cubic-bezier(0.2, 0.8, 0.2, 1)', 
+        overflow: 'hidden' 
+    },
     
     // ✏️ EDIT UI STYLES
     editRow: { display:'flex', gap:'5px', width:'100%' },

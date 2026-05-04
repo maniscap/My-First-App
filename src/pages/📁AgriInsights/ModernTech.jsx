@@ -100,6 +100,15 @@ const ModernTech = () => {
 
   return (
       <div style={styles.page}>
+        {/* Background Image reused from MarketRates to save Service Worker storage */}
+        <img 
+          src="https://img.freepik.com/premium-photo/concept-growing-crops-using-ai-farming-system-uses-artificial-intelligence-optimize-work_1006821-4087.jpg?w=2000" 
+          alt="Modern Farming Background" 
+          style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover', zIndex: -2 }} 
+        />
+        {/* Dark Glass Overlay for text readability */}
+        <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', backgroundColor: 'rgba(0, 0, 0, 0.2)', zIndex: -1 }}></div>
+
         <div style={styles.appWrapper}>
           {/* TOP HEADER */}
           <div style={styles.topBar}>
@@ -122,8 +131,9 @@ const ModernTech = () => {
                     onClick={() => setActiveTech(tech)}
                     style={{
                         ...styles.tabBtn, 
-                          background: activeTech.id === tech.id ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.3)',
-                          borderColor: activeTech.id === tech.id ? 'rgba(255,255,255,0.5)' : 'rgba(255,255,255,0.1)',
+                          background: activeTech.id === tech.id ? 'rgba(255, 255, 255, 0.15)' : 'rgba(255, 255, 255, 0.05)',
+                          borderTop: activeTech.id === tech.id ? '1px solid rgba(255,255,255,0.3)' : '1px solid rgba(255,255,255,0.15)',
+                          borderLeft: activeTech.id === tech.id ? '1px solid rgba(255,255,255,0.2)' : '1px solid rgba(255,255,255,0.05)',
                     }}
                   >
                         {tech.icon} <span style={{marginLeft: '8px', fontWeight: activeTech.id === tech.id ? '700' : '500'}}>{tech.name}</span>
@@ -201,44 +211,44 @@ const ModernTech = () => {
 
 // APPLE STYLE GLASSMORPHISM BASE
 const appleGlass = {
-  background: 'rgba(0, 0, 0, 0.4)', // Sleek dark blur base
-  backdropFilter: 'blur(12px) saturate(120%) brightness(110%)',
-  WebkitBackdropFilter: 'blur(12px) saturate(120%) brightness(110%)',
+  background: 'rgba(255, 255, 255, 0.06)',
+  backdropFilter: 'blur(16px) saturate(120%)',
+  WebkitBackdropFilter: 'blur(16px) saturate(120%)',
   border: '1px solid rgba(255, 255, 255, 0.1)',
   borderTop: '1px solid rgba(255, 255, 255, 0.3)',
   borderLeft: '1px solid rgba(255, 255, 255, 0.2)',
-  boxShadow: 'inset 0 1px 1px rgba(255, 255, 255, 0.3), 0 8px 32px rgba(0, 0, 0, 0.15)'
+  boxShadow: 'inset 0 1px 2px rgba(255, 255, 255, 0.2), inset 0 -1px 2px rgba(0, 0, 0, 0.1), 0 8px 30px rgba(0, 0, 0, 0.2)'
 };
 
 const styles = {
-  page: { position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', color: 'white', fontFamily: '"SF Pro Display", system-ui, sans-serif', background: '#111', textShadow: '0 2px 8px rgba(0,0,0,0.3)', display: 'flex', justifyContent: 'center' },
+  page: { position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', color: 'white', fontFamily: '"SF Pro Display", system-ui, sans-serif', background: 'transparent', textShadow: '0 2px 10px rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center' },
   appWrapper: { position: 'relative', width: '100%', maxWidth: '520px', height: '100%', display: 'flex', flexDirection: 'column' },
   
   topBar: { ...appleGlass, display:'flex', justifyContent:'space-between', alignItems:'center', borderRadius: '40px', padding: '8px 15px', margin: '15px 12px', zIndex: 10 },
   locationText: { display:'flex', flexDirection:'column', alignItems:'center', flex: 1, overflow: 'hidden', padding: '0 10px', textAlign: 'center' },
   cityTitle: { fontSize:'18px', fontWeight:'700', textShadow:'0 2px 5px rgba(0,0,0,0.5)', letterSpacing:'0.5px', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis', width:'100%' },
   regionTitle: { fontSize:'11px', opacity:0.9, marginTop:'2px', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis', width:'100%', color: '#4ade80' },
-  iconBtn: { background:'transparent', border:'none', color:'white', cursor:'pointer', padding:'5px', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))' },
+  iconBtn: { background: 'rgba(255, 255, 255, 0.06)', border: '1px solid rgba(255, 255, 255, 0.1)', borderTop: '1px solid rgba(255, 255, 255, 0.3)', borderLeft: '1px solid rgba(255, 255, 255, 0.2)', borderRadius: '14px', color:'white', cursor:'pointer', padding:'8px', backdropFilter: 'blur(16px)', boxShadow: 'inset 0 1px 2px rgba(255, 255, 255, 0.2), inset 0 -1px 2px rgba(0, 0, 0, 0.1), 0 4px 10px rgba(0, 0, 0, 0.1)' },
 
   scrollContent: { flex: 1, overflowY: 'auto', padding: '10px 12px 100px 12px' },
   
   tabContainer: { display: 'flex', gap: '10px', overflowX: 'auto', paddingBottom: '15px', marginBottom: '5px' },
-  tabBtn: { display: 'flex', alignItems: 'center', padding: '12px 20px', borderRadius: '30px', border: '1px solid rgba(255,255,255,0.1)', whiteSpace: 'nowrap', cursor: 'pointer', transition: 'all 0.3s ease', color: '#fff', backdropFilter: 'blur(10px)', boxShadow: '0 4px 15px rgba(0,0,0,0.1)' },
+  tabBtn: { display: 'flex', alignItems: 'center', padding: '12px 20px', borderRadius: '30px', border: '1px solid rgba(255,255,255,0.05)', borderTop: '1px solid rgba(255,255,255,0.2)', borderLeft: '1px solid rgba(255,255,255,0.1)', whiteSpace: 'nowrap', cursor: 'pointer', transition: 'all 0.3s ease', color: '#fff', backdropFilter: 'blur(16px)', boxShadow: 'inset 0 1px 2px rgba(255, 255, 255, 0.15), inset 0 -1px 2px rgba(0, 0, 0, 0.1), 0 4px 15px rgba(0,0,0,0.1)' },
   
   glassSection: { ...appleGlass, borderRadius: '32px', padding: '20px', marginBottom: '20px', display: 'flex', flexDirection: 'column', boxSizing: 'border-box' },
-  iconCircle: { width: '40px', height: '40px', borderRadius: '50%', background: 'rgba(74, 222, 128, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(74, 222, 128, 0.3)' },
+  iconCircle: { width: '40px', height: '40px', borderRadius: '50%', background: 'rgba(74, 222, 128, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(74, 222, 128, 0.2)', borderTop: '1px solid rgba(74, 222, 128, 0.4)', borderLeft: '1px solid rgba(74, 222, 128, 0.3)', boxShadow: 'inset 0 1px 3px rgba(255, 255, 255, 0.2)' },
   
   statsGrid: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '15px' },
-  modernCard: { background: 'rgba(0,0,0,0.3)', borderRadius: '20px', padding: '16px', display: 'flex', flexDirection: 'column', justifyContent: 'center', border: '1px solid rgba(255, 255, 255, 0.05)', boxShadow: 'inset 0 1px 1px rgba(255, 255, 255, 0.05)' },
+  modernCard: { background: 'rgba(255, 255, 255, 0.05)', backdropFilter: 'blur(16px)', borderRadius: '20px', padding: '16px', display: 'flex', flexDirection: 'column', justifyContent: 'center', border: '1px solid rgba(255, 255, 255, 0.08)', borderTop: '1px solid rgba(255, 255, 255, 0.25)', borderLeft: '1px solid rgba(255, 255, 255, 0.15)', boxShadow: 'inset 0 1px 2px rgba(255, 255, 255, 0.15), inset 0 -1px 2px rgba(0, 0, 0, 0.1)' },
   cardLabel: { fontSize: '11px', color: '#a1a1aa', textTransform: 'uppercase', fontWeight: '600', marginBottom: '6px', letterSpacing: '0.5px' },
   statValue: { fontSize: '15px', color: '#fff', fontWeight: '700' },
   
-  benefitText: { fontSize: '13px', color: '#d1d5db', background: 'rgba(255, 255, 255, 0.05)', padding: '16px', borderRadius: '20px', lineHeight: '1.6', border: '1px solid rgba(255,255,255,0.05)' },
-  actionBtn: { width: '100%', padding: '16px', marginTop: '20px', background: 'linear-gradient(135deg, #34d399 0%, #059669 100%)', color: '#fff', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '16px', fontSize: '15px', fontWeight: '800', cursor: 'pointer', boxShadow: '0 8px 25px rgba(5, 150, 105, 0.4)' },
+  benefitText: { fontSize: '13px', color: '#d1d5db', background: 'rgba(255, 255, 255, 0.05)', backdropFilter: 'blur(16px)', padding: '16px', borderRadius: '20px', lineHeight: '1.6', border: '1px solid rgba(255, 255, 255, 0.08)', borderTop: '1px solid rgba(255, 255, 255, 0.25)', borderLeft: '1px solid rgba(255, 255, 255, 0.15)', boxShadow: 'inset 0 1px 2px rgba(255, 255, 255, 0.15), inset 0 -1px 2px rgba(0, 0, 0, 0.1)' },
+  actionBtn: { width: '100%', padding: '16px', marginTop: '20px', background: 'linear-gradient(135deg, rgba(52, 211, 153, 0.9) 0%, rgba(5, 150, 105, 0.9) 100%)', color: '#fff', border: '1px solid rgba(255,255,255,0.2)', borderTop: '1px solid rgba(255,255,255,0.4)', borderRadius: '16px', fontSize: '15px', fontWeight: '800', cursor: 'pointer', backdropFilter: 'blur(16px)', boxShadow: 'inset 0 1px 2px rgba(255,255,255,0.3), 0 8px 25px rgba(5, 150, 105, 0.4)' },
 
   videoList: { display: 'flex', flexDirection: 'column', gap: '15px' },
   videoCard: { ...appleGlass, borderRadius: '32px', overflow: 'hidden', display: 'flex', flexDirection: 'column', padding: '12px' },
-  iframeWrapper: { position: 'relative', width: '100%', paddingTop: '56.25%', borderRadius: '20px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.1)' },
+  iframeWrapper: { position: 'relative', width: '100%', paddingTop: '56.25%', borderRadius: '20px', overflow: 'hidden', border: '1px solid rgba(255, 255, 255, 0.08)', borderTop: '1px solid rgba(255, 255, 255, 0.25)', boxShadow: 'inset 0 1px 2px rgba(255, 255, 255, 0.2)' },
   videoDetails: { padding: '15px 5px 5px 5px' },
   videoTitle: { margin: '0 0 6px 0', fontSize: '15px', color: '#fff', fontWeight: '700', lineHeight: '1.4', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' },
   channelTitle: { margin: 0, fontSize: '12px', color: 'rgba(255,255,255,0.6)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px' }

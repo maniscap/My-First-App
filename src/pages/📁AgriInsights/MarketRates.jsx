@@ -31,7 +31,7 @@ const MARKET_REPORTS = [
 const TREND_REPORTS = [
   {
     category: "State-wise Reports",
-    icon: <FaMapMarkerAlt color="#60a5fa" />,
+    icon: <FaMapMarkerAlt color="#10b981" />,
     items: [
       { name: "State-wise Wholesale Prices Monthly Analysis", url: "https://agmarknet.gov.in/statewholesalemonthanalysis" },
       { name: "State-wise & Variety-wise Prices Monthly Analysis", url: "https://agmarknet.gov.in/statevarietymonthlyanalysis" },
@@ -41,7 +41,7 @@ const TREND_REPORTS = [
   },
   {
     category: "District-wise Reports",
-    icon: <FaMapMarkerAlt color="#f472b6" />,
+    icon: <FaMapMarkerAlt color="#06b6d4" />,
     items: [
       { name: "District-wise Wholesale Prices Monthly Analysis", url: "https://agmarknet.gov.in/districtwholesalemonthanalysis" },
       { name: "District-wise & Variety-wise Prices Monthly Analysis", url: "https://agmarknet.gov.in/districtvarietymonthlyanalysis" },
@@ -63,7 +63,7 @@ const TREND_REPORTS = [
   },
   {
     category: "Market-wise Reports (All Districts)",
-    icon: <FaMapMarkerAlt color="#a78bfa" />,
+    icon: <FaMapMarkerAlt color="#a7f3d0" />,
     items: [
       { name: "Market-wise Wholesale Arrivals Monthly Analysis (All Districts)", url: "https://agmarknet.gov.in/marketallarrivalmonthanalysis" },
       { name: "Market-wise Wholesale Prices Monthly Analysis (All Districts)", url: "https://agmarknet.gov.in/marketallwholesalemonthanalysis" },
@@ -97,8 +97,17 @@ const cardHoverVariants = {
 };
 
 const iconVariants = {
-  rest: { rotate: 0 },
-  hover: { rotate: 10, transition: { duration: 0.3 } }
+  rest: { 
+    rotate: 0, 
+    scale: 1,
+    boxShadow: 'inset 0 1px 2px rgba(255, 255, 255, 0.2), 0 4px 10px rgba(0, 0, 0, 0.1)'
+  },
+  hover: { 
+    rotate: 10, 
+    scale: 1.1,
+    boxShadow: 'inset 0 1px 2px rgba(255, 255, 255, 0.4), 0 0 15px rgba(255, 255, 255, 0.25)', 
+    transition: { duration: 0.3 } 
+  }
 };
 
 // Shared images to be used for both the top banner and the bookshelf
@@ -143,7 +152,7 @@ const Bookshelf = ({ items, onLinkClick, favorites, onToggleFavorite }) => {
                   </div>
                   <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
                     <motion.button
-                      whileHover={{ scale: 1.15 }}
+                      whileHover={{ scale: 1.15, filter: 'drop-shadow(0 0 8px rgba(251, 191, 36, 0.5))' }}
                       whileTap={{ scale: 0.85 }}
                       onClick={(e) => {
                         e.stopPropagation();
@@ -163,17 +172,18 @@ const Bookshelf = ({ items, onLinkClick, favorites, onToggleFavorite }) => {
                     </motion.button>
                     <motion.div 
                       style={{ 
-                        background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(6, 182, 212, 0.1) 100%)', 
+                        background: 'rgba(255, 255, 255, 0.05)', 
                         padding: '10px', 
-                        borderRadius: '10px', 
+                        borderRadius: '12px', 
                         display: 'flex', 
                         alignItems: 'center', 
                         justifyContent: 'center', 
                         flexShrink: 0,
-                        border: '1px solid rgba(16, 185, 129, 0.2)',
-                        boxShadow: 'inset 0 1px 0 rgba(255, 255, 255, 0.08)'
+                        border: '1px solid rgba(255, 255, 255, 0.1)',
+                        borderTop: '1px solid rgba(255, 255, 255, 0.25)',
+                        boxShadow: 'inset 0 1px 1px rgba(255, 255, 255, 0.15), 0 4px 10px rgba(0, 0, 0, 0.1)'
                       }}
-                      whileHover={{ scale: 1.05 }}
+                      whileHover={{ scale: 1.05, boxShadow: 'inset 0 1px 2px rgba(255, 255, 255, 0.3), 0 0 12px rgba(16, 185, 129, 0.4)' }}
                     >
                         <FaExternalLinkAlt size={14} color="#10b981" />
                     </motion.div>
@@ -315,10 +325,14 @@ const MarketRates = () => {
   };
 
   return (
-    <div style={styles.page}>
+    <>
+      {/* FULL SCREEN BACKGROUND */}
+      <div style={styles.bg}>
+        <div style={styles.bgOverlay}></div>
+        <div style={styles.pageOverlay}></div>
+      </div>
 
-      {/* THICK BACKGROUND OVERLAY */}
-      <div style={styles.pageOverlay}></div>
+      <div style={styles.page}>
       
       {/* 3-SECOND INTERCEPT MODAL */}
       <AnimatePresence>
@@ -447,8 +461,8 @@ const MarketRates = () => {
             onClick={() => setShowFavoritesOnly(!showFavoritesOnly)}
             style={{
               ...styles.filterButton,
-              background: showFavoritesOnly ? 'rgba(251, 191, 36, 0.3)' : 'rgba(255,255,255,0.05)',
-              borderColor: showFavoritesOnly ? 'rgba(251, 191, 36, 0.5)' : 'rgba(255,255,255,0.1)',
+              background: showFavoritesOnly ? 'rgba(251, 191, 36, 0.15)' : 'rgba(255,255,255,0.02)',
+              borderColor: showFavoritesOnly ? 'rgba(251, 191, 36, 0.3)' : 'rgba(255,255,255,0.08)',
               color: showFavoritesOnly ? '#fbbf24' : '#a1a1aa'
             }}
           >
@@ -462,8 +476,8 @@ const MarketRates = () => {
             onClick={() => setShowRecentOnly(!showRecentOnly)}
             style={{
               ...styles.filterButton,
-              background: showRecentOnly ? 'rgba(16, 185, 129, 0.3)' : 'rgba(255,255,255,0.05)',
-              borderColor: showRecentOnly ? 'rgba(16, 185, 129, 0.5)' : 'rgba(255,255,255,0.1)',
+              background: showRecentOnly ? 'rgba(16, 185, 129, 0.15)' : 'rgba(255,255,255,0.02)',
+              borderColor: showRecentOnly ? 'rgba(16, 185, 129, 0.3)' : 'rgba(255,255,255,0.08)',
               color: showRecentOnly ? '#10b981' : '#a1a1aa'
             }}
           >
@@ -496,7 +510,7 @@ const MarketRates = () => {
                     setShowFavoritesOnly(false);
                     setShowRecentOnly(false);
                   }}
-                  style={{background: 'none', border: 'none', color: '#10b981', cursor: 'pointer', fontSize: '12px', fontWeight: '600'}}
+                  style={{background: 'none', border: 'none', color: '#10b981', cursor: 'pointer', fontSize: '13px', fontWeight: '600'}}
                 >
                   Clear
                 </motion.button>
@@ -516,10 +530,10 @@ const MarketRates = () => {
                   >
                     <div style={styles.cardContent}>
                       <motion.div 
-                        style={{...styles.cardIconBox, background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.2) 0%, rgba(168, 85, 247, 0.1) 100%)'}}
+                        style={styles.cardIconBox}
                         variants={iconVariants}
                       >
-                        <FaFileInvoice size={18} color="#60a5fa" />
+                        <FaFileInvoice size={20} color="#10b981" />
                       </motion.div>
                       <div style={{ flex: 1, textAlign: 'left' }}>
                         <h3 style={{...styles.cardTitleText, marginBottom: '4px'}}>{highlightText(item.name, searchQuery)}</h3>
@@ -528,7 +542,7 @@ const MarketRates = () => {
                       <div style={{display: 'flex', gap: '8px', alignItems: 'center'}}>
                         {item.isNew && <span style={{fontSize: '10px', background: '#10b981', color: '#000', padding: '3px 8px', borderRadius: '12px', fontWeight: '700'}}>NEW</span>}
                         <motion.button
-                          whileHover={{ scale: 1.2 }}
+                          whileHover={{ scale: 1.2, filter: 'drop-shadow(0 0 8px rgba(251, 191, 36, 0.5))' }}
                           whileTap={{ scale: 0.8 }}
                           onClick={(e) => { e.stopPropagation(); toggleFavorite(item); }}
                           style={{background: 'none', border: 'none', cursor: 'pointer'}}
@@ -597,10 +611,10 @@ const MarketRates = () => {
             >
               <div style={styles.cardContent}>
                 <motion.div 
-                  style={{...styles.cardIconBox, background: 'linear-gradient(135deg, rgba(251, 191, 36, 0.2) 0%, rgba(251, 191, 36, 0.1) 100%)'}}
-                  whileHover={{ scale: 1.1, rotate: 5 }}
+                  style={styles.cardIconBox}
+                  whileHover={{ scale: 1.1, rotate: 5, boxShadow: 'inset 0 1px 2px rgba(255, 255, 255, 0.4), 0 0 15px rgba(251, 191, 36, 0.3)' }}
                 >
-                  <FaStar size={18} color="#fbbf24" />
+                  <FaStar size={20} color="#fbbf24" />
                 </motion.div>
                 <div style={{ flex: 1 }}>
                   <h3 style={styles.cardTitleText}>View All Favorites</h3>
@@ -621,7 +635,7 @@ const MarketRates = () => {
               style={styles.sectionHeader}
               whileHover={{ x: 5 }}
             >
-              <FaClock size={20} color="#3b82f6" />
+              <FaClock size={20} color="#10b981" />
               <h2 style={styles.sectionTitle}>Recently Viewed ({recentItems.length})</h2>
             </motion.div>
             <motion.button
@@ -632,10 +646,10 @@ const MarketRates = () => {
             >
               <div style={styles.cardContent}>
                 <motion.div 
-                  style={{...styles.cardIconBox, background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.2) 0%, rgba(59, 130, 246, 0.1) 100%)'}}
-                  whileHover={{ scale: 1.1, rotate: -5 }}
+                  style={styles.cardIconBox}
+                  whileHover={{ scale: 1.1, rotate: -5, boxShadow: 'inset 0 1px 2px rgba(255, 255, 255, 0.4), 0 0 15px rgba(16, 185, 129, 0.3)' }}
                 >
-                  <FaClock size={18} color="#3b82f6" />
+                  <FaClock size={20} color="#10b981" />
                 </motion.div>
                 <div style={{ flex: 1 }}>
                   <h3 style={styles.cardTitleText}>View Recent Reports</h3>
@@ -699,7 +713,7 @@ const MarketRates = () => {
         {/* SECTION 2: PRICE TREND REPORTS */}
         <motion.div variants={containerVariants} initial="hidden" animate="show" style={styles.section}>
           <div style={styles.sectionHeader}>
-            <FaChartArea size={20} color="#3b82f6" />
+            <FaChartArea size={20} color="#10b981" />
             <h2 style={styles.sectionTitle}>Price Trend Reports</h2>
             <span style={{ marginLeft: 'auto', fontSize: '12px', color: '#71717a', background: 'rgba(255,255,255,0.05)', padding: '4px 8px', borderRadius: '4px' }}>
               {TREND_REPORTS.reduce((acc, group) => acc + group.items.length, 0)} reports
@@ -747,7 +761,7 @@ const MarketRates = () => {
         {/* SECTION 3: INFO TRIGGER BUTTON */}
         <motion.button 
           variants={itemVariants}
-          whileHover={{ scale: 1.02 }}
+          whileHover={{ scale: 1.02, boxShadow: 'inset 0 1px 2px rgba(255, 255, 255, 0.3), 0 0 15px rgba(255, 255, 255, 0.15)' }}
           whileTap={{ scale: 0.98 }}
           onClick={() => setIsInfoModalOpen(true)} 
           style={styles.infoTriggerBtn}
@@ -859,29 +873,43 @@ const MarketRates = () => {
         )}
       </AnimatePresence>
     </div>
+    </>
   );
 };
 
 const styles = {
+  bg: {
+    position: 'fixed',
+    top: 0, left: 0, right: 0, bottom: 0,
+    zIndex: 0,
+    backgroundImage: 'url("https://cdn.wallpapersafari.com/96/60/BSGmdb.jpg")',
+    backgroundSize: 'cover',
+    backgroundPosition: 'center',
+  },
+  bgOverlay: {
+    position: 'absolute',
+    top: 0, left: 0, right: 0, bottom: 0,
+    zIndex: 1,
+    backgroundColor: 'rgba(10, 10, 15, 0.4)',
+  },
   page: { 
     height: '100vh', 
-    background: '#111111',
+    background: 'transparent',
     color: '#f0f4f8', 
     fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif', 
     overflow: 'hidden', 
     display: 'flex', 
     flexDirection: 'column',
     position: 'relative',
+    zIndex: 10,
     boxSizing: 'border-box',
     textShadow: '0 2px 8px rgba(0,0,0,0.3)'
   },
   pageOverlay: {
     position: 'absolute',
     top: 0, left: 0, right: 0, bottom: 0,
-    background: 'radial-gradient(circle at 20% 50%, rgba(168, 85, 247, 0.1) 0%, transparent 50%), radial-gradient(circle at 80% 80%, rgba(59, 130, 246, 0.1) 0%, transparent 50%)',
-    backdropFilter: 'blur(40px)',
-    WebkitBackdropFilter: 'blur(40px)',
-    zIndex: 0,
+    background: 'radial-gradient(circle at 50% 0%, rgba(255, 255, 255, 0.05) 0%, transparent 60%)',
+    zIndex: 2,
     pointerEvents: 'none'
   },
   headerContainer: { 
@@ -895,30 +923,34 @@ const styles = {
     display: 'flex', 
     justifyContent: 'space-between', 
     alignItems: 'center',
-    background: 'rgba(255, 255, 255, 0.03)',
-    backdropFilter: 'blur(30px)',
-    WebkitBackdropFilter: 'blur(30px)',
+    background: 'rgba(255, 255, 255, 0.02)',
+    backdropFilter: 'blur(25px) saturate(120%)',
+    WebkitBackdropFilter: 'blur(25px) saturate(120%)',
     border: '1px solid rgba(255, 255, 255, 0.08)',
-    borderRadius: '20px',
+    borderTop: '1px solid rgba(255, 255, 255, 0.35)',
+    borderLeft: '1px solid rgba(255, 255, 255, 0.2)',
+    borderRadius: '24px',
     padding: '12px 16px',
-    boxShadow: 'inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 10px 40px rgba(0, 0, 0, 0.2)'
+    boxShadow: 'inset 0 2px 5px rgba(255, 255, 255, 0.25), inset 0 -2px 5px rgba(0, 0, 0, 0.1), 0 10px 40px rgba(0, 0, 0, 0.2)'
   },
   title: { fontSize: '20px', margin: 0, fontWeight: '600', letterSpacing: '-0.3px', color: '#ffffff' },
   subtitle: { fontSize: '12px', color: '#10b981', margin: '6px 0 0 0', fontWeight: '500', textTransform: 'uppercase', letterSpacing: '0.8px' },
   iconBtn: { 
     background: 'rgba(255, 255, 255, 0.05)', 
-    border: '1px solid rgba(255, 255, 255, 0.08)', 
+    border: '1px solid rgba(255, 255, 255, 0.1)', 
+    borderTop: '1px solid rgba(255, 255, 255, 0.35)',
     cursor: 'pointer', 
     width: '40px', 
     height: '40px', 
-    borderRadius: '12px', 
+    borderRadius: '14px', 
     display: 'flex', 
     alignItems: 'center', 
     justifyContent: 'center', 
     padding: 0, 
     color: '#f0f4f8',
     transition: 'all 0.3s ease',
-    backdropFilter: 'blur(10px)'
+    backdropFilter: 'blur(10px)',
+    boxShadow: 'inset 0 2px 4px rgba(255, 255, 255, 0.25), inset 0 -1px 2px rgba(0, 0, 0, 0.1), 0 4px 10px rgba(0, 0, 0, 0.1)'
   },
   
   // SEARCH & FILTER STYLES
@@ -936,15 +968,15 @@ const styles = {
     position: 'relative',
     display: 'flex',
     alignItems: 'center',
-    background: 'transparent',
-    backdropFilter: 'blur(12px) saturate(120%) brightness(110%)',
-    WebkitBackdropFilter: 'blur(12px) saturate(120%) brightness(110%)',
-    border: '1px solid rgba(255, 255, 255, 0.1)',
-    borderTop: '1px solid rgba(255, 255, 255, 0.3)',
+    background: 'rgba(255, 255, 255, 0.02)',
+    backdropFilter: 'blur(25px) saturate(120%)',
+    WebkitBackdropFilter: 'blur(25px) saturate(120%)',
+    border: '1px solid rgba(255, 255, 255, 0.08)',
+    borderTop: '1px solid rgba(255, 255, 255, 0.35)',
     borderLeft: '1px solid rgba(255, 255, 255, 0.2)',
-    borderRadius: '16px',
+    borderRadius: '18px',
     transition: 'all 0.3s ease',
-    boxShadow: 'inset 0 1px 1px rgba(255, 255, 255, 0.3), 0 4px 15px rgba(0, 0, 0, 0.1)'
+    boxShadow: 'inset 0 2px 5px rgba(255, 255, 255, 0.2), inset 0 -2px 5px rgba(0, 0, 0, 0.1), 0 8px 20px rgba(0, 0, 0, 0.15)'
   },
   searchInput: {
     flex: 1,
@@ -978,20 +1010,20 @@ const styles = {
     alignItems: 'center',
     justifyContent: 'center',
     gap: '8px',
-    padding: '10px 14px',
-    background: 'transparent',
-    backdropFilter: 'blur(12px) saturate(120%) brightness(110%)',
-    WebkitBackdropFilter: 'blur(12px) saturate(120%) brightness(110%)',
-    border: '1px solid rgba(255, 255, 255, 0.1)',
-    borderTop: '1px solid rgba(255, 255, 255, 0.3)',
+    padding: '12px 14px',
+    background: 'rgba(255, 255, 255, 0.02)',
+    backdropFilter: 'blur(25px) saturate(120%)',
+    WebkitBackdropFilter: 'blur(25px) saturate(120%)',
+    border: '1px solid rgba(255, 255, 255, 0.08)',
+    borderTop: '1px solid rgba(255, 255, 255, 0.35)',
     borderLeft: '1px solid rgba(255, 255, 255, 0.2)',
-    borderRadius: '12px',
+    borderRadius: '16px',
     color: '#cbd5e1',
-    fontSize: '13px',
+    fontSize: '14px',
     fontWeight: '600',
     cursor: 'pointer',
     transition: 'all 0.3s ease',
-    boxShadow: 'inset 0 1px 1px rgba(255, 255, 255, 0.3), 0 4px 15px rgba(0, 0, 0, 0.1)'
+    boxShadow: 'inset 0 2px 4px rgba(255, 255, 255, 0.2), inset 0 -1px 3px rgba(0, 0, 0, 0.1), 0 4px 15px rgba(0, 0, 0, 0.1)'
   },
 
   scrollContent: { flex: 1, overflowY: 'auto', padding: '20px', position: 'relative', zIndex: 1, width: '100%', boxSizing: 'border-box' },
@@ -1004,13 +1036,13 @@ const styles = {
     position: 'relative', 
     padding: '20px', 
     borderRadius: '24px', 
-    background: 'transparent',
-    backdropFilter: 'blur(12px) saturate(120%) brightness(110%)',
-    WebkitBackdropFilter: 'blur(12px) saturate(120%) brightness(110%)',
-    border: '1px solid rgba(255, 255, 255, 0.1)',
-    borderTop: '1px solid rgba(255, 255, 255, 0.3)',
+    background: 'rgba(255, 255, 255, 0.02)',
+    backdropFilter: 'blur(30px) saturate(120%)',
+    WebkitBackdropFilter: 'blur(30px) saturate(120%)',
+    border: '1px solid rgba(255, 255, 255, 0.08)',
+    borderTop: '1px solid rgba(255, 255, 255, 0.35)',
     borderLeft: '1px solid rgba(255, 255, 255, 0.2)',
-    boxShadow: 'inset 0 1px 1px rgba(255, 255, 255, 0.3), 0 8px 32px rgba(0, 0, 0, 0.15)',
+    boxShadow: 'inset 0 2px 6px rgba(255, 255, 255, 0.25), inset 0 -2px 5px rgba(0, 0, 0, 0.15), 0 10px 30px rgba(0, 0, 0, 0.2)',
     cursor: 'pointer', 
     marginBottom: '14px', 
     overflow: 'hidden', 
@@ -1020,17 +1052,19 @@ const styles = {
   },
   cardContent: { position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', gap: '14px', width: '100%' },
   cardIconBox: { 
-    width: '48px', 
-    height: '48px', 
+    width: '52px', 
+    height: '52px', 
     borderRadius: '12px', 
-    background: 'linear-gradient(135deg, rgba(168, 85, 247, 0.2) 0%, rgba(59, 130, 246, 0.1) 100%)',
-    backdropFilter: 'blur(10px)', 
+    background: 'rgba(255, 255, 255, 0.05)',
+    backdropFilter: 'blur(20px)', 
     display: 'flex', 
     alignItems: 'center', 
     justifyContent: 'center', 
     flexShrink: 0,
     border: '1px solid rgba(255, 255, 255, 0.1)',
-    boxShadow: 'inset 0 1px 0 rgba(255, 255, 255, 0.1)'
+    borderTop: '1px solid rgba(255, 255, 255, 0.35)',
+    borderLeft: '1px solid rgba(255, 255, 255, 0.2)',
+    boxShadow: 'inset 0 2px 4px rgba(255, 255, 255, 0.25), inset 0 -1px 2px rgba(0, 0, 0, 0.1), 0 4px 10px rgba(0, 0, 0, 0.1)'
   },
   cardTitleText: { fontSize: '16px', fontWeight: '600', color: '#ffffff', margin: 0 },
   cardSubtext: { fontSize: '13px', color: '#94a3b8', margin: '4px 0 0 0' },
@@ -1043,15 +1077,16 @@ const styles = {
     overflow: 'hidden', 
     position: 'relative', 
     marginBottom: '36px', 
-    border: '1px solid rgba(255, 255, 255, 0.08)',
-    boxShadow: 'inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 20px 60px rgba(0, 0, 0, 0.3)',
+    border: '1px solid rgba(255, 255, 255, 0.15)',
+    borderTop: '1px solid rgba(255, 255, 255, 0.35)',
+    boxShadow: 'inset 0 2px 5px rgba(255, 255, 255, 0.25), inset 0 -2px 5px rgba(0, 0, 0, 0.15), 0 20px 60px rgba(0, 0, 0, 0.3)',
     boxSizing: 'border-box' 
   },
   hoardingImage: { width: '100%', height: '100%', objectFit: 'cover' },
   hoardingOverlay: { 
     position: 'absolute', 
     inset: 0, 
-    background: 'linear-gradient(to right, rgba(15, 23, 42, 0.9) 0%, rgba(15, 23, 42, 0.5) 60%, transparent 100%)',
+    background: 'linear-gradient(to right, rgba(15, 15, 20, 0.9) 0%, rgba(15, 15, 20, 0.5) 60%, transparent 100%)',
     display: 'flex', 
     alignItems: 'center', 
     padding: '32px', 
@@ -1065,13 +1100,13 @@ const styles = {
     borderRadius: '20px', 
     cursor: 'pointer', 
     overflow: 'hidden', 
-    background: 'transparent',
-    backdropFilter: 'blur(12px) saturate(120%) brightness(110%)',
-    WebkitBackdropFilter: 'blur(12px) saturate(120%) brightness(110%)',
-    border: '1px solid rgba(255, 255, 255, 0.1)',
-    borderTop: '1px solid rgba(255, 255, 255, 0.3)',
+    background: 'rgba(255, 255, 255, 0.02)',
+    backdropFilter: 'blur(25px) saturate(120%)',
+    WebkitBackdropFilter: 'blur(25px) saturate(120%)',
+    border: '1px solid rgba(255, 255, 255, 0.08)',
+    borderTop: '1px solid rgba(255, 255, 255, 0.35)',
     borderLeft: '1px solid rgba(255, 255, 255, 0.2)',
-    boxShadow: 'inset 0 1px 1px rgba(255, 255, 255, 0.3), 0 8px 32px rgba(0, 0, 0, 0.15)',
+    boxShadow: 'inset 0 2px 5px rgba(255, 255, 255, 0.25), inset 0 -2px 4px rgba(0, 0, 0, 0.15), 0 8px 25px rgba(0, 0, 0, 0.15)',
     flexShrink: 0, 
     boxSizing: 'border-box',
     transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)'
@@ -1087,20 +1122,20 @@ const styles = {
     gap: '10px', 
     width: '100%', 
     padding: '16px', 
-    background: 'transparent',
-    backdropFilter: 'blur(12px) saturate(120%) brightness(110%)',
-    WebkitBackdropFilter: 'blur(12px) saturate(120%) brightness(110%)',
-    border: '1px solid rgba(255, 255, 255, 0.1)',
-    borderTop: '1px solid rgba(255, 255, 255, 0.3)',
+    background: 'rgba(255, 255, 255, 0.02)',
+    backdropFilter: 'blur(25px) saturate(120%)',
+    WebkitBackdropFilter: 'blur(25px) saturate(120%)',
+    border: '1px solid rgba(255, 255, 255, 0.08)',
+    borderTop: '1px solid rgba(255, 255, 255, 0.35)',
     borderLeft: '1px solid rgba(255, 255, 255, 0.2)',
-    borderRadius: '14px', 
+    borderRadius: '16px', 
     color: '#cbd5e1', 
     fontSize: '14px', 
     fontWeight: '600', 
     cursor: 'pointer', 
     marginTop: '12px',
     transition: 'all 0.3s ease',
-    boxShadow: 'inset 0 1px 1px rgba(255, 255, 255, 0.3), 0 4px 15px rgba(0, 0, 0, 0.1)'
+    boxShadow: 'inset 0 2px 5px rgba(255, 255, 255, 0.25), inset 0 -2px 4px rgba(0, 0, 0, 0.1), 0 8px 20px rgba(0, 0, 0, 0.15)'
   },
   
   infoModalOverlay: { 
@@ -1117,10 +1152,11 @@ const styles = {
     justifyContent: 'flex-end' 
   },
   infoModalContent: { 
-    background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 27, 60, 0.95) 100%)',
-    backdropFilter: 'blur(30px)', 
-    WebkitBackdropFilter: 'blur(30px)', 
-    borderLeft: '1px solid rgba(255, 255, 255, 0.08)',
+    background: 'rgba(15, 15, 20, 0.75)',
+    backdropFilter: 'blur(40px) saturate(150%)', 
+    WebkitBackdropFilter: 'blur(40px) saturate(150%)', 
+    borderLeft: '1px solid rgba(255, 255, 255, 0.15)',
+    borderTop: '1px solid rgba(255, 255, 255, 0.25)',
     padding: '24px', 
     width: '100%', 
     maxWidth: '420px', 
@@ -1128,22 +1164,22 @@ const styles = {
     display: 'flex', 
     flexDirection: 'column', 
     boxSizing: 'border-box', 
-    boxShadow: 'inset 1px 0 0 rgba(255, 255, 255, 0.08), -20px 0 60px rgba(0, 0, 0, 0.4)' 
+    boxShadow: 'inset 2px 2px 5px rgba(255, 255, 255, 0.2), inset 0 -2px 10px rgba(0, 0, 0, 0.2), -20px 0 60px rgba(0, 0, 0, 0.5)' 
   },
   infoModalTitle: { fontSize: '18px', fontWeight: '700', margin: 0, color: '#ffffff' },
   infoModalScroll: { flex: 1, overflowY: 'auto', paddingRight: '8px', marginTop: '16px' },
 
   infoCard: { 
-    background: 'transparent',
-    backdropFilter: 'blur(12px) saturate(120%) brightness(110%)',
-    WebkitBackdropFilter: 'blur(12px) saturate(120%) brightness(110%)',
-    padding: '20px', 
-    borderRadius: '16px', 
+    background: 'rgba(255, 255, 255, 0.02)',
+    backdropFilter: 'blur(25px) saturate(120%)',
+    WebkitBackdropFilter: 'blur(25px) saturate(120%)',
+    padding: '24px', 
+    borderRadius: '24px', 
     marginBottom: '16px', 
-    border: '1px solid rgba(255, 255, 255, 0.1)',
-    borderTop: '1px solid rgba(255, 255, 255, 0.3)',
+    border: '1px solid rgba(255, 255, 255, 0.08)',
+    borderTop: '1px solid rgba(255, 255, 255, 0.35)',
     borderLeft: '1px solid rgba(255, 255, 255, 0.2)',
-    boxShadow: 'inset 0 1px 1px rgba(255, 255, 255, 0.3), 0 8px 32px rgba(0, 0, 0, 0.15)'
+    boxShadow: 'inset 0 2px 5px rgba(255, 255, 255, 0.25), inset 0 -2px 5px rgba(0, 0, 0, 0.15), 0 8px 32px rgba(0, 0, 0, 0.15)'
   },
   cardHeader: { margin: '0 0 16px 0', fontSize: '14px', color: '#38bdf8', fontWeight: '700', letterSpacing: '0.2px' },
   textBlock: { marginBottom: '16px' },
@@ -1163,7 +1199,7 @@ const styles = {
     width: '100%', 
     marginTop: '12px',
     transition: 'all 0.3s ease',
-    boxShadow: '0 4px 15px rgba(16, 185, 129, 0.3)',
+    boxShadow: 'inset 0 2px 4px rgba(255, 255, 255, 0.3), 0 4px 15px rgba(16, 185, 129, 0.3)',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
@@ -1172,6 +1208,8 @@ const styles = {
   secondaryLinkBtn: { 
     background: 'rgba(255, 255, 255, 0.08)',
     border: '1px solid rgba(255, 255, 255, 0.1)',
+    borderTop: '1px solid rgba(255, 255, 255, 0.25)',
+    borderLeft: '1px solid rgba(255, 255, 255, 0.15)',
     color: '#f0f4f8', 
     padding: '12px', 
     borderRadius: '10px', 
@@ -1181,7 +1219,8 @@ const styles = {
     width: '100%', 
     marginTop: '12px',
     transition: 'all 0.3s ease',
-    backdropFilter: 'blur(10px)'
+    backdropFilter: 'blur(10px)',
+    boxShadow: 'inset 0 2px 4px rgba(255, 255, 255, 0.15), inset 0 -1px 2px rgba(0,0,0,0.1)'
   },
 
   modalOverlay: { 
@@ -1200,32 +1239,37 @@ const styles = {
     boxSizing: 'border-box' 
   },
   modalContent: { 
-    background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.98) 0%, rgba(30, 27, 60, 0.98) 100%)',
+    background: 'rgba(20, 20, 25, 0.65)',
     border: '1px solid rgba(255, 255, 255, 0.1)',
-    borderRadius: '24px', 
+    borderTop: '1px solid rgba(255, 255, 255, 0.35)',
+    borderLeft: '1px solid rgba(255, 255, 255, 0.2)',
+    borderRadius: '28px', 
     padding: '36px 32px', 
     width: '100%', 
     maxWidth: '380px', 
     textAlign: 'center', 
-    boxShadow: 'inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 20px 60px rgba(0, 0, 0, 0.4)',
+    boxShadow: 'inset 0 2px 6px rgba(255, 255, 255, 0.25), inset 0 -2px 6px rgba(0, 0, 0, 0.2), 0 25px 60px rgba(0, 0, 0, 0.5)',
     boxSizing: 'border-box',
-    backdropFilter: 'blur(20px)'
+    backdropFilter: 'blur(30px) saturate(150%)',
+    WebkitBackdropFilter: 'blur(30px) saturate(150%)'
   },
   modalTitle: { fontSize: '22px', fontWeight: '700', color: '#ffffff', margin: '0 0 12px 0' },
   modalText: { fontSize: '14px', color: '#cbd5e1', margin: '0 0 24px 0', lineHeight: '1.6' },
   modalReportName: { 
-    background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(6, 182, 212, 0.1) 100%)',
+    background: 'rgba(255, 255, 255, 0.05)',
     padding: '16px', 
-    borderRadius: '12px', 
+    borderRadius: '16px', 
     fontSize: '14px', 
     fontWeight: '600', 
     color: '#10b981', 
     marginBottom: '28px', 
-    border: '1px solid rgba(16, 185, 129, 0.2)',
-    boxShadow: 'inset 0 1px 0 rgba(255, 255, 255, 0.05)'
+    border: '1px solid rgba(255, 255, 255, 0.1)',
+    borderTop: '1px solid rgba(255, 255, 255, 0.3)',
+    borderLeft: '1px solid rgba(255, 255, 255, 0.15)',
+    boxShadow: 'inset 0 2px 4px rgba(255, 255, 255, 0.15), inset 0 -1px 2px rgba(0, 0, 0, 0.1)'
   },
   loaderLine: { width: '100%', height: '3px', background: 'rgba(255, 255, 255, 0.1)', borderRadius: '2px', overflow: 'hidden', marginBottom: '16px' },
-  loaderFill: { height: '100%', background: 'linear-gradient(to right, #10b981, #06b6d4)' },
+  loaderFill: { height: '100%', background: 'linear-gradient(to right, #10b981, #34d399)' },
   modalFooterText: { fontSize: '11px', color: '#64748b', textTransform: 'uppercase', letterSpacing: '1.2px', fontWeight: '700', margin: 0 },
 
   // FULL PAGE OVERLAY STYLES
@@ -1235,9 +1279,9 @@ const styles = {
     left: 0, 
     width: '100%', 
     height: '100%', 
-    background: 'linear-gradient(135deg, #0f172a 0%, #1a1f3a 50%, #0d1628 100%)',
-    backdropFilter: 'blur(40px)', 
-    WebkitBackdropFilter: 'blur(40px)', 
+    background: 'rgba(10, 10, 12, 0.35)',
+    backdropFilter: 'blur(16px) saturate(150%)', 
+    WebkitBackdropFilter: 'blur(16px) saturate(150%)', 
     zIndex: 500, 
     display: 'flex', 
     flexDirection: 'column', 

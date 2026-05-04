@@ -143,6 +143,11 @@ const FloatingCalculator = () => {
       setPresetIndex((prev) => (prev + 1) % presets.length);
   };
 
+  // --- GATEKEEPER ---
+  if (!location.pathname.toLowerCase().includes('expenditure')) {
+    return null;
+  }
+
   // --- RENDER ---
   return (
     <div

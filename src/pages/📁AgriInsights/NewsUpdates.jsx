@@ -290,7 +290,7 @@ const NewsUpdates = () => {
               <motion.button
                 style={{
                   ...styles.actionBtn,
-                  backgroundColor: isSavedArticle ? '#E74C3C' : 'rgba(255,255,255,0.1)'
+                  background: isSavedArticle ? '#E74C3C' : 'rgba(255,255,255,0.05)'
                 }}
                 onClick={() => toggleSave(article)}
                 whileHover={{ scale: 1.1 }}
@@ -335,6 +335,13 @@ const NewsUpdates = () => {
       </div>
 
       <div style={styles.page}>
+        <style>{`
+          .hide-scrollbar::-webkit-scrollbar { display: none; }
+          .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        `}</style>
+        
+        <div style={styles.appWrapper}>
+          <div style={styles.topSection}>
         {/* HEADER */}
         <div style={styles.header}>
           <button style={styles.backBtn} onClick={() => navigate('/dashboard')} title="Go back">
@@ -392,23 +399,27 @@ const NewsUpdates = () => {
         </div>
 
         {/* CATEGORY FILTER */}
-        {showFilters && (
-          <motion.div
-            style={styles.filterPanel}
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-          >
+        <AnimatePresence>
+          {showFilters && (
+            <motion.div
+              style={styles.filterPanel}
+              initial={{ opacity: 0, height: 0, y: -10 }}
+              animate={{ opacity: 1, height: 'auto', y: 0 }}
+              exit={{ opacity: 0, height: 0, y: -10 }}
+              transition={{ duration: 0.2 }}
+            >
             <div style={styles.categoryGrid}>
               {FARMING_CATEGORIES.map((category) => (
                 <motion.button
                   key={category.id}
                   style={{
                     ...styles.categoryBtn,
-                    backgroundColor: selectedCategory.id === category.id
-                      ? `${category.color}20`
-                      : 'rgba(255,255,255,0.05)',
+                    background: selectedCategory.id === category.id
+                      ? 'rgba(255,255,255,0.1)'
+                      : 'rgba(255,255,255,0.02)',
                     borderColor: selectedCategory.id === category.id ? category.color : 'rgba(255,255,255,0.1)',
+                    borderTop: selectedCategory.id === category.id ? `1px solid ${category.color}` : '1px solid rgba(255,255,255,0.25)',
+                    borderLeft: selectedCategory.id === category.id ? `1px solid ${category.color}` : '1px solid rgba(255,255,255,0.15)',
                   }}
                   onClick={() => {
                     setSelectedCategory(category);
@@ -426,9 +437,12 @@ const NewsUpdates = () => {
               ))}
             </div>
           </motion.div>
-        )}
+          )}
+        </AnimatePresence>
+      </div>
 
-        {/* MAIN CONTENT */}
+      {/* MAIN CONTENT */}
+      <div className="hide-scrollbar" style={styles.scrollContent}>
         <div style={styles.stage}>
           <AnimatePresence>
             {/* Showing Saved Articles */}
@@ -548,6 +562,8 @@ const NewsUpdates = () => {
           </motion.div>
         )}
       </div>
+      </div>
+      </div>
     </>
   );
 };
@@ -563,7 +579,7 @@ const styles = {
     right: 0,
     bottom: 0,
     zIndex: 0,
-    backgroundImage: 'linear-gradient(135deg, #1a472a 0%, #0f1419 50%, #1a2332 100%)',
+    backgroundImage: 'url("https://cdn.wallpapersafari.com/96/60/BSGmdb.jpg")',
     backgroundSize: 'cover',
     backgroundPosition: 'center',
   },
@@ -574,6 +590,7 @@ const styles = {
     right: 0,
     bottom: 0,
     zIndex: 1,
+    backgroundColor: 'rgba(10, 15, 20, 0.45)',
     backgroundImage: 'linear-gradient(rgba(46, 204, 113, 0.02) 1px, transparent 1px), linear-gradient(90deg, rgba(46, 204, 113, 0.02) 1px, transparent 1px)',
     backgroundSize: '40px 40px',
   },
@@ -593,9 +610,9 @@ const styles = {
 
   // ===== HEADER =====
   header: {
-    background: 'linear-gradient(135deg, rgba(20,20,20,0.9), rgba(46,204,113,0.1))',
-    backdropFilter: 'blur(30px)',
-    WebkitBackdropFilter: 'blur(30px)',
+    background: 'rgba(255, 255, 255, 0.02)',
+    backdropFilter: 'blur(30px) saturate(120%)',
+    WebkitBackdropFilter: 'blur(30px) saturate(120%)',
     width: '100%',
     maxWidth: '600px',
     display: 'flex',
@@ -604,7 +621,10 @@ const styles = {
     padding: '18px 20px',
     borderRadius: '28px',
     marginBottom: '20px',
-    border: '1px solid rgba(46, 204, 113, 0.2)',
+    border: '1px solid rgba(255, 255, 255, 0.08)',
+    borderTop: '1px solid rgba(255, 255, 255, 0.35)',
+    borderLeft: '1px solid rgba(255, 255, 255, 0.2)',
+    boxShadow: 'inset 0 2px 5px rgba(255, 255, 255, 0.25), inset 0 -2px 5px rgba(0, 0, 0, 0.1), 0 10px 40px rgba(0, 0, 0, 0.2)',
     position: 'sticky',
     top: '10px',
     zIndex: 50,
@@ -612,8 +632,10 @@ const styles = {
     gap: '12px',
   },
   backBtn: {
-    background: 'rgba(255,255,255,0.08)',
-    border: 'none',
+    background: 'rgba(255, 255, 255, 0.05)',
+    border: '1px solid rgba(255, 255, 255, 0.1)',
+    borderTop: '1px solid rgba(255, 255, 255, 0.35)',
+    borderLeft: '1px solid rgba(255, 255, 255, 0.2)',
     color: 'white',
     width: '40px',
     height: '40px',
@@ -624,6 +646,7 @@ const styles = {
     justifyContent: 'center',
     transition: 'all 0.3s',
     flexShrink: 0,
+    boxShadow: 'inset 0 2px 4px rgba(255, 255, 255, 0.25), inset 0 -1px 2px rgba(0, 0, 0, 0.1), 0 4px 10px rgba(0, 0, 0, 0.1)'
   },
   headerContent: {
     flex: 1,
@@ -647,8 +670,10 @@ const styles = {
     fontWeight: '500',
   },
   savedBtn: {
-    background: 'rgba(230, 126, 34, 0.2)',
-    border: '1px solid rgba(230, 126, 34, 0.4)',
+    background: 'rgba(255, 255, 255, 0.05)',
+    border: '1px solid rgba(255, 255, 255, 0.1)',
+    borderTop: '1px solid rgba(255, 255, 255, 0.35)',
+    borderLeft: '1px solid rgba(255, 255, 255, 0.2)',
     color: '#E67E22',
     width: '44px',
     height: '44px',
@@ -660,6 +685,7 @@ const styles = {
     position: 'relative',
     transition: 'all 0.3s',
     flexShrink: 0,
+    boxShadow: 'inset 0 2px 4px rgba(255, 255, 255, 0.25), inset 0 -1px 2px rgba(0, 0, 0, 0.1), 0 4px 10px rgba(0, 0, 0, 0.1)'
   },
   savedCount: {
     position: 'absolute',
@@ -691,6 +717,13 @@ const styles = {
     position: 'relative',
     display: 'flex',
     alignItems: 'center',
+    background: 'rgba(255, 255, 255, 0.02)',
+    backdropFilter: 'blur(25px) saturate(120%)',
+    border: '1px solid rgba(255, 255, 255, 0.08)',
+    borderTop: '1px solid rgba(255, 255, 255, 0.35)',
+    borderLeft: '1px solid rgba(255, 255, 255, 0.2)',
+    borderRadius: '16px',
+    boxShadow: 'inset 0 2px 5px rgba(255, 255, 255, 0.2), inset 0 -2px 5px rgba(0, 0, 0, 0.1), 0 8px 20px rgba(0, 0, 0, 0.15)'
   },
   searchIcon: {
     position: 'absolute',
@@ -701,8 +734,8 @@ const styles = {
   },
   searchInput: {
     width: '100%',
-    background: 'rgba(20,20,20,0.8)',
-    border: '1px solid rgba(46, 204, 113, 0.3)',
+    background: 'transparent',
+    border: 'none',
     color: 'white',
     padding: '12px 16px 12px 44px',
     borderRadius: '16px',
@@ -727,8 +760,11 @@ const styles = {
     transition: 'all 0.2s',
   },
   filterBtn: {
-    background: 'linear-gradient(135deg, rgba(52, 152, 219, 0.3), rgba(46, 204, 113, 0.3))',
-    border: '1px solid rgba(52, 152, 219, 0.4)',
+    background: 'rgba(255, 255, 255, 0.05)',
+    backdropFilter: 'blur(25px) saturate(120%)',
+    border: '1px solid rgba(255, 255, 255, 0.08)',
+    borderTop: '1px solid rgba(255, 255, 255, 0.35)',
+    borderLeft: '1px solid rgba(255, 255, 255, 0.2)',
     color: 'white',
     padding: '12px 16px',
     borderRadius: '16px',
@@ -740,19 +776,23 @@ const styles = {
     gap: '8px',
     transition: 'all 0.3s',
     flexShrink: 0,
+    boxShadow: 'inset 0 2px 4px rgba(255, 255, 255, 0.2), inset 0 -1px 3px rgba(0, 0, 0, 0.1), 0 4px 15px rgba(0, 0, 0, 0.1)'
   },
 
   // ===== FILTER PANEL =====
   filterPanel: {
     width: '100%',
     maxWidth: '600px',
-    background: 'rgba(20,20,20,0.85)',
-    border: '1px solid rgba(46, 204, 113, 0.2)',
+    background: 'rgba(255, 255, 255, 0.02)',
+    backdropFilter: 'blur(30px) saturate(120%)',
+    border: '1px solid rgba(255, 255, 255, 0.08)',
+    borderTop: '1px solid rgba(255, 255, 255, 0.35)',
+    borderLeft: '1px solid rgba(255, 255, 255, 0.2)',
+    boxShadow: 'inset 0 2px 5px rgba(255, 255, 255, 0.25), inset 0 -2px 5px rgba(0, 0, 0, 0.15), 0 10px 30px rgba(0, 0, 0, 0.2)',
     borderRadius: '20px',
     padding: '16px',
     marginBottom: '16px',
     boxSizing: 'border-box',
-    backdropFilter: 'blur(20px)',
   },
   categoryGrid: {
     display: 'grid',
@@ -761,8 +801,11 @@ const styles = {
     width: '100%',
   },
   categoryBtn: {
-    background: 'rgba(255,255,255,0.05)',
-    border: '1.5px solid rgba(255,255,255,0.1)',
+    background: 'rgba(255,255,255,0.02)',
+    border: '1px solid rgba(255,255,255,0.08)',
+    borderTop: '1px solid rgba(255, 255, 255, 0.25)',
+    borderLeft: '1px solid rgba(255, 255, 255, 0.15)',
+    boxShadow: 'inset 0 1px 2px rgba(255, 255, 255, 0.2), inset 0 -1px 2px rgba(0, 0, 0, 0.1)',
     color: 'white',
     padding: '12px',
     borderRadius: '14px',
@@ -813,13 +856,15 @@ const styles = {
 
   // ===== ARTICLE CARD =====
   card: {
-    background: 'linear-gradient(135deg, rgba(15,15,20,0.9), rgba(20,40,35,0.4))',
-    backdropFilter: 'blur(20px)',
-    WebkitBackdropFilter: 'blur(20px)',
-    borderRadius: '18px',
+    background: 'rgba(255, 255, 255, 0.02)',
+    backdropFilter: 'blur(30px) saturate(120%)',
+    WebkitBackdropFilter: 'blur(30px) saturate(120%)',
+    borderRadius: '24px',
     overflow: 'hidden',
-    border: '1px solid rgba(46, 204, 113, 0.15)',
-    boxShadow: '0 10px 30px rgba(0,0,0,0.3)',
+    border: '1px solid rgba(255, 255, 255, 0.08)',
+    borderTop: '1px solid rgba(255, 255, 255, 0.35)',
+    borderLeft: '1px solid rgba(255, 255, 255, 0.2)',
+    boxShadow: 'inset 0 2px 5px rgba(255, 255, 255, 0.25), inset 0 -2px 5px rgba(0, 0, 0, 0.15), 0 10px 30px rgba(0, 0, 0, 0.2)',
     display: 'flex',
     flexDirection: 'column',
     transition: 'all 0.3s',
@@ -937,8 +982,10 @@ const styles = {
     gap: '8px',
   },
   actionBtn: {
-    background: 'rgba(255,255,255,0.1)',
-    border: 'none',
+    background: 'rgba(255,255,255,0.05)',
+    border: '1px solid rgba(255, 255, 255, 0.08)',
+    borderTop: '1px solid rgba(255, 255, 255, 0.25)',
+    borderLeft: '1px solid rgba(255, 255, 255, 0.15)',
     color: '#2ECC71',
     width: '36px',
     height: '36px',
@@ -949,6 +996,7 @@ const styles = {
     justifyContent: 'center',
     transition: 'all 0.2s',
     fontSize: '16px',
+    boxShadow: 'inset 0 1px 2px rgba(255, 255, 255, 0.2), 0 4px 10px rgba(0,0,0,0.1)'
   },
   readMoreBtn: {
     background: 'linear-gradient(135deg, #2ECC71 0%, #27AE60 100%)',
@@ -962,16 +1010,22 @@ const styles = {
     marginLeft: 'auto',
     textAlign: 'center',
     border: 'none',
+    borderTop: '1px solid rgba(255, 255, 255, 0.4)',
     cursor: 'pointer',
+    boxShadow: 'inset 0 2px 4px rgba(255, 255, 255, 0.3), 0 4px 10px rgba(46, 204, 113, 0.3)'
   },
 
   // ===== SAVED SECTION =====
   savedSection: {
     width: '100%',
     maxWidth: '600px',
-    borderRadius: '20px',
-    background: 'rgba(20,20,20,0.9)',
-    border: '2px solid rgba(230, 126, 34, 0.3)',
+    borderRadius: '24px',
+    background: 'rgba(255, 255, 255, 0.02)',
+    backdropFilter: 'blur(30px) saturate(120%)',
+    border: '1px solid rgba(255, 255, 255, 0.08)',
+    borderTop: '1px solid rgba(255, 255, 255, 0.35)',
+    borderLeft: '1px solid rgba(255, 255, 255, 0.2)',
+    boxShadow: 'inset 0 2px 5px rgba(255, 255, 255, 0.25), inset 0 -2px 5px rgba(0, 0, 0, 0.15), 0 10px 30px rgba(0, 0, 0, 0.2)',
     overflow: 'hidden',
   },
   savedHeader: {
@@ -989,8 +1043,10 @@ const styles = {
     color: '#E67E22',
   },
   closeBtn: {
-    background: 'rgba(255,255,255,0.1)',
-    border: 'none',
+    background: 'rgba(255, 255, 255, 0.05)',
+    border: '1px solid rgba(255, 255, 255, 0.1)',
+    borderTop: '1px solid rgba(255, 255, 255, 0.35)',
+    borderLeft: '1px solid rgba(255, 255, 255, 0.2)',
     color: 'white',
     width: '36px',
     height: '36px',
@@ -1000,6 +1056,7 @@ const styles = {
     alignItems: 'center',
     justifyContent: 'center',
     transition: 'all 0.2s',
+    boxShadow: 'inset 0 2px 4px rgba(255, 255, 255, 0.25), inset 0 -1px 2px rgba(0, 0, 0, 0.1), 0 4px 10px rgba(0, 0, 0, 0.1)'
   },
 
   // ===== EMPTY STATES =====
@@ -1012,9 +1069,13 @@ const styles = {
     flexDirection: 'column',
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: '20px',
-    background: 'rgba(20,20,20,0.6)',
-    border: '1px dashed rgba(46, 204, 113, 0.2)',
+    borderRadius: '24px',
+    background: 'rgba(255, 255, 255, 0.02)',
+    backdropFilter: 'blur(20px) saturate(120%)',
+    border: '1px solid rgba(255, 255, 255, 0.08)',
+    borderTop: '1px solid rgba(255, 255, 255, 0.25)',
+    borderLeft: '1px solid rgba(255, 255, 255, 0.15)',
+    boxShadow: 'inset 0 2px 5px rgba(255, 255, 255, 0.2), inset 0 -2px 5px rgba(0, 0, 0, 0.1)'
   },
   emptyText: {
     margin: '8px 0',
@@ -1027,10 +1088,13 @@ const styles = {
     width: '100%',
     maxWidth: '600px',
     padding: '20px',
-    borderRadius: '16px',
-    background: 'rgba(231, 76, 60, 0.15)',
-    border: '1px solid rgba(231, 76, 60, 0.3)',
-    backdropFilter: 'blur(20px)',
+    borderRadius: '24px',
+    background: 'rgba(231, 76, 60, 0.1)',
+    backdropFilter: 'blur(20px) saturate(120%)',
+    border: '1px solid rgba(231, 76, 60, 0.2)',
+    borderTop: '1px solid rgba(231, 76, 60, 0.4)',
+    borderLeft: '1px solid rgba(231, 76, 60, 0.3)',
+    boxShadow: 'inset 0 2px 5px rgba(255, 255, 255, 0.2), inset 0 -2px 5px rgba(0, 0, 0, 0.1), 0 10px 30px rgba(231, 76, 60, 0.1)'
   },
   errorContent: {
     display: 'flex',
