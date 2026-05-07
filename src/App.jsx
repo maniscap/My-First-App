@@ -34,6 +34,8 @@ import GPSMeasurement from './pages/📁Tools&utils/GPSMeasurement';
 import ChatBot from './🔧components/ChatBot';
 import FloatingCalculator from './🔧components/FloatingCalculator'; 
 import SplashScreen from './🔧components/SplashScreen';
+import BottomNavigation from './pages/🎫BottomNavigationCard/BottomNavigation';
+import SmartLens from './pages/🎫BottomNavigationCard/SmartLens';
 
 function App() {
   const location = useLocation();
@@ -131,6 +133,9 @@ function App() {
             {/* Utilities & Admin */}
             <Route path="/admin" element={<Admin />} />
             <Route path="/search" element={<SearchResults />} />
+            
+            {/* SmartLens Scanner */}
+            <Route path="/scanner" element={<SmartLens />} />
 
             {/* 404 Error Page */}
             <Route path="*" element={
@@ -143,10 +148,13 @@ function App() {
 
           {/* --- CHATBOT (Only Visible on Dashboard) --- */}
           {location.pathname === '/dashboard' && (
-            <div style={{ position: 'fixed', bottom: '20px', right: '20px', zIndex: 1000 }}>
+            <div style={{ position: 'fixed', bottom: '20px', right: '20px', zIndex: 9999 }}>
               <ChatBot />
             </div>
           )}
+
+          {/* --- BOTTOM NAVIGATION DOCK --- */}
+          <BottomNavigation />
           
         </div>
       )}

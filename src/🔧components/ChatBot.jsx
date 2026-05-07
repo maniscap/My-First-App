@@ -635,7 +635,7 @@ function ChatBot() {
   // ===============================================================================================
   // SECTION 6: BOUNDARY-PROTECTED DRAGGABLE UI & TERMS LOGIC
   // ===============================================================================================
-  const [position, setPosition] = useState({ x: 20, y: window.innerHeight - 100 });
+  const [position, setPosition] = useState({ x: 20, y: window.innerHeight - 120 });
   const [isDragging, setIsDragging] = useState(false);
   const dragOffset = useRef({ x: 0, y: 0 });
 
@@ -658,11 +658,12 @@ function ChatBot() {
     const capsuleWidth = isExpanded ? 145 : 50; 
     const capsuleHeight = 50;
     const padding = 10;
+    const bottomPadding = 100; // Extra protection so it doesn't hide under the Bottom Navigation Dock
 
     if (newX < padding) newX = padding;
     if (newX > screenWidth - capsuleWidth - padding) newX = screenWidth - capsuleWidth - padding;
     if (newY < padding) newY = padding;
-    if (newY > screenHeight - capsuleHeight - padding) newY = screenHeight - capsuleHeight - padding;
+    if (newY > screenHeight - capsuleHeight - bottomPadding) newY = screenHeight - capsuleHeight - bottomPadding;
     
     setPosition({ x: newX, y: newY });
   };
@@ -689,11 +690,12 @@ function ChatBot() {
     const capsuleWidth = isExpanded ? 145 : 50;
     const capsuleHeight = 50;
     const padding = 10;
+    const bottomPadding = 100; // Extra protection so it doesn't hide under the Bottom Navigation Dock
 
     if (newX < padding) newX = padding;
     if (newX > screenWidth - capsuleWidth - padding) newX = screenWidth - capsuleWidth - padding;
     if (newY < padding) newY = padding;
-    if (newY > screenHeight - capsuleHeight - padding) newY = screenHeight - capsuleHeight - padding;
+    if (newY > screenHeight - capsuleHeight - bottomPadding) newY = screenHeight - capsuleHeight - bottomPadding;
     
     setPosition({ x: newX, y: newY });
   };
@@ -1557,7 +1559,7 @@ const styles = {
     
     chatBody: { flex: 1, padding: '16px', overflowY: 'auto', scrollBehavior: 'smooth', position:'relative', backgroundColor: 'transparent', minHeight: 0 },
     chatBodyClearing: { animation: 'fadeOutUp 0.4s ease-out forwards' },
-    botBubble: { background: 'transparent', color: '#ffffff', padding: '14px 18px', maxWidth: '90%', fontSize: '15px', lineHeight: '1.5', wordWrap: 'break-word' },
+    botBubble: { background: 'transparent', color: '#ffffff', padding: '14px 18px', maxWidth: '90%', fontSize: '15px', lineHeight: '1.5', wordWrap: 'break-word', fontFamily: '"Times New Roman", Times, serif' },
     userBubble: { background: '#111111', color: '#ffffff', padding: '14px 18px', borderRadius: '24px', borderBottomRightRadius: '8px', maxWidth: '85%', fontSize: '15px', lineHeight: '1.5', wordWrap: 'break-word', border: '1px solid rgba(255, 255, 255, 0.15)', borderTop: '1px solid rgba(255, 255, 255, 0.4)', borderLeft: '1px solid rgba(255, 255, 255, 0.3)', boxShadow: 'inset 0 1px 2px rgba(255, 255, 255, 0.4), inset 0 0 10px rgba(255,255,255,0.1), 0 8px 32px rgba(0, 0, 0, 0.2)' },
     
     codeBlock: { backgroundColor: '#0d0d0d', border: '1px solid #333', borderRadius: '8px', margin: '12px 0', overflow: 'hidden' },
