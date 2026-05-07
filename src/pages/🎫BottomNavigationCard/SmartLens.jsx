@@ -17,7 +17,6 @@ const SmartLens = () => {
 
     // --- 1. Camera Initialization ---
     useEffect(() => {
-        let isMounted = true;
         const startCamera = async () => {
             try {
                 // Prefer the rear camera ('environment') for scanning
@@ -27,32 +26,23 @@ const SmartLens = () => {
                     }
                 };
                 const stream = await navigator.mediaDevices.getUserMedia(constraints);
-                if (!isMounted) {
-                    stream.getTracks().forEach(track => track.stop());
-                    return;
-                }
                 streamRef.current = stream;
                 if (videoRef.current) {
                     videoRef.current.srcObject = stream;
                 }
+                setIsLoadingCamera(false); // Camera started successfully
             } catch (err) {
                 console.error("Error accessing rear camera:", err);
                 // If rear camera fails (e.g., on a laptop), try any camera
                 try {
                     const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-                    if (!isMounted) {
-                        stream.getTracks().forEach(track => track.stop());
-                        return;
-                    }
                     streamRef.current = stream;
                     if (videoRef.current) {
                         videoRef.current.srcObject = stream;
                     }
                 } catch (finalErr) {
                     console.error("Error accessing any camera:", finalErr);
-                    if (isMounted) {
-                        setError("Could not access the camera. Please check permissions in your browser settings.");
-                    }
+                    setError("Could not access the camera. Please check permissions in your browser settings.");
                 }
             }
         };
@@ -61,12 +51,8 @@ const SmartLens = () => {
 
         // --- 2. Cleanup on component unmount ---
         return () => {
-            isMounted = false;
             if (streamRef.current) {
                 streamRef.current.getTracks().forEach(track => track.stop());
-            }
-            if (videoRef.current) {
-                videoRef.current.srcObject = null;
             }
         };
     }, []);
@@ -115,11 +101,38 @@ const SmartLens = () => {
         setError(null);
     };
 
+    // New function for handling file input
+    const handleFileChange = (event) => {
+        const file = event.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setCapturedImage(reader.result);
+                setIsAnalyzing(true); // Simulate analysis start
+                setAnalysisResult(null);
+                // Simulate AI analysis for uploaded image
+                setTimeout(() => {
+                    setAnalysisResult("🖼️ AI Brain Analysis Complete for uploaded image:\n\nThis image appears to show a healthy plant. No visible signs of pests or nutrient deficiencies detected. Good job!");
+                    setIsAnalyzing(false);
+                }, 3000);
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+
     return (
         <div style={styles.container}>
-            <video ref={videoRef} autoPlay playsInline muted style={styles.video} />
+            {isLoadingCamera && ( // Show loading spinner while camera initializes
+                <div style={styles.cameraLoadingOverlay}>
+                    <Loader2 className="animate-spin" size={50} color="#4ade80" />
+                    <p style={styles.cameraLoadingText}>Starting Camera...</p>
+                </div>
+            )}
+            {!isLoadingCamera && !error && ( // Only show video if camera loaded and no error
+                <video ref={videoRef} autoPlay playsInline muted style={styles.video} />
+            )}
 
-            {/* Captured Image Freeze Frame */}
+            {/* Captured Image Freeze Frame (always on top of video/loading) */}
             {capturedImage && (
                 <img src={capturedImage} alt="Captured" style={styles.capturedPreview} />
             )}
@@ -148,7 +161,7 @@ const SmartLens = () => {
                 </div>
 
                 {/* Center Viewfinder */}
-                {!isAnalyzing && (
+                {!isAnalyzing && !isLoadingCamera && ( // Only show viewfinder if not analyzing and camera loaded
                     <div style={styles.viewfinder}>
                         <div style={styles.viewfinderText}>
                             Position a crop or any object inside the frame
@@ -170,8 +183,27 @@ const SmartLens = () => {
                 )}
 
                 {/* Footer / Capture Button */}
-                {!isAnalyzing && (
+                {!isAnalyzing && !isLoadingCamera && ( // Only show footer if not analyzing and camera loaded
                     <div style={styles.footer}>
+                        {/* Hidden file input */}
+                        <input
+                            type="file"
+                            accept="image/*"
+                            onChange={handleFileChange}
+                            style={{ display: 'none' }}
+                            id="image-upload-input"
+                        />
+                        {/* Upload Image Button */}
+                        <motion.label
+                            htmlFor="image-upload-input"
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            style={styles.uploadButton}
+                        >
+                            <Camera size={24} color="white" /> {/* Reusing Camera icon for upload */}
+                        </motion.label>
+
+                        {/* Capture Button */}
                         <motion.button
                             whileHover={{ scale: 1.05 }}
                             whileTap={{ scale: 0.95 }}
@@ -237,6 +269,26 @@ const styles = {
         height: '100%',
         objectFit: 'cover',
         zIndex: 1,
+    },
+    cameraLoadingOverlay: { // New style for camera loading
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        width: '100%',
+        height: '100%',
+        backgroundColor: 'rgba(0,0,0,0.8)',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 3,
+    },
+    cameraLoadingText: { // New style for camera loading text
+        color: '#4ade80',
+        fontSize: '18px',
+        fontWeight: 'bold',
+        marginTop: '15px',
+        textShadow: '0 2px 4px rgba(0,0,0,0.8)',
     },
     overlay: {
         position: 'absolute',
@@ -334,6 +386,19 @@ const styles = {
         alignItems: 'center',
         justifyContent: 'center',
         boxShadow: '0 0 0 4px rgba(255,255,255,0.3), 0 5px 20px rgba(0,0,0,0.3)',
+    },
+    uploadButton: { // New style for upload button
+        width: '56px',
+        height: '56px',
+        borderRadius: '50%',
+        background: 'rgba(255, 255, 255, 0.2)',
+        border: '1px solid rgba(255, 255, 255, 0.4)',
+        cursor: 'pointer',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        boxShadow: '0 0 0 4px rgba(255,255,255,0.1), 0 5px 20px rgba(0,0,0,0.2)',
+        color: 'white',
     },
     resultSheet: {
         position: 'absolute',

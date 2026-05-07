@@ -49,15 +49,15 @@ function Dashboard() {
   // Weather & UI State
   const [weatherData, setWeatherData] = useState(null);
   const [weatherImage, setWeatherImage] = useState(weatherImages.clearDay); 
-  const [activeTab, setActiveTab] = useState('AgriInsights');
-  const [direction, setDirection] = useState(1); // 1 for right, -1 for left
-  
-  const TABS = ['AgriInsights', 'Agri commerce', 'tools and utils'];
   
   // Location State
   const [userLocation, setUserLocation] = useState('Select Location'); 
   const [locationTitle, setLocationTitle] = useState('Home'); 
   const [showLocModal, setShowLocModal] = useState(false); 
+
+  const [activeTab, setActiveTab] = useState('AgriInsights');
+  const [direction, setDirection] = useState(1);
+  const TABS = ['AgriInsights', 'Agri commerce', 'tools and utils'];
 
   // --- INITIALIZATION & LISTENER (ZOMATO STYLE FIX) ---
   useEffect(() => {
@@ -248,15 +248,11 @@ function Dashboard() {
         </div>
       </div>
 
-      <div style={heroSection}><h1 style={fadedHeroTitle}>Growing Smarter Together</h1></div>
-
-      {/* 2. SEGMENTED CAPSULE TABS */}
-      <div style={capsuleContainerWrapper}>
-        <div style={capsuleContainer}>
-           <button onClick={() => changeTab('AgriInsights')} style={activeTab === 'AgriInsights' ? activeTabStyle : inactiveTabStyle}>AgriInsights</button>
-           <button onClick={() => changeTab('Agri commerce')} style={activeTab === 'Agri commerce' ? activeTabStyle : inactiveTabStyle}>Agri Commerce</button>
-           <button onClick={() => changeTab('tools and utils')} style={activeTab === 'tools and utils' ? activeTabStyle : inactiveTabStyle}>Tools & Utils</button>
-        </div>
+      {/* 2. SEPARATE CARD TABS (Square with curved edges) */}
+      <div style={tabCardsContainer}>
+        <button onClick={() => changeTab('AgriInsights')} style={activeTab === 'AgriInsights' ? activeCardTabStyle : inactiveCardTabStyle}>AgriInsights</button>
+        <button onClick={() => changeTab('Agri commerce')} style={activeTab === 'Agri commerce' ? activeCardTabStyle : inactiveCardTabStyle}>Agri Commerce</button>
+        <button onClick={() => changeTab('tools and utils')} style={activeTab === 'tools and utils' ? activeCardTabStyle : inactiveCardTabStyle}>Tools & Utils</button>
       </div>
 
       {/* 3. SWIPEABLE BENTO GRID AREA */}
@@ -348,7 +344,11 @@ function Dashboard() {
                   </div>
                </div>
             </Link>
+          </>
+        )}
 
+        {activeTab === 'tools and utils' && (
+          <>
             <Link to="/freelancing" style={cardLink}>
                <div className="glass-card" style={{...cardStyle, backgroundImage: "url('https://img.freepik.com/premium-photo/farmers-shake-hands-cornfield-partnership-agreement_875825-141614.jpg')"}}>
                   <div style={cardTopOverlay}>
@@ -357,11 +357,6 @@ function Dashboard() {
                   </div>
                </div>
             </Link>
-          </>
-        )}
-
-        {activeTab === 'tools and utils' && (
-          <>
             <Link to="/expenditure" style={cardLink}>
                <div className="glass-card" style={{...cardStyle, backgroundImage: "url('https://img.freepik.com/premium-photo/agronomist-with-tablet-taking-sample-his-crops-ar-23-v-61-job-id-619beb4c01e54b488b59fcdc87c74efc_1204450-66335.jpg')"}}>
                   <div style={cardTopOverlay}>
@@ -390,7 +385,6 @@ function Dashboard() {
             </Link>
           </>
         )}
-
           </motion.div>
         </AnimatePresence>
       </div>
@@ -461,8 +455,6 @@ const headerWrapper = { padding: '25px 20px 0 20px' };
 const topRow = { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px' };
 const locationClickableArea = { display:'flex', flexDirection:'column', justifyContent:'center', cursor: 'pointer' };
 const profileCircle = { width: '48px', height: '48px', borderRadius: '50%', background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(10px)', display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none', border: '1px solid rgba(255,255,255,0.25)' };
-const heroSection = { padding: '0 20px', marginTop: '25px', marginBottom: '20px' };
-const fadedHeroTitle = { fontSize: '1.4rem', margin: 0, fontWeight: '800', letterSpacing: '1px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', background: 'linear-gradient(to right, #ffffff 0%, #e0e0e0 50%, rgba(255,255,255,0.2) 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', display: 'inline-block', textTransform: 'uppercase' };
 const bentoGrid = { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', padding: '0 20px 10px 20px', maxWidth: '1000px', margin: '0 auto' };
 const cardLink = { textDecoration: 'none', color: 'white', display: 'block', width: '100%', height: '100%' };
 const cardStyle = { borderRadius: '18px', height: '185px', position: 'relative', overflow: 'hidden', backgroundSize: 'cover', backgroundPosition: 'center', border: '1px solid rgba(255,255,255,0.15)' };
@@ -473,9 +465,8 @@ const cardTitle = { margin: '0 0 4px 0', fontSize: '17px', fontWeight: '700', te
 const cardSubtitle = { margin: 0, fontSize: '13px', opacity: 0.9, fontWeight: '500', textShadow: '0 1px 4px rgba(0,0,0,0.8)' };
 const darkOverlay = { position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.15)', zIndex: 1 }; 
 const weatherContainer = { padding: '0 20px 100px 20px', maxWidth: '1000px', margin: '0 auto' };
-const capsuleContainerWrapper = { padding: '0 20px', maxWidth: '1000px', margin: '0 auto 20px auto' };
-const capsuleContainer = { display: 'flex', background: 'rgba(0, 0, 0, 0.3)', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)', borderRadius: '30px', padding: '5px', border: '1px solid rgba(255,255,255,0.1)' };
-const activeTabStyle = { flex: 1, background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', color: 'white', border: 'none', padding: '12px 5px', borderRadius: '25px', fontSize: '14px', fontWeight: '700', cursor: 'pointer', textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', boxShadow: '0 4px 10px rgba(16, 185, 129, 0.3)', transition: 'all 0.3s ease' };
-const inactiveTabStyle = { flex: 1, background: 'transparent', color: '#f8fafc', border: 'none', padding: '12px 5px', borderRadius: '25px', fontSize: '14px', fontWeight: '600', cursor: 'pointer', textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', transition: 'all 0.3s ease' };
+const tabCardsContainer = { display: 'flex', gap: '12px', padding: '0 20px', maxWidth: '1000px', margin: '0 auto 20px auto' };
+const activeCardTabStyle = { flex: 1, background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', color: 'white', border: '1px solid rgba(16, 185, 129, 0.5)', padding: '14px 8px', borderRadius: '16px', fontSize: '13px', fontWeight: '800', cursor: 'pointer', textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', boxShadow: '0 6px 16px rgba(16, 185, 129, 0.25)', transition: 'all 0.3s ease' };
+const inactiveCardTabStyle = { flex: 1, background: 'rgba(255, 255, 255, 0.1)', color: '#f8fafc', border: '1px solid rgba(255, 255, 255, 0.15)', padding: '14px 8px', borderRadius: '16px', fontSize: '13px', fontWeight: '600', cursor: 'pointer', textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', backdropFilter: 'blur(10px)', transition: 'all 0.3s ease' };
 
 export default Dashboard;
