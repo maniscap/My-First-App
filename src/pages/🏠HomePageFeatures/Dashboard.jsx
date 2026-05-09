@@ -42,6 +42,26 @@ const getBackgroundImage = (conditionText) => {
   return weatherImages.defaultFallback;
 };
 
+// --- DYNAMIC THEME DEFINITIONS ---
+const getThemeColors = (tab) => {
+  if (tab === 'AgriInsights') return { 
+    topHeader: '#38BDF8', 
+    bottomMain: '#000000', 
+    topImg: 'linear-gradient(180deg, #38BDF8 0%, #E0F2FE 100%)' 
+  }; // Blue Sky & Green Trees Theme
+  if (tab === 'Agri commerce') return { 
+    topHeader: '#1A0B2E', 
+    bottomMain: '#000000', 
+    topImg: 'radial-gradient(circle at top right, rgba(120, 30, 200, 0.35), transparent 60%), radial-gradient(circle at bottom left, rgba(255, 107, 107, 0.15), transparent 60%)' 
+  }; // Deep Space Nebula Theme
+  if (tab === 'tools and utils') return { 
+    topHeader: '#38bdf8', 
+    bottomMain: '#000000', 
+    topImg: 'linear-gradient(180deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.4) 100%)'
+  }; // Realistic Sky Blue + White Atmospheric Haze
+  return { topHeader: '#0F172A', bottomMain: '#000000', topImg: 'none' };
+};
+
 function Dashboard() {
   const navigate = useNavigate(); 
   
@@ -220,25 +240,78 @@ function Dashboard() {
     navigate('/user-location');
   };
 
+  const activeTheme = getThemeColors(activeTab);
+
   return (
-    <div style={{...pageStyle, background: '#000000'}}>
+    <div style={{...pageStyle, background: 'var(--theme-bottom-bg)', transition: 'background-color 0.5s ease', '--theme-bottom-bg': activeTheme.bottomMain, '--theme-top-bg': activeTheme.topHeader, '--theme-top-img': activeTheme.topImg}}>
       
       {/* 1. TOP SECTION (Dynamic Header) */}
-      <div style={{...topSectionWrapper, background: '#1A1D24'}}>
-        <div style={topSectionOverlay}>
+      <div style={{...topSectionWrapper, backgroundColor: 'var(--theme-top-bg)', backgroundImage: 'var(--theme-top-img)', backgroundSize: 'cover', transition: 'background-color 0.5s ease'}}>
+        
+        {/* PURE CSS SKY ART */}
+        <AnimatePresence>
+          {activeTab === 'AgriInsights' && (
+            <motion.div 
+              key="agri-nature"
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.5 }}
+              style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', overflow: 'hidden', zIndex: 0, pointerEvents: 'none' }}
+            >
+               {/* Sun - Positioned on the right but spaced away from the profile icon */}
+               <div className="css-sun" style={{ top: '25px', right: '25%' }}></div>
+
+               {/* Clouds */}
+               <div className="css-cloud" style={{ top: '25px', left: '20%', transform: 'scale(0.6)', opacity: 0.85, filter: 'blur(1px)' }}></div>
+               
+               {/* Elegant Rolling Farm Hills at the bottom */}
+               <div className="css-hill" style={{ width: '600px', height: '200px', left: '-100px', bottom: '-120px', background: '#2E7D32', zIndex: 1 }}></div>
+               <div className="css-hill" style={{ width: '500px', height: '180px', right: '-100px', bottom: '-100px', background: '#388E3C', zIndex: 2 }}></div>
+               <div className="css-hill" style={{ width: '700px', height: '150px', left: '-150px', bottom: '-80px', background: '#4CAF50', zIndex: 3 }}></div>
+            </motion.div>
+          )}
+
+          {activeTab === 'Agri commerce' && (
+            <motion.div 
+              key="deep-space"
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.5 }}
+              style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', overflow: 'hidden', zIndex: 0, pointerEvents: 'none' }}
+            >
+               <div className="css-star" style={{ top: '20px', left: '15%', animationDelay: '0s' }}></div>
+               <div className="css-star" style={{ top: '50px', left: '30%', animationDelay: '1s' }}></div>
+               <div className="css-star" style={{ top: '15px', right: '40%', animationDelay: '0.5s' }}></div>
+               <div className="css-shooting-star" style={{ top: '10px', left: '50%', animationDelay: '0s' }}></div>
+               <div className="css-shooting-star" style={{ top: '40px', right: '10%', animationDelay: '2s' }}></div>
+               <div className="css-full-moon" style={{ top: '28px', right: '24%' }}></div>
+            </motion.div>
+          )}
+
+          {activeTab === 'tools and utils' && (
+            <motion.div 
+              key="day-sky"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.5 }}
+              style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', overflow: 'hidden', zIndex: 0, pointerEvents: 'none' }}
+            >
+               <div className="css-cloud" style={{ top: '30px', right: '15%', transform: 'scale(0.8)', opacity: 0.9, filter: 'blur(1px)' }}></div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        <div style={{...topSectionOverlay, position: 'relative', zIndex: 1}}>
           {/* HEADER */}
           <div style={headerWrapper}>
             <div style={topRow}>
                <div style={locationClickableArea} onClick={goToManagementPage}>
                   <div style={{display:'flex', alignItems:'center'}}>
-                      <div style={{fontSize:'20px', fontWeight:'900', color:'#ffffff', textTransform:'capitalize'}}>
+                      <div style={{fontSize:'20px', fontWeight:'900', color: '#ffffff', textTransform:'capitalize', transition: 'color 0.5s ease'}}>
                           <span style={{color:'#ff5252', marginRight:'6px'}}>📍</span>{locationTitle} 
                       </div>
-                      <ChevronDown size={20} color="#ffffff" style={{marginLeft:'2px', marginTop:'2px', opacity:0.9}} />
+                      <ChevronDown size={20} color="#ffffff" style={{marginLeft:'2px', marginTop:'2px', opacity:0.9, transition: 'color 0.5s ease'}} />
                   </div>
                   <div style={{
-                      color:'#aaaaaa', fontSize:'13px', marginTop:'2px', maxWidth:'280px', 
-                      whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis', fontWeight:'600', paddingLeft:'2px' 
+                      color: 'rgba(255,255,255,0.8)', fontSize:'13px', marginTop:'2px', maxWidth:'280px', 
+                      whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis', fontWeight:'600', paddingLeft:'2px', transition: 'color 0.5s ease'
                   }}>
                     {userLocation}
                   </div>
@@ -249,9 +322,93 @@ function Dashboard() {
         </div>
 
         {/* BROWSER-LIKE TABS */}
-        <div style={{ paddingTop: '15px', paddingBottom: '0' }}>
+        <div style={{ paddingTop: '8px', paddingBottom: '0', position: 'relative', zIndex: 1 }}>
           <style>{`
-            .active-tab::before {
+            @import url('https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@700;800;900&display=swap');
+            .css-cloud {
+              position: absolute;
+              width: 120px;
+              height: 35px;
+              background: #ffffff;
+              border-radius: 50px;
+              box-shadow: inset 0px -4px 6px rgba(0,0,0,0.05);
+            }
+            .css-cloud::before, .css-cloud::after {
+              content: '';
+              position: absolute;
+              background: #ffffff;
+              border-radius: 50%;
+            }
+            .css-cloud::before {
+              width: 60px;
+              height: 60px;
+              top: -30px;
+              left: 20px;
+              box-shadow: inset 2px 4px 6px rgba(255,255,255,0.8);
+            }
+            .css-cloud::after {
+              width: 45px;
+              height: 45px;
+              top: -15px;
+              right: 15px;
+            }
+            .css-star {
+              position: absolute;
+              width: 3px; height: 3px;
+              background: #ffffff;
+              border-radius: 50%;
+              box-shadow: 0 0 6px #ffffff;
+              animation: twinkle 2s infinite ease-in-out alternate;
+            }
+            @keyframes twinkle {
+              0% { opacity: 0.3; transform: scale(0.8); }
+              100% { opacity: 1; transform: scale(1.2); }
+            }
+            .css-sun {
+              position: absolute;
+              width: 36px; height: 36px;
+              border-radius: 50%;
+              background: #FDE047;
+              box-shadow: 0 0 20px rgba(253, 224, 71, 0.8);
+              opacity: 0.9;
+            }
+            .css-hill {
+              position: absolute;
+              border-radius: 50%;
+              box-shadow: inset 0px 8px 16px rgba(255,255,255,0.15);
+            }
+            .css-full-moon {
+              position: absolute;
+              width: 36px; height: 36px;
+              border-radius: 50%;
+              background: #E9D5FF;
+              box-shadow: 0 0 15px 2px rgba(233, 213, 255, 0.5);
+              opacity: 0.9;
+            }
+            .css-shooting-star {
+              position: absolute;
+              width: 40px; height: 2px;
+              background: linear-gradient(90deg, rgba(255,255,255,0.8), transparent);
+              border-radius: 50%;
+              animation: shoot 4s infinite linear;
+            }
+            @keyframes shoot {
+              0% { transform: translateX(0) translateY(0) rotate(-35deg); opacity: 1; }
+              20% { transform: translateX(-150px) translateY(100px) rotate(-35deg); opacity: 0; }
+              100% { transform: translateX(-150px) translateY(100px) rotate(-35deg); opacity: 0; }
+            }
+            .active-tab-bg {
+              position: absolute;
+              top: 0;
+              left: 0;
+              right: 0;
+              bottom: 0;
+              background: var(--theme-bottom-bg);
+              border-radius: 16px 16px 0 0;
+              z-index: 0;
+              transition: background-color 0.5s ease;
+            }
+            .active-tab-bg::before {
               content: "";
               position: absolute;
               left: -16px;
@@ -259,10 +416,11 @@ function Dashboard() {
               width: 16px;
               height: 16px;
               border-bottom-right-radius: 16px;
-              box-shadow: 10px 10px 0 10px #000000;
+              box-shadow: 10px 10px 0 10px var(--theme-bottom-bg);
               pointer-events: none;
+              transition: box-shadow 0.5s ease;
             }
-            .active-tab::after {
+            .active-tab-bg::after {
               content: "";
               position: absolute;
               right: -16px;
@@ -270,48 +428,71 @@ function Dashboard() {
               width: 16px;
               height: 16px;
               border-bottom-left-radius: 16px;
-              box-shadow: -10px 10px 0 10px #000000;
+              box-shadow: -10px 10px 0 10px var(--theme-bottom-bg);
               pointer-events: none;
+              transition: box-shadow 0.5s ease;
             }
           `}</style>
           <div style={tabCardsContainer}>
-            <button className={activeTab === 'AgriInsights' ? 'active-tab' : ''} onClick={() => changeTab('AgriInsights')} style={getTabStyle('AgriInsights', activeTab === 'AgriInsights')}>
-              <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
-                 <span style={getPillStyle(activeTab === 'AgriInsights')}>Agri</span>
-                 <span style={getLabelStyle(activeTab === 'AgriInsights')}>Insights</span>
-              </span>
-            </button>
-            <button className={activeTab === 'Agri commerce' ? 'active-tab' : ''} onClick={() => changeTab('Agri commerce')} style={getTabStyle('Agri commerce', activeTab === 'Agri commerce')}>
-              <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
-                 <span style={getPillStyle(activeTab === 'Agri commerce')}>Agri</span>
-                 <span style={getLabelStyle(activeTab === 'Agri commerce')}>Commerce</span>
-              </span>
-            </button>
-            <button className={activeTab === 'tools and utils' ? 'active-tab' : ''} onClick={() => changeTab('tools and utils')} style={getTabStyle('tools and utils', activeTab === 'tools and utils')}>
-              <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
-                 <span style={getPillStyle(activeTab === 'tools and utils')}>Agri</span>
-                 <span style={getLabelStyle(activeTab === 'tools and utils')}>Tools</span>
-              </span>
-            </button>
+            {TABS.map(tab => {
+              const isActive = activeTab === tab;
+              const tabName = tab === 'AgriInsights' ? '🌱 Insights' : tab === 'Agri commerce' ? '🛒 Commerce' : '🚜 Tools';
+              
+              return (
+                <button 
+                  key={tab}
+                  onClick={() => changeTab(tab)} 
+                  style={{
+                    flex: 1,
+                    height: '70px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    border: 'none',
+                    outline: 'none',
+                    fontFamily: '"Fredoka One", cursive',
+                    position: 'relative',
+                    background: 'transparent',
+                    padding: 0,
+                    WebkitTapHighlightColor: 'transparent',
+                    zIndex: isActive ? 10 : 1
+                  }}
+                >
+                  {/* INACTIVE BACKGROUND (Isolated layer, strictly smaller to give the float effect) */}
+                  <div style={{ position: 'absolute', top: '10px', left: 0, right: 0, bottom: '8px', background: '#FFFFFF', borderRadius: '12px', border: '1px solid rgba(255, 255, 255, 0.2)', boxShadow: '0 4px 10px rgba(0,0,0,0.15)', opacity: isActive ? 0 : 1, transition: 'opacity 0.3s ease', zIndex: 0 }} />
+
+                  {/* ACTIVE BACKGROUND (FRAMER MOTION) */}
+                  {isActive && <motion.div layoutId="activeTabIndicator" className="active-tab-bg" transition={{ type: "spring", stiffness: 300, damping: 30 }} />}
+
+                  {/* TEXT CONTENT */}
+                  <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', lineHeight: '1.1', position: 'relative', zIndex: 1, marginTop: isActive ? '2px' : '-2px' }}>
+                     <span style={getTopTextStyle(tab, isActive)}>Agri</span>
+                     <span style={getBottomTextStyle(tab, isActive)}>{tabName}</span>
+                  </span>
+                </button>
+              );
+            })}
           </div>
         </div>
       </div>
 
       {/* 2. BOTTOM CONTENT AREA (Browser Window) */}
-      <div style={bottomContentContainer}>
+      <div style={{...bottomContentContainer, background: 'var(--theme-bottom-bg)', transition: 'background-color 0.5s ease'}}>
         {/* CUSTOM MULTI-COLOR SEARCH BAR */}
-        <div style={{ padding: '20px 20px 10px 20px' }}>
-          <div style={{ position: 'relative', display: 'flex', alignItems: 'center', background: '#fff', borderRadius: '50px', padding: '14px 20px' }}>
-             <Search size={22} color="#555" style={{marginRight: '12px'}} />
+        <div style={{ padding: '20px 100px 36px 20px', maxWidth: '1000px', margin: '0 auto' }}>
+          <div style={{ position: 'relative', display: 'flex', alignItems: 'center', background: 'linear-gradient(135deg, #ffffff 0%, #e4e4e9 40%, #f4f5f7 60%, #d8dbe0 100%)', borderRadius: '16px', padding: '10px 16px', border: '1px solid #b8c0c8', boxShadow: '0 6px 16px rgba(0, 0, 0, 0.15), inset 0 2px 3px rgba(255, 255, 255, 1), inset 0 -2px 3px rgba(0, 0, 0, 0.08)' }}>
+             <Search size={20} color="#555" style={{marginRight: '10px'}} />
              <input 
                 value={searchVal}
                 onChange={(e) => setSearchVal(e.target.value)}
                 onFocus={() => setIsSearchFocused(true)}
                 onBlur={() => setIsSearchFocused(false)}
-                style={{ flex: 1, background: 'transparent', border: 'none', outline: 'none', color: '#000', fontSize: '16px', position: 'relative', zIndex: 2, padding: 0, fontWeight: '600' }}
+                style={{ flex: 1, background: 'transparent', border: 'none', outline: 'none', color: '#111', fontSize: '15px', position: 'relative', zIndex: 2, padding: 0, fontWeight: '600' }}
              />
              {(!isSearchFocused && searchVal === '') && (
-               <div style={{ position: 'absolute', left: '54px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', fontSize: '16px', fontWeight: '800', zIndex: 1, color: '#999', whiteSpace: 'nowrap' }}>
+               <div style={{ position: 'absolute', left: '48px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', fontSize: '15px', fontWeight: '800', zIndex: 1, color: '#777', whiteSpace: 'nowrap' }}>
                  Search for <span style={{color: '#EA580C'}}>Summer</span> <span style={{color: '#06B6D4'}}>Cool</span>
                </div>
              )}
@@ -323,10 +504,10 @@ function Dashboard() {
           <AnimatePresence mode="wait">
             <motion.div 
               key={activeTab}
-              initial={{ opacity: 0, x: direction * 50 }}
+              initial={{ opacity: 0, x: direction * 30 }}
               animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: direction * -50 }}
-              transition={{ duration: 0.25, ease: "easeInOut" }}
+              exit={{ opacity: 0, x: direction * -30 }}
+              transition={{ duration: 0.3, ease: "easeOut" }}
               style={bentoGrid}
             >
 
@@ -536,54 +717,38 @@ const cardSubtitle = { margin: 0, fontSize: '13px', opacity: 0.9, fontWeight: '5
 const darkOverlay = { position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.15)', zIndex: 1 }; 
 const weatherContainer = { padding: '0 20px 100px 20px', maxWidth: '1000px', margin: '0 auto' };
 
-// --- DYNAMIC MODERN TAB STYLES ---
-const getTabStyle = (tab, isActive) => {
-  const baseStyle = {
-    flex: 1,
-    cursor: 'pointer',
-    textAlign: 'center',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    whiteSpace: 'nowrap',
-    transition: 'all 0.3s ease',
-    border: 'none',
-    outline: 'none',
-    fontFamily: '"Inter", "SF Pro Display", "-apple-system", sans-serif',
-    flexDirection: 'column'
-  };
-  
-  if (isActive) {
-    return {
-      ...baseStyle,
-      background: '#000000',
-      color: '#ffffff',
-      borderRadius: '16px 16px 0 0',
-      padding: '14px 12px 10px 12px',
-      position: 'relative',
-      zIndex: 10,
-    };
+const getTopTextStyle = (tab, isActive) => {
+  let color = '#A1A1AA'; 
+  if (!isActive) {
+    if (tab === 'AgriInsights') color = '#10B981';
+    else if (tab === 'Agri commerce') color = '#8B5CF6'; 
+    else if (tab === 'tools and utils') color = '#38BDF8'; 
   } else {
-    return {
-      ...baseStyle,
-      background: '#FFFFFF',
-      color: '#1A1A1A',
-      borderRadius: '12px',
-      padding: '10px 12px',
-      marginBottom: '8px'
-    };
+    color = '#A1A1AA';
   }
+
+  return {
+    color, fontSize: '10px', fontWeight: '900', textTransform: 'uppercase', letterSpacing: '1px', transition: 'color 0.5s ease',
+    fontFamily: '"Nunito", sans-serif'
+  };
 };
 
-const getPillStyle = (isActive) => ({
-  background: isActive ? 'rgba(255,255,255,0.1)' : 'rgba(10, 80, 61, 0.1)',
-  color: isActive ? '#A0A0A0' : '#0A503D',
-  padding: '2px 8px', borderRadius: '12px', fontSize: '9px', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.5px'
-});
-
-const getLabelStyle = (isActive) => ({
-  color: isActive ? '#FFFFFF' : '#1A1A1A',
-  fontSize: isActive ? '15px' : '13px', fontWeight: '800', letterSpacing: '-0.2px'
-});
+const getBottomTextStyle = (tab, isActive) => {
+  let color = '#1A1D24';
+  if (isActive) {
+    color = '#FFFFFF';
+  } else {
+    if (tab === 'AgriInsights') color = '#064E3B';
+    else if (tab === 'Agri commerce') color = '#1A0B2E';
+    else if (tab === 'tools and utils') color = '#0EA5E9';
+  }
+  return {
+    color,
+    fontSize: isActive ? '18px' : '15px', fontWeight: 'normal', letterSpacing: '0.5px', 
+    transition: 'all 0.5s ease',
+    textShadow: isActive ? '0px 3px 0px #444, 0px 4px 8px rgba(0,0,0,0.6)' 
+                         : '0px 2px 0px rgba(0,0,0,0.15), 0px 3px 4px rgba(0,0,0,0.05)'
+  };
+};
 
 export default Dashboard;
