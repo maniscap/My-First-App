@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios'; 
 import LocationSheet from '../../🔧components/LocationSheet'; 
 import BottomNavigation from '../🎫BottomNavigationCard/BottomNavigation'; 
-import { ChevronDown, Radio, Map, Briefcase, TrendingUp, Newspaper, BookOpen, Rocket } from 'lucide-react'; 
+import { ChevronDown, Radio, Map, Briefcase, TrendingUp, Newspaper, BookOpen, Rocket, Search } from 'lucide-react'; 
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSwipeable } from 'react-swipeable';
 
@@ -44,7 +44,6 @@ const getBackgroundImage = (conditionText) => {
 
 function Dashboard() {
   const navigate = useNavigate(); 
-  const [bgImage, setBgImage] = useState('');
   
   // Weather & UI State
   const [weatherData, setWeatherData] = useState(null);
@@ -58,14 +57,11 @@ function Dashboard() {
   const [activeTab, setActiveTab] = useState('AgriInsights');
   const [direction, setDirection] = useState(1);
   const TABS = ['AgriInsights', 'Agri commerce', 'tools and utils'];
+  const [searchVal, setSearchVal] = useState('');
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
 
   // --- INITIALIZATION & LISTENER (ZOMATO STYLE FIX) ---
   useEffect(() => {
-    const hour = new Date().getHours();
-    setBgImage(hour >= 18 || hour < 6 
-      ? 'https://images.unsplash.com/photo-1652454159675-11ead6275680?q=80&w=1170&auto=format&fit=crop' 
-      : 'https://images.unsplash.com/photo-1625246333195-78d9c38ad449?q=80&w=2940&auto=format&fit=crop');
-
     const loadData = () => {
         const savedLoc = localStorage.getItem('userLocation'); 
         const savedTitle = localStorage.getItem('locationTitle');
@@ -225,47 +221,114 @@ function Dashboard() {
   };
 
   return (
-    <div style={{...pageStyle, backgroundImage: `url('${bgImage}')`}}>
+    <div style={{...pageStyle, background: '#000000'}}>
       
-      {/* 1. HEADER */}
-      <div style={headerWrapper}>
-        <div style={topRow}>
-           <div style={locationClickableArea} onClick={goToManagementPage}>
-              <div style={{display:'flex', alignItems:'center'}}>
-                  <div style={{fontSize:'20px', fontWeight:'800', color:'white', textShadow:'0 2px 4px rgba(0,0,0,0.6)', textTransform:'capitalize'}}>
-                      <span style={{color:'#ff5252', marginRight:'6px'}}>📍</span>{locationTitle} 
+      {/* 1. TOP SECTION (Dynamic Header) */}
+      <div style={{...topSectionWrapper, background: '#1A1D24'}}>
+        <div style={topSectionOverlay}>
+          {/* HEADER */}
+          <div style={headerWrapper}>
+            <div style={topRow}>
+               <div style={locationClickableArea} onClick={goToManagementPage}>
+                  <div style={{display:'flex', alignItems:'center'}}>
+                      <div style={{fontSize:'20px', fontWeight:'900', color:'#ffffff', textTransform:'capitalize'}}>
+                          <span style={{color:'#ff5252', marginRight:'6px'}}>📍</span>{locationTitle} 
+                      </div>
+                      <ChevronDown size={20} color="#ffffff" style={{marginLeft:'2px', marginTop:'2px', opacity:0.9}} />
                   </div>
-                  <ChevronDown size={20} color="white" style={{marginLeft:'2px', marginTop:'2px', opacity:0.9}} />
-              </div>
-              <div style={{
-                  color:'rgba(255,255,255,0.85)', fontSize:'12px', marginTop:'2px', maxWidth:'280px', 
-                  whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis', textShadow:'0 1px 2px rgba(0,0,0,0.8)', fontWeight:'500', paddingLeft:'2px' 
-              }}>
-                {userLocation}
-              </div>
-           </div>
-           <Link to="/profile" style={profileCircle}><span style={{fontSize:'24px'}}>🧢</span></Link>
+                  <div style={{
+                      color:'#aaaaaa', fontSize:'13px', marginTop:'2px', maxWidth:'280px', 
+                      whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis', fontWeight:'600', paddingLeft:'2px' 
+                  }}>
+                    {userLocation}
+                  </div>
+               </div>
+               <Link to="/profile" style={profileCircle}><span style={{fontSize:'24px'}}>🧢</span></Link>
+            </div>
+          </div>
+        </div>
+
+        {/* BROWSER-LIKE TABS */}
+        <div style={{ paddingTop: '15px', paddingBottom: '0' }}>
+          <style>{`
+            .active-tab::before {
+              content: "";
+              position: absolute;
+              left: -16px;
+              bottom: 0;
+              width: 16px;
+              height: 16px;
+              border-bottom-right-radius: 16px;
+              box-shadow: 10px 10px 0 10px #000000;
+              pointer-events: none;
+            }
+            .active-tab::after {
+              content: "";
+              position: absolute;
+              right: -16px;
+              bottom: 0;
+              width: 16px;
+              height: 16px;
+              border-bottom-left-radius: 16px;
+              box-shadow: -10px 10px 0 10px #000000;
+              pointer-events: none;
+            }
+          `}</style>
+          <div style={tabCardsContainer}>
+            <button className={activeTab === 'AgriInsights' ? 'active-tab' : ''} onClick={() => changeTab('AgriInsights')} style={getTabStyle('AgriInsights', activeTab === 'AgriInsights')}>
+              <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+                 <span style={getPillStyle(activeTab === 'AgriInsights')}>Agri</span>
+                 <span style={getLabelStyle(activeTab === 'AgriInsights')}>Insights</span>
+              </span>
+            </button>
+            <button className={activeTab === 'Agri commerce' ? 'active-tab' : ''} onClick={() => changeTab('Agri commerce')} style={getTabStyle('Agri commerce', activeTab === 'Agri commerce')}>
+              <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+                 <span style={getPillStyle(activeTab === 'Agri commerce')}>Agri</span>
+                 <span style={getLabelStyle(activeTab === 'Agri commerce')}>Commerce</span>
+              </span>
+            </button>
+            <button className={activeTab === 'tools and utils' ? 'active-tab' : ''} onClick={() => changeTab('tools and utils')} style={getTabStyle('tools and utils', activeTab === 'tools and utils')}>
+              <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+                 <span style={getPillStyle(activeTab === 'tools and utils')}>Agri</span>
+                 <span style={getLabelStyle(activeTab === 'tools and utils')}>Tools</span>
+              </span>
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* 2. SEPARATE CARD TABS (Square with curved edges) */}
-      <div style={tabCardsContainer}>
-        <button onClick={() => changeTab('AgriInsights')} style={activeTab === 'AgriInsights' ? activeCardTabStyle : inactiveCardTabStyle}>AgriInsights</button>
-        <button onClick={() => changeTab('Agri commerce')} style={activeTab === 'Agri commerce' ? activeCardTabStyle : inactiveCardTabStyle}>Agri Commerce</button>
-        <button onClick={() => changeTab('tools and utils')} style={activeTab === 'tools and utils' ? activeCardTabStyle : inactiveCardTabStyle}>Tools & Utils</button>
-      </div>
+      {/* 2. BOTTOM CONTENT AREA (Browser Window) */}
+      <div style={bottomContentContainer}>
+        {/* CUSTOM MULTI-COLOR SEARCH BAR */}
+        <div style={{ padding: '20px 20px 10px 20px' }}>
+          <div style={{ position: 'relative', display: 'flex', alignItems: 'center', background: '#fff', borderRadius: '50px', padding: '14px 20px' }}>
+             <Search size={22} color="#555" style={{marginRight: '12px'}} />
+             <input 
+                value={searchVal}
+                onChange={(e) => setSearchVal(e.target.value)}
+                onFocus={() => setIsSearchFocused(true)}
+                onBlur={() => setIsSearchFocused(false)}
+                style={{ flex: 1, background: 'transparent', border: 'none', outline: 'none', color: '#000', fontSize: '16px', position: 'relative', zIndex: 2, padding: 0, fontWeight: '600' }}
+             />
+             {(!isSearchFocused && searchVal === '') && (
+               <div style={{ position: 'absolute', left: '54px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', fontSize: '16px', fontWeight: '800', zIndex: 1, color: '#999', whiteSpace: 'nowrap' }}>
+                 Search for <span style={{color: '#EA580C'}}>Summer</span> <span style={{color: '#06B6D4'}}>Cool</span>
+               </div>
+             )}
+          </div>
+        </div>
 
-      {/* 3. SWIPEABLE BENTO GRID AREA */}
-      <div {...swipeHandlers} style={{ overflowX: 'hidden', width: '100%', minHeight: '350px' }}>
-        <AnimatePresence mode="wait">
-          <motion.div 
-            key={activeTab}
-            initial={{ opacity: 0, x: direction * 50 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: direction * -50 }}
-            transition={{ duration: 0.25, ease: "easeInOut" }}
-            style={bentoGrid}
-          >
+        {/* SWIPEABLE BENTO GRID AREA */}
+        <div {...swipeHandlers} style={{ overflowX: 'hidden', width: '100%', minHeight: '350px' }}>
+          <AnimatePresence mode="wait">
+            <motion.div 
+              key={activeTab}
+              initial={{ opacity: 0, x: direction * 50 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: direction * -50 }}
+              transition={{ duration: 0.25, ease: "easeInOut" }}
+              style={bentoGrid}
+            >
 
         {activeTab === 'AgriInsights' && (
           <>
@@ -309,6 +372,15 @@ function Dashboard() {
 
         {activeTab === 'Agri commerce' && (
           <>
+            <Link to="/freelancing" style={cardLink}>
+               <div className="glass-card" style={{...cardStyle, backgroundImage: "url('https://img.freepik.com/premium-photo/farmers-shake-hands-cornfield-partnership-agreement_875825-141614.jpg')"}}>
+                  <div style={cardTopOverlay}>
+                     <div><h3 style={cardTitle}>Freelancing</h3><p style={cardSubtitle}>Hire Professionals & Experts</p></div>
+                     <div style={whiteIconBox}><Briefcase size={28} color="white"/></div>
+                  </div>
+               </div>
+            </Link>
+
             <Link to="/rent-machinery" style={cardLink}>
                <div className="glass-card" style={{...cardStyle, backgroundImage: "url('https://img.freepik.com/premium-photo/tractor-watering-tractor-spraying-field-farm-landscape-agricultural-beautiful-countryside_114016-69.jpg')"}}>
                   <div style={cardTopOverlay}>
@@ -349,14 +421,6 @@ function Dashboard() {
 
         {activeTab === 'tools and utils' && (
           <>
-            <Link to="/freelancing" style={cardLink}>
-               <div className="glass-card" style={{...cardStyle, backgroundImage: "url('https://img.freepik.com/premium-photo/farmers-shake-hands-cornfield-partnership-agreement_875825-141614.jpg')"}}>
-                  <div style={cardTopOverlay}>
-                     <div><h3 style={cardTitle}>Freelancing</h3><p style={cardSubtitle}>Hire Professionals & Experts</p></div>
-                     <div style={whiteIconBox}><Briefcase size={28} color="white"/></div>
-                  </div>
-               </div>
-            </Link>
             <Link to="/expenditure" style={cardLink}>
                <div className="glass-card" style={{...cardStyle, backgroundImage: "url('https://img.freepik.com/premium-photo/agronomist-with-tablet-taking-sample-his-crops-ar-23-v-61-job-id-619beb4c01e54b488b59fcdc87c74efc_1204450-66335.jpg')"}}>
                   <div style={cardTopOverlay}>
@@ -376,7 +440,7 @@ function Dashboard() {
             </Link>
 
             <Link to="/radio" style={cardLink}>
-               <div className="glass-card" style={{...cardStyle, backgroundImage: "url('https://images.unsplash.com/photo-1478737270239-2f02b77fc618?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D ')"}}>
+               <div className="glass-card" style={{...cardStyle, backgroundImage: "url('https://images.unsplash.com/photo-1478737270239-2f02b77fc618?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D')"}}>
                   <div style={cardTopOverlay}>
                      <div><h3 style={cardTitle}>Farm Radio</h3><p style={cardSubtitle}>News & Songs</p></div>
                      <div style={whiteIconBox}><Radio size={28} color="white"/></div>
@@ -435,6 +499,7 @@ function Dashboard() {
            </div>
         </Link>
       </div>
+      </div>
 
       <BottomNavigation />
 
@@ -450,12 +515,17 @@ function Dashboard() {
 }
 
 // --- STYLES ---
-const pageStyle = { position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', backgroundSize: 'cover', backgroundPosition: 'center', backgroundColor: 'black', overflowY: 'auto', touchAction: 'pan-y', overscrollBehavior: 'none' };
-const headerWrapper = { padding: '25px 20px 0 20px' };
-const topRow = { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px' };
+const pageStyle = { position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', backgroundColor: '#000', backgroundSize: 'cover', backgroundPosition: 'center', overflowY: 'auto', touchAction: 'pan-y', overscrollBehavior: 'none' };
+const topSectionWrapper = { position: 'relative', paddingBottom: 0 };
+const topSectionOverlay = { paddingTop: 'env(safe-area-inset-top)', paddingBottom: '0' };
+const headerWrapper = { padding: '25px 20px 10px 20px' };
+const topRow = { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' };
 const locationClickableArea = { display:'flex', flexDirection:'column', justifyContent:'center', cursor: 'pointer' };
-const profileCircle = { width: '48px', height: '48px', borderRadius: '50%', background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(10px)', display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none', border: '1px solid rgba(255,255,255,0.25)' };
-const bentoGrid = { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', padding: '0 20px 10px 20px', maxWidth: '1000px', margin: '0 auto' };
+const profileCircle = { width: '48px', height: '48px', borderRadius: '50%', background: 'rgba(0,0,0,0.05)', backdropFilter: 'blur(10px)', display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none', border: '1px solid rgba(0,0,0,0.1)' };
+const tabCardsContainer = { display: 'flex', gap: '16px', padding: '0 15px', maxWidth: '1000px', margin: '0 auto', alignItems: 'flex-end' };
+const inactiveCardTabStyle = { flex: 1, height: '75px', background: 'rgba(255,255,255,0.5)', color: '#555', border: '2px solid transparent', borderRadius: '20px', padding: '8px 4px', cursor: 'pointer', textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', whiteSpace: 'normal', lineHeight: '1.2', transition: 'all 0.3s ease', boxShadow: 'none' };
+const bottomContentContainer = { background: '#000000', flex: 1, minHeight: '60vh', paddingTop: '0', position: 'relative', zIndex: 9 };
+const bentoGrid = { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', padding: '0 20px 20px 20px', maxWidth: '1000px', margin: '0 auto' };
 const cardLink = { textDecoration: 'none', color: 'white', display: 'block', width: '100%', height: '100%' };
 const cardStyle = { borderRadius: '18px', height: '185px', position: 'relative', overflow: 'hidden', backgroundSize: 'cover', backgroundPosition: 'center', border: '1px solid rgba(255,255,255,0.15)' };
 const wideCardStyle = { gridColumn: 'span 2', height: '180px', borderRadius: '18px', position: 'relative', overflow: 'hidden', backgroundSize: 'cover', backgroundPosition: 'center', border: '1px solid rgba(255,255,255,0.15)' };
@@ -465,8 +535,55 @@ const cardTitle = { margin: '0 0 4px 0', fontSize: '17px', fontWeight: '700', te
 const cardSubtitle = { margin: 0, fontSize: '13px', opacity: 0.9, fontWeight: '500', textShadow: '0 1px 4px rgba(0,0,0,0.8)' };
 const darkOverlay = { position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.15)', zIndex: 1 }; 
 const weatherContainer = { padding: '0 20px 100px 20px', maxWidth: '1000px', margin: '0 auto' };
-const tabCardsContainer = { display: 'flex', gap: '12px', padding: '0 20px', maxWidth: '1000px', margin: '0 auto 20px auto' };
-const activeCardTabStyle = { flex: 1, background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', color: 'white', border: '1px solid rgba(16, 185, 129, 0.5)', padding: '14px 8px', borderRadius: '16px', fontSize: '13px', fontWeight: '800', cursor: 'pointer', textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', boxShadow: '0 6px 16px rgba(16, 185, 129, 0.25)', transition: 'all 0.3s ease' };
-const inactiveCardTabStyle = { flex: 1, background: 'rgba(255, 255, 255, 0.1)', color: '#f8fafc', border: '1px solid rgba(255, 255, 255, 0.15)', padding: '14px 8px', borderRadius: '16px', fontSize: '13px', fontWeight: '600', cursor: 'pointer', textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', backdropFilter: 'blur(10px)', transition: 'all 0.3s ease' };
+
+// --- DYNAMIC MODERN TAB STYLES ---
+const getTabStyle = (tab, isActive) => {
+  const baseStyle = {
+    flex: 1,
+    cursor: 'pointer',
+    textAlign: 'center',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    whiteSpace: 'nowrap',
+    transition: 'all 0.3s ease',
+    border: 'none',
+    outline: 'none',
+    fontFamily: '"Inter", "SF Pro Display", "-apple-system", sans-serif',
+    flexDirection: 'column'
+  };
+  
+  if (isActive) {
+    return {
+      ...baseStyle,
+      background: '#000000',
+      color: '#ffffff',
+      borderRadius: '16px 16px 0 0',
+      padding: '14px 12px 10px 12px',
+      position: 'relative',
+      zIndex: 10,
+    };
+  } else {
+    return {
+      ...baseStyle,
+      background: '#FFFFFF',
+      color: '#1A1A1A',
+      borderRadius: '12px',
+      padding: '10px 12px',
+      marginBottom: '8px'
+    };
+  }
+};
+
+const getPillStyle = (isActive) => ({
+  background: isActive ? 'rgba(255,255,255,0.1)' : 'rgba(10, 80, 61, 0.1)',
+  color: isActive ? '#A0A0A0' : '#0A503D',
+  padding: '2px 8px', borderRadius: '12px', fontSize: '9px', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.5px'
+});
+
+const getLabelStyle = (isActive) => ({
+  color: isActive ? '#FFFFFF' : '#1A1A1A',
+  fontSize: isActive ? '15px' : '13px', fontWeight: '800', letterSpacing: '-0.2px'
+});
 
 export default Dashboard;
