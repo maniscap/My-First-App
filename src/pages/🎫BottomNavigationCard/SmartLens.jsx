@@ -56,7 +56,9 @@ const SmartLens = () => {
             // Prefer the rear camera ('environment') for scanning
             const constraints = {
                 video: {
-                    facingMode: "environment" // Prefer rear camera but don't force 'exact' to avoid OverconstrainedError
+                    facingMode: "environment", // Prefer rear camera but don't force 'exact' to avoid OverconstrainedError
+                    width: { ideal: 1920 },    // Request High Definition width (1080p)
+                    height: { ideal: 1080 }    // Request High Definition height
                 }
             };
             
@@ -79,7 +81,12 @@ const SmartLens = () => {
 
             // If rear camera fails (e.g., on a laptop), try any camera
             try {
-                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                const stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: {
+                        width: { ideal: 1920 },
+                        height: { ideal: 1080 }
+                    } 
+                });
 
                 if (!isMounted.current || currentReqId !== activeStreamId.current) {
                     stream.getTracks().forEach(track => { track.enabled = false; track.stop(); });
