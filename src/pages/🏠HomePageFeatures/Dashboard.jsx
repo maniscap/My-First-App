@@ -46,20 +46,20 @@ const getBackgroundImage = (conditionText) => {
 const getThemeColors = (tab) => {
   if (tab === 'AgriInsights') return { 
     topHeader: '#38BDF8', 
-    bottomMain: '#000000', 
+    bottomMain: '#0E0E10', 
     topImg: 'linear-gradient(180deg, #38BDF8 0%, #E0F2FE 100%)' 
   }; // Blue Sky & Green Trees Theme
   if (tab === 'Agri commerce') return { 
     topHeader: '#1A0B2E', 
-    bottomMain: '#000000', 
+    bottomMain: '#0E0E10', 
     topImg: 'radial-gradient(circle at top right, rgba(120, 30, 200, 0.35), transparent 60%), radial-gradient(circle at bottom left, rgba(255, 107, 107, 0.15), transparent 60%)' 
   }; // Deep Space Nebula Theme
   if (tab === 'tools and utils') return { 
     topHeader: '#38bdf8', 
-    bottomMain: '#000000', 
+    bottomMain: '#0E0E10', 
     topImg: 'linear-gradient(180deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.4) 100%)'
   }; // Realistic Sky Blue + White Atmospheric Haze
-  return { topHeader: '#0F172A', bottomMain: '#000000', topImg: 'none' };
+  return { topHeader: '#0F172A', bottomMain: '#0E0E10', topImg: 'none' };
 };
 
 function Dashboard() {
@@ -696,7 +696,7 @@ function Dashboard() {
 }
 
 // --- STYLES ---
-const pageStyle = { position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', backgroundColor: '#000', backgroundSize: 'cover', backgroundPosition: 'center', overflowY: 'auto', touchAction: 'pan-y', overscrollBehavior: 'none' };
+const pageStyle = { position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', backgroundColor: '#0E0E10', backgroundSize: 'cover', backgroundPosition: 'center', overflowY: 'auto', touchAction: 'pan-y', overscrollBehavior: 'none' };
 const topSectionWrapper = { position: 'relative', paddingBottom: 0 };
 const topSectionOverlay = { paddingTop: 'env(safe-area-inset-top)', paddingBottom: '0' };
 const headerWrapper = { padding: '25px 20px 10px 20px' };
@@ -705,7 +705,7 @@ const locationClickableArea = { display:'flex', flexDirection:'column', justifyC
 const profileCircle = { width: '48px', height: '48px', borderRadius: '50%', background: 'rgba(0,0,0,0.05)', backdropFilter: 'blur(10px)', display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none', border: '1px solid rgba(0,0,0,0.1)' };
 const tabCardsContainer = { display: 'flex', gap: '16px', padding: '0 15px', maxWidth: '1000px', margin: '0 auto', alignItems: 'flex-end' };
 const inactiveCardTabStyle = { flex: 1, height: '75px', background: 'rgba(255,255,255,0.5)', color: '#555', border: '2px solid transparent', borderRadius: '20px', padding: '8px 4px', cursor: 'pointer', textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', whiteSpace: 'normal', lineHeight: '1.2', transition: 'all 0.3s ease', boxShadow: 'none' };
-const bottomContentContainer = { background: '#000000', flex: 1, minHeight: '60vh', paddingTop: '0', position: 'relative', zIndex: 9 };
+const bottomContentContainer = { background: '#0E0E10', flex: 1, minHeight: '60vh', paddingTop: '0', position: 'relative', zIndex: 9 };
 const bentoGrid = { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', padding: '0 20px 20px 20px', maxWidth: '1000px', margin: '0 auto' };
 const cardLink = { textDecoration: 'none', color: 'white', display: 'block', width: '100%', height: '100%' };
 const cardStyle = { borderRadius: '18px', height: '185px', position: 'relative', overflow: 'hidden', backgroundSize: 'cover', backgroundPosition: 'center', border: '1px solid rgba(255,255,255,0.15)' };
