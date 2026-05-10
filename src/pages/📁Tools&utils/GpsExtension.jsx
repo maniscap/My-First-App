@@ -134,6 +134,7 @@ export const GeoTagCamera = ({ onSave, onClose }) => {
     const canvasRef = useRef(null);
     const [stream, setStream] = useState(null);
     const streamRef = useRef(null); 
+    const requestCount = useRef(0);
 
     const [capturedImage, setCapturedImage] = useState(null);
     const [locData, setLocData] = useState(null);
@@ -144,6 +145,7 @@ export const GeoTagCamera = ({ onSave, onClose }) => {
     const locIntervalRef = useRef(null);
 
     const stopCamera = () => {
+        requestCount.current += 1;
         if (streamRef.current) {
             streamRef.current.getTracks().forEach(track => { track.stop(); track.enabled = false; });
             streamRef.current = null;
@@ -204,17 +206,22 @@ export const GeoTagCamera = ({ onSave, onClose }) => {
 
     const startCamera = async () => {
         stopCamera();
+        const currentReq = requestCount.current;
         try {
             const mediaStream = await navigator.mediaDevices.getUserMedia({ 
                 video: { facingMode: cameraMode, width: { ideal: 1920 }, height: { ideal: 1080 } } 
             });
+            if (currentReq !== requestCount.current) {
+                mediaStream.getTracks().forEach(track => track.stop());
+                return;
+            }
             streamRef.current = mediaStream; 
             setStream(mediaStream);
             setPermissionError(false);
             if (videoRef.current) { videoRef.current.srcObject = mediaStream; }
         } catch (err) { 
             console.error(err);
-            setPermissionError(true); 
+            if (currentReq === requestCount.current) { setPermissionError(true); }
         }
     };
 

@@ -320,6 +320,14 @@ export const processWithFarmBrain = async (systemPrompt, userText = "", imageBas
     }
 }
 
+// Specialized wrapper for SmartLens and other direct AI analysis tasks
+export const analyzeWithAIBrain = async (userText, imageBase64 = null) => {
+    const systemPrompt = "You are an expert agricultural AI. Analyze the provided image or text and give precise farming advice.";
+    const result = await processWithFarmBrain(systemPrompt, userText, imageBase64);
+    if (result.success) return result.data;
+    throw new Error(result.error || "AI Analysis failed");
+}
+
 // ======================================================================
 // 6. IMAGE GENERATION ENGINE
 // ======================================================================

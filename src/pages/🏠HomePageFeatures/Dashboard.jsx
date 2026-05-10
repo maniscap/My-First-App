@@ -436,7 +436,7 @@ function Dashboard() {
           <div style={tabCardsContainer}>
             {TABS.map(tab => {
               const isActive = activeTab === tab;
-              const tabName = tab === 'AgriInsights' ? '🌱 Insights' : tab === 'Agri commerce' ? '🛒 Commerce' : '🚜 Tools';
+              const tabName = tab === 'AgriInsights' ? '🌱 Insights' : tab === 'Agri commerce' ? '🛒 Commerce' : '🔧 Tools';
               
               return (
                 <button 

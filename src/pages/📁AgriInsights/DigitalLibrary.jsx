@@ -5,9 +5,9 @@ import { useSwipeable } from 'react-swipeable';
 import { motion, AnimatePresence } from 'framer-motion';
 import jsPDF from 'jspdf';
 
-// The path is perfectly set for a file sitting in src/pages/ pulling from src/⚓Utils.js/
+// The path is perfectly set for a file sitting in src/pages/ pulling from src/utils/
 // We now import the specialized multi-agent and continuous generation tracks
-import { processWithFarmBrain, generateEducationalBook, generateStoryBook, extendStory } from '../../⚓Utils.js/AIBrain';
+import { processWithFarmBrain, generateEducationalBook, generateStoryBook, extendStory } from '../../utils/AiBrain';
 
 // --- PREMIUM GLASS CARD STYLE EXTRACTED FROM WEATHER.JSX ---
 const getGlassStyle = (theme) => ({

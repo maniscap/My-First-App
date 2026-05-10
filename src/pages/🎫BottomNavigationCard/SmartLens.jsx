@@ -1,10 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { X, Zap, Camera, Loader2, RefreshCw } from 'lucide-react';
+import { X, Zap, Camera, Loader2, RefreshCw, Image } from 'lucide-react';
 
-// IMPORT YOUR AI BRAIN HERE:
-// import { analyzeWithAIBrain } from '../../utils/AiBrain'; 
+import { analyzeWithAIBrain } from '../../utils/AiBrain'; 
 
 const SmartLens = () => {
     const navigate = useNavigate();
@@ -14,6 +13,7 @@ const SmartLens = () => {
     const [capturedImage, setCapturedImage] = useState(null);
     const [isAnalyzing, setIsAnalyzing] = useState(false);
     const [analysisResult, setAnalysisResult] = useState(null);
+    const [isLoadingCamera, setIsLoadingCamera] = useState(true);
 
     // --- 1. Camera Initialization ---
     useEffect(() => {
@@ -40,9 +40,11 @@ const SmartLens = () => {
                     if (videoRef.current) {
                         videoRef.current.srcObject = stream;
                     }
+                    setIsLoadingCamera(false); // Camera started successfully on fallback
                 } catch (finalErr) {
                     console.error("Error accessing any camera:", finalErr);
                     setError("Could not access the camera. Please check permissions in your browser settings.");
+                    setIsLoadingCamera(false); // Stop loading if error occurs
                 }
             }
         };
@@ -77,17 +79,10 @@ const SmartLens = () => {
         setAnalysisResult(null);
 
         try {
-            // 4. Send to AIBrain.js
-            // Example: Using your AIBrain utility directly
-            // const result = await analyzeWithAIBrain("Identify this plant and detect any diseases. Provide brief recommendations.", base64Image);
-            // setAnalysisResult(result);
-
-            // NOTE: Simulated delay to show the scanning UI until you uncomment the real AIBrain call above!
-            setTimeout(() => {
-                setAnalysisResult("🌾 AI Brain Analysis Complete:\n\nThis appears to be a healthy plant leaf. No visible signs of pests or nutrient deficiencies detected. Keep up the good watering schedule!");
-                setIsAnalyzing(false);
-            }, 3000);
-
+            // 4. Send to actual AIBrain.js
+            const result = await analyzeWithAIBrain("Identify this plant and detect any diseases. Provide brief recommendations.", base64Image);
+            setAnalysisResult(result);
+            setIsAnalyzing(false);
         } catch (err) {
             console.error("AI Brain Analysis Error:", err);
             setError("Failed to analyze the image with AI Brain.");
@@ -106,15 +101,19 @@ const SmartLens = () => {
         const file = event.target.files[0];
         if (file) {
             const reader = new FileReader();
-            reader.onloadend = () => {
+            reader.onloadend = async () => {
                 setCapturedImage(reader.result);
-                setIsAnalyzing(true); // Simulate analysis start
+                setIsAnalyzing(true);
                 setAnalysisResult(null);
-                // Simulate AI analysis for uploaded image
-                setTimeout(() => {
-                    setAnalysisResult("🖼️ AI Brain Analysis Complete for uploaded image:\n\nThis image appears to show a healthy plant. No visible signs of pests or nutrient deficiencies detected. Good job!");
+                try {
+                    const result = await analyzeWithAIBrain("Identify this plant and detect any diseases. Provide brief recommendations.", reader.result);
+                    setAnalysisResult(result);
+                } catch (err) {
+                    console.error("AI Brain Analysis Error:", err);
+                    setError("Failed to analyze the uploaded image.");
+                } finally {
                     setIsAnalyzing(false);
-                }, 3000);
+                }
             };
             reader.readAsDataURL(file);
         }
@@ -200,7 +199,7 @@ const SmartLens = () => {
                             whileTap={{ scale: 0.95 }}
                             style={styles.uploadButton}
                         >
-                            <Camera size={24} color="white" /> {/* Reusing Camera icon for upload */}
+                            <Image size={24} color="white" />
                         </motion.label>
 
                         {/* Capture Button */}
@@ -253,7 +252,7 @@ const styles = {
         left: 0,
         width: '100vw',
         height: '100vh',
-        backgroundColor: '#000',
+        backgroundColor: '#0E0E10',
         overflow: 'hidden',
     },
     video: {
@@ -374,6 +373,7 @@ const styles = {
         alignItems: 'center',
         padding: '30px',
         paddingBottom: 'calc(30px + env(safe-area-inset-bottom))',
+        gap: '40px', // Adds space between the upload and capture buttons
     },
     captureButton: {
         width: '70px',
