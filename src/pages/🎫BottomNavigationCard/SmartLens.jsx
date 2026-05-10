@@ -22,7 +22,7 @@ const SmartLens = () => {
                 // Prefer the rear camera ('environment') for scanning
                 const constraints = {
                     video: {
-                        facingMode: { exact: "environment" }
+                        facingMode: "environment" // Prefer rear camera but don't force 'exact' to avoid OverconstrainedError
                     }
                 };
                 const stream = await navigator.mediaDevices.getUserMedia(constraints);
