@@ -9,20 +9,46 @@ const SmartLens = () => {
     const navigate = useNavigate();
     const videoRef = useRef(null);
     const streamRef = useRef(null);
+    const isMounted = useRef(true);
+    const activeStreamId = useRef(0);
     const [error, setError] = useState(null);
     const [capturedImage, setCapturedImage] = useState(null);
     const [isAnalyzing, setIsAnalyzing] = useState(false);
     const [analysisResult, setAnalysisResult] = useState(null);
     const [isLoadingCamera, setIsLoadingCamera] = useState(true);
+    const [isFlashOn, setIsFlashOn] = useState(false);
+
+    const stopCamera = () => {
+        if (streamRef.current) {
+            streamRef.current.getTracks().forEach(track => {
+                track.enabled = false;
+                track.stop();
+            });
+            streamRef.current = null;
+        }
+        if (videoRef.current && videoRef.current.srcObject) {
+            const tracks = videoRef.current.srcObject.getTracks();
+            tracks.forEach(track => {
+                track.enabled = false;
+                track.stop();
+            });
+            videoRef.current.srcObject = null;
+        }
+    };
 
     const startCamera = async () => {
+        stopCamera();
+        activeStreamId.current += 1;
+        const currentReqId = activeStreamId.current;
         setIsLoadingCamera(true);
         setError(null);
 
         // Check if HTTPS/Camera API is supported by the browser
         if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-            setError("Camera access is not supported. Please ensure you are using HTTPS or localhost.");
-            setIsLoadingCamera(false);
+            if (isMounted.current && currentReqId === activeStreamId.current) {
+                setError("Camera access is not supported. Please ensure you are using HTTPS or localhost.");
+                setIsLoadingCamera(false);
+            }
             return;
         }
 
@@ -37,6 +63,11 @@ const SmartLens = () => {
             // This is the line that natively triggers the OS/Browser permission dialog!
             const stream = await navigator.mediaDevices.getUserMedia(constraints);
 
+            if (!isMounted.current || currentReqId !== activeStreamId.current) {
+                stream.getTracks().forEach(track => { track.enabled = false; track.stop(); });
+                return;
+            }
+
             streamRef.current = stream;
             if (videoRef.current) {
                 videoRef.current.srcObject = stream;
@@ -44,10 +75,16 @@ const SmartLens = () => {
             setIsLoadingCamera(false); // Camera started successfully
         } catch (err) {
             console.error("Error accessing rear camera:", err);
+            if (!isMounted.current || currentReqId !== activeStreamId.current) return;
 
             // If rear camera fails (e.g., on a laptop), try any camera
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+
+                if (!isMounted.current || currentReqId !== activeStreamId.current) {
+                    stream.getTracks().forEach(track => { track.enabled = false; track.stop(); });
+                    return;
+                }
 
                 streamRef.current = stream;
                 if (videoRef.current) {
@@ -55,6 +92,8 @@ const SmartLens = () => {
                 }
                 setIsLoadingCamera(false); // Camera started successfully on fallback
             } catch (finalErr) {
+                if (!isMounted.current || currentReqId !== activeStreamId.current) return;
+
                 console.error("Error accessing any camera:", finalErr);
                 
                 // Provide professional, specific error messages based on why it failed
@@ -75,23 +114,45 @@ const SmartLens = () => {
 
     // --- 1. Camera Initialization ---
     useEffect(() => {
-        startCamera();
-
+        isMounted.current = true;
         startCamera();
 
         // --- 2. Cleanup on component unmount ---
         return () => {
-            if (streamRef.current) {
-                streamRef.current.getTracks().forEach(track => track.stop());
-                streamRef.current = null;
-            }
-            if (videoRef.current && videoRef.current.srcObject) {
-                const tracks = videoRef.current.srcObject.getTracks();
-                tracks.forEach(track => track.stop());
-                videoRef.current.srcObject = null;
-            }
+            isMounted.current = false;
+            activeStreamId.current += 1;
+            stopCamera();
         };
     }, []);
+
+    const toggleFlash = async () => {
+        if (!streamRef.current) return;
+        const track = streamRef.current.getVideoTracks()[0];
+        const nextState = !isFlashOn;
+        
+        try {
+            // Some Android devices require ImageCapture to "wake up" the hardware flash
+            if (typeof window.ImageCapture !== 'undefined') {
+                new ImageCapture(track);
+            }
+
+            // Attempt 1: Standard advanced constraints (works on most modern mobile browsers)
+            await track.applyConstraints({
+                advanced: [{ torch: nextState }]
+            });
+            setIsFlashOn(nextState);
+        } catch (err) {
+            console.warn("Advanced constraint failed, trying direct constraint...", err);
+            try {
+                // Attempt 2: Fallback for older browsers
+                await track.applyConstraints({ torch: nextState });
+                setIsFlashOn(nextState);
+            } catch (fallbackErr) {
+                console.error("Error toggling flash:", fallbackErr);
+                alert("Flashlight is not supported or currently unavailable on this device/browser.");
+            }
+        }
+    };
 
     const handleCapture = async () => {
         if (!videoRef.current) return;
@@ -161,9 +222,13 @@ const SmartLens = () => {
                     <p style={styles.cameraLoadingText}>Starting Camera...</p>
                 </div>
             )}
-            {!isLoadingCamera && !error && ( // Only show video if camera loaded and no error
-                <video ref={videoRef} autoPlay playsInline muted style={styles.video} />
-            )}
+            <video 
+                ref={videoRef} 
+                autoPlay 
+                playsInline 
+                muted 
+                style={{ ...styles.video, display: (isLoadingCamera || error) ? 'none' : 'block' }} 
+            />
 
             {/* Captured Image Freeze Frame (always on top of video/loading) */}
             {capturedImage && (
@@ -187,9 +252,10 @@ const SmartLens = () => {
                     <motion.button
                         whileHover={{ scale: 1.1 }}
                         whileTap={{ scale: 0.9 }}
-                        style={styles.controlButton}
+                        onClick={toggleFlash}
+                        style={{ ...styles.controlButton, background: isFlashOn ? 'rgba(255, 255, 255, 0.8)' : 'rgba(0, 0, 0, 0.3)' }}
                     >
-                        <Zap size={22} color="white" />
+                        <Zap size={22} color={isFlashOn ? "black" : "white"} />
                     </motion.button>
                 </div>
 
