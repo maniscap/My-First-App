@@ -15,39 +15,67 @@ const SmartLens = () => {
     const [analysisResult, setAnalysisResult] = useState(null);
     const [isLoadingCamera, setIsLoadingCamera] = useState(true);
 
-    // --- 1. Camera Initialization ---
-    useEffect(() => {
-        const startCamera = async () => {
+    const startCamera = async () => {
+        setIsLoadingCamera(true);
+        setError(null);
+
+        // Check if HTTPS/Camera API is supported by the browser
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            setError("Camera access is not supported. Please ensure you are using HTTPS or localhost.");
+            setIsLoadingCamera(false);
+            return;
+        }
+
+        try {
+            // Prefer the rear camera ('environment') for scanning
+            const constraints = {
+                video: {
+                    facingMode: "environment" // Prefer rear camera but don't force 'exact' to avoid OverconstrainedError
+                }
+            };
+            
+            // This is the line that natively triggers the OS/Browser permission dialog!
+            const stream = await navigator.mediaDevices.getUserMedia(constraints);
+
+            streamRef.current = stream;
+            if (videoRef.current) {
+                videoRef.current.srcObject = stream;
+            }
+            setIsLoadingCamera(false); // Camera started successfully
+        } catch (err) {
+            console.error("Error accessing rear camera:", err);
+
+            // If rear camera fails (e.g., on a laptop), try any camera
             try {
-                // Prefer the rear camera ('environment') for scanning
-                const constraints = {
-                    video: {
-                        facingMode: "environment" // Prefer rear camera but don't force 'exact' to avoid OverconstrainedError
-                    }
-                };
-                const stream = await navigator.mediaDevices.getUserMedia(constraints);
+                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+
                 streamRef.current = stream;
                 if (videoRef.current) {
                     videoRef.current.srcObject = stream;
                 }
-                setIsLoadingCamera(false); // Camera started successfully
-            } catch (err) {
-                console.error("Error accessing rear camera:", err);
-                // If rear camera fails (e.g., on a laptop), try any camera
-                try {
-                    const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-                    streamRef.current = stream;
-                    if (videoRef.current) {
-                        videoRef.current.srcObject = stream;
-                    }
-                    setIsLoadingCamera(false); // Camera started successfully on fallback
-                } catch (finalErr) {
-                    console.error("Error accessing any camera:", finalErr);
-                    setError("Could not access the camera. Please check permissions in your browser settings.");
-                    setIsLoadingCamera(false); // Stop loading if error occurs
+                setIsLoadingCamera(false); // Camera started successfully on fallback
+            } catch (finalErr) {
+                console.error("Error accessing any camera:", finalErr);
+                
+                // Provide professional, specific error messages based on why it failed
+                let errorMessage = "Could not access the camera. Please check permissions or ensure you are using HTTPS.";
+                if (finalErr.name === 'NotAllowedError' || finalErr.name === 'PermissionDeniedError') {
+                    errorMessage = "Camera permission was denied. Please click the lock icon in your URL bar to allow camera access, then retry.";
+                } else if (finalErr.name === 'NotFoundError' || finalErr.name === 'DevicesNotFoundError') {
+                    errorMessage = "No camera found on this device.";
+                } else if (finalErr.name === 'NotReadableError' || finalErr.name === 'TrackStartError') {
+                    errorMessage = "Camera is already in use by another application (like Zoom or Teams).";
                 }
+                
+                setError(errorMessage);
+                setIsLoadingCamera(false); // Stop loading if error occurs
             }
-        };
+        }
+    };
+
+    // --- 1. Camera Initialization ---
+    useEffect(() => {
+        startCamera();
 
         startCamera();
 
@@ -55,6 +83,12 @@ const SmartLens = () => {
         return () => {
             if (streamRef.current) {
                 streamRef.current.getTracks().forEach(track => track.stop());
+                streamRef.current = null;
+            }
+            if (videoRef.current && videoRef.current.srcObject) {
+                const tracks = videoRef.current.srcObject.getTracks();
+                tracks.forEach(track => track.stop());
+                videoRef.current.srcObject = null;
             }
         };
     }, []);
@@ -237,7 +271,10 @@ const SmartLens = () => {
                 <div style={styles.errorOverlay}>
                     <div style={styles.errorBox}>
                         <p>{error}</p>
-                        <button onClick={() => navigate(-1)} style={styles.errorButton}>Go Back</button>
+                        <div style={{ display: 'flex', gap: '15px', justifyContent: 'center', marginTop: '20px' }}>
+                            <button onClick={startCamera} style={styles.errorButton}>Retry Camera</button>
+                            <button onClick={() => navigate(-1)} style={{...styles.errorButton, background: '#555'}}>Go Back</button>
+                        </div>
                     </div>
                 </div>
             )}
