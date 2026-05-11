@@ -154,14 +154,14 @@ const NavItem = ({ item, index }) => {
       whileTap={{ scale: 0.85 }}
       onClick={item.onClick}
       animate={isCenter ? { 
-        y: [0, -4, 0],
+        y: [0, -6, 0],
         boxShadow: [
           '0 10px 24px rgba(0, 0, 0, 0.4), inset 0 2px 5px rgba(255, 255, 255, 0.3)',
           '0 15px 32px rgba(74, 222, 128, 0.35), inset 0 2px 5px rgba(255, 255, 255, 0.5)',
           '0 10px 24px rgba(0, 0, 0, 0.4), inset 0 2px 5px rgba(255, 255, 255, 0.3)'
         ]
       } : {
-        y: [0, -3, 0]
+        y: [0, -4, 0]
       }}
       transition={{ 
         repeat: Infinity, 
@@ -170,7 +170,7 @@ const NavItem = ({ item, index }) => {
         delay: index * 0.2
       }}
     >
-      <Icon size={isCenter ? 24 : 22} strokeWidth={isCenter ? 2 : 2.5} count={item.count} />
+      <Icon size={isCenter ? 26 : 22} strokeWidth={isCenter ? 2 : 2.5} count={item.count} />
     </motion.button>
   );
 };
@@ -185,32 +185,30 @@ const styles = {
   },
   dockContainer: {
     width: '100%',
-    background: 'rgba(249, 249, 249, 0.9)',
-    backdropFilter: 'blur(20px) saturate(180%)',
-    WebkitBackdropFilter: 'blur(20px) saturate(180%)',
-    borderTop: '1px solid rgba(0, 0, 0, 0.1)',
-    borderRadius: '24px 24px 0 0',
-    boxShadow: '0 -8px 32px rgba(0, 0, 0, 0.1)',
+    background: 'linear-gradient(180deg, var(--card-color) 0%, var(--bg-color) 100%)',
+    borderTop: '1px solid var(--border-color)',
+    borderRadius: '0',
+    boxShadow: '0 -8px 30px rgba(0, 0, 0, 0.1), inset 0 2px 3px rgba(255, 255, 255, 0.15)',
     display: 'flex',
     justifyContent: 'space-around',
     alignItems: 'center',
-    padding: '6px 12px',
-    paddingBottom: 'calc(6px + env(safe-area-inset-bottom))',
-    boxSizing: 'border-box'
+    padding: '10px 16px',
+    boxSizing: 'border-box',
+    transition: 'background-color 0.3s ease, border-color 0.3s ease'
   },
   navItem: {
     background: 'transparent',
     border: '1px solid transparent',
     borderRadius: '50%',
-    color: '#1C1C1E',
-    filter: 'drop-shadow(0 4px 6px rgba(0, 0, 0, 0.25))',
+    color: 'var(--text-color)',
+    filter: 'none',
     cursor: 'pointer',
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
     justifyContent: 'center',
-    width: '40px',
-    height: '40px',
+    width: '44px',
+    height: '44px',
     padding: '0',
     transition: 'all 0.4s ease',
     WebkitFontSmoothing: 'antialiased',
@@ -226,8 +224,8 @@ const styles = {
     filter: 'none',
   },
   lensButton: {
-    width: '48px',
-    height: '48px',
+    width: '54px',
+    height: '54px',
     borderRadius: '50%',
     background: 'linear-gradient(145deg, #2c2c2e, #000000)',
     display: 'flex',

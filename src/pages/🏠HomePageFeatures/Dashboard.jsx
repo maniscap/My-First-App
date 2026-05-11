@@ -9,22 +9,22 @@ import { useSwipeable } from 'react-swipeable';
 
 // --- WEATHER IMAGE ASSETS (URLs) ---
 const weatherImages = {
-  clearDay: 'https://images.pexels.com/photos/296234/pexels-photo-296234.jpeg',
-  clearNight: 'https://images.pexels.com/photos/11752993/pexels-photo-11752993.jpeg',
-  cloudyDay: 'https://images.pexels.com/photos/158163/clouds-cloudporn-weather-lookup-158163.jpeg',
-  cloudyNight: 'https://images.pexels.com/photos/29473893/pexels-photo-29473893.jpeg', 
-  partlyCloudyDay: 'https://images.pexels.com/photos/13958707/pexels-photo-13958707.jpeg',
-  partlyCloudyNight: 'https://images.pexels.com/photos/5489557/pexels-photo-5489557.jpeg',
-  mistDay: 'https://images.pexels.com/photos/6745483/pexels-photo-6745483.jpeg',
-  mistNight: 'https://images.pexels.com/photos/1529881/pexels-photo-1529881.jpeg',
-  rainDay: 'https://images.pexels.com/photos/30345921/pexels-photo-30345921.jpeg',
-  rainEvening: 'https://images.pexels.com/photos/8590614/pexels-photo-8590614.jpeg',
-  rainNight: 'https://images.pexels.com/photos/850488/pexels-photo-850488.png',
-  storm: 'https://images.pexels.com/photos/16218619/pexels-photo-16218619.jpeg',
-  sunrise: 'https://images.pexels.com/photos/10248028/pexels-photo-10248028.jpeg',
-  sunset: 'https://images.pexels.com/photos/539282/pexels-photo-539282.jpeg',
-  drizzle: 'https://images.pexels.com/photos/804474/pexels-photo-804474.jpeg',
-  defaultFallback: 'https://images.pexels.com/photos/1107717/pexels-photo-1107717.jpeg' 
+  clearDay: 'https://images.pexels.com/photos/296234/pexels-photo-296234.jpeg?auto=compress&cs=tinysrgb&w=600',
+  clearNight: 'https://images.pexels.com/photos/11752993/pexels-photo-11752993.jpeg?auto=compress&cs=tinysrgb&w=600',
+  cloudyDay: 'https://images.pexels.com/photos/158163/clouds-cloudporn-weather-lookup-158163.jpeg?auto=compress&cs=tinysrgb&w=600',
+  cloudyNight: 'https://images.pexels.com/photos/29473893/pexels-photo-29473893.jpeg?auto=compress&cs=tinysrgb&w=600', 
+  partlyCloudyDay: 'https://images.pexels.com/photos/13958707/pexels-photo-13958707.jpeg?auto=compress&cs=tinysrgb&w=600',
+  partlyCloudyNight: 'https://images.pexels.com/photos/5489557/pexels-photo-5489557.jpeg?auto=compress&cs=tinysrgb&w=600',
+  mistDay: 'https://images.pexels.com/photos/6745483/pexels-photo-6745483.jpeg?auto=compress&cs=tinysrgb&w=600',
+  mistNight: 'https://images.pexels.com/photos/1529881/pexels-photo-1529881.jpeg?auto=compress&cs=tinysrgb&w=600',
+  rainDay: 'https://images.pexels.com/photos/30345921/pexels-photo-30345921.jpeg?auto=compress&cs=tinysrgb&w=600',
+  rainEvening: 'https://images.pexels.com/photos/8590614/pexels-photo-8590614.jpeg?auto=compress&cs=tinysrgb&w=600',
+  rainNight: 'https://images.pexels.com/photos/850488/pexels-photo-850488.png?auto=compress&cs=tinysrgb&w=600',
+  storm: 'https://images.pexels.com/photos/16218619/pexels-photo-16218619.jpeg?auto=compress&cs=tinysrgb&w=600',
+  sunrise: 'https://images.pexels.com/photos/10248028/pexels-photo-10248028.jpeg?auto=compress&cs=tinysrgb&w=600',
+  sunset: 'https://images.pexels.com/photos/539282/pexels-photo-539282.jpeg?auto=compress&cs=tinysrgb&w=600',
+  drizzle: 'https://images.pexels.com/photos/804474/pexels-photo-804474.jpeg?auto=compress&cs=tinysrgb&w=600',
+  defaultFallback: 'https://images.pexels.com/photos/1107717/pexels-photo-1107717.jpeg?auto=compress&cs=tinysrgb&w=600' 
 };
 
 // --- ADDED: SMART TEXT MATCHER AS SECONDARY FALLBACK ---
@@ -260,7 +260,7 @@ function Dashboard() {
                <div className="css-sun" style={{ top: '25px', right: '25%' }}></div>
 
                {/* Clouds */}
-               <div className="css-cloud" style={{ top: '25px', left: '20%', transform: 'scale(0.6)', opacity: 0.85, filter: 'blur(1px)' }}></div>
+               <div className="css-cloud" style={{ top: '25px', left: '20%', transform: 'scale(0.6)', opacity: 0.85 }}></div>
                
                {/* Elegant Rolling Farm Hills at the bottom */}
                <div className="css-hill" style={{ width: '600px', height: '200px', left: '-100px', bottom: '-120px', background: '#2E7D32', zIndex: 1 }}></div>
@@ -293,7 +293,7 @@ function Dashboard() {
               transition={{ duration: 0.5 }}
               style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', overflow: 'hidden', zIndex: 0, pointerEvents: 'none' }}
             >
-               <div className="css-cloud" style={{ top: '30px', right: '15%', transform: 'scale(0.8)', opacity: 0.9, filter: 'blur(1px)' }}></div>
+               <div className="css-cloud" style={{ top: '30px', right: '15%', transform: 'scale(0.8)', opacity: 0.9 }}></div>
             </motion.div>
           )}
         </AnimatePresence>
@@ -359,6 +359,7 @@ function Dashboard() {
               border-radius: 50%;
               box-shadow: 0 0 6px #ffffff;
               animation: twinkle 2s infinite ease-in-out alternate;
+              will-change: transform, opacity;
             }
             @keyframes twinkle {
               0% { opacity: 0.3; transform: scale(0.8); }
@@ -391,6 +392,7 @@ function Dashboard() {
               background: linear-gradient(90deg, rgba(255,255,255,0.8), transparent);
               border-radius: 50%;
               animation: shoot 4s infinite linear;
+              will-change: transform, opacity;
             }
             @keyframes shoot {
               0% { transform: translateX(0) translateY(0) rotate(-35deg); opacity: 1; }
@@ -482,7 +484,7 @@ function Dashboard() {
       <div style={{...bottomContentContainer, background: 'var(--theme-bottom-bg)', transition: 'background-color 0.5s ease'}}>
         {/* CUSTOM MULTI-COLOR SEARCH BAR */}
         <div style={{ padding: '24px 16px 24px 16px', maxWidth: '1000px', margin: '0 auto' }}>
-          <div style={{ position: 'relative', display: 'flex', alignItems: 'center', background: 'var(--card-color)', borderRadius: '16px', padding: '10px 16px', border: '1px solid var(--border-color)', boxShadow: '0 6px 16px rgba(0, 0, 0, 0.05)', color: 'var(--text-color)' }}>
+          <div style={{ position: 'relative', display: 'flex', alignItems: 'center', background: 'var(--card-color)', borderRadius: '16px', padding: '10px 16px', border: '1px solid var(--border-color)', boxShadow: '0 6px 16px rgba(0, 0, 0, 0.05)', color: 'var(--text-color)', width: '85%', maxWidth: '400px' }}>
              <Search size={20} color="var(--subtle-text)" style={{marginRight: '10px'}} />
              <input 
                 value={searchVal}
@@ -649,8 +651,7 @@ function Dashboard() {
                      position: 'absolute',
                      top: 0,
                      left: 0,
-                     zIndex: -1,
-                     filter: 'brightness(1.15)'
+                     zIndex: -1
                  }} 
                />
               

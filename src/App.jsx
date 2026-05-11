@@ -11,6 +11,7 @@ import Login from './pages/🪪Authentication&Terms/Login';
 import Profile from './pages/📁Profile/Profile';
 import NotificationsPage from './pages/🎫BottomNavigationCard/NotificationsPage';
 import MoreMenuPage from './pages/🎫BottomNavigationCard/MoreMenuPage';
+import CartPage from './pages/🎫BottomNavigationCard/CartPage';
 import SettingsPage from './pages/⚙️Settings/SettingsPage';
 import ThemeSettingsPage from './pages/🎫BottomNavigationCard/ThemeSettings';
 import Admin from './pages/🔰AdminPage/Admin';
@@ -117,6 +118,7 @@ function App() {
             {/* Feature Pages */}
             <Route path="/profile" element={<Profile />} />
             <Route path="/more" element={<MoreMenuPage />} />
+            <Route path="/cart" element={<CartPage />} />
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="/settings/theme" element={<ThemeSettingsPage />} />
             

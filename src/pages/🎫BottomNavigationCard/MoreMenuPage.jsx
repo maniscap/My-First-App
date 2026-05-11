@@ -11,6 +11,7 @@ function MoreMenuPage() {
     // --- DYNAMIC STYLING ---
     const pageStyle = { position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: theme.colors.background, display:'flex', justifyContent:'center', overflowY:'auto', transition: 'background-color 0.3s ease' };
     const subPageCard = { width: '100%', maxWidth: '480px', background: theme.colors.card, padding: '20px', minHeight: '100vh', boxSizing:'border-box', transition: 'background-color 0.3s ease' };
+    const backBtn = { background:'none', border:'none', fontSize:'14px', color: theme.colors.subtleText, cursor:'pointer', marginBottom:'20px', padding:0, fontWeight:'600' };
     const sectionTitle = { margin:'0 0 25px 0', color: theme.colors.text, fontSize:'24px', fontWeight: '700', borderBottom: `1px solid ${theme.colors.border}`, paddingBottom: '15px' };
     const menuListStyle = { listStyle: 'none', padding: 0, margin: 0 };
     const getMenuItemStyle = () => ({ 
@@ -34,6 +35,7 @@ function MoreMenuPage() {
     return (
         <div style={pageStyle}>
             <div style={subPageCard}>
+                <button onClick={() => navigate(-1)} style={backBtn}>⬅ Back</button>
                 <h2 style={sectionTitle}>More Options</h2>
                 
                 <ul style={menuListStyle}>
