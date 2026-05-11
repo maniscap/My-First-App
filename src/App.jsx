@@ -9,6 +9,10 @@ import NewsUpdates from './pages/📁AgriInsights/NewsUpdates';
 import DigitalLibrary from './pages/📁AgriInsights/DigitalLibrary'; 
 import Login from './pages/🪪Authentication&Terms/Login';
 import Profile from './pages/📁Profile/Profile';
+import NotificationsPage from './pages/🎫BottomNavigationCard/NotificationsPage';
+import MoreMenuPage from './pages/🎫BottomNavigationCard/MoreMenuPage';
+import SettingsPage from './pages/⚙️Settings/SettingsPage';
+import ThemeSettingsPage from './pages/🎫BottomNavigationCard/ThemeSettings';
 import Admin from './pages/🔰AdminPage/Admin';
 import Weather from './pages/📁Tools&utils/Weather';
 import SearchResults from './pages/🏠HomePageFeatures/SearchResults';
@@ -36,6 +40,7 @@ import FloatingCalculator from './🔧components/FloatingCalculator';
 import SplashScreen from './🔧components/SplashScreen';
 import BottomNavigation from './pages/🎫BottomNavigationCard/BottomNavigation';
 import SmartLens from './pages/🎫BottomNavigationCard/SmartLens';
+import { useTheme } from './pages/🎫BottomNavigationCard/ThemeSettings';
 
 function App() {
   const location = useLocation();
@@ -43,6 +48,7 @@ function App() {
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const [showSplash, setShowSplash] = useState(true); 
   const SPLASH_DURATION = 4500; // 4500 = 4.5 seconds. Change this easily anytime.
+  const { theme } = useTheme();
 
   // --- GLOBAL NATIVE ZOOM PREVENTION ---
   useEffect(() => {
@@ -76,7 +82,7 @@ function App() {
   }, []);
 
   return (
-    <div style={{ width: '100%', height: '100vh', backgroundColor: '#000' }}>
+    <div style={{ width: '100%', height: '100vh', backgroundColor: theme.colors.background, color: theme.colors.text, transition: 'background-color 0.3s ease, color 0.3s ease' }}>
       
       {/* --- THE SHIELD: Splash Screen sits on top --- */}
       {(isCheckingAuth || showSplash) && (
@@ -110,6 +116,12 @@ function App() {
             
             {/* Feature Pages */}
             <Route path="/profile" element={<Profile />} />
+            <Route path="/more" element={<MoreMenuPage />} />
+            <Route path="/settings" element={<SettingsPage />} />
+            <Route path="/settings/theme" element={<ThemeSettingsPage />} />
+            
+            {/* Notifications */}
+            <Route path="/notifications" element={<NotificationsPage />} />
             
             {/* --- AGRI INSIGHTS & SUB-PAGES --- */}
             <Route path="/market-rates" element={<MarketRates />} /> 

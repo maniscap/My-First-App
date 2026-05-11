@@ -1,7 +1,7 @@
 import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Home, Map, MessageSquare, User } from 'lucide-react';
+import { Home, Bell, ShoppingCart, Menu } from 'lucide-react';
 
 const DynamicScannerIcon = ({ size = 32, ...props }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -32,7 +32,7 @@ const DynamicScannerIcon = ({ size = 32, ...props }) => (
         {/* Left Leaf */}
         <path d="M12 14c-3.5 0-5.5-2.5-5.5-5.5C9.5 8.5 12 11 12 14z" fill="rgba(74, 222, 128, 0.3)" stroke="#4ade80" strokeWidth="1.5" strokeLinejoin="round" />
         {/* Right Leaf */}
-        <path d="M12 11c3.5 0 5.5-2.5 5.5-5.5C14.5 5.5 12 8 12 11z" fill="rgba(74, 222, 128, 0.3)" stroke="#4ade80" strokeWidth="1.5" strokeLinejoin="round" />
+        <path d="M12 11c3.5 0-5.5-2.5 5.5-5.5C14.5 5.5 12 8 12 11z" fill="rgba(74, 222, 128, 0.3)" stroke="#4ade80" strokeWidth="1.5" strokeLinejoin="round" />
       </motion.g>
 
       {/* Sweeping Laser Line & Glow */}
@@ -54,22 +54,75 @@ const DynamicScannerIcon = ({ size = 32, ...props }) => (
   </svg>
 );
 
+const NotificationBellIcon = ({ size, strokeWidth, count }) => (
+  <div style={{ position: 'relative', display: 'flex' }}>
+    <Bell size={size} strokeWidth={strokeWidth} />
+    {count > 0 && (
+      <div style={{
+        position: 'absolute',
+        top: '-4px',
+        right: '-4px',
+        minWidth: '14px',
+        height: '14px',
+        backgroundColor: '#ef4444',
+        color: 'white',
+        fontSize: '9px',
+        fontWeight: 'bold',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderRadius: '7px',
+        padding: '0 2px',
+      }}>
+        {count > 99 ? '99+' : count}
+      </div>
+    )}
+  </div>
+);
+
+const StyledCartIcon = ({ size, strokeWidth, count }) => (
+  <div style={{ position: 'relative', display: 'flex' }}>
+    <ShoppingCart size={size} strokeWidth={strokeWidth} />
+    {count > 0 && (
+      <div style={{
+        position: 'absolute',
+        top: '-4px',
+        right: '-4px',
+        minWidth: '14px',
+        height: '14px',
+        backgroundColor: '#3b82f6',
+        color: 'white',
+        fontSize: '9px',
+        fontWeight: 'bold',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderRadius: '7px',
+        padding: '0 2px',
+      }}>
+        {count > 99 ? '99+' : count}
+      </div>
+    )}
+  </div>
+);
+
 const BottomNavigation = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
   // --- STRICT VIEW LOGIC ---
-  // Only show the bottom navigation on the dashboard
-  if (location.pathname !== '/dashboard') {
+  // Show the bottom navigation on the main tabs
+  const allowedPaths = ['/dashboard', '/notifications', '/cart', '/profile', '/scanner', '/more'];
+  if (!allowedPaths.includes(location.pathname)) {
     return null;
   }
 
   const navItems = [
     { icon: Home, path: '/dashboard', active: location.pathname === '/dashboard', onClick: () => navigate('/dashboard') },
-    { icon: Map, path: '/map', active: location.pathname === '/map', onClick: () => navigate('/map') },
+    { icon: StyledCartIcon, path: '/cart', count: 0, active: location.pathname === '/cart', onClick: () => navigate('/cart') },
     { icon: DynamicScannerIcon, path: '/scanner', isCenter: true, onClick: () => navigate('/scanner') },
-    { icon: MessageSquare, path: '/messages', active: location.pathname === '/messages', onClick: () => navigate('/messages') },
-    { icon: User, path: '/profile', active: location.pathname === '/profile', onClick: () => navigate('/profile') }
+    { icon: NotificationBellIcon, path: '/notifications', count: 0, active: location.pathname === '/notifications', onClick: () => navigate('/notifications') },
+    { icon: Menu, path: '/more', active: location.pathname === '/more', onClick: () => navigate('/more') }
   ];
 
   return (
@@ -101,14 +154,14 @@ const NavItem = ({ item, index }) => {
       whileTap={{ scale: 0.85 }}
       onClick={item.onClick}
       animate={isCenter ? { 
-        y: [0, -6, 0],
+        y: [0, -4, 0],
         boxShadow: [
-          '0 4px 15px rgba(0, 0, 0, 0.15)',
-          '0 8px 25px rgba(74, 222, 128, 0.35)',
-          '0 4px 15px rgba(0, 0, 0, 0.15)'
+          '0 10px 24px rgba(0, 0, 0, 0.4), inset 0 2px 5px rgba(255, 255, 255, 0.3)',
+          '0 15px 32px rgba(74, 222, 128, 0.35), inset 0 2px 5px rgba(255, 255, 255, 0.5)',
+          '0 10px 24px rgba(0, 0, 0, 0.4), inset 0 2px 5px rgba(255, 255, 255, 0.3)'
         ]
       } : {
-        y: [0, -4, 0]
+        y: [0, -3, 0]
       }}
       transition={{ 
         repeat: Infinity, 
@@ -117,7 +170,7 @@ const NavItem = ({ item, index }) => {
         delay: index * 0.2
       }}
     >
-      <Icon size={isCenter ? 28 : 24} strokeWidth={isCenter ? 2 : 2.5} />
+      <Icon size={isCenter ? 24 : 22} strokeWidth={isCenter ? 2 : 2.5} count={item.count} />
     </motion.button>
   );
 };
@@ -132,33 +185,32 @@ const styles = {
   },
   dockContainer: {
     width: '100%',
-    background: 'transparent',
-    backdropFilter: 'blur(6px) saturate(110%)',
-    WebkitBackdropFilter: 'blur(6px) saturate(110%)',
-    borderTop: '1px solid rgba(255, 255, 255, 0.25)',
-    borderLeft: '1px solid rgba(255, 255, 255, 0.05)',
-    borderRight: '1px solid rgba(255, 255, 255, 0.05)',
-    borderRadius: '32px 32px 0 0',
-    boxShadow: '0 -8px 24px rgba(0, 0, 0, 0.15)',
+    background: 'rgba(249, 249, 249, 0.9)',
+    backdropFilter: 'blur(20px) saturate(180%)',
+    WebkitBackdropFilter: 'blur(20px) saturate(180%)',
+    borderTop: '1px solid rgba(0, 0, 0, 0.1)',
+    borderRadius: '24px 24px 0 0',
+    boxShadow: '0 -8px 32px rgba(0, 0, 0, 0.1)',
     display: 'flex',
     justifyContent: 'space-around',
     alignItems: 'center',
-    padding: '8px 16px',
-    paddingBottom: 'calc(8px + env(safe-area-inset-bottom))',
+    padding: '6px 12px',
+    paddingBottom: 'calc(6px + env(safe-area-inset-bottom))',
     boxSizing: 'border-box'
   },
   navItem: {
     background: 'transparent',
     border: '1px solid transparent',
     borderRadius: '50%',
-    color: '#A1A1A6',
+    color: '#1C1C1E',
+    filter: 'drop-shadow(0 4px 6px rgba(0, 0, 0, 0.25))',
     cursor: 'pointer',
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
     justifyContent: 'center',
-    width: '46px',
-    height: '46px',
+    width: '40px',
+    height: '40px',
     padding: '0',
     transition: 'all 0.4s ease',
     WebkitFontSmoothing: 'antialiased',
@@ -167,24 +219,23 @@ const styles = {
     position: 'relative',
   },
   navItemActive: {
-    background: 'rgba(255, 255, 255, 0.05)',
-    border: '1px solid rgba(255, 255, 255, 0.25)',
     color: '#FFFFFF',
-    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+    background: 'linear-gradient(145deg, #3a3a3c, #111111)',
+    boxShadow: '0 8px 20px rgba(0, 0, 0, 0.3), inset 0 2px 4px rgba(255, 255, 255, 0.2)',
+    border: '1px solid #000000',
+    filter: 'none',
   },
   lensButton: {
-    width: '54px',
-    height: '54px',
+    width: '48px',
+    height: '48px',
     borderRadius: '50%',
-    background: 'rgba(255, 255, 255, 0.03)',
-    backdropFilter: 'blur(8px) saturate(110%)',
-    WebkitBackdropFilter: 'blur(8px) saturate(110%)',
+    background: 'linear-gradient(145deg, #2c2c2e, #000000)',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
     cursor: 'pointer',
-    border: '1px solid rgba(255, 255, 255, 0.35)',
-    boxShadow: '0 4px 15px rgba(0, 0, 0, 0.15)',
+    border: '1px solid rgba(0, 0, 0, 0.9)',
+    boxShadow: '0 10px 24px rgba(0, 0, 0, 0.4), inset 0 2px 5px rgba(255, 255, 255, 0.3)',
     color: '#FFFFFF',
     WebkitFontSmoothing: 'antialiased',
     WebkitBackfaceVisibility: 'hidden',

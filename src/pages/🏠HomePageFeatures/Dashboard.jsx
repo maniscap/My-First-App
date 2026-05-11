@@ -46,20 +46,20 @@ const getBackgroundImage = (conditionText) => {
 const getThemeColors = (tab) => {
   if (tab === 'AgriInsights') return { 
     topHeader: '#38BDF8', 
-    bottomMain: '#0E0E10', 
+    bottomMain: 'var(--bg-color)', 
     topImg: 'linear-gradient(180deg, #38BDF8 0%, #E0F2FE 100%)' 
   }; // Blue Sky & Green Trees Theme
   if (tab === 'Agri commerce') return { 
     topHeader: '#1A0B2E', 
-    bottomMain: '#0E0E10', 
+    bottomMain: 'var(--bg-color)', 
     topImg: 'radial-gradient(circle at top right, rgba(120, 30, 200, 0.35), transparent 60%), radial-gradient(circle at bottom left, rgba(255, 107, 107, 0.15), transparent 60%)' 
   }; // Deep Space Nebula Theme
   if (tab === 'tools and utils') return { 
     topHeader: '#38bdf8', 
-    bottomMain: '#0E0E10', 
+    bottomMain: 'var(--bg-color)', 
     topImg: 'linear-gradient(180deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.4) 100%)'
   }; // Realistic Sky Blue + White Atmospheric Haze
-  return { topHeader: '#0F172A', bottomMain: '#0E0E10', topImg: 'none' };
+  return { topHeader: '#0F172A', bottomMain: 'var(--bg-color)', topImg: 'none' };
 };
 
 function Dashboard() {
@@ -461,7 +461,7 @@ function Dashboard() {
                   }}
                 >
                   {/* INACTIVE BACKGROUND (Isolated layer, strictly smaller to give the float effect) */}
-                  <div style={{ position: 'absolute', top: '10px', left: 0, right: 0, bottom: '8px', background: '#FFFFFF', borderRadius: '12px', border: '1px solid rgba(255, 255, 255, 0.2)', boxShadow: '0 4px 10px rgba(0,0,0,0.15)', opacity: isActive ? 0 : 1, transition: 'opacity 0.3s ease', zIndex: 0 }} />
+                <div style={{ position: 'absolute', top: '10px', left: 0, right: 0, bottom: '8px', background: 'var(--card-color)', borderRadius: '12px', border: '1px solid var(--border-color)', boxShadow: '0 4px 10px rgba(0,0,0,0.05)', opacity: isActive ? 0 : 1, transition: 'opacity 0.3s ease', zIndex: 0 }} />
 
                   {/* ACTIVE BACKGROUND (FRAMER MOTION) */}
                   {isActive && <motion.div layoutId="activeTabIndicator" className="active-tab-bg" transition={{ type: "spring", stiffness: 300, damping: 30 }} />}
@@ -482,14 +482,14 @@ function Dashboard() {
       <div style={{...bottomContentContainer, background: 'var(--theme-bottom-bg)', transition: 'background-color 0.5s ease'}}>
         {/* CUSTOM MULTI-COLOR SEARCH BAR */}
         <div style={{ padding: '24px 16px 24px 16px', maxWidth: '1000px', margin: '0 auto' }}>
-          <div style={{ position: 'relative', display: 'flex', alignItems: 'center', background: 'linear-gradient(135deg, #ffffff 0%, #e4e4e9 40%, #f4f5f7 60%, #d8dbe0 100%)', borderRadius: '16px', padding: '10px 16px', border: '1px solid #b8c0c8', boxShadow: '0 6px 16px rgba(0, 0, 0, 0.15), inset 0 2px 3px rgba(255, 255, 255, 1), inset 0 -2px 3px rgba(0, 0, 0, 0.08)' }}>
-             <Search size={20} color="#555" style={{marginRight: '10px'}} />
+          <div style={{ position: 'relative', display: 'flex', alignItems: 'center', background: 'var(--card-color)', borderRadius: '16px', padding: '10px 16px', border: '1px solid var(--border-color)', boxShadow: '0 6px 16px rgba(0, 0, 0, 0.05)', color: 'var(--text-color)' }}>
+             <Search size={20} color="var(--subtle-text)" style={{marginRight: '10px'}} />
              <input 
                 value={searchVal}
                 onChange={(e) => setSearchVal(e.target.value)}
                 onFocus={() => setIsSearchFocused(true)}
                 onBlur={() => setIsSearchFocused(false)}
-                style={{ flex: 1, background: 'transparent', border: 'none', outline: 'none', color: '#111', fontSize: '15px', position: 'relative', zIndex: 2, padding: 0, fontWeight: '600' }}
+                style={{ flex: 1, background: 'transparent', border: 'none', outline: 'none', color: 'var(--text-color)', fontSize: '15px', position: 'relative', zIndex: 2, padding: 0, fontWeight: '600' }}
              />
              {(!isSearchFocused && searchVal === '') && (
                <div style={{ position: 'absolute', left: '48px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', fontSize: '15px', fontWeight: '800', zIndex: 1, color: '#777', whiteSpace: 'nowrap' }}>
@@ -696,7 +696,7 @@ function Dashboard() {
 }
 
 // --- STYLES ---
-const pageStyle = { position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', backgroundColor: '#0E0E10', backgroundSize: 'cover', backgroundPosition: 'center', overflowY: 'auto', touchAction: 'pan-y', overscrollBehavior: 'none' };
+const pageStyle = { position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', backgroundColor: 'var(--bg-color)', backgroundSize: 'cover', backgroundPosition: 'center', overflowY: 'auto', touchAction: 'pan-y', overscrollBehavior: 'none' };
 const topSectionWrapper = { position: 'relative', paddingBottom: 0 };
 const topSectionOverlay = { paddingTop: 'env(safe-area-inset-top)', paddingBottom: '0' };
 const headerWrapper = { padding: '25px 20px 10px 20px' };
@@ -704,8 +704,8 @@ const topRow = { display: 'flex', justifyContent: 'space-between', alignItems: '
 const locationClickableArea = { display:'flex', flexDirection:'column', justifyContent:'center', cursor: 'pointer' };
 const profileCircle = { width: '48px', height: '48px', borderRadius: '50%', background: 'rgba(0,0,0,0.05)', backdropFilter: 'blur(10px)', display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none', border: '1px solid rgba(0,0,0,0.1)' };
 const tabCardsContainer = { display: 'flex', gap: '16px', padding: '0 15px', maxWidth: '1000px', margin: '0 auto', alignItems: 'flex-end' };
-const inactiveCardTabStyle = { flex: 1, height: '75px', background: 'rgba(255,255,255,0.5)', color: '#555', border: '2px solid transparent', borderRadius: '20px', padding: '8px 4px', cursor: 'pointer', textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', whiteSpace: 'normal', lineHeight: '1.2', transition: 'all 0.3s ease', boxShadow: 'none' };
-const bottomContentContainer = { background: '#0E0E10', flex: 1, minHeight: '60vh', paddingTop: '0', position: 'relative', zIndex: 9 };
+const inactiveCardTabStyle = { flex: 1, height: '75px', background: 'var(--card-color)', color: 'var(--text-color)', border: '2px solid transparent', borderRadius: '20px', padding: '8px 4px', cursor: 'pointer', textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', whiteSpace: 'normal', lineHeight: '1.2', transition: 'all 0.3s ease', boxShadow: 'none' };
+const bottomContentContainer = { background: 'var(--bg-color)', flex: 1, minHeight: '60vh', paddingTop: '0', position: 'relative', zIndex: 9 };
 const bentoGrid = { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', padding: '0 16px 24px 16px', maxWidth: '1000px', margin: '0 auto' };
 const cardLink = { textDecoration: 'none', color: 'white', display: 'block', width: '100%', height: '100%' };
 const cardStyle = { borderRadius: '18px', height: '185px', position: 'relative', overflow: 'hidden', backgroundSize: 'cover', backgroundPosition: 'center', border: '1px solid rgba(255,255,255,0.15)' };
@@ -718,36 +718,18 @@ const darkOverlay = { position: 'absolute', top: 0, left: 0, width: '100%', heig
 const weatherContainer = { padding: '0 16px 100px 16px', maxWidth: '1000px', margin: '0 auto' };
 
 const getTopTextStyle = (tab, isActive) => {
-  let color = '#A1A1AA'; 
-  if (!isActive) {
-    if (tab === 'AgriInsights') color = '#10B981';
-    else if (tab === 'Agri commerce') color = '#8B5CF6'; 
-    else if (tab === 'tools and utils') color = '#38BDF8'; 
-  } else {
-    color = '#A1A1AA';
-  }
-
   return {
-    color, fontSize: '10px', fontWeight: '900', textTransform: 'uppercase', letterSpacing: '1px', transition: 'color 0.5s ease',
+    color: 'var(--subtle-text)', fontSize: '10px', fontWeight: '900', textTransform: 'uppercase', letterSpacing: '1px', transition: 'color 0.5s ease',
     fontFamily: '"Nunito", sans-serif'
   };
 };
 
 const getBottomTextStyle = (tab, isActive) => {
-  let color = '#1A1D24';
-  if (isActive) {
-    color = '#FFFFFF';
-  } else {
-    if (tab === 'AgriInsights') color = '#064E3B';
-    else if (tab === 'Agri commerce') color = '#1A0B2E';
-    else if (tab === 'tools and utils') color = '#0EA5E9';
-  }
   return {
-    color,
+    color: 'var(--text-color)',
     fontSize: isActive ? '18px' : '15px', fontWeight: 'normal', letterSpacing: '0.5px', 
     transition: 'all 0.5s ease',
-    textShadow: isActive ? '0px 3px 0px #444, 0px 4px 8px rgba(0,0,0,0.6)' 
-                         : '0px 2px 0px rgba(0,0,0,0.15), 0px 3px 4px rgba(0,0,0,0.05)'
+    textShadow: 'none'
   };
 };
 
