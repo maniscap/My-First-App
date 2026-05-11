@@ -1,16 +1,19 @@
-import React, { useRef } from 'react';
+import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { motion, useMotionValue, useTransform } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { Home, Map, MessageSquare, User } from 'lucide-react';
 
 const DynamicScannerIcon = ({ size = 32, ...props }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <motion.g {...props} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      {/* Animated Corner Viewfinder Brackets */}
+    <motion.g {...props} style={{ originX: '50%', originY: '50%' }}>
+      {/* Viewfinder Brackets */}
       <motion.g
-        animate={{ scale: [1, 1.1, 1] }}
-        transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-        style={{ originX: '50%', originY: '50%' }}
+        stroke="rgba(255,255,255,0.7)"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        animate={{ scale: [1, 1.05, 1] }}
+        transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
       >
         <path d="M4 7V5C4 4.44772 4.44772 4 5 4H7" />
         <path d="M17 4H19C19.5523 4 20 4.44772 20 5V7" />
@@ -18,35 +21,35 @@ const DynamicScannerIcon = ({ size = 32, ...props }) => (
         <path d="M7 20H5C4.44772 20 4 19.5523 4 19V17" />
       </motion.g>
 
-      {/* Inner Pulsing Agri-Tech Core (Leaves) */}
+      {/* Central Plant / Sprout */}
       <motion.g
-        animate={{ scale: [0.8, 1.1, 0.8], opacity: [0.6, 1, 0.6] }}
-        transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+        animate={{ scale: [0.95, 1.05, 0.95] }}
+        transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
         style={{ originX: '50%', originY: '50%' }}
       >
         {/* Stem */}
-        <path d="M12 15.5V12" strokeWidth="1.5" />
+        <path d="M12 19V9" stroke="#4ade80" strokeWidth="1.5" strokeLinecap="round" />
         {/* Left Leaf */}
-        <path d="M12 13.5C10 13.5 8.5 12 8.5 10.5C10.5 10.5 12 12 12 13.5Z" fill="currentColor" stroke="none" />
+        <path d="M12 14c-3.5 0-5.5-2.5-5.5-5.5C9.5 8.5 12 11 12 14z" fill="rgba(74, 222, 128, 0.3)" stroke="#4ade80" strokeWidth="1.5" strokeLinejoin="round" />
         {/* Right Leaf */}
-        <path d="M12 12C14.5 12 15.5 9.5 15.5 8.5C13 8.5 12 10.5 12 12Z" fill="currentColor" stroke="none" />
+        <path d="M12 11c3.5 0 5.5-2.5 5.5-5.5C14.5 5.5 12 8 12 11z" fill="rgba(74, 222, 128, 0.3)" stroke="#4ade80" strokeWidth="1.5" strokeLinejoin="round" />
       </motion.g>
 
-      {/* Sweeping Laser Line */}
-      <motion.path 
-        d="M4 12H20" 
-        strokeWidth="1.5"
-        animate={{ 
-          y: [-7, 7],
-          opacity: [0, 1, 1, 0]
-        }}
-        transition={{ 
-          duration: 2, 
-          repeat: Infinity, 
-          ease: "linear",
-          times: [0, 0.2, 0.8, 1]
-        }}
-      />
+      {/* Sweeping Laser Line & Glow */}
+      <motion.g
+        animate={{ y: [4, 19, 4] }}
+        transition={{ duration: 2.5, repeat: Infinity, ease: "linear" }}
+      >
+        <line x1="4" y1="0" x2="20" y2="0" stroke="#38bdf8" strokeWidth="1.5" style={{ filter: 'drop-shadow(0 0 3px #38bdf8)' }} />
+        <rect x="4" y="0" width="16" height="5" fill="url(#laser-gradient)" />
+      </motion.g>
+
+      <defs>
+        <linearGradient id="laser-gradient" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="rgba(56, 189, 248, 0.4)" />
+          <stop offset="100%" stopColor="rgba(56, 189, 248, 0)" />
+        </linearGradient>
+      </defs>
     </motion.g>
   </svg>
 );
@@ -54,7 +57,6 @@ const DynamicScannerIcon = ({ size = 32, ...props }) => (
 const BottomNavigation = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const mouseX = useMotionValue(Infinity);
 
   // --- STRICT VIEW LOGIC ---
   // Only show the bottom navigation on the dashboard
@@ -72,31 +74,17 @@ const BottomNavigation = () => {
 
   return (
     <div style={styles.wrapper}>
-      {/* Curved Glassmorphism Dock */}
-      <motion.div 
-        onMouseMove={(e) => mouseX.set(e.nativeEvent.x)}
-        onMouseLeave={() => mouseX.set(Infinity)}
-        style={styles.dockContainer}
-      >
+      {/* Liquid Water Dock */}
+      <div style={styles.dockContainer}>
         {navItems.map((item, i) => (
-          <NavItem key={i} mouseX={mouseX} item={item} />
+          <NavItem key={i} item={item} index={i} />
         ))}
-      </motion.div>
+      </div>
     </div>
   );
 };
 
-const NavItem = ({ mouseX, item }) => {
-  const ref = useRef(null);
-
-  const distance = useTransform(mouseX, (val) => {
-    const bounds = ref.current?.getBoundingClientRect() ?? { x: 0, width: 0 };
-    return val - bounds.x - bounds.width / 2;
-  });
-
-  const scale = useTransform(distance, [-120, 0, 120], [1, 1.4, 1], { clamp: true });
-  const y = useTransform(distance, [-120, 0, 120], [0, -15, 0], { clamp: true });
-
+const NavItem = ({ item, index }) => {
   const Icon = item.icon;
   const isCenter = item.isCenter || false;
 
@@ -105,19 +93,31 @@ const NavItem = ({ mouseX, item }) => {
 
   return (
     <motion.button
-      ref={ref}
       style={{ 
         ...buttonStyle, 
-        ...activeStyle,
-        scale,
-        y
+        ...activeStyle
       }}
-      whileTap={isCenter ? { scale: 0.9 } : { scale: 0.85 }}
+      whileHover={{ scale: 1.05 }}
+      whileTap={{ scale: 0.85 }}
       onClick={item.onClick}
-      animate={isCenter ? { boxShadow: ['0 4px 10px rgba(74, 222, 128, 0.2)', '0 4px 20px rgba(74, 222, 128, 0.5)', '0 4px 10px rgba(74, 222, 128, 0.2)'] } : {}}
-      transition={isCenter ? { repeat: Infinity, duration: 2.5 } : {}}
+      animate={isCenter ? { 
+        y: [0, -6, 0],
+        boxShadow: [
+          '0 4px 15px rgba(0, 0, 0, 0.15)',
+          '0 8px 25px rgba(74, 222, 128, 0.35)',
+          '0 4px 15px rgba(0, 0, 0, 0.15)'
+        ]
+      } : {
+        y: [0, -4, 0]
+      }}
+      transition={{ 
+        repeat: Infinity, 
+        duration: isCenter ? 3 : 3 + (index % 2) * 0.5, 
+        ease: "easeInOut",
+        delay: index * 0.2
+      }}
     >
-      <Icon size={isCenter ? 30 : 26} strokeWidth={isCenter ? 2 : 2.5} />
+      <Icon size={isCenter ? 28 : 24} strokeWidth={isCenter ? 2 : 2.5} />
     </motion.button>
   );
 };
@@ -125,67 +125,71 @@ const NavItem = ({ mouseX, item }) => {
 const styles = {
   wrapper: {
     position: 'fixed',
-    bottom: '10px',
-    left: '50%',
-    transform: 'translateX(-50%)',
-    width: '92%',
-    maxWidth: '420px',
-    height: '70px',
+    bottom: '0',
+    left: '0',
+    width: '100%',
     zIndex: 1000,
   },
   dockContainer: {
     width: '100%',
-    height: '100%',
     background: 'transparent',
-    backdropFilter: 'blur(12px) saturate(120%)',
-    WebkitBackdropFilter: 'blur(12px) saturate(120%)',
-    border: '1px solid rgba(255, 255, 255, 0.1)',
-    borderTop: '1.5px solid rgba(255, 255, 255, 0.9)',
-    borderLeft: '1.5px solid rgba(255, 255, 255, 0.5)',
-    borderBottom: '1px solid rgba(255, 255, 255, 0.05)',
-    borderRadius: '40px',
-    boxShadow: 'inset 0 2px 3px rgba(255, 255, 255, 0.8), inset 0 -2px 5px rgba(0, 0, 0, 0.2), 0 10px 30px rgba(0, 0, 0, 0.15)',
+    backdropFilter: 'blur(6px) saturate(110%)',
+    WebkitBackdropFilter: 'blur(6px) saturate(110%)',
+    borderTop: '1px solid rgba(255, 255, 255, 0.25)',
+    borderLeft: '1px solid rgba(255, 255, 255, 0.05)',
+    borderRight: '1px solid rgba(255, 255, 255, 0.05)',
+    borderRadius: '32px 32px 0 0',
+    boxShadow: '0 -8px 24px rgba(0, 0, 0, 0.15)',
     display: 'flex',
     justifyContent: 'space-around',
     alignItems: 'center',
-    padding: '0 20px',
+    padding: '8px 16px',
+    paddingBottom: 'calc(8px + env(safe-area-inset-bottom))',
     boxSizing: 'border-box'
   },
   navItem: {
-    background: 'none',
-    border: 'none',
-    color: '#E3E3E3',
+    background: 'transparent',
+    border: '1px solid transparent',
+    borderRadius: '50%',
+    color: '#A1A1A6',
     cursor: 'pointer',
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
     justifyContent: 'center',
-    padding: '8px',
-    transition: 'color 0.3s ease',
+    width: '46px',
+    height: '46px',
+    padding: '0',
+    transition: 'all 0.4s ease',
     WebkitFontSmoothing: 'antialiased',
     WebkitBackfaceVisibility: 'hidden',
     backfaceVisibility: 'hidden',
+    position: 'relative',
   },
   navItemActive: {
-    color: '#4ade80',
-    filter: 'drop-shadow(0 0 8px rgba(74, 222, 128, 0.4))'
+    background: 'rgba(255, 255, 255, 0.05)',
+    border: '1px solid rgba(255, 255, 255, 0.25)',
+    color: '#FFFFFF',
+    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
   },
   lensButton: {
-    width: '56px',
-    height: '56px',
-    borderRadius: '18px',
-    background: 'linear-gradient(145deg, rgba(74, 222, 128, 0.15), rgba(22, 101, 52, 0.1))',
-    backdropFilter: 'blur(10px)',
-    WebkitBackdropFilter: 'blur(10px)',
+    width: '54px',
+    height: '54px',
+    borderRadius: '50%',
+    background: 'rgba(255, 255, 255, 0.03)',
+    backdropFilter: 'blur(8px) saturate(110%)',
+    WebkitBackdropFilter: 'blur(8px) saturate(110%)',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
     cursor: 'pointer',
-    border: '1.5px solid rgba(74, 222, 128, 0.4)',
-    color: '#4ade80',
+    border: '1px solid rgba(255, 255, 255, 0.35)',
+    boxShadow: '0 4px 15px rgba(0, 0, 0, 0.15)',
+    color: '#FFFFFF',
     WebkitFontSmoothing: 'antialiased',
     WebkitBackfaceVisibility: 'hidden',
     backfaceVisibility: 'hidden',
+    position: 'relative',
   }
 };
 
