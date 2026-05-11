@@ -481,7 +481,7 @@ function Dashboard() {
       {/* 2. BOTTOM CONTENT AREA (Browser Window) */}
       <div style={{...bottomContentContainer, background: 'var(--theme-bottom-bg)', transition: 'background-color 0.5s ease'}}>
         {/* CUSTOM MULTI-COLOR SEARCH BAR */}
-        <div style={{ padding: '20px 100px 36px 20px', maxWidth: '1000px', margin: '0 auto' }}>
+        <div style={{ padding: '24px 16px 24px 16px', maxWidth: '1000px', margin: '0 auto' }}>
           <div style={{ position: 'relative', display: 'flex', alignItems: 'center', background: 'linear-gradient(135deg, #ffffff 0%, #e4e4e9 40%, #f4f5f7 60%, #d8dbe0 100%)', borderRadius: '16px', padding: '10px 16px', border: '1px solid #b8c0c8', boxShadow: '0 6px 16px rgba(0, 0, 0, 0.15), inset 0 2px 3px rgba(255, 255, 255, 1), inset 0 -2px 3px rgba(0, 0, 0, 0.08)' }}>
              <Search size={20} color="#555" style={{marginRight: '10px'}} />
              <input 
@@ -706,7 +706,7 @@ const profileCircle = { width: '48px', height: '48px', borderRadius: '50%', back
 const tabCardsContainer = { display: 'flex', gap: '16px', padding: '0 15px', maxWidth: '1000px', margin: '0 auto', alignItems: 'flex-end' };
 const inactiveCardTabStyle = { flex: 1, height: '75px', background: 'rgba(255,255,255,0.5)', color: '#555', border: '2px solid transparent', borderRadius: '20px', padding: '8px 4px', cursor: 'pointer', textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', whiteSpace: 'normal', lineHeight: '1.2', transition: 'all 0.3s ease', boxShadow: 'none' };
 const bottomContentContainer = { background: '#0E0E10', flex: 1, minHeight: '60vh', paddingTop: '0', position: 'relative', zIndex: 9 };
-const bentoGrid = { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', padding: '0 20px 20px 20px', maxWidth: '1000px', margin: '0 auto' };
+const bentoGrid = { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', padding: '0 16px 24px 16px', maxWidth: '1000px', margin: '0 auto' };
 const cardLink = { textDecoration: 'none', color: 'white', display: 'block', width: '100%', height: '100%' };
 const cardStyle = { borderRadius: '18px', height: '185px', position: 'relative', overflow: 'hidden', backgroundSize: 'cover', backgroundPosition: 'center', border: '1px solid rgba(255,255,255,0.15)' };
 const wideCardStyle = { gridColumn: 'span 2', height: '180px', borderRadius: '18px', position: 'relative', overflow: 'hidden', backgroundSize: 'cover', backgroundPosition: 'center', border: '1px solid rgba(255,255,255,0.15)' };
@@ -715,7 +715,7 @@ const whiteIconBox = { filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))' };
 const cardTitle = { margin: '0 0 4px 0', fontSize: '17px', fontWeight: '700', textShadow: '0 2px 6px rgba(0,0,0,0.8)' };
 const cardSubtitle = { margin: 0, fontSize: '13px', opacity: 0.9, fontWeight: '500', textShadow: '0 1px 4px rgba(0,0,0,0.8)' };
 const darkOverlay = { position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.15)', zIndex: 1 }; 
-const weatherContainer = { padding: '0 20px 100px 20px', maxWidth: '1000px', margin: '0 auto' };
+const weatherContainer = { padding: '0 16px 100px 16px', maxWidth: '1000px', margin: '0 auto' };
 
 const getTopTextStyle = (tab, isActive) => {
   let color = '#A1A1AA'; 
