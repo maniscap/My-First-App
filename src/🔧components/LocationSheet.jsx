@@ -2,6 +2,7 @@ import React, {
   useState, 
   useEffect 
 } from 'react';
+import { createPortal } from 'react-dom';
 import { 
   useNavigate 
 } from 'react-router-dom';
@@ -128,7 +129,7 @@ const LocationSheet = ({
   };
 
   // --- 4. RENDER COMPONENT ---
-  return (
+  const sheetContent = (
     <div style={styles.backdropStyle}>
       
       {/* Click on background overlay to close */}
@@ -297,6 +298,8 @@ const LocationSheet = ({
       </div>
     </div>
   );
+
+  return createPortal(sheetContent, document.body);
 };
 
 // --- 5. EXPANDED STYLES OBJECT (Line Count Boost) ---
@@ -307,7 +310,7 @@ const styles = {
     left: 0, 
     width: '100%', 
     height: '100%', 
-    zIndex: 9999, 
+    zIndex: 99999, 
     background: 'rgba(0,0,0,0.7)', 
     backdropFilter: 'blur(5px)', 
     display: 'flex', 
