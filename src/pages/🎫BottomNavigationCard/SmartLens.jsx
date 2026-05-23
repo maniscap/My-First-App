@@ -68,15 +68,38 @@ Exactly 3 bullet points. Surprising or lesser-known facts.
 
 Keep each section tight. Be informative and engaging. No padding.`,
   },
+  lens: {
+    label: 'Lens Scan',
+    Icon: ScanSearch,
+    color: '#facc15',
+    colorDim: 'rgba(250,204,21,0.18)',
+    hint: 'Center the subject inside the circle before capture',
+    systemPrompt: `You are a visual AI assistant that identifies and describes the object framed inside the camera overlay.
+Analyze the focused item and respond with EXACTLY this structure (use these exact section headers):
+
+**🔎 Object Identification**
+State the most likely object, product, or scene in 1-2 sentences.
+
+**🧩 Key Features**
+List 4 bullet points describing visible details, material, color, or use.
+
+**📍 Context**
+Explain where this object is commonly found or how it is used.
+
+**✔️ Best Match**
+If unsure, say so clearly. If confident, give one concise result.
+
+Keep the answer direct and practical with no extra padding.`,
+  },
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Camera constraint ladder (4K → 1080p → any)
 // ─────────────────────────────────────────────────────────────────────────────
 const CAMERA_CONSTRAINTS = [
-  { video: { facingMode: { ideal: 'environment' }, width: { ideal: 4096, min: 1920 }, height: { ideal: 2160, min: 1080 }, frameRate: { ideal: 30 } } },
-  { video: { facingMode: { ideal: 'environment' }, width: { ideal: 1920 }, height: { ideal: 1080 } } },
-  { video: { width: { ideal: 1920 }, height: { ideal: 1080 } } },
+  { video: { facingMode: { ideal: 'environment' }, width: { ideal: 2560 }, height: { ideal: 1440 }, frameRate: { ideal: 30 } } },
+  { video: { facingMode: { ideal: 'environment' }, width: { ideal: 1920 }, height: { ideal: 1080 }, frameRate: { ideal: 30 } } },
+  { video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } } },
   { video: true },
 ];
 
@@ -187,24 +210,17 @@ const RS = {
   numText:     { color: '#c4c9d4', fontSize: 14, lineHeight: 1.65 },
 };
 
-// Corner bracket positions
-const BRACKETS = {
-  tl: { top: 0,    left: 0,  borderTopWidth: 3,    borderLeftWidth: 3  },
-  tr: { top: 0,    right: 0, borderTopWidth: 3,    borderRightWidth: 3 },
-  bl: { bottom: 0, left: 0,  borderBottomWidth: 3, borderLeftWidth: 3  },
-  br: { bottom: 0, right: 0, borderBottomWidth: 3, borderRightWidth: 3 },
-};
-
 // ─────────────────────────────────────────────────────────────────────────────
 // Main SmartLens Component
 // ─────────────────────────────────────────────────────────────────────────────
 const SmartLens = () => {
-  const navigate   = useNavigate();
-  const videoRef   = useRef(null);
-  const streamRef  = useRef(null);
-  const isMounted  = useRef(true);
-  const reqIdRef   = useRef(0);
-  const chatEndRef = useRef(null);
+  const navigate      = useNavigate();
+  const videoRef      = useRef(null);
+  const viewfinderRef = useRef(null);
+  const streamRef     = useRef(null);
+  const isMounted     = useRef(true);
+  const reqIdRef      = useRef(0);
+  const chatEndRef    = useRef(null);
 
   // Camera
   const [isLoadingCamera, setIsLoadingCamera] = useState(true);
@@ -214,6 +230,8 @@ const SmartLens = () => {
   // Scan
   const [scanMode, setScanMode]           = useState('plant');
   const [capturedImage, setCapturedImage] = useState(null);
+  const [selectionPath, setSelectionPath] = useState([]);
+  const [isDrawing, setIsDrawing]         = useState(false);
 
   // Confirmation
   const [confirmMode, setConfirmMode] = useState(false);
@@ -230,6 +248,65 @@ const SmartLens = () => {
   const [isFollowUpLoading, setIsFollowUpLoading]   = useState(false);
 
   const mode = SCAN_MODES[scanMode];
+  const lensHint = scanMode === 'lens'
+    ? 'Draw around the object or tap capture to scan the frame.'
+    : mode.hint;
+
+  useEffect(() => {
+    if (scanMode !== 'lens') {
+      setSelectionPath([]);
+      setIsDrawing(false);
+    }
+  }, [scanMode]);
+
+  const normalizePoint = (clientX, clientY) => {
+    const rect = viewfinderRef.current?.getBoundingClientRect();
+    if (!rect) return null;
+    return {
+      x: Math.max(0, Math.min(clientX - rect.left, rect.width)),
+      y: Math.max(0, Math.min(clientY - rect.top, rect.height)),
+    };
+  };
+
+  const handleLensPointerDown = (event) => {
+    if (scanMode !== 'lens' || isLoadingCamera || cameraError) return;
+    const point = normalizePoint(event.clientX, event.clientY);
+    if (!point) return;
+    event.currentTarget.setPointerCapture?.(event.pointerId);
+    setSelectionPath([point]);
+    setIsDrawing(true);
+    event.preventDefault();
+  };
+
+  const handleLensPointerMove = (event) => {
+    if (!isDrawing) return;
+    const point = normalizePoint(event.clientX, event.clientY);
+    if (!point) return;
+    setSelectionPath(prev => {
+      const last = prev[prev.length - 1];
+      if (!last || Math.hypot(point.x - last.x, point.y - last.y) > 4) {
+        return [...prev, point];
+      }
+      return prev;
+    });
+    event.preventDefault();
+  };
+
+  const handleLensPointerEnd = (event) => {
+    if (!isDrawing) return;
+    const point = normalizePoint(event.clientX, event.clientY);
+    if (point) {
+      setSelectionPath(prev => {
+        const last = prev[prev.length - 1];
+        if (!last || Math.hypot(point.x - last.x, point.y - last.y) > 4) {
+          return [...prev, point];
+        }
+        return prev;
+      });
+    }
+    setIsDrawing(false);
+    event.preventDefault();
+  };
 
   // ── Camera helpers ─────────────────────────────────────────────────────────
   const stopCamera = useCallback(() => {
@@ -263,7 +340,10 @@ const SmartLens = () => {
           return;
         }
         streamRef.current = stream;
-        if (videoRef.current) videoRef.current.srcObject = stream;
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          videoRef.current.play?.().catch(() => {});
+        }
         setIsLoadingCamera(false);
         return;
       } catch (err) {
@@ -327,10 +407,44 @@ const SmartLens = () => {
   // 2nd: Canvas drawImage fallback at full video resolution, JPEG 0.97
   const captureFromCanvas = () => {
     const v = videoRef.current;
-    if (!v?.videoWidth) return null;
+    if (!v?.videoWidth || !viewfinderRef.current) return null;
+    const width  = v.videoWidth;
+    const height = v.videoHeight;
+
+    if (scanMode === 'lens' && selectionPath.length > 2) {
+      const rect = viewfinderRef.current.getBoundingClientRect();
+      if (rect.width && rect.height) {
+        const scaleX = width / rect.width;
+        const scaleY = height / rect.height;
+        const scaledPoints = selectionPath.map(p => ({ x: p.x * scaleX, y: p.y * scaleY }));
+        const minX = Math.max(0, Math.min(...scaledPoints.map(p => p.x)));
+        const minY = Math.max(0, Math.min(...scaledPoints.map(p => p.y)));
+        const maxX = Math.min(width, Math.max(...scaledPoints.map(p => p.x)));
+        const maxY = Math.min(height, Math.max(...scaledPoints.map(p => p.y)));
+        const cropWidth = Math.max(64, Math.ceil(maxX - minX));
+        const cropHeight = Math.max(64, Math.ceil(maxY - minY));
+        const c = document.createElement('canvas');
+        c.width = cropWidth;
+        c.height = cropHeight;
+        const ctx = c.getContext('2d');
+        ctx.save();
+        ctx.beginPath();
+        scaledPoints.forEach((pt, idx) => {
+          const x = pt.x - minX;
+          const y = pt.y - minY;
+          idx === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+        });
+        ctx.closePath();
+        ctx.clip();
+        ctx.drawImage(v, minX, minY, cropWidth, cropHeight, 0, 0, cropWidth, cropHeight);
+        ctx.restore();
+        return c.toDataURL('image/png');
+      }
+    }
+
     const c = document.createElement('canvas');
-    c.width  = v.videoWidth;
-    c.height = v.videoHeight;
+    c.width  = width;
+    c.height = height;
     c.getContext('2d').drawImage(v, 0, 0, c.width, c.height);
     return c.toDataURL('image/jpeg', 0.97);
   };
@@ -339,7 +453,9 @@ const SmartLens = () => {
     const track = streamRef.current?.getVideoTracks?.()?.[0];
     let base64  = null;
 
-    if (track && typeof window.ImageCapture !== 'undefined') {
+    if (scanMode === 'lens') {
+      base64 = captureFromCanvas();
+    } else if (track && typeof window.ImageCapture !== 'undefined') {
       try {
         const ic   = new window.ImageCapture(track);
         const blob = await ic.takePhoto({ fillLightMode: isFlashOn ? 'flash' : 'off' });
@@ -377,6 +493,8 @@ const SmartLens = () => {
     setCapturedImage(null);
     setConfirmMode(false);
     setConfirmMsg('');
+    setSelectionPath([]);
+    setIsDrawing(false);
   };
 
   // ── Confirm → analyse ──────────────────────────────────────────────────────
@@ -432,6 +550,8 @@ const SmartLens = () => {
     setAnalysisResult(null);
     setAnalysisError(null);
     setChatHistory([]);
+    setSelectionPath([]);
+    setIsDrawing(false);
   };
 
   const showCameraUI = !confirmMode && !isAnalyzing && !analysisResult && !analysisError;
@@ -515,11 +635,23 @@ const SmartLens = () => {
 
           {/* Viewfinder */}
           {!isLoadingCamera && !cameraError && (
-            <div style={S.viewfinder}>
-              {Object.entries(BRACKETS).map(([pos, bs]) => (
-                <div key={pos} style={{ ...S.bracket, ...bs, borderColor: mode.color }} />
-              ))}
-              <p style={S.hintBadge}>{mode.hint}</p>
+            <div style={S.viewfinder} ref={viewfinderRef}
+              onPointerDown={handleLensPointerDown}
+              onPointerMove={handleLensPointerMove}
+              onPointerUp={handleLensPointerEnd}
+              onPointerLeave={handleLensPointerEnd}>
+              {scanMode === 'lens' && selectionPath.length > 1 && (
+                <svg style={S.selectionSvg} preserveAspectRatio="none">
+                  <path d={selectionPath.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ')}
+                    fill="none"
+                    stroke="rgba(255,255,255,0.95)"
+                    strokeWidth="8"
+                    strokeLinejoin="round"
+                    strokeLinecap="round"
+                  />
+                </svg>
+              )}
+              <p style={S.hintBadge}>{lensHint}</p>
             </div>
           )}
 
@@ -532,7 +664,10 @@ const SmartLens = () => {
                   <Image size={22} color="white" />
                 </CtrlBtn>
                 <motion.button whileTap={{ scale: 0.91 }} onClick={handleCapture}
-                  style={{ ...S.captureBtn, boxShadow: `0 0 0 7px ${mode.colorDim},0 10px 30px rgba(0,0,0,0.45)` }}>
+                  style={{
+                    ...S.captureBtn,
+                    boxShadow: `0 0 0 7px ${mode.colorDim},0 10px 30px rgba(0,0,0,0.45)`,
+                  }}>
                   <div style={{ ...S.captureCore, background: mode.color }} />
                 </motion.button>
                 {/* Spacer to keep capture button centred */}
@@ -818,7 +953,7 @@ const S = {
   },
   viewfinder: {
     flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
-    position: 'relative', margin: '16px 48px',
+    position: 'relative', margin: '16px 16px', touchAction: 'none', minHeight: 250,
   },
   bracket: { position: 'absolute', width: 28, height: 28, borderStyle: 'solid', borderWidth: 0, borderRadius: 2 },
   hintBadge: {
@@ -826,7 +961,21 @@ const S = {
     textAlign: 'center', background: 'rgba(0,0,0,0.38)', padding: '5px 14px',
     borderRadius: 20, backdropFilter: 'blur(10px)', margin: 0,
   },
-  footer: { padding: '14px 22px', paddingBottom: 'calc(28px + env(safe-area-inset-bottom))' },
+  lensCircle: {
+    position: 'absolute', width: '60%', aspectRatio: '1 / 1', borderRadius: '50%',
+    border: '2px solid rgba(255,255,255,0.85)', boxShadow: '0 0 0 10px rgba(255,255,255,0.04)',
+    pointerEvents: 'none',
+  },
+  selectionOverlay: {
+    position: 'absolute', borderRadius: '50%', border: '2px solid white',
+    boxShadow: '0 0 0 4px rgba(255,255,255,0.12), inset 0 0 0 2px rgba(255,255,255,0.25)',
+    pointerEvents: 'none',
+  },
+  selectionSvg: {
+    position: 'absolute', inset: 0, width: '100%', height: '100%', zIndex: 1,
+    overflow: 'visible', pointerEvents: 'none',
+  },
+  footer: { padding: '14px 16px', paddingBottom: 'calc(28px + env(safe-area-inset-bottom))' },
   footerRow: { display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 28 },
   captureBtn: {
     width: 74, height: 74, borderRadius: '50%', background: 'white',

@@ -4,7 +4,7 @@ import App from './App.jsx'
 import './index.css'
 import { BrowserRouter } from 'react-router-dom'
 import 'leaflet/dist/leaflet.css';
-import { ThemeProvider } from './pages/🎫BottomNavigationCard/ThemeSettings.jsx';
+import { ThemeProvider } from './pages/⚙️Settings/ThemeSettings.jsx';
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>

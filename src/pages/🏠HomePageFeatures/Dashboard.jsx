@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios'; 
 import LocationSheet from '../../🔧components/LocationSheet'; 
-import BottomNavigation from '../🎫BottomNavigationCard/BottomNavigation'; 
 import { ChevronDown, Radio, Map, Briefcase, TrendingUp, Newspaper, BookOpen, Rocket, Search } from 'lucide-react'; 
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSwipeable } from 'react-swipeable';
@@ -483,7 +482,7 @@ function Dashboard() {
       {/* 2. BOTTOM CONTENT AREA (Browser Window) */}
       <div style={{...bottomContentContainer, background: 'var(--theme-bottom-bg)', transition: 'background-color 0.5s ease'}}>
         {/* CUSTOM MULTI-COLOR SEARCH BAR */}
-        <div style={{ padding: '24px 16px 24px 16px', maxWidth: '1000px', margin: '0 auto' }}>
+        <div style={{ padding: '24px 10px 24px 10px', maxWidth: '1000px', margin: '0 auto' }}>
           <div style={{ position: 'relative', display: 'flex', alignItems: 'center', background: 'var(--card-color)', borderRadius: '16px', padding: '10px 16px', border: '1px solid var(--border-color)', boxShadow: '0 6px 16px rgba(0, 0, 0, 0.05)', color: 'var(--text-color)', width: '85%', maxWidth: '400px' }}>
              <Search size={20} color="var(--subtle-text)" style={{marginRight: '10px'}} />
              <input 
@@ -683,8 +682,6 @@ function Dashboard() {
       </div>
       </div>
 
-      <BottomNavigation />
-
       {showLocModal && (
         <LocationSheet 
           onLocationSelect={handleLocationSelect} 
@@ -704,10 +701,10 @@ const headerWrapper = { padding: '25px 20px 10px 20px' };
 const topRow = { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' };
 const locationClickableArea = { display:'flex', flexDirection:'column', justifyContent:'center', cursor: 'pointer' };
 const profileCircle = { width: '48px', height: '48px', borderRadius: '50%', background: 'rgba(0,0,0,0.05)', backdropFilter: 'blur(10px)', display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none', border: '1px solid rgba(0,0,0,0.1)' };
-const tabCardsContainer = { display: 'flex', gap: '16px', padding: '0 15px', maxWidth: '1000px', margin: '0 auto', alignItems: 'flex-end' };
+const tabCardsContainer = { display: 'flex', gap: '10px', padding: '0 10px', maxWidth: '1000px', margin: '0 auto', alignItems: 'flex-end' };
 const inactiveCardTabStyle = { flex: 1, height: '75px', background: 'var(--card-color)', color: 'var(--text-color)', border: '2px solid transparent', borderRadius: '20px', padding: '8px 4px', cursor: 'pointer', textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', whiteSpace: 'normal', lineHeight: '1.2', transition: 'all 0.3s ease', boxShadow: 'none' };
 const bottomContentContainer = { background: 'var(--bg-color)', flex: 1, minHeight: '60vh', paddingTop: '0', position: 'relative', zIndex: 9 };
-const bentoGrid = { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', padding: '0 16px 24px 16px', maxWidth: '1000px', margin: '0 auto' };
+const bentoGrid = { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', padding: '0 10px 24px 10px', maxWidth: '1000px', margin: '0 auto' };
 const cardLink = { textDecoration: 'none', color: 'white', display: 'block', width: '100%', height: '100%' };
 const cardStyle = { borderRadius: '18px', height: '185px', position: 'relative', overflow: 'hidden', backgroundSize: 'cover', backgroundPosition: 'center', border: '1px solid rgba(255,255,255,0.15)' };
 const wideCardStyle = { gridColumn: 'span 2', height: '180px', borderRadius: '18px', position: 'relative', overflow: 'hidden', backgroundSize: 'cover', backgroundPosition: 'center', border: '1px solid rgba(255,255,255,0.15)' };
@@ -716,7 +713,7 @@ const whiteIconBox = { filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))' };
 const cardTitle = { margin: '0 0 4px 0', fontSize: '17px', fontWeight: '700', textShadow: '0 2px 6px rgba(0,0,0,0.8)' };
 const cardSubtitle = { margin: 0, fontSize: '13px', opacity: 0.9, fontWeight: '500', textShadow: '0 1px 4px rgba(0,0,0,0.8)' };
 const darkOverlay = { position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.15)', zIndex: 1 }; 
-const weatherContainer = { padding: '0 16px 100px 16px', maxWidth: '1000px', margin: '0 auto' };
+const weatherContainer = { padding: '0 10px 100px 10px', maxWidth: '1000px', margin: '0 auto' };
 
 const getTopTextStyle = (tab, isActive) => {
   return {

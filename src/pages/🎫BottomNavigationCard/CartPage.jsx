@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import BottomNavigation from './BottomNavigation';
-import { useTheme } from './ThemeSettings';
+import { useTheme } from '../⚙️Settings/ThemeSettings';
 import { ShoppingCart } from 'lucide-react';
 
 function CartPage() {
@@ -41,8 +40,6 @@ function CartPage() {
                     </div>
                 )}
             </div>
-            
-            <BottomNavigation />
         </div>
     );
 }

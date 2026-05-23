@@ -1,8 +1,7 @@
 import React from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import BottomNavigation from './BottomNavigation';
 import { User, Palette, FileText, Settings } from 'lucide-react';
-import { useTheme } from './ThemeSettings';
+import { useTheme } from '../⚙️Settings/ThemeSettings';
 
 function MoreMenuPage() {
     const navigate = useNavigate();
@@ -50,7 +49,6 @@ function MoreMenuPage() {
                 </ul>
             </div>
             
-            <BottomNavigation />
             <style>{`
                 .menu-item-hover:hover {
                     background-color: ${theme.colors.background};

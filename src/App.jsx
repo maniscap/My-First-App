@@ -13,7 +13,7 @@ import NotificationsPage from './pages/🎫BottomNavigationCard/NotificationsPag
 import MoreMenuPage from './pages/🎫BottomNavigationCard/MoreMenuPage';
 import CartPage from './pages/🎫BottomNavigationCard/CartPage';
 import SettingsPage from './pages/⚙️Settings/SettingsPage';
-import ThemeSettingsPage from './pages/🎫BottomNavigationCard/ThemeSettings';
+import ThemeSettingsPage from './pages/⚙️Settings/ThemeSettings';
 import Admin from './pages/🔰AdminPage/Admin';
 import Weather from './pages/📁Tools&utils/Weather';
 import SearchResults from './pages/🏠HomePageFeatures/SearchResults';
@@ -41,7 +41,7 @@ import FloatingCalculator from './🔧components/FloatingCalculator';
 import SplashScreen from './🔧components/SplashScreen';
 import BottomNavigation from './pages/🎫BottomNavigationCard/BottomNavigation';
 import SmartLens from './pages/🎫BottomNavigationCard/SmartLens';
-import { useTheme } from './pages/🎫BottomNavigationCard/ThemeSettings';
+import { useTheme } from './pages/⚙️Settings/ThemeSettings';
 
 function App() {
   const location = useLocation();

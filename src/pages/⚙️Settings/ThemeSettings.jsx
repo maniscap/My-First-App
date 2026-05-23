@@ -1,7 +1,7 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CheckCircle } from 'lucide-react';
-import BottomNavigation from './BottomNavigation';
+import BottomNavigation from '../🎫BottomNavigationCard/BottomNavigation';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // 1. GLOBAL THEME CONTEXT LOGIC
@@ -50,6 +50,58 @@ const themes = {
       primary: '#FFB74D',
       border: '#FFE0B2',
     }
+  },
+  emerald: {
+    name: 'Emerald Nature',
+    colors: { background: '#ECFDF5', card: '#FFFFFF', text: '#064E3B', subtleText: '#047857', primary: '#10B981', border: '#D1FAE5' }
+  },
+  sapphire: {
+    name: 'Deep Sapphire',
+    colors: { background: '#0F172A', card: '#1E293B', text: '#F8FAFC', subtleText: '#94A3B8', primary: '#3B82F6', border: '#334155' }
+  },
+  amethyst: {
+    name: 'Royal Amethyst',
+    colors: { background: '#2E1065', card: '#4C1D95', text: '#F5F3FF', subtleText: '#C4B5FD', primary: '#8B5CF6', border: '#5B21B6' }
+  },
+  skyBlue: {
+    name: 'Sky Blue',
+    colors: { background: '#F0F9FF', card: '#FFFFFF', text: '#0369A1', subtleText: '#38BDF8', primary: '#0EA5E9', border: '#BAE6FD' }
+  },
+  monochrome: {
+    name: 'Pure Monochrome',
+    colors: { background: '#FFFFFF', card: '#F5F5F5', text: '#000000', subtleText: '#666666', primary: '#000000', border: '#E5E5E5' }
+  },
+  amber: {
+    name: 'Golden Amber',
+    colors: { background: '#FFFBEB', card: '#FFFFFF', text: '#78350F', subtleText: '#B45309', primary: '#F59E0B', border: '#FEF3C7' }
+  },
+  teal: {
+    name: 'Ocean Teal',
+    colors: { background: '#042F2E', card: '#134E4A', text: '#F0FDFA', subtleText: '#5EEAD4', primary: '#14B8A6', border: '#115E59' }
+  },
+  cyberpunk: {
+    name: 'Cyberpunk Neon',
+    colors: { background: '#0D0914', card: '#1A1423', text: '#E2D5F8', subtleText: '#9D8BB0', primary: '#FF00FF', border: '#322544' }
+  },
+  matcha: {
+    name: 'Matcha Green',
+    colors: { background: '#F4F7F4', card: '#FFFFFF', text: '#2D3A2D', subtleText: '#7B8C7B', primary: '#86B070', border: '#E3EBE3' }
+  },
+  volcanic: {
+    name: 'Volcanic Ash',
+    colors: { background: '#121212', card: '#1E1E1E', text: '#F5F5F5', subtleText: '#888888', primary: '#FF5722', border: '#2C2C2C' }
+  },
+  nordic: {
+    name: 'Nordic Frost',
+    colors: { background: '#F0F4F8', card: '#FFFFFF', text: '#102A43', subtleText: '#627D98', primary: '#334E68', border: '#D9E2EC' }
+  },
+  dracula: {
+    name: 'Midnight Dracula',
+    colors: { background: '#282A36', card: '#44475A', text: '#F8F8F2', subtleText: '#6272A4', primary: '#BD93F9', border: '#6272A4' }
+  },
+  sandstone: {
+    name: 'Desert Sandstone',
+    colors: { background: '#FAF6F0', card: '#FFFFFF', text: '#4A4036', subtleText: '#9E8E7E', primary: '#D4A373', border: '#E8DFD5' }
   }
 };
 
@@ -92,7 +144,14 @@ export const ThemeProvider = ({ children }) => {
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
 };
 
-export const useTheme = () => useContext(ThemeContext);
+export const useTheme = () => {
+  const context = useContext(ThemeContext);
+  if (!context) {
+    console.warn("⚠️ ThemeProvider is missing! Please wrap your app in <ThemeProvider> inside App.jsx. Using fallback light theme.");
+    return { theme: themes.light, setTheme: () => {}, availableThemes: themes };
+  }
+  return context;
+};
 
 
 // ─────────────────────────────────────────────────────────────────────────────

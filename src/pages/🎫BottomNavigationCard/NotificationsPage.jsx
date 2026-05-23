@@ -1,6 +1,5 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import BottomNavigation from './BottomNavigation';
 
 // --- STYLING HELPERS (Extracted from Profile.jsx) ---
 const pageStyle = { position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'var(--bg-color)', display:'flex', justifyContent:'center', overflowY:'auto' };
@@ -31,8 +30,6 @@ function NotificationsPage({ NotificationBar }) {
                 
                 {/* Future implementation will involve complex state management here */}
             </div>
-            
-            <BottomNavigation />
         </div>
     );
 }
