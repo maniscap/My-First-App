@@ -69,7 +69,7 @@ Exactly 3 bullet points. Surprising or lesser-known facts.
 Keep each section tight. Be informative and engaging. No padding.`,
   },
   lens: {
-    label: 'Lens Scan',
+    label: 'Circle to Scan',
     Icon: ScanSearch,
     color: '#facc15',
     colorDim: 'rgba(250,204,21,0.18)',
@@ -719,11 +719,6 @@ const SmartLens = () => {
               onPointerMove={handleLensPointerMove}
               onPointerUp={handleLensPointerEnd}
               onPointerLeave={handleLensPointerEnd}>
-              <motion.div
-                animate={{ x: ['-8%', '8%', '-8%'], opacity: [0.18, 0.45, 0.18] }}
-                transition={{ repeat: Infinity, duration: 2.4, ease: 'easeInOut' }}
-                style={S.shimmerOverlay}
-              />
               {scanMode === 'lens' && selectionPath.length > 1 && (
                 <svg style={S.selectionSvg} preserveAspectRatio="none">
                   <path d={selectionPath.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ')}
@@ -1044,13 +1039,6 @@ const S = {
     position: 'absolute', bottom: -22, color: 'rgba(255,255,255,0.78)', fontSize: 13,
     textAlign: 'center', background: 'rgba(0,0,0,0.38)', padding: '5px 14px',
     borderRadius: 20, backdropFilter: 'blur(10px)', margin: 0,
-  },
-  shimmerOverlay: {
-    position: 'absolute', inset: 0,
-    pointerEvents: 'none', zIndex: 1, opacity: 0.22,
-    background: 'linear-gradient(120deg, transparent 0%, rgba(255,255,255,0.28) 22%, rgba(255,255,255,0.08) 40%, rgba(255,255,255,0) 58%, rgba(255,255,255,0.18) 100%)',
-    filter: 'blur(1px)',
-    mixBlendMode: 'screen',
   },
   detectionBox: {
     position: 'absolute', border: '2px solid rgba(255,255,255,0.9)', borderRadius: 18,
