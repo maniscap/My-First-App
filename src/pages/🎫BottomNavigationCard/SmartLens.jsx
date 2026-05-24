@@ -17,9 +17,9 @@ const SCAN_MODES = {
     Icon: Leaf,
     color: '#22c55e',
     colorDim: 'rgba(34,197,94,0.18)',
-    hint: 'Point at any plant, crop, or leaf',
+    hint: 'Point at any plant, crop, or leaf. AI detects all plant features in the frame.',
     systemPrompt: `You are an expert botanist, agronomist, and plant pathologist.
-Analyze the plant image and respond with EXACTLY this structure (use these exact section headers):
+Analyze the entire image and detect any plants, leaves, crops, or botanical features in the frame. Respond with EXACTLY this structure (use these exact section headers):
 
 **🌿 Species Identification**
 State the common name, scientific name, and plant family. If uncertain, say so.
@@ -47,7 +47,7 @@ Keep each section concise. Use plain English. No padding or filler sentences.`,
     Icon: ScanSearch,
     color: '#38bdf8',
     colorDim: 'rgba(56,189,248,0.18)',
-    hint: 'Point at any object, text, or scene',
+    hint: 'Point at any object, text, or scene. AI checks the entire frame for relevant items.',
     systemPrompt: `You are a highly capable visual AI assistant with encyclopedic knowledge.
 Analyze the image and respond with EXACTLY this structure (use these exact section headers):
 
@@ -73,9 +73,9 @@ Keep each section tight. Be informative and engaging. No padding.`,
     Icon: ScanSearch,
     color: '#facc15',
     colorDim: 'rgba(250,204,21,0.18)',
-    hint: 'Center the subject inside the circle before capture',
-    systemPrompt: `You are a visual AI assistant that identifies and describes the object framed inside the camera overlay.
-Analyze the focused item and respond with EXACTLY this structure (use these exact section headers):
+    hint: 'Tap capture to scan the scene. Draw around the object only if you want a tighter crop.',
+    systemPrompt: `You are a visual AI assistant that identifies and describes the most important object or scene in the image.
+Analyze the entire captured frame and respond with EXACTLY this structure (use these exact section headers):
 
 **🔎 Object Identification**
 State the most likely object, product, or scene in 1-2 sentences.
@@ -89,7 +89,7 @@ Explain where this object is commonly found or how it is used.
 **✔️ Best Match**
 If unsure, say so clearly. If confident, give one concise result.
 
-Keep the answer direct and practical with no extra padding.`,
+If the user has drawn a circle or selection, prioritize that region; otherwise, analyze the whole frame. Keep the answer direct and practical with no extra padding.`,
   },
 };
 
@@ -219,8 +219,8 @@ const SmartLens = () => {
   const viewfinderRef = useRef(null);
   const streamRef     = useRef(null);
   const isMounted     = useRef(true);
-  const reqIdRef      = useRef(0);
-  const chatEndRef    = useRef(null);
+  const reqIdRef          = useRef(0);
+  const chatEndRef        = useRef(null);
 
   // Camera
   const [isLoadingCamera, setIsLoadingCamera] = useState(true);
@@ -249,7 +249,7 @@ const SmartLens = () => {
 
   const mode = SCAN_MODES[scanMode];
   const lensHint = scanMode === 'lens'
-    ? 'Draw around the object or tap capture to scan the frame.'
+    ? 'Draw a closed loop around the object to auto-capture and analyse instantly.'
     : mode.hint;
 
   useEffect(() => {
@@ -259,6 +259,7 @@ const SmartLens = () => {
     }
   }, [scanMode]);
 
+
   const normalizePoint = (clientX, clientY) => {
     const rect = viewfinderRef.current?.getBoundingClientRect();
     if (!rect) return null;
@@ -267,6 +268,7 @@ const SmartLens = () => {
       y: Math.max(0, Math.min(clientY - rect.top, rect.height)),
     };
   };
+
 
   const handleLensPointerDown = (event) => {
     if (scanMode !== 'lens' || isLoadingCamera || cameraError) return;
@@ -292,19 +294,47 @@ const SmartLens = () => {
     event.preventDefault();
   };
 
+  const isPathClosed = (path) => {
+    if (!path || path.length < 8) return false;
+    const first = path[0];
+    const last  = path[path.length - 1];
+    const rect  = viewfinderRef.current?.getBoundingClientRect();
+    const threshold = rect ? Math.max(rect.width, rect.height) * 0.08 : 28;
+    return Math.hypot(first.x - last.x, first.y - last.y) < threshold;
+  };
+
+  const autoCaptureLens = async (path) => {
+    if (isAnalyzing || !path || !path.length) return;
+    const base64 = await captureFromCanvas();
+    if (!base64) return;
+    setCapturedImage(base64);
+    setConfirmMode(false);
+    setConfirmMsg('');
+    await analyzeCapturedImage(base64);
+  };
+
   const handleLensPointerEnd = (event) => {
     if (!isDrawing) return;
     const point = normalizePoint(event.clientX, event.clientY);
+    let nextPath = selectionPath;
     if (point) {
-      setSelectionPath(prev => {
-        const last = prev[prev.length - 1];
-        if (!last || Math.hypot(point.x - last.x, point.y - last.y) > 4) {
-          return [...prev, point];
-        }
-        return prev;
-      });
+      const last = selectionPath[selectionPath.length - 1];
+      if (!last || Math.hypot(point.x - last.x, point.y - last.y) > 4) {
+        nextPath = [...selectionPath, point];
+      }
     }
+    setSelectionPath(nextPath);
     setIsDrawing(false);
+
+    if (scanMode === 'lens' && isPathClosed(nextPath)) {
+      setSelectionPath(prev => {
+        const first = prev[0];
+        if (!first) return prev;
+        return [...prev, first];
+      });
+      autoCaptureLens(nextPath);
+    }
+
     event.preventDefault();
   };
 
@@ -344,6 +374,7 @@ const SmartLens = () => {
           videoRef.current.srcObject = stream;
           videoRef.current.play?.().catch(() => {});
         }
+        enableCameraEnhancements(stream);
         setIsLoadingCamera(false);
         return;
       } catch (err) {
@@ -402,18 +433,47 @@ const SmartLens = () => {
     }
   };
 
+  const enableCameraEnhancements = async (stream) => {
+    const track = stream?.getVideoTracks?.()?.[0];
+    if (!track?.applyConstraints) return;
+    try {
+      const caps = track.getCapabilities?.() || {};
+      const advanced = [];
+      if (caps.focusMode?.includes?.('continuous')) advanced.push({ focusMode: 'continuous' });
+      if (caps.exposureMode?.includes?.('continuous')) advanced.push({ exposureMode: 'continuous' });
+      if (caps.whiteBalanceMode?.includes?.('continuous')) advanced.push({ whiteBalanceMode: 'continuous' });
+      if (typeof caps.zoom === 'number' && caps.zoom > 1) {
+        const zoom = Math.min(caps.zoom, 2);
+        advanced.push({ zoom });
+      }
+      if (advanced.length) await track.applyConstraints({ advanced });
+    } catch (err) {
+      console.warn('[SmartLens] Camera enhancement constraints unavailable:', err);
+    }
+  };
+
   // ── HIGH-QUALITY Capture ───────────────────────────────────────────────────
   // 1st: ImageCapture API (native hardware shutter — sharpest result)
   // 2nd: Canvas drawImage fallback at full video resolution, JPEG 0.97
-  const captureFromCanvas = () => {
+  const captureFromCanvas = async () => {
     const v = videoRef.current;
-    if (!v?.videoWidth || !viewfinderRef.current) return null;
+    if (!v?.videoWidth || !v?.videoHeight) return null;
     const width  = v.videoWidth;
     const height = v.videoHeight;
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return null;
+
+    ctx.filter = 'contrast(1.08) saturate(1.12) brightness(1.02)';
+    ctx.imageSmoothingEnabled = true;
+    ctx.drawImage(v, 0, 0, width, height);
+    ctx.filter = 'none';
 
     if (scanMode === 'lens' && selectionPath.length > 2) {
-      const rect = viewfinderRef.current.getBoundingClientRect();
-      if (rect.width && rect.height) {
+      const rect = viewfinderRef.current?.getBoundingClientRect();
+      if (rect?.width && rect?.height) {
         const scaleX = width / rect.width;
         const scaleY = height / rect.height;
         const scaledPoints = selectionPath.map(p => ({ x: p.x * scaleX, y: p.y * scaleY }));
@@ -423,30 +483,17 @@ const SmartLens = () => {
         const maxY = Math.min(height, Math.max(...scaledPoints.map(p => p.y)));
         const cropWidth = Math.max(64, Math.ceil(maxX - minX));
         const cropHeight = Math.max(64, Math.ceil(maxY - minY));
-        const c = document.createElement('canvas');
-        c.width = cropWidth;
-        c.height = cropHeight;
-        const ctx = c.getContext('2d');
-        ctx.save();
-        ctx.beginPath();
-        scaledPoints.forEach((pt, idx) => {
-          const x = pt.x - minX;
-          const y = pt.y - minY;
-          idx === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
-        });
-        ctx.closePath();
-        ctx.clip();
-        ctx.drawImage(v, minX, minY, cropWidth, cropHeight, 0, 0, cropWidth, cropHeight);
-        ctx.restore();
-        return c.toDataURL('image/png');
+        const cropCanvas = document.createElement('canvas');
+        cropCanvas.width = cropWidth;
+        cropCanvas.height = cropHeight;
+        const cropCtx = cropCanvas.getContext('2d');
+        if (!cropCtx) return canvas.toDataURL('image/jpeg', 0.97);
+        cropCtx.drawImage(canvas, minX, minY, cropWidth, cropHeight, 0, 0, cropWidth, cropHeight);
+        return cropCanvas.toDataURL('image/png');
       }
     }
 
-    const c = document.createElement('canvas');
-    c.width  = width;
-    c.height = height;
-    c.getContext('2d').drawImage(v, 0, 0, c.width, c.height);
-    return c.toDataURL('image/jpeg', 0.97);
+    return canvas.toDataURL('image/jpeg', 0.97);
   };
 
   const handleCapture = async () => {
@@ -454,7 +501,7 @@ const SmartLens = () => {
     let base64  = null;
 
     if (scanMode === 'lens') {
-      base64 = captureFromCanvas();
+      base64 = await captureFromCanvas();
     } else if (track && typeof window.ImageCapture !== 'undefined') {
       try {
         const ic   = new window.ImageCapture(track);
@@ -462,16 +509,22 @@ const SmartLens = () => {
         base64     = await blobToBase64(blob);
       } catch (e) {
         console.warn('[SmartLens] ImageCapture failed, using canvas:', e);
-        base64 = captureFromCanvas();
+        base64 = await captureFromCanvas();
       }
     } else {
-      base64 = captureFromCanvas();
+      base64 = await captureFromCanvas();
     }
 
     if (!base64) return;
     setCapturedImage(base64);
-    setConfirmMode(true);   // ← show confirmation, not analysis
     setConfirmMsg('');
+
+    if (scanMode === 'lens') {
+      setConfirmMode(false);
+      await analyzeCapturedImage(base64);
+    } else {
+      setConfirmMode(true);
+    }
   };
 
   // ── Gallery upload → confirmation ──────────────────────────────────────────
@@ -498,8 +551,34 @@ const SmartLens = () => {
   };
 
   // ── Confirm → analyse ──────────────────────────────────────────────────────
+  const analyzeCapturedImage = async (base64) => {
+    if (!base64) return;
+    setConfirmMode(false);
+    setIsAnalyzing(true);
+    setAnalysisResult(null);
+    setAnalysisError(null);
+    setChatHistory([]);
+
+    const cfg    = SCAN_MODES[scanMode];
+    const prompt = cfg.systemPrompt;
+
+    try {
+      const result = await analyzeWithAIBrain(prompt, base64);
+      if (isMounted.current) setAnalysisResult(result);
+    } catch (err) {
+      console.error('[SmartLens] Analysis error:', err);
+      if (isMounted.current) setAnalysisError('AI analysis failed. Please check your connection and try again.');
+    } finally {
+      if (isMounted.current) setIsAnalyzing(false);
+    }
+  };
+
   const handleConfirmAnalyze = async () => {
     if (!capturedImage) return;
+    if (scanMode === 'lens') {
+      return analyzeCapturedImage(capturedImage);
+    }
+
     setConfirmMode(false);
     setIsAnalyzing(true);
     setAnalysisResult(null);
@@ -571,11 +650,11 @@ const SmartLens = () => {
       {/* Live video */}
       <video
         ref={videoRef} autoPlay playsInline muted
-        style={{ ...S.video, display: (isLoadingCamera || cameraError || capturedImage) ? 'none' : 'block' }}
+        style={{ ...S.video, display: (isLoadingCamera || cameraError || (capturedImage && scanMode !== 'lens')) ? 'none' : 'block' }}
       />
 
       {/* Frozen frame (during confirm / analysis / result) */}
-      {capturedImage && (
+      {capturedImage && scanMode !== 'lens' && (
         <img src={capturedImage} alt="Captured" style={S.frozenFrame} />
       )}
 
@@ -640,6 +719,11 @@ const SmartLens = () => {
               onPointerMove={handleLensPointerMove}
               onPointerUp={handleLensPointerEnd}
               onPointerLeave={handleLensPointerEnd}>
+              <motion.div
+                animate={{ x: ['-8%', '8%', '-8%'], opacity: [0.18, 0.45, 0.18] }}
+                transition={{ repeat: Infinity, duration: 2.4, ease: 'easeInOut' }}
+                style={S.shimmerOverlay}
+              />
               {scanMode === 'lens' && selectionPath.length > 1 && (
                 <svg style={S.selectionSvg} preserveAspectRatio="none">
                   <path d={selectionPath.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ')}
@@ -876,7 +960,7 @@ const SmartLens = () => {
         </div>
       )}
 
-      <style>{`@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
+      <style>{`@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}@keyframes shimmer-slide{0%{transform:translateX(-120%)}100%{transform:translateX(120%)}}`}</style>
     </div>
   );
 };
@@ -901,7 +985,7 @@ const S = {
     background: '#08080a', overflow: 'hidden',
     fontFamily: "'DM Sans',-apple-system,BlinkMacSystemFont,sans-serif",
   },
-  video:       { width: '100%', height: '100%', objectFit: 'cover' },
+  video:       { width: '100%', height: '100%', objectFit: 'cover', filter: 'contrast(1.05) saturate(1.08) brightness(1.02)' },
   frozenFrame: { position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover', zIndex: 1 },
   spin:        { animation: 'spin 1s linear infinite' },
 
@@ -961,10 +1045,27 @@ const S = {
     textAlign: 'center', background: 'rgba(0,0,0,0.38)', padding: '5px 14px',
     borderRadius: 20, backdropFilter: 'blur(10px)', margin: 0,
   },
-  lensCircle: {
-    position: 'absolute', width: '60%', aspectRatio: '1 / 1', borderRadius: '50%',
-    border: '2px solid rgba(255,255,255,0.85)', boxShadow: '0 0 0 10px rgba(255,255,255,0.04)',
+  shimmerOverlay: {
+    position: 'absolute', inset: 0,
+    pointerEvents: 'none', zIndex: 1, opacity: 0.22,
+    background: 'linear-gradient(120deg, transparent 0%, rgba(255,255,255,0.28) 22%, rgba(255,255,255,0.08) 40%, rgba(255,255,255,0) 58%, rgba(255,255,255,0.18) 100%)',
+    filter: 'blur(1px)',
+    mixBlendMode: 'screen',
+  },
+  detectionBox: {
+    position: 'absolute', border: '2px solid rgba(255,255,255,0.9)', borderRadius: 18,
+    overflow: 'hidden', pointerEvents: 'none', zIndex: 3,
+  },
+  detectionShimmer: {
+    position: 'absolute', inset: 0,
     pointerEvents: 'none',
+    background: 'linear-gradient(120deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.28) 40%, rgba(255,255,255,0) 80%)',
+    transform: 'translateX(-120%)',
+    animation: 'shimmer-slide 1.6s infinite ease-in-out',
+  },
+  detectionLabel: {
+    position: 'absolute', top: 8, left: 8, padding: '4px 10px', borderRadius: 14,
+    color: '#000', fontSize: 11, fontWeight: 700, zIndex: 4,
   },
   selectionOverlay: {
     position: 'absolute', borderRadius: '50%', border: '2px solid white',

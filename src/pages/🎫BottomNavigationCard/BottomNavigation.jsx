@@ -144,20 +144,19 @@ const BottomNavigation = () => {
           bottom: 0;
           left: 0;
           width: 100%;
-          height: 70px;
-          background: var(--text-color); /* Opposite of the background */
+          height: 66px; /* Slightly decreased to reduce wasted space at the bottom */
+          background: transparent; /* Truly transparent for the valley cutout */
           display: flex;
           justify-content: center;
           align-items: center;
-          box-shadow: 0 -5px 25px rgba(0, 0, 0, 0.05);
+          filter: drop-shadow(0 -5px 25px rgba(0, 0, 0, 0.05)); /* Restored original 25px shadow spread */
           z-index: 1000;
-          transition: background-color 0.3s ease;
         }
         
         .navigation ul {
           display: flex;
-          width: 90%; /* Creates space on left and right */
-          max-width: 380px; /* Pulls icons inwards on larger screens */
+          width: 90%; 
+          max-width: 380px; 
           margin: 0 auto;
           padding: 0;
           position: relative;
@@ -167,7 +166,7 @@ const BottomNavigation = () => {
           list-style: none;
           position: relative;
           width: 20%; 
-          height: 70px;
+          height: 66px;
           z-index: 2;
         }
         
@@ -214,7 +213,7 @@ const BottomNavigation = () => {
           background: var(--text-color); /* Creates the detached floating piece effect */
           color: var(--bg-color);
           opacity: 1;
-          transform: translateY(-8px); /* Float cleanly into the valley */
+          transform: translateY(-6px); /* Adjusted for perfect centering with the new 66px height */
           transition-delay: 0.25s;
         }
         
@@ -234,31 +233,43 @@ const BottomNavigation = () => {
         
         .indicator {
           position: relative;
-          width: 70px; /* Fixed width keeps the U-shape valley perfect */
-          height: 56px;
-          background: var(--bg-color, #121212); /* Cuts a hole to reveal the page background */
-          border-radius: 0 0 35px 35px; /* Wide, deep valley bottom */
+          width: 68px; /* Micro decreased horizontal stretch */
+          height: 66px; 
+          
+          background-image: 
+            linear-gradient(to right, var(--text-color), var(--text-color)),
+            radial-gradient(circle at 50% 0%, transparent 33.5px, var(--text-color) 34px);
+          background-position: 
+            0 56px,
+            0 21px; 
+          background-size: 
+            68px 11px, /* Matched to 66px height to decrease bottom wasted space (66-56=10 + 1px overlap) */
+            68px 36px; /* Extended height to overlap 1px with the block below and remove the fractional line */
+          background-repeat: no-repeat;
         }
         
-        /* The sweeping concave slope corners */
+        /* The solid left side and concave shoulder */
         .indicator::before {
           content: '';
           position: absolute;
           top: 0px; 
-          left: -28px;
-          width: 28px;
-          height: 28px;
-          background: radial-gradient(circle at 0 100%, transparent 27.5px, var(--bg-color, #121212) 28px);
+          right: 100%;
+          width: 100vw;
+          height: 66px;
+          background: var(--text-color);
+          border-top-right-radius: 27px; /* Matched to the new narrower curve */
         }
         
+        /* The solid right side and concave shoulder */
         .indicator::after {
           content: '';
           position: absolute;
           top: 0px;
-          right: -28px;
-          width: 28px;
-          height: 28px;
-          background: radial-gradient(circle at 100% 100%, transparent 27.5px, var(--bg-color, #121212) 28px);
+          left: 100%;
+          width: 100vw;
+          height: 66px;
+          background: var(--text-color);
+          border-top-left-radius: 27px; /* Matched to the new narrower curve */
         }
       `}</style>
     </div>
