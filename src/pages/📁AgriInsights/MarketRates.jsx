@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { IoMdArrowBack, IoMdClose, IoMdSearch } from 'react-icons/io';
@@ -215,6 +215,8 @@ const MarketRates = () => {
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
   const [showRecentOnly, setShowRecentOnly] = useState(false);
 
+  const scrollRef = useRef(null);
+
   // Save favorites to localStorage
   useEffect(() => {
     localStorage.setItem('marketRatesFavorites', JSON.stringify(favorites));
@@ -231,6 +233,11 @@ const MarketRates = () => {
     document.head.appendChild(style);
     return () => document.head.removeChild(style);
   }, []);
+
+  // Auto-scroll to top when filters or search change
+  useEffect(() => {
+    if (scrollRef.current) scrollRef.current.scrollTop = 0;
+  }, [searchQuery, showFavoritesOnly, showRecentOnly, activeCategory]);
 
   // Auto-rotating banner interval
   useEffect(() => {
@@ -312,11 +319,16 @@ const MarketRates = () => {
 
   const filteredItems = useMemo(() => getFilteredCategories(), [searchQuery, showFavoritesOnly, showRecentOnly, favorites, recentItems]);
 
+  // Utility to safely escape special characters in search queries to prevent Regex crashes
+  const escapeRegExp = (string) => {
+    return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  };
+
   // Helper function to highlight matching text
   const highlightText = (text, query) => {
     if (!query.trim()) return text;
     
-    const parts = text.split(new RegExp(`(${query})`, 'gi'));
+    const parts = text.split(new RegExp(`(${escapeRegExp(query)})`, 'gi'));
     return parts.map((part, idx) => 
       part.toLowerCase() === query.toLowerCase() 
         ? <span key={idx} style={{ background: 'rgba(251, 191, 36, 0.6)', color: '#fff', padding: '2px 4px', borderRadius: '4px', fontWeight: '600' }}>{part}</span>
@@ -487,7 +499,7 @@ const MarketRates = () => {
         </div>
       </motion.div>
 
-      <div style={styles.scrollContent}>
+      <div style={styles.scrollContent} ref={scrollRef}>
         
         {/* SEARCH RESULTS / FILTER RESULTS VIEW */}
         {(searchQuery || showFavoritesOnly || showRecentOnly) && (

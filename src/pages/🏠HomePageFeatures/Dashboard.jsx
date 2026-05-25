@@ -73,7 +73,7 @@ function Dashboard() {
   const [locationTitle, setLocationTitle] = useState('Home'); 
   const [showLocModal, setShowLocModal] = useState(false); 
 
-  const [activeTab, setActiveTab] = useState('AgriInsights');
+  const [activeTab, setActiveTab] = useState(() => sessionStorage.getItem('dashboard_active_tab') || 'AgriInsights');
   const [direction, setDirection] = useState(1);
   const TABS = ['AgriInsights', 'Agri commerce', 'tools and utils'];
   const [searchVal, setSearchVal] = useState('');
@@ -153,6 +153,7 @@ function Dashboard() {
     const newIndex = TABS.indexOf(newTab);
     setDirection(newIndex > currentIndex ? 1 : -1);
     setActiveTab(newTab);
+    sessionStorage.setItem('dashboard_active_tab', newTab);
   };
 
   const swipeHandlers = useSwipeable({
@@ -566,7 +567,7 @@ function Dashboard() {
             <Link to="/rent-machinery" style={cardLink}>
                <div className="glass-card" style={{...cardStyle, backgroundImage: "url('https://img.freepik.com/premium-photo/tractor-watering-tractor-spraying-field-farm-landscape-agricultural-beautiful-countryside_114016-69.jpg')"}}>
                   <div style={cardTopOverlay}>
-                     <div><h3 style={cardTitle}>Rent Machinery</h3><p style={cardSubtitle}>Tractors & Tools</p></div>
+                     <div><h3 style={cardTitle}>Hire Machinery</h3><p style={cardSubtitle}>Tractors & Tools</p></div>
                      <div style={whiteIconBox}><svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12h3l1-3h4l1 3h8"/><circle cx="6" cy="17" r="3"/><circle cx="18" cy="17" r="3"/><path d="M15 5h4l2 7h-6z"/></svg></div>
                   </div>
                </div>

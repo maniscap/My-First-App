@@ -10,7 +10,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { searchQuery, maxResults = 10 } = req.body;
+    const { searchQuery, maxResults = 10, pageToken } = req.body;
     const apiKey = process.env.YOUTUBE_API_KEY || process.env.YOUTUBE_KEY;
 
     if (!apiKey) {
@@ -22,8 +22,12 @@ export default async function handler(req, res) {
     }
 
     // Added relevanceLanguage=hi to match your original frontend code
-    const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=${maxResults}&q=${encodeURIComponent(searchQuery)}&type=video&key=${apiKey}&relevanceLanguage=hi`;
+    let url = `https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=${maxResults}&q=${encodeURIComponent(searchQuery)}&type=video&key=${apiKey}&relevanceLanguage=hi`;
     
+    if (pageToken) {
+      url += `&pageToken=${pageToken}`;
+    }
+
     const response = await fetch(url, {
       headers: {
         "Referer": req.headers.referer || "http://localhost:3000"

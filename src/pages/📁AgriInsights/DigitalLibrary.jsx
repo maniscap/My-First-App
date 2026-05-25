@@ -346,7 +346,9 @@ const DigitalLibrary = () => {
     // --- NEW: Fetch a high-quality image from Unsplash based on the topic ---
     const unsplashUrl = `https://source.unsplash.com/400x600/?${encodeURIComponent(currentTopic + ',farm,agriculture')}`;
     setCoverImage(unsplashUrl);
-    new Image().src = unsplashUrl; // Preload the image
+    const preloaderImg = new Image();
+    preloaderImg.onerror = () => setCoverImage(''); // Fallback if Unsplash is blocked by the network
+    preloaderImg.src = unsplashUrl;
 
     const isStory = contentStyle.includes('Story');
     setIsStoryMode(isStory);
@@ -915,7 +917,10 @@ const DigitalLibrary = () => {
         {/* Search History Dropdown */}
         <div style={{ background: 'transparent', backdropFilter: 'blur(16px) saturate(120%) brightness(110%)', WebkitBackdropFilter: 'blur(16px) saturate(120%) brightness(110%)', border: '1px solid rgba(255, 255, 255, 0.1)', borderTop: '1px solid rgba(255, 255, 255, 0.3)', borderLeft: '1px solid rgba(255, 255, 255, 0.2)', borderRadius: '24px', overflow: 'hidden', boxShadow: 'inset 0 1px 1px rgba(255, 255, 255, 0.3), 0 8px 32px rgba(0,0,0,0.15)', maxWidth: '500px', width: '100%', margin: '20px auto 0 auto', flexShrink: 0 }}>
           <button 
-            onClick={() => setIsHistoryOpen(!isHistoryOpen)} 
+            onClick={() => {
+              setIsHistoryOpen(!isHistoryOpen);
+              setIsSavedBooksOpen(false); // Close the other dropdown
+            }} 
             style={{ width: '100%', padding: '16px 20px', background: 'transparent', border: 'none', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', fontSize: '15px', fontWeight: '700', color: '#fff', textShadow: '0 1px 2px rgba(0,0,0,0.5)' }}
           > 
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -962,7 +967,10 @@ const DigitalLibrary = () => {
       {/* Saved Books Dropdown */}
         <div style={{ background: 'transparent', backdropFilter: 'blur(16px) saturate(120%) brightness(110%)', WebkitBackdropFilter: 'blur(16px) saturate(120%) brightness(110%)', border: '1px solid rgba(255, 255, 255, 0.1)', borderTop: '1px solid rgba(255, 255, 255, 0.3)', borderLeft: '1px solid rgba(255, 255, 255, 0.2)', borderRadius: '24px', overflow: 'hidden', boxShadow: 'inset 0 1px 1px rgba(255, 255, 255, 0.3), 0 8px 32px rgba(0,0,0,0.15)', maxWidth: '500px', width: '100%', margin: '20px auto 20px auto', flexShrink: 0 }}>
           <button 
-            onClick={() => setIsSavedBooksOpen(!isSavedBooksOpen)} 
+            onClick={() => {
+              setIsSavedBooksOpen(!isSavedBooksOpen);
+              setIsHistoryOpen(false); // Close the other dropdown
+            }} 
             style={{ width: '100%', padding: '16px 20px', background: 'transparent', border: 'none', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', fontSize: '15px', fontWeight: '700', color: '#fff', textShadow: '0 1px 2px rgba(0,0,0,0.5)' }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -1129,7 +1137,8 @@ const KindleStyleViewer = ({ bookData, bookTopic, coverImage, theme, setTheme, c
         <PageCover theme={theme}>
           <div style={{
             width: '100%', height: '100%',
-            backgroundImage: `url(${coverImage || ''})`,
+            backgroundColor: isDark ? '#111' : '#eee', // Fallback color if image fails
+            backgroundImage: coverImage ? `url(${coverImage})` : 'none',
             backgroundSize: 'cover', backgroundPosition: 'center',
             display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end',
             padding: '30px', boxSizing: 'border-box', position: 'relative'

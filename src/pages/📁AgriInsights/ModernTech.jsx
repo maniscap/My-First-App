@@ -41,7 +41,7 @@ const TECH_CATEGORIES = [
     cost: 'Varies widely',
     subsidy: 'Available under various state schemes',
     benefits: 'Reduces labor dependency, ensures uniform planting/harvesting.',
-    actionText: 'Rent Machinery'
+    actionText: 'Hire Machinery'
   }
 ];
 
@@ -49,7 +49,9 @@ const ModernTech = () => {
   const navigate = useNavigate();
   const [activeTech, setActiveTech] = useState(TECH_CATEGORIES[0]);
   const [videos, setVideos] = useState([]);
+  const [nextPageToken, setNextPageToken] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState(null);
 
   // Hide scrollbars for the sleek Apple look
@@ -72,9 +74,18 @@ const ModernTech = () => {
       const cachedData = sessionStorage.getItem(cacheKey);
       
       if (cachedData) {
-        setVideos(JSON.parse(cachedData));
-        setLoading(false);
-        return;
+        try {
+          const parsed = JSON.parse(cachedData);
+          if (Array.isArray(parsed)) {
+            // Old cache format detected (no token). Remove it to force a fresh fetch.
+            sessionStorage.removeItem(cacheKey);
+          } else {
+            setVideos(parsed.items || []);
+            setNextPageToken(parsed.nextPageToken || null);
+            setLoading(false);
+            return;
+          }
+        } catch(e) {}
       }
 
       try {
@@ -82,10 +93,12 @@ const ModernTech = () => {
           searchQuery: activeTech.searchQuery,
           maxResults: 4
         });
-        const videoData = response.data.items;
+        const videoData = response.data.items || [];
+        const token = response.data.nextPageToken || null;
         
         setVideos(videoData);
-        sessionStorage.setItem(cacheKey, JSON.stringify(videoData));
+        setNextPageToken(token);
+        sessionStorage.setItem(cacheKey, JSON.stringify({ items: videoData, nextPageToken: token }));
       } catch (err) {
         console.error("YouTube Fetch Error:", err);
         const backendError = err.response?.data?.details || err.response?.data?.error || err.message;
@@ -97,6 +110,31 @@ const ModernTech = () => {
 
     fetchVideos();
   }, [activeTech]);
+
+  const loadMoreVideos = async () => {
+    if (!nextPageToken || loadingMore) return;
+    setLoadingMore(true);
+    try {
+      const response = await axios.post('/api/ModernTech', {
+        searchQuery: activeTech.searchQuery,
+        maxResults: 4,
+        pageToken: nextPageToken
+      });
+      const newVideos = response.data.items || [];
+      const token = response.data.nextPageToken || null;
+      
+      const updatedVideos = [...videos, ...newVideos];
+      setVideos(updatedVideos);
+      setNextPageToken(token);
+      
+      const cacheKey = `farmcap_yt_${activeTech.id}`;
+      sessionStorage.setItem(cacheKey, JSON.stringify({ items: updatedVideos, nextPageToken: token }));
+    } catch (err) {
+      console.error("Load More Error:", err);
+    } finally {
+      setLoadingMore(false);
+    }
+  };
 
   return (
       <div style={styles.page}>
@@ -191,7 +229,7 @@ const ModernTech = () => {
                               src={`https://www.youtube-nocookie.com/embed/${vid.id.videoId}?rel=0&modestbranding=1`} 
                               title={vid.snippet.title} 
                               frameBorder="0" 
-                              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; compute-pressure" 
                               allowFullScreen
                                 style={{position:'absolute', top:0, left:0, borderRadius:'20px'}}
                           ></iframe>
@@ -202,6 +240,16 @@ const ModernTech = () => {
                       </div>
                   </div>
               ))}
+              
+              {videos.length > 0 && (
+                  <button 
+                    onClick={loadMoreVideos} 
+                    style={{ ...styles.actionBtn, marginTop: '5px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', color: '#fff', boxShadow: 'none', opacity: !nextPageToken ? 0.5 : 1, cursor: !nextPageToken ? 'not-allowed' : 'pointer' }}
+                    disabled={loadingMore || !nextPageToken}
+                  >
+                    {loadingMore ? '⏳ Loading more...' : (!nextPageToken ? 'No more videos' : 'Load More Videos')}
+                  </button>
+              )}
             </div>
           </div>
         </div>

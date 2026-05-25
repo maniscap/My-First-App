@@ -1,175 +1,27 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Link } from 'react-router-dom';
-import { db } from '../../firebase';
-import { collection, getDocs } from 'firebase/firestore';
 
 function Freelancing() {
-  const [bgImage, setBgImage] = useState('');
-  const dayBg = 'https://images.unsplash.com/photo-1625246333195-78d9c38ad449?q=80&w=2940&auto=format&fit=crop';
-  const nightBg = 'https://images.unsplash.com/photo-1504333638930-c8787321eee0?q=80&w=2070&auto=format&fit=crop';
-
-  useEffect(() => {
-    const hour = new Date().getHours();
-    if (hour >= 18 || hour < 6) setBgImage(nightBg);
-    else setBgImage(dayBg);
-  }, []);
-
-  const [services, setServices] = useState([]);
-  const [loading, setLoading] = useState(true);
-  
-  // User Location State
-  const [userLat, setUserLat] = useState(null);
-  const [userLng, setUserLng] = useState(null);
-  const [userLocName, setUserLocName] = useState('');
-
-  // 1. GET USER COORDINATES from Dashboard Memory
-  useEffect(() => {
-    const lat = localStorage.getItem('userLat');
-    const lng = localStorage.getItem('userLng');
-    const name = localStorage.getItem('userLocation');
-    if (lat) setUserLat(parseFloat(lat));
-    if (lng) setUserLng(parseFloat(lng));
-    if (name) setUserLocName(name);
-  }, []);
-
-  // 2. Fetch Data
-  useEffect(() => {
-    const fetchServices = async () => {
-      try {
-        const querySnapshot = await getDocs(collection(db, "services")); 
-        const list = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        setServices(list);
-        setLoading(false);
-      } catch (error) { console.error("Error:", error); setLoading(false); }
-    };
-    fetchServices();
-  }, []);
-
-  // 3. HAVERSINE DISTANCE FORMULA
-  const getDistance = (lat1, lon1, lat2, lon2) => {
-    if (!lat1 || !lon1 || !lat2 || !lon2) return 9999;
-    const R = 6371; // Radius of earth in km
-    const dLat = (lat2 - lat1) * Math.PI / 180;
-    const dLon = (lon2 - lon1) * Math.PI / 180;
-    const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-              Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-              Math.sin(dLon/2) * Math.sin(dLon/2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-    return R * c; // Distance in km
-  };
-
-  // 4. SMART RADIUS FILTER (50km)
-  const filteredServices = services.filter(item => {
-    // 4a. Match Category (Buyer View for Freelancing/Consultants)
-    const isExpert = item.serviceType === 'consulting' || item.category === 'consulting' || item.category === 'freelance';
-    if (!isExpert) return false;
-    
-    // 4b. Safe Location String Fallback
-    const itemLocString = typeof item.location === 'object' ? `${item.location.locality || ''}, ${item.location.city || ''}` : item.location || '';
-
-    // 4c. If user has NO coordinates set, fallback to name matching
-    if (!userLat || !userLng) {
-       return !userLocName || itemLocString.toLowerCase().includes(userLocName.toLowerCase());
-    }
-
-    // 4d. If item has NO coordinates, fallback to name matching
-    if (!item.lat || !item.lng) {
-       return !userLocName || itemLocString.toLowerCase().includes(userLocName.toLowerCase());
-    }
-
-    // 4e. CALCULATE DISTANCE
-    const dist = getDistance(userLat, userLng, item.lat, item.lng);
-    return dist <= 50; 
-  });
-
-  // ACTION HANDLERS
-  const openDirections = (lat, lng) => {
-    if (lat && lng) window.open(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`, '_blank');
-    else alert("Seller GPS not available.");
-  };
-
-  const openWhatsApp = (item) => {
-    const phone = item.sellerContact || item.phone;
-    const name = item.sellerName || item.name || 'Seller';
-    const title = item.title || item.name || 'consulting services';
-    const price = item.price || item.rate || 'negotiable';
-    const msg = `Hi ${name}, I am interested in your ${title} at ₹${price}. My location is ${userLocName || "nearby"}. Can we discuss further?`;
-    
-    if (!phone) {
-       alert("Seller contact number not provided.");
-       return;
-    }
-    window.open(`https://wa.me/91${phone}?text=${encodeURIComponent(msg)}`, '_blank');
-  };
-
   return (
-    <div style={{...pageStyle, backgroundImage: `url('${bgImage}')`}}>
+    <div style={pageStyle}>
       <div style={contentContainer}>
         <Link to="/dashboard" style={backLink}>⬅ Dashboard</Link>
-        <h1 style={titleStyle}>💼 Agri Freelancers</h1>
-        
-        {/* RADIUS BADGE */}
-        {userLocName && (
-          <div style={filterBadge}>
-            📍 Showing experts within <strong>50km</strong> of {userLocName}
-          </div>
-        )}
-
-        {/* SELLER REDIRECT BANNER */}
-        <div style={sellerBanner}>
-            <div>
-                <div style={{fontWeight: 'bold', fontSize: '14px', marginBottom: '4px'}}>Are you an Agri Expert?</div>
-                <div style={{fontSize: '12px', opacity: 0.9}}>List your consulting services in the Seller Profile.</div>
-            </div>
-            <Link to="/profile" style={sellerBtn}>Go to Profile ➔</Link>
-        </div>
-
-        <div style={{ display: 'grid', gap: '15px' }}>
-          {loading ? <p style={{textAlign:'center', color:'white'}}>⏳ Loading Experts...</p> : 
-            filteredServices.length > 0 ? (
-              filteredServices.map((item) => (
-                <div key={item.id} style={glassItem}>
-                  {item.image || item.photo ? (<img src={item.image || item.photo} alt="Service" style={itemImg} />) : (<div style={placeholderImg}>💼</div>)}
-                  <div style={{flex: 1}}>
-                    <h3 style={{ margin: '0 0 5px 0', color: '#2196F3' }}>{item.title || item.name}</h3>
-                    <p style={{fontSize: '13px', margin:'2px 0'}}>Rate: <span style={{ color: 'lightgreen', fontWeight: 'bold' }}>₹{item.price || item.rate}</span></p>
-                    <p style={{ fontSize: '11px', color: '#ddd' }}>
-                        📍 {typeof item.location === 'object' ? `${item.location.locality || ''}, ${item.location.city || ''}` : item.location}
-                    </p>
-                    <div style={{marginTop:'8px', display:'flex', gap:'8px'}}>
-                       <button onClick={() => openDirections(item.lat, item.lng)} style={smallActionBtn}>📍 Direct</button>
-                       <button onClick={() => openWhatsApp(item)} style={smallActionBtn}>💬 Chat</button>
-                    </div>
-                  </div>
-                  <a href={`tel:${item.sellerContact || item.phone}`} style={callBtn}>📞</a>
-                </div>
-              ))
-            ) : (
-              <div style={{textAlign:'center', color:'white', opacity:0.7, padding:'20px'}}>
-                <p>No experts found within 50km of <strong>{userLocName}</strong>.</p>
-                <button onClick={() => setUserLocName('')} style={resetBtn}>🌍 Show All Locations</button>
-              </div>
-            )
-          }
+        <div style={messageContainer}>
+          <h1 style={titleStyle}>💼 Agri Freelancers</h1>
+          <p style={subtitleStyle}>This feature is coming soon.</p>
+          <p style={subTextStyle}>We are preparing the platform to receive real data. Stay tuned!</p>
         </div>
       </div>
     </div>
   );
-  }
+}
 
-// STYLES
-const pageStyle = { position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', backgroundSize: 'cover', backgroundPosition: 'center', backgroundColor: 'black', overflowY: 'auto' };
-const contentContainer = { padding: '20px', maxWidth: '800px', margin: '0 auto', paddingBottom: '100px', paddingTop: '20px' };
-const backLink = { color: 'white', textDecoration: 'none', fontSize: '14px', background: 'rgba(0,0,0,0.5)', padding: '8px 15px', borderRadius: '20px', backdropFilter: 'blur(5px)' };
-const titleStyle = { color: 'white', textAlign: 'center', marginTop: '15px', textShadow: '0 2px 4px rgba(0,0,0,0.8)', fontWeight: '900', marginBottom: '10px' };
-const filterBadge = { textAlign:'center', marginBottom:'15px', color:'lightgreen', fontSize:'13px', background:'rgba(0,0,0,0.6)', padding:'5px 10px', borderRadius:'15px', display:'inline-block' };
-const glassItem = { backgroundColor: 'rgba(255, 255, 255, 0.15)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.2)', padding: '12px', borderRadius: '15px', display: 'flex', alignItems: 'center', boxShadow: '0 4px 10px rgba(0,0,0,0.2)', color: 'white' };
-const itemImg = { width:'80px', height:'80px', borderRadius:'10px', objectFit:'cover', marginRight:'15px', border:'1px solid rgba(255,255,255,0.5)' };
-const placeholderImg = { width:'80px', height:'80px', borderRadius:'10px', background:'rgba(255,255,255,0.1)', marginRight:'15px', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'30px' };
-const callBtn = { textDecoration: 'none', padding: '10px', backgroundColor: '#28a745', color: 'white', borderRadius: '50%', fontSize: '18px', width:'40px', height:'40px', display:'flex', alignItems:'center', justifyContent:'center', boxShadow: '0 4px 10px rgba(0,0,0,0.2)', marginLeft: '10px' };
-const smallActionBtn = { padding: '5px 10px', fontSize: '11px', borderRadius: '15px', border: 'none', background: 'rgba(255,255,255,0.2)', color: 'white', cursor: 'pointer' };
-const resetBtn = { padding:'8px 15px', marginTop:'10px', borderRadius:'20px', border:'none', cursor:'pointer', background:'white', color:'black', fontWeight:'bold' };
-const sellerBanner = { background: 'rgba(33, 150, 243, 0.15)', border: '1px solid rgba(33, 150, 243, 0.4)', borderRadius: '16px', padding: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', color: 'white', backdropFilter: 'blur(5px)' };
-const sellerBtn = { background: '#2196F3', color: '#fff', padding: '10px 16px', borderRadius: '12px', textDecoration: 'none', fontWeight: 'bold', fontSize: '13px', boxShadow: '0 4px 10px rgba(33, 150, 243, 0.3)', flexShrink: 0, marginLeft: '10px' };
+const pageStyle = { position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', backgroundColor: '#111', overflowY: 'auto' };
+const contentContainer = { padding: '20px', maxWidth: '800px', margin: '0 auto', height: '100%' };
+const backLink = { color: 'white', textDecoration: 'none', fontSize: '14px', background: 'rgba(255,255,255,0.1)', padding: '8px 15px', borderRadius: '20px' };
+const messageContainer = { textAlign: 'center', marginTop: '40vh', transform: 'translateY(-50%)' };
+const titleStyle = { color: '#2196F3', fontSize: '28px', marginBottom: '10px' };
+const subtitleStyle = { color: 'white', fontSize: '18px', margin: '0' };
+const subTextStyle = { color: '#aaa', fontSize: '14px', marginTop: '10px' };
 
 export default Freelancing;

@@ -26,7 +26,7 @@ import ModernTech from './pages/📁AgriInsights/ModernTech';
 import Radio from './pages/📁Tools&utils/Radio';
 
 // --- AGRICOMMERCE PAGES ---
-import RentMachinery from './pages/📁AgriCommerce/HireMachinery';
+import HireMachinery from './pages/📁AgriCommerce/HireMachinery';
 import HireWorkers from './pages/📁AgriCommerce/HireWorkers';
 import Business from './pages/📁AgriCommerce/Business';
 import FarmFresh from './pages/📁AgriCommerce/FarmFresh';
@@ -131,7 +131,7 @@ function App() {
             <Route path="/library" element={<DigitalLibrary />} />   
             <Route path="/modern-tech" element={<ModernTech />} />
             
-            <Route path="/rent-machinery" element={<RentMachinery />} />
+            <Route path="/rent-machinery" element={<HireMachinery />} />
             <Route path="/hire-workers" element={<HireWorkers />} />
             <Route path="/business" element={<Business />} />
             <Route path="/farm-fresh" element={<FarmFresh />} />

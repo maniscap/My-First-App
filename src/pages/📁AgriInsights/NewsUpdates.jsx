@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -85,6 +85,17 @@ const NewsUpdates = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [sortBy, setSortBy] = useState('recent'); // recent, trending, mostRead
 
+  const scrollRef = useRef(null);
+  const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1592982537447-7440770cbfc9?q=80&w=1000&auto=format&fit=crop';
+
+  // Utility to decode HTML entities (like &quot;, &#39;) in titles and descriptions
+  const decodeHTML = (html) => {
+    if (!html) return '';
+    const txt = document.createElement('textarea');
+    txt.innerHTML = html;
+    return txt.value;
+  };
+
   // Load saved articles from localStorage
   useEffect(() => {
     const saved = localStorage.getItem('savedNews');
@@ -92,12 +103,12 @@ const NewsUpdates = () => {
   }, []);
 
   // Fetch News
-  const fetchNews = useCallback(async (isLoadMore = false) => {
+  const fetchNews = useCallback(async (isLoadMore = false, overrideQuery = null) => {
     setLoading(true);
     setError(null);
 
     try {
-      const query = searchInput || selectedCategory.query;
+      const query = overrideQuery !== null ? overrideQuery : (searchInput || selectedCategory.query);
 
       const response = await fetch('/api/NewsUpdates', {
         method: 'POST',
@@ -141,17 +152,32 @@ const NewsUpdates = () => {
   useEffect(() => {
     setArticles([]);
     setPage(1);
-    fetchNews(false);
+    setSearchInput('');
+    if (scrollRef.current) scrollRef.current.scrollTop = 0;
+    fetchNews(false, selectedCategory.query);
   }, [selectedCategory]);
 
   // Handle Search
   const handleSearch = (e) => {
     e.preventDefault();
+    setArticles([]);
+    setPage(1);
+    if (scrollRef.current) scrollRef.current.scrollTop = 0;
+
     if (searchInput.trim()) {
-      setArticles([]);
-      setPage(1);
       fetchNews(false);
+    } else {
+      fetchNews(false, selectedCategory.query);
     }
+  };
+
+  // Handle Clear Search
+  const handleClearSearch = () => {
+    setSearchInput('');
+    setArticles([]);
+    setPage(1);
+    if (scrollRef.current) scrollRef.current.scrollTop = 0;
+    fetchNews(false, selectedCategory.query);
   };
 
   // Toggle Save Article
@@ -171,7 +197,7 @@ const NewsUpdates = () => {
 
   // Share Article
   const shareArticle = (article) => {
-    const text = `Check this farming news: ${article.title}\n${article.url || article.link}`;
+    const text = `Check this farming news: ${decodeHTML(article.title)}\n${article.url || article.link}`;
     
     if (navigator.share) {
       navigator.share({
@@ -189,7 +215,7 @@ const NewsUpdates = () => {
   const getReadingTime = (text) => {
     if (!text) return '2 min';
     const words = text.split(' ').length;
-    const minutes = Math.ceil(words / 200);
+    const minutes = Math.max(1, Math.ceil(words / 200));
     return `${minutes} min`;
   };
 
@@ -207,7 +233,8 @@ const NewsUpdates = () => {
     if (diffHours < 24) return `${diffHours}h ago`;
     if (diffDays < 7) return `${diffDays}d ago`;
 
-    const options = { month: 'short', day: 'numeric', year: diffDays > 30 ? 'numeric' : undefined };
+    const options = { month: 'short', day: 'numeric' };
+    if (diffDays > 365) options.year = 'numeric';
     return new Date(dateString).toLocaleDateString('en-IN', options);
   };
 
@@ -225,12 +252,12 @@ const NewsUpdates = () => {
 
   // Render Article Card
   const renderArticleCard = (article, index, isSaved = false) => {
-    const title = article.title || 'Untitled';
-    const desc = article.description || article.content || 'Read more on the original source...';
+    const title = decodeHTML(article.title || 'Untitled');
+    const desc = decodeHTML(article.description || article.content || 'Read more on the original source...');
     const link = article.url || article.link;
     const date = article.publishedAt || article.pubDate;
     const sourceName = article.source?.name || article.source_id || 'Agri News';
-    const img = article[imageKey] || 'https://images.unsplash.com/photo-1592982537447-7440770cbfc9?q=80&w=1000&auto=format&fit=crop';
+    const img = article[imageKey] || FALLBACK_IMAGE;
     
     const isSavedArticle = savedArticles.some(a => (a.url || a.link) === (article.url || article.link));
     const sourceInfo = getSourceBadge(sourceName);
@@ -253,7 +280,7 @@ const NewsUpdates = () => {
             alt={title}
             style={styles.image}
             onError={(e) => {
-              e.target.src = 'https://images.unsplash.com/photo-1592982537447-7440770cbfc9?q=80&w=1000&auto=format&fit=crop';
+              if (e.target.src !== FALLBACK_IMAGE) e.target.src = FALLBACK_IMAGE;
             }}
           />
           <div style={styles.imageOverlay}>
@@ -379,7 +406,7 @@ const NewsUpdates = () => {
               <motion.button
                 type="button"
                 style={styles.clearBtn}
-                onClick={() => setSearchInput('')}
+                onClick={handleClearSearch}
                 whileTap={{ scale: 0.95 }}
               >
                 <CloseIcon size={18} />
@@ -422,7 +449,16 @@ const NewsUpdates = () => {
                     borderLeft: selectedCategory.id === category.id ? `1px solid ${category.color}` : '1px solid rgba(255,255,255,0.15)',
                   }}
                   onClick={() => {
-                    setSelectedCategory(category);
+                    if (selectedCategory.id === category.id) {
+                      // Refresh active category
+                      setArticles([]);
+                      setPage(1);
+                      setSearchInput('');
+                      if (scrollRef.current) scrollRef.current.scrollTop = 0;
+                      fetchNews(false, category.query);
+                    } else {
+                      setSelectedCategory(category);
+                    }
                     setShowFilters(false);
                   }}
                   whileHover={{ scale: 1.05 }}
@@ -442,7 +478,7 @@ const NewsUpdates = () => {
       </div>
 
       {/* MAIN CONTENT */}
-      <div className="hide-scrollbar" style={styles.scrollContent}>
+        <div className="hide-scrollbar" style={styles.scrollContent} ref={scrollRef}>
         <div style={styles.stage}>
           <AnimatePresence>
             {/* Showing Saved Articles */}
