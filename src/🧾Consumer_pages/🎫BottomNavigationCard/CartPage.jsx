@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useTheme } from '../⚙️Settings/ThemeSettings';
+import { useTheme } from '../⚙️Settings/Consumer_ThemeSettings';
 import { ShoppingCart } from 'lucide-react';
 
 function CartPage() {

@@ -8,18 +8,18 @@ import MarketRates from './🧾Consumer_pages/📁AgriInsights/MarketRates';
 import NewsUpdates from './🧾Consumer_pages/📁AgriInsights/NewsUpdates';       
 import DigitalLibrary from './🧾Consumer_pages/📁AgriInsights/DigitalLibrary'; 
 import Login from './🧾Consumer_pages/🪪Authentication&Terms/Login';
-import Profile from './🧾Consumer_pages/📁Profile/Profile';
-import NotificationsPage from './🧾Consumer_pages/🎫BottomNavigationCard/NotificationsPage';
-import MoreMenuPage from './🧾Consumer_pages/🎫BottomNavigationCard/MoreMenuPage';
+import Consumer_Profile from './🧾Consumer_pages/📁ConsumerProfile/Consumer_Profile';
+import Consumer_NotificationsPage from './🧾Consumer_pages/🎫BottomNavigationCard/Consumer_NotificationsPage';
+import Consumer_MoreMenuPage from './🧾Consumer_pages/🎫BottomNavigationCard/Consumer_MoreMenuPage';
 import CartPage from './🧾Consumer_pages/🎫BottomNavigationCard/CartPage';
-import SettingsPage from './🧾Consumer_pages/⚙️Settings/SettingsPage';
-import ThemeSettingsPage from './🧾Consumer_pages/⚙️Settings/ThemeSettings';
+import Consumer_SettingsPage from './🧾Consumer_pages/⚙️Settings/Consumer_SettingsPage';
+import Consumer_ThemeSettings from './🧾Consumer_pages/⚙️Settings/Consumer_ThemeSettings';
 import Admin from './🧑‍💻Admin_Page/Admin';
 import Weather from './🧾Consumer_pages/📁Tools&utils/Weather';
 import SearchResults from './🧾Consumer_pages/🏠HomePageFeatures/SearchResults';
 import Expenditure from './🧾Consumer_pages/📁Tools&utils/Expenditure';
 import CropExpenses from './🧾Consumer_pages/📁Tools&utils/CropExpenses'; 
-import UserLocation from './🧾Consumer_pages/🏠HomePageFeatures/UserLocation'; 
+import Consumer_UserLocation from './🧾Consumer_pages/🏠HomePageFeatures/Consumer_UserLocation'; 
 import ModernTech from './🧾Consumer_pages/📁AgriInsights/ModernTech';
 
 // --- NEW PAGES ---
@@ -35,13 +35,19 @@ import Freelancing from './🧾Consumer_pages/📁AgriCommerce/Freelancing';
 // --- FIXED IMPORT ---
 import GPSMeasurement from './🧾Consumer_pages/📁Tools&utils/GPSMeasurement';
 
+// --- SELLER PAGES ---
+import Seller_HomePage from './🧾Seller_pages/Seller_HomePage';
+import Seller_Profile from './🧾Seller_pages/Seller_Profile';
+import SellerProfile_Setup from './🧾Seller_pages/SellerProfile_Setup';
+import Seller_NotificationsPage from './🧾Seller_pages/Seller_NotificationsPage';
+
 // --- IMPORT COMPONENTS ---
 import ChatBot from './🔧Consumer_Components/ChatBot';
 import FloatingCalculator from './🔧Consumer_Components/FloatingCalculator'; 
 import SplashScreen from './🔧Consumer_Components/SplashScreen';
-import BottomNavigation from './🧾Consumer_pages/🎫BottomNavigationCard/BottomNavigation';
+import Consumer_BottomNavigation from './🧾Consumer_pages/🎫BottomNavigationCard/Consumer_BottomNavigation';
 import SmartLens from './🧾Consumer_pages/🎫BottomNavigationCard/SmartLens';
-import { useTheme } from './🧾Consumer_pages/⚙️Settings/ThemeSettings';
+import { useTheme } from './🧾Consumer_pages/⚙️Settings/Consumer_ThemeSettings';
 import { useUserMode } from './UserModeContext';
 
 function App() {
@@ -104,11 +110,22 @@ function App() {
           {/* --- MAIN PAGE CONTENT --- */}
           {isSellerMode ? (
             <Routes>
-              {/* --- SELLER ROUTES WILL GO HERE --- */}
+              {/* SMART ROUTING: Redirects for Seller Mode */}
+              <Route path="/" element={user ? <Navigate to="/Seller_HomePage" replace /> : <Navigate to="/login" replace />} />
+              <Route path="/login" element={user ? <Navigate to="/Seller_HomePage" replace /> : <Login />} />
+              <Route path="/Consumer_HomePage" element={<Navigate to="/Seller_HomePage" replace />} />
+              
+              {/* --- SELLER MAIN PAGES --- */}
+              <Route path="/Seller_HomePage" element={<Seller_HomePage />} />
+              <Route path="/profile" element={<Seller_Profile />} />
+              <Route path="/seller-setup" element={<SellerProfile_Setup />} />
+              <Route path="/seller-notifications" element={<Seller_NotificationsPage />} />
+
               <Route path="*" element={
                 <div style={{ textAlign: 'center', marginTop: '100px', color: theme.colors.text }}>
                   <h1>Seller Mode 🚀</h1>
-                  <p>Your beautiful Seller Consumer_HomePage is coming soon!</p>
+                  <p>Page coming soon!</p>
+                  <Link to="/Seller_HomePage" style={{color: '#4CAF50'}}>Go to Seller Dashboard</Link>
                 </div>
               } />
             </Routes>
@@ -117,26 +134,27 @@ function App() {
               {/* SMART ROUTING: Redirects instantly based on login status */}
               <Route path="/" element={user ? <Navigate to="/Consumer_HomePage" replace /> : <Navigate to="/login" replace />} />
               <Route path="/login" element={user ? <Navigate to="/Consumer_HomePage" replace /> : <Login />} />
+              <Route path="/Seller_HomePage" element={<Navigate to="/Consumer_HomePage" replace />} />
               
               {/* Main Consumer_HomePage */}
               <Route path="/Consumer_HomePage" element={<Consumer_HomePage />} />
               
               {/* Location Management Page */}
-              <Route path="/user-location" element={<UserLocation />} /> 
+              <Route path="/user-location" element={<Consumer_UserLocation />} /> 
               
               {/* Expenditure Section */}
               <Route path="/expenditure" element={<Expenditure />} />
               <Route path="/expenditure/:folderId" element={<CropExpenses />} />
               
               {/* Feature Pages */}
-              <Route path="/profile" element={<Profile />} />
-              <Route path="/more" element={<MoreMenuPage />} />
+              <Route path="/profile" element={<Consumer_Profile />} />
+              <Route path="/more" element={<Consumer_MoreMenuPage />} />
               <Route path="/cart" element={<CartPage />} />
-              <Route path="/settings" element={<SettingsPage />} />
-              <Route path="/settings/theme" element={<ThemeSettingsPage />} />
+              <Route path="/settings" element={<Consumer_SettingsPage />} />
+              <Route path="/settings/theme" element={<Consumer_ThemeSettings />} />
               
               {/* Notifications */}
-              <Route path="/notifications" element={<NotificationsPage />} />
+              <Route path="/notifications" element={<Consumer_NotificationsPage />} />
               
               {/* --- AGRI INSIGHTS & SUB-PAGES --- */}
               <Route path="/market-rates" element={<MarketRates />} /> 
@@ -182,7 +200,7 @@ function App() {
           )}
 
           {/* --- BOTTOM NAVIGATION DOCK --- */}
-          {!isSellerMode && <BottomNavigation />}
+          {!isSellerMode && <Consumer_BottomNavigation />}
           
         </div>
       )}

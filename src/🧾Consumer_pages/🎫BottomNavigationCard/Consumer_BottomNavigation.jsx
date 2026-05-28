@@ -92,7 +92,7 @@ const StyledCartIcon = ({ size, strokeWidth, count }) => (
   </div>
 );
 
-const BottomNavigation = () => {
+const Consumer_BottomNavigation = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -276,4 +276,4 @@ const BottomNavigation = () => {
   );
 };
 
-export default BottomNavigation;
+export default Consumer_BottomNavigation;

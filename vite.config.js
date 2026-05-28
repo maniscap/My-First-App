@@ -8,6 +8,9 @@ export default defineConfig(({ mode }) => {
   return {
     plugins: [react()],
     server: {
+      hmr: {
+        clientPort: 3000,
+      },
       proxy: {
         '/api/ceda': {
           target: 'https://api.ceda.ashoka.edu.in/v1',

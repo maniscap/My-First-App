@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios'; 
 import LocationSheet from '../../🔧Consumer_Components/LocationSheet';
-import { ChevronDown, Radio, Map, Briefcase, TrendingUp, Newspaper, BookOpen, Rocket, Search } from 'lucide-react'; 
+import { ChevronDown, Radio, Map, Briefcase, TrendingUp, Newspaper, BookOpen, Rocket, Search, Tractor, IndianRupee, ShoppingBasket, FileText, CloudSun } from 'lucide-react'; 
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSwipeable } from 'react-swipeable';
 
@@ -41,23 +41,56 @@ const getBackgroundImage = (conditionText) => {
   return weatherImages.defaultFallback;
 };
 
+// --- CONSTANT: CINEMATIC BOX-SHADOW SNOW ---
+const generateSnowBoxShadows = (count) => {
+  let shadows = '';
+  const dropHeight = 120; // 120vh
+  const breezeDrift = 15; // 15vw
+  const screenWidth = 120; // 120vw
+  for(let i = 0; i < count; i++) {
+    const x = Math.floor(Math.random() * screenWidth) - breezeDrift;
+    const y = Math.floor(Math.random() * dropHeight);
+    const alpha = (Math.random() * 0.6 + 0.4).toFixed(2);
+    shadows += `${x}vw ${y}vh rgba(255, 255, 255, ${alpha}),`;
+    shadows += `${x - breezeDrift}vw ${y - dropHeight}vh rgba(255, 255, 255, ${alpha})${i < count - 1 ? ',' : ''}`;
+  }
+  return shadows;
+};
+const snowShadows1 = generateSnowBoxShadows(150);
+const snowShadows2 = generateSnowBoxShadows(100);
+const snowShadows3 = generateSnowBoxShadows(30);
+
+// --- CONSTANT: STYLIZED VECTOR SMOKE ---
+const VECTOR_SMOKE = Array.from({ length: 60 }).map((_, i) => ({
+  size: Math.random() * 8 + 8, // Scaled up to 8px-16px for a thicker base
+  br1: Math.floor(Math.random() * 10 + 45),
+  br2: Math.floor(Math.random() * 10 + 45),
+  br3: Math.floor(Math.random() * 10 + 45),
+  br4: Math.floor(Math.random() * 10 + 45),
+  duration: Math.random() * 2.5 + 4.5, // 4.5s to 7s (more consistent rising speed)
+  delay: -(i * 0.12), // Denser overlap for a continuous column
+  drift: Math.random() * 14 - 7, // Tighter horizontal spread
+  scale: Math.random() * 1.5 + 2.0, // Grows larger as it drifts up
+  startX: Math.random() * 4 - 2, // Kept tighter to the center
+}));
+
 // --- DYNAMIC THEME DEFINITIONS ---
 const getThemeColors = (tab) => {
   if (tab === 'AgriInsights') return { 
-    topHeader: '#38BDF8', 
+    topHeader: '#0EA5E9', 
     bottomMain: 'var(--bg-color)', 
-    topImg: 'linear-gradient(180deg, #38BDF8 0%, #E0F2FE 100%)' 
-  }; // Blue Sky & Green Trees Theme
+    topImg: 'linear-gradient(180deg, #0EA5E9 0%, #38BDF8 40%, #BAE6FD 100%)' 
+  }; // Vibrant Sky Blue Theme
   if (tab === 'Agri commerce') return { 
-    topHeader: '#1A0B2E', 
+    topHeader: '#000000', 
     bottomMain: 'var(--bg-color)', 
-    topImg: 'radial-gradient(circle at top right, rgba(120, 30, 200, 0.35), transparent 60%), radial-gradient(circle at bottom left, rgba(255, 107, 107, 0.15), transparent 60%)' 
-  }; // Deep Space Nebula Theme
+    topImg: 'linear-gradient(180deg, #000000 0%, #020202 50%, #050505 100%)' 
+  }; // Night Sky Theme
   if (tab === 'tools and utils') return { 
-    topHeader: '#38bdf8', 
+    topHeader: '#0B101E', 
     bottomMain: 'var(--bg-color)', 
-    topImg: 'linear-gradient(180deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.4) 100%)'
-  }; // Realistic Sky Blue + White Atmospheric Haze
+    topImg: 'linear-gradient(180deg, #0B101E 0%, #1B273D 60%, #2A3B5C 100%)'
+  }; 
   return { topHeader: '#0F172A', bottomMain: 'var(--bg-color)', topImg: 'none' };
 };
 
@@ -256,16 +289,52 @@ function Consumer_HomePage() {
               initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.5 }}
               style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', overflow: 'hidden', zIndex: 0, pointerEvents: 'none' }}
             >
-               {/* Sun - Positioned on the right but spaced away from the profile icon */}
-               <div className="css-sun" style={{ top: '25px', right: '25%' }}></div>
+              <div className="sky-header">
+                {/* Sun and atmospheric glow */}
+                <div className="sun-ambient"></div>
+                <div className="sun-halo"></div>
+                <div className="sun-core"></div>
+                
+                {/* Camera Lens Bokeh Bubbles */}
+                <div className="bokeh bokeh-1"></div>
+                <div className="bokeh bokeh-2"></div>
+                <div className="bokeh bokeh-3"></div>
+                <div className="bokeh bokeh-4"></div>
+                <div className="bokeh bokeh-5"></div>
 
-               {/* Clouds */}
-               <div className="css-cloud" style={{ top: '25px', left: '20%', transform: 'scale(0.6)', opacity: 0.85 }}></div>
-               
-               {/* Elegant Rolling Farm Hills at the bottom */}
-               <div className="css-hill" style={{ width: '600px', height: '200px', left: '-100px', bottom: '-120px', background: '#2E7D32', zIndex: 1 }}></div>
-               <div className="css-hill" style={{ width: '500px', height: '180px', right: '-100px', bottom: '-100px', background: '#388E3C', zIndex: 2 }}></div>
-               <div className="css-hill" style={{ width: '700px', height: '150px', left: '-150px', bottom: '-80px', background: '#4CAF50', zIndex: 3 }}></div>
+                {/* Realistic Animated Birds (Sprite Sheet) */}
+                <motion.div 
+                  style={{ position: 'absolute', top: '15%', left: '-10%', zIndex: 10, opacity: 0.9, filter: 'drop-shadow(0px 8px 6px rgba(0,0,0,0.25))' }} 
+                  animate={{ x: ['-10vw', '120vw'], y: [0, -20, 15, -10] }} 
+                  transition={{ x: { duration: 18, ease: "linear", repeat: Infinity, delay: 0 }, y: { duration: 18, ease: "easeInOut", repeat: Infinity, delay: 0 } }}
+                >
+                  <div className="real-bird" style={{ animationDuration: '1s', transform: 'scale(0.6)' }}></div>
+                </motion.div>
+
+                <motion.div 
+                  style={{ position: 'absolute', top: '25%', left: '-10%', zIndex: 10, opacity: 0.75, filter: 'drop-shadow(0px 5px 4px rgba(0,0,0,0.15))' }} 
+                  animate={{ x: ['-10vw', '120vw'], y: [0, 15, -10, 0] }} 
+                  transition={{ x: { duration: 22, ease: "linear", repeat: Infinity, delay: 3 }, y: { duration: 22, ease: "easeInOut", repeat: Infinity, delay: 3 } }}
+                >
+                  <div className="real-bird" style={{ animationDuration: '0.8s', animationDelay: '-0.5s', transform: 'scale(0.4)' }}></div>
+                </motion.div>
+
+                <motion.div 
+                  style={{ position: 'absolute', top: '10%', left: '-10%', zIndex: 10, opacity: 0.5, filter: 'drop-shadow(0px 3px 3px rgba(0,0,0,0.1))' }} 
+                  animate={{ x: ['-10vw', '120vw'], y: [0, -10, 5, -5] }} 
+                  transition={{ x: { duration: 25, ease: "linear", repeat: Infinity, delay: 7 }, y: { duration: 25, ease: "easeInOut", repeat: Infinity, delay: 7 } }}
+                >
+                  <div className="real-bird" style={{ animationDuration: '1.2s', animationDelay: '-0.2s', transform: 'scale(0.25)' }}></div>
+                </motion.div>
+
+                <motion.div 
+                  style={{ position: 'absolute', top: '18%', left: '-10%', zIndex: 10, opacity: 0.65, filter: 'drop-shadow(0px 4px 4px rgba(0,0,0,0.2))' }} 
+                  animate={{ x: ['-10vw', '120vw'], y: [0, -5, 10, 0] }} 
+                  transition={{ x: { duration: 28, ease: "linear", repeat: Infinity, delay: 5 }, y: { duration: 28, ease: "easeInOut", repeat: Infinity, delay: 5 } }}
+                >
+                  <div className="real-bird" style={{ animationDuration: '0.9s', animationDelay: '-0.3s', transform: 'scale(0.35)' }}></div>
+                </motion.div>
+              </div>
             </motion.div>
           )}
 
@@ -275,25 +344,91 @@ function Consumer_HomePage() {
               initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.5 }}
               style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', overflow: 'hidden', zIndex: 0, pointerEvents: 'none' }}
             >
-               <div className="css-star" style={{ top: '20px', left: '15%', animationDelay: '0s' }}></div>
-               <div className="css-star" style={{ top: '50px', left: '30%', animationDelay: '1s' }}></div>
-               <div className="css-star" style={{ top: '15px', right: '40%', animationDelay: '0.5s' }}></div>
-               <div className="css-shooting-star" style={{ top: '10px', left: '50%', animationDelay: '0s' }}></div>
-               <div className="css-shooting-star" style={{ top: '40px', right: '10%', animationDelay: '2s' }}></div>
-               <div className="css-full-moon" style={{ top: '28px', right: '24%' }}></div>
+              {/* 1. Ambient Deep Space Nebula */}
+              <div className="cine-nebula purple-nebula"></div>
+              <div className="cine-nebula blue-nebula"></div>
+
+              {/* 2. Star Shapes */}
+              <div className="night-star-shape twinkling" style={{ top: '10%', left: '15%', fontSize: '8px', animationDelay: '0s' }}>★</div>
+              <div className="night-star-shape twinkling" style={{ top: '40%', left: '50%', fontSize: '10px', animationDelay: '1s' }}>★</div>
+              <div className="night-star-shape twinkling" style={{ top: '70%', left: '20%', fontSize: '7px', animationDelay: '2s' }}>★</div>
+              <div className="night-star-shape twinkling" style={{ top: '20%', left: '80%', fontSize: '11px', animationDelay: '0.5s' }}>★</div>
+              <div className="night-star-shape twinkling" style={{ top: '50%', left: '90%', fontSize: '8px', animationDelay: '1.5s' }}>★</div>
+              <div className="night-star-shape twinkling" style={{ top: '80%', left: '60%', fontSize: '9px', animationDelay: '2.5s' }}>★</div>
+              <div className="night-star-shape twinkling" style={{ top: '30%', left: '5%', fontSize: '6px', animationDelay: '0.3s' }}>★</div>
+              <div className="night-star-shape twinkling" style={{ top: '85%', left: '40%', fontSize: '10px', animationDelay: '1.2s' }}>★</div>
+              
+              <div className="night-star-shape glowing" style={{ top: '25%', left: '35%', fontSize: '9px' }}>★</div>
+              <div className="night-star-shape glowing" style={{ top: '60%', left: '75%', fontSize: '12px', color: '#FDE047' }}>★</div>
+              <div className="night-star-shape glowing" style={{ top: '15%', left: '65%', fontSize: '8px' }}>★</div>
+              <div className="night-star-shape glowing" style={{ top: '85%', left: '15%', fontSize: '10px', color: '#FFD700' }}>★</div>
+              <div className="night-star-shape glowing" style={{ top: '5%', left: '45%', fontSize: '7px' }}>★</div>
+              <div className="night-star-shape glowing" style={{ top: '90%', left: '85%', fontSize: '11px' }}>★</div>
+
+              {/* 3. Radiant Poetic Moon */}
+              <div className="cine-moon-wrapper">
+                <div className="cine-moon-halo"></div>
+                <div className="cine-moon"></div>
+              </div>
+
+              {/* 4. High-Velocity Shooting Stars */}
+              <div className="cine-shooting-star streak-1"></div>
+              <div className="cine-shooting-star streak-2"></div>
+              <div className="cine-shooting-star streak-3"></div>
+
+              {/* 5. Light Dark Clouds */}
+              <div className="cine-dark-cloud" style={{ top: '15%', left: '10%', width: '150px', height: '40px' }}></div>
+              <div className="cine-dark-cloud" style={{ top: '10%', right: '20%', width: '200px', height: '60px' }}></div>
+              <div className="cine-dark-cloud" style={{ top: '35%', left: '50%', width: '180px', height: '50px' }}></div>
+
+              {/* 6. Ethereal Horizon Mist */}
+              <div className="cine-mist back-mist"></div>
+              <div className="cine-mist front-mist"></div>
             </motion.div>
           )}
 
           {activeTab === 'tools and utils' && (
             <motion.div 
-              key="day-sky"
+              key="tools-winter"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 0.5 }}
+              transition={{ duration: 0.8 }}
               style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', overflow: 'hidden', zIndex: 0, pointerEvents: 'none' }}
             >
-               <div className="css-cloud" style={{ top: '30px', right: '15%', transform: 'scale(0.8)', opacity: 0.9 }}></div>
+              {/* Cinematic Box-Shadow Snowfall */}
+              <div className="snow-layer snow-1" style={{ boxShadow: snowShadows1 }}></div>
+              <div className="snow-layer snow-2" style={{ boxShadow: snowShadows2 }}></div>
+              <div className="snow-layer snow-3" style={{ boxShadow: snowShadows3 }}></div>
+
+              {/* Cozy Winter House */}
+              <div className="cozy-house">
+                <div className="chimney">
+                  {VECTOR_SMOKE.map((puff, i) => (
+                    <div 
+                      key={`smoke-${i}`} 
+                      className="smoke puff"
+                      style={{
+                        width: `${puff.size}px`, height: `${puff.size}px`,
+                        borderRadius: `${puff.br1}% ${puff.br2}% ${puff.br3}% ${puff.br4}%`,
+                        marginLeft: `${puff.startX}px`,
+                        animationDelay: `${puff.delay}s`, animationDuration: `${puff.duration}s`,
+                        zIndex: 50 - i, // Replicates the prepend() stacking effect
+                        '--drift': `${puff.drift}px`, '--scale': puff.scale
+                      }}
+                    ></div>
+                  ))}
+                </div>
+                <div className="roof"></div>
+                <div className="walls"></div>
+                <div className="window glowing-window"></div>
+                <div className="door"></div>
+              </div>
+
+              {/* Thick Snow Ground Layers */}
+              <div className="snow-ground ground-back"></div>
+              <div className="snow-ground ground-mid"></div>
+              <div className="snow-ground ground-front"></div>
             </motion.div>
           )}
         </AnimatePresence>
@@ -325,80 +460,369 @@ function Consumer_HomePage() {
         <div style={{ paddingTop: '8px', paddingBottom: '0', position: 'relative', zIndex: 1 }}>
           <style>{`
             @import url('https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@700;800;900&display=swap');
-            .css-cloud {
+            
+            /* --- NEW SUNNY DAY PREMIUM DESIGN --- */
+            .sky-header {
               position: absolute;
-              width: 120px;
+              top: 0; left: 0;
+              width: 100%;
+              height: 100%;
+              background: linear-gradient(150deg, #1ea2ff 0%, #7ed3ff 45%, #d0f0ff 100%);
+              overflow: hidden;
+              isolation: isolate;
+            }
+
+            /* --- WINTER SNOWFALL THEME (Tools & Utils) --- */
+            .snow-ground {
+              position: absolute;
+              bottom: -30px;
+              border-radius: 120% 120% 0 0;
+            }
+            .ground-back {
+              left: -30%; width: 160%; height: 45%;
+              background: linear-gradient(180deg, #E2E8F0 0%, #CBD5E1 100%);
+              z-index: 2;
+            }
+            .ground-mid {
+              right: -30%; width: 150%; height: 35%;
+              background: linear-gradient(180deg, #F1F5F9 0%, #E2E8F0 100%);
+              z-index: 3;
+              box-shadow: 0 -10px 20px rgba(255,255,255,0.6);
+            }
+            .ground-front {
+              left: -20%; width: 140%; height: 25%;
+              background: linear-gradient(180deg, #FFFFFF 0%, #F8FAFC 100%);
+              z-index: 4;
+              box-shadow: 0 -15px 25px rgba(255,255,255,0.9);
+            }
+
+            .snow-layer {
+              position: absolute;
+              top: 0;
+              left: 0;
+              background: transparent;
+              border-radius: 50%;
+              pointer-events: none;
+            }
+            .snow-1 { width: 3px; height: 3px; animation: cinematic-snowfall 15s linear infinite; opacity: 0.5; z-index: 1; }
+            .snow-2 { width: 5px; height: 5px; animation: cinematic-snowfall 10s linear infinite; opacity: 0.8; filter: blur(1px); z-index: 2; }
+            .snow-1 { width: 3px; height: 3px; animation: cinematic-snowfall 24s linear infinite; opacity: 0.5; z-index: 1; }
+            .snow-2 { width: 5px; height: 5px; animation: cinematic-snowfall 16s linear infinite; opacity: 0.8; filter: blur(1px); z-index: 2; }
+            /* The heavy bokeh layer goes in front of the house and snow mounds for 3D depth */
+            .snow-3 { width: 16px; height: 16px; animation: cinematic-snowfall 6s linear infinite; opacity: 0.9; filter: blur(5px); z-index: 10; }
+            .snow-3 { width: 16px; height: 16px; animation: cinematic-snowfall 10s linear infinite; opacity: 0.9; filter: blur(5px); z-index: 10; }
+
+            @keyframes cinematic-snowfall {
+              0% { transform: translateY(0) translateX(0); }
+              100% { transform: translateY(120vh) translateX(15vw); }
+            }
+
+            /* Cozy Winter House */
+            .cozy-house {
+              position: absolute;
+              bottom: 20%;
+              right: 15%;
+              width: 80px;
+              height: 60px;
+              z-index: 3;
+            }
+            .cozy-house .walls {
+              position: absolute; bottom: 0; width: 80px; height: 45px;
+              background: #4E342E;
+              border-radius: 4px;
+            }
+            .cozy-house .roof {
+              position: absolute; top: -10px; left: -10px; width: 0; height: 0;
+              border-left: 50px solid transparent;
+              border-right: 50px solid transparent;
+              border-bottom: 30px solid #F8FAFC; 
+              filter: drop-shadow(0 4px 2px rgba(0,0,0,0.15));
+              z-index: 2;
+            }
+            .cozy-house .window {
+              position: absolute; top: 12px; left: 15px; width: 16px; height: 16px;
+              background: #FEF08A; 
+              box-shadow: 0 0 15px 5px rgba(254, 240, 138, 0.6), inset 0 0 4px rgba(234, 88, 12, 0.8);
+              border: 2px solid #3E2723;
+              border-radius: 2px;
+              z-index: 2;
+            }
+            .cozy-house .window::after {
+              content: ''; position: absolute; top: 0; left: 6px; width: 2px; height: 16px; background: #3E2723;
+            }
+            .cozy-house .window::before {
+              content: ''; position: absolute; top: 6px; left: 0; width: 16px; height: 2px; background: #3E2723;
+            }
+            .cozy-house .door {
+              position: absolute; bottom: 0; right: 15px; width: 16px; height: 26px;
+              background: #271410;
+              border-radius: 2px 2px 0 0;
+              z-index: 2;
+            }
+            .cozy-house .chimney {
+              position: absolute; top: -20px; right: 10px; width: 12px; height: 25px;
+              background: linear-gradient(to right, #4E342E, #271410); /* Realistic depth */
+              z-index: 1;
+            }
+            .cozy-house .chimney::after {
+              content: ''; position: absolute; top: -4px; left: -3px; width: 18px; height: 5px;
+              background: #1A0D0A; border-radius: 2px; z-index: 60; /* The cap frame */
+              box-shadow: 0 2px 3px rgba(0,0,0,0.4);
+            }
+            .cozy-house .smoke {
+              position: absolute; 
+              bottom: calc(100% - 2px); /* Start slightly inside the cap */
+              left: 50%;
+              transform: translateX(-50%);
+              background-color: #f6f3eb; /* Warm white vector fill */
+              /* Hard, unblurred inset shadows for Cel-Shading scaled down for mini-chimney */
+              box-shadow: inset -1px -1.5px 0px 0px #b5c7d8, inset -2px -3px 0px 0px #829cb8; 
+              animation: vector-rise 5s linear infinite;
+              pointer-events: none;
+            }
+            @keyframes vector-rise {
+              0% { transform: translate(-50%, 0) scale(0.2); opacity: 0; }
+              5% { opacity: 1; }
+              80% { opacity: 1; }
+              100% { transform: translate(calc(-50% + var(--drift)), -120px) scale(var(--scale)); opacity: 0; }
+            }
+            @keyframes sun-breathe {
+              0%, 100% { transform: scale(1); opacity: 1; }
+              50% { transform: scale(1.08); opacity: 0.85; }
+            }
+            @keyframes bokeh-drift {
+              0% { transform: translate(0, 0) scale(1); opacity: 0.6; }
+              100% { transform: translate(-10px, 10px) scale(1.05); opacity: 0.9; }
+            }
+            .sun-core {
+              position: absolute;
+              top: 20px;
+              right: 120px;
+              width: 35px;
               height: 35px;
               background: #ffffff;
-              border-radius: 50px;
-              box-shadow: inset 0px -4px 6px rgba(0,0,0,0.05);
-            }
-            .css-cloud::before, .css-cloud::after {
-              content: '';
-              position: absolute;
-              background: #ffffff;
               border-radius: 50%;
+              filter: none;
+              box-shadow: 0 0 20px 8px rgba(255, 255, 255, 1), 0 0 40px 15px rgba(255, 255, 255, 0.5);
+              mix-blend-mode: screen;
+              animation: sun-breathe 4s ease-in-out infinite;
+              z-index: 10;
             }
-            .css-cloud::before {
-              width: 60px;
-              height: 60px;
-              top: -30px;
-              left: 20px;
-              box-shadow: inset 2px 4px 6px rgba(255,255,255,0.8);
-            }
-            .css-cloud::after {
+            .sun-halo {
+              position: absolute;
+              top: 15px;
+              right: 115px;
               width: 45px;
               height: 45px;
-              top: -15px;
-              right: 15px;
+              background: rgba(255, 255, 255, 0.7);
+              border-radius: 50%;
+              filter: blur(8px);
+              mix-blend-mode: screen;
+              animation: sun-breathe 5s ease-in-out infinite;
             }
+            .sun-ambient {
+              position: absolute;
+              top: 5px;
+              right: 105px;
+              width: 65px;
+              height: 65px;
+              background: rgba(255, 255, 255, 0.3);
+              border-radius: 50%;
+              filter: blur(15px);
+              mix-blend-mode: overlay;
+            }
+            .bokeh {
+              position: absolute;
+              border-radius: 50%;
+              pointer-events: none;
+              mix-blend-mode: screen;
+              animation: bokeh-drift 8s ease-in-out infinite alternate;
+            }
+            .bokeh-1 {
+              top: 30px; right: 140px;
+              width: 45px; height: 45px;
+              background: rgba(255, 255, 255, 0.08);
+              border: 1.5px solid rgba(255, 255, 255, 0.25);
+              filter: blur(0.5px);
+            }
+            .bokeh-2 {
+              top: 50px; right: 160px;
+              width: 30px; height: 30px;
+              background: rgba(255, 255, 255, 0.15);
+              border: 1.5px solid rgba(255, 255, 255, 0.25);
+              filter: blur(0.5px);
+              animation-delay: -2s;
+            }
+            .bokeh-3 {
+              top: 70px; right: 180px;
+              width: 20px; height: 20px;
+              background: rgba(255, 255, 255, 0.25);
+              border: 1.5px solid rgba(255, 255, 255, 0.35);
+              animation-delay: -4s;
+            }
+            .bokeh-4 {
+              top: 90px; right: 200px;
+              width: 15px; height: 15px;
+              background: rgba(255, 255, 255, 0.4);
+              box-shadow: 0 0 6px rgba(255, 255, 255, 0.7);
+              animation-delay: -6s;
+            }
+            .bokeh-5 {
+              top: 5px; right: 105px;
+              width: 80px; height: 80px;
+              border: 2.5px solid rgba(255, 255, 255, 0.08);
+              background: transparent;
+              animation-delay: -1s;
+            }
+            .real-bird {
+              background-image: url('https://s3-us-west-2.amazonaws.com/s.cdpn.io/174479/bird-cells-new.svg');
+              background-size: auto 100%;
+              width: 88px;
+              height: 125px;
+              will-change: background-position;
+              animation-name: fly-cycle;
+              animation-timing-function: steps(10);
+              animation-iteration-count: infinite;
+            }
+            @keyframes fly-cycle {
+              100% {
+                background-position: -900px 0;
+              }
+            }
+            .content {
+              position: relative;
+              z-index: 10;
+            }
+            /* ------------------------------------ */
+
             .css-star {
               position: absolute;
               width: 3px; height: 3px;
               background: #ffffff;
               border-radius: 50%;
-              box-shadow: 0 0 6px #ffffff;
+              box-shadow: 0 0 8px 2px rgba(255,255,255,0.8);
               animation: twinkle 2s infinite ease-in-out alternate;
-              will-change: transform, opacity;
             }
             @keyframes twinkle {
-              0% { opacity: 0.3; transform: scale(0.8); }
-              100% { opacity: 1; transform: scale(1.2); }
+              0% { opacity: 0.2; transform: scale(0.5); box-shadow: 0 0 2px rgba(255,255,255,0.2); }
+              100% { opacity: 1; transform: scale(1.2); box-shadow: 0 0 12px 3px rgba(255,255,255,1); }
             }
             .css-sun {
               position: absolute;
-              width: 36px; height: 36px;
+              width: 50px; height: 50px;
               border-radius: 50%;
-              background: #FDE047;
-              box-shadow: 0 0 20px rgba(253, 224, 71, 0.8);
-              opacity: 0.9;
+              background: linear-gradient(135deg, #FFFBEB 0%, #FDE047 100%);
+              box-shadow: 0 0 40px 10px rgba(253, 224, 71, 0.6), 0 0 80px 30px rgba(253, 224, 71, 0.3);
+              animation: sun-pulse 4s infinite alternate ease-in-out;
+            }
+            @keyframes sun-pulse {
+              0% { box-shadow: 0 0 40px 10px rgba(253, 224, 71, 0.6), 0 0 80px 30px rgba(253, 224, 71, 0.3); }
+              100% { box-shadow: 0 0 50px 15px rgba(253, 224, 71, 0.8), 0 0 100px 40px rgba(253, 224, 71, 0.4); }
             }
             .css-hill {
               position: absolute;
               border-radius: 50%;
-              box-shadow: inset 0px 8px 16px rgba(255,255,255,0.15);
             }
-            .css-full-moon {
+
+            /* --- WORLD-CLASS CINEMATIC NIGHT SKY ARCHITECTURE --- */
+            
+            /* 1. NEBULAS / ATMOSPHERIC GLOW */
+            .cine-nebula {
+              position: absolute; border-radius: 50%; filter: blur(60px); 
+              opacity: 0.3; mix-blend-mode: screen; pointer-events: none;
+              animation: cine-breathe 12s ease-in-out infinite alternate;
+            }
+            .purple-nebula { top: -20%; left: 0%; width: 70vw; height: 50vh; background: rgba(45, 16, 91, 0.2); }
+            .blue-nebula { bottom: 10%; right: -10%; width: 80vw; height: 60vh; background: rgba(7, 82, 116, 0.15); animation-delay: -6s; }
+            @keyframes cine-breathe { 0% { opacity: 0.3; transform: scale(0.9); } 100% { opacity: 0.7; transform: scale(1.1); } }
+
+            /* 2. STAR SHAPES */
+            .night-star-shape {
               position: absolute;
-              width: 36px; height: 36px;
-              border-radius: 50%;
-              background: #E9D5FF;
-              box-shadow: 0 0 15px 2px rgba(233, 213, 255, 0.5);
-              opacity: 0.9;
+              color: white;
+              text-shadow: 0 0 8px rgba(255, 255, 255, 0.8);
             }
-            .css-shooting-star {
+            .twinkling {
+              animation: twinkle-star-shape 3s infinite ease-in-out alternate;
+            }
+            .glowing {
+              opacity: 0.8;
+            }
+            @keyframes twinkle-star-shape {
+              0% { opacity: 0.1; transform: scale(0.6); }
+              100% { opacity: 1; transform: scale(1.2); text-shadow: 0 0 12px rgba(255, 255, 255, 1); }
+            }
+
+            /* 3. RADIANT POETIC MOON */
+            .cine-moon-wrapper {
+              position: absolute; top: 15%; right: 22%; width: 45px; height: 45px;
+            }
+            .cine-moon {
+              width: 100%; height: 100%; border-radius: 50%;
+              background: radial-gradient(circle at 35% 35%, #FFF9E6 0%, #FFF5CD 60%, #d4c89a 100%);
+              box-shadow: 0 0 6px 1px rgba(255, 249, 230, 0.1), inset -3px -3px 8px rgba(0, 0, 0, 0.4), inset 2px 2px 6px rgba(255, 249, 230, 0.8);
+              position: relative; z-index: 2;
+            }
+            .cine-moon-halo {
+              position: absolute; top: -15%; left: -15%; width: 130%; height: 130%;
+              border-radius: 50%;
+              background: radial-gradient(circle, rgba(255, 249, 230, 0.05) 0%, transparent 60%);
+              filter: blur(4px); z-index: 1;
+              animation: cine-halo-pulse 6s ease-in-out infinite alternate;
+            }
+            @keyframes cine-halo-pulse { 0% { transform: scale(0.95); opacity: 0.8; } 100% { transform: scale(1.05); opacity: 1; } }
+            
+            /* 4. HIGH-VELOCITY SHOOTING STARS */
+            .cine-shooting-star {
+              position: absolute; width: 120px; height: 1.5px;
+              transform: rotate(-45deg); opacity: 0;
+            }
+            .streak-1 { 
+              top: 15%; right: 25%; animation: cine-shoot 7s linear infinite; animation-delay: 1s; 
+              background: linear-gradient(90deg, rgba(255,255,255,1) 0%, rgba(56, 189, 248, 0.8) 30%, transparent 100%);
+              filter: drop-shadow(0 0 6px rgba(56, 189, 248, 0.8));
+            }
+            .streak-2 { 
+              top: 40%; right: 5%; animation: cine-shoot 10s linear infinite; animation-delay: 4.5s; 
+              background: linear-gradient(90deg, rgba(255,255,255,1) 0%, rgba(253, 224, 71, 0.8) 30%, transparent 100%);
+              filter: drop-shadow(0 0 8px rgba(253, 224, 71, 0.6));
+            }
+            .streak-3 { 
+              top: 5%; right: 50%; animation: cine-shoot 15s linear infinite; animation-delay: 9s; transform: rotate(-45deg) scale(0.7); 
+              background: linear-gradient(90deg, rgba(255,255,255,1) 0%, rgba(255, 255, 255, 0.5) 30%, transparent 100%);
+              filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.6));
+            }
+            @keyframes cine-shoot {
+               0% { transform: translate(0, 0) rotate(-45deg) scale(0); opacity: 0; }
+               2% { opacity: 1; transform: translate(-30px, 30px) rotate(-45deg) scale(1); }
+               10% { opacity: 0; transform: translate(-250px, 250px) rotate(-45deg) scale(0.2); }
+               100% { opacity: 0; }
+            }
+
+            /* 5. LIGHT DARK CLOUDS */
+            .cine-dark-cloud {
               position: absolute;
-              width: 40px; height: 2px;
-              background: linear-gradient(90deg, rgba(255,255,255,0.8), transparent);
-              border-radius: 50%;
-              animation: shoot 4s infinite linear;
-              will-change: transform, opacity;
+              background: radial-gradient(ellipse at center, #375A6C 0%, #1C3B4D 60%, transparent 100%);
+              border-radius: 50px;
+              filter: blur(12px);
+              opacity: 0.85;
+              z-index: 1;
+              pointer-events: none;
             }
-            @keyframes shoot {
-              0% { transform: translateX(0) translateY(0) rotate(-35deg); opacity: 1; }
-              20% { transform: translateX(-150px) translateY(100px) rotate(-35deg); opacity: 0; }
-              100% { transform: translateX(-150px) translateY(100px) rotate(-35deg); opacity: 0; }
+
+            /* 6. ETHEREAL HORIZON MIST */
+            .cine-mist { 
+              position: absolute; bottom: 0; left: -25%; width: 150%; height: 120px; 
+              filter: blur(40px); pointer-events: none;
+              animation: cine-mist-drift 25s ease-in-out infinite alternate; 
             }
+            .back-mist { bottom: -20px; background: rgba(56, 189, 248, 0.05); z-index: 1; }
+            .front-mist { bottom: -40px; background: rgba(226, 232, 240, 0.02); z-index: 3; animation-duration: 35s; animation-direction: alternate-reverse; }
+            @keyframes cine-mist-drift {
+               0% { transform: translateX(-5%); }
+               100% { transform: translateX(5%); }
+            }
+
             .active-tab-bg {
               position: absolute;
               top: 0;
@@ -484,7 +908,7 @@ function Consumer_HomePage() {
       <div style={{...bottomContentContainer, background: 'var(--theme-bottom-bg)', transition: 'background-color 0.5s ease'}}>
         {/* CUSTOM MULTI-COLOR SEARCH BAR */}
         <div style={{ padding: '24px 10px 24px 10px', maxWidth: '1000px', margin: '0 auto' }}>
-          <div style={{ position: 'relative', display: 'flex', alignItems: 'center', background: 'var(--card-color)', borderRadius: '16px', padding: '10px 16px', border: '1px solid var(--border-color)', boxShadow: '0 6px 16px rgba(0, 0, 0, 0.05)', color: 'var(--text-color)', width: '85%', maxWidth: '400px' }}>
+          <div style={{ position: 'relative', display: 'flex', alignItems: 'center', background: 'var(--card-color)', borderRadius: '16px', padding: '10px 16px', border: '1px solid var(--border-color)', boxShadow: '0 6px 16px rgba(0, 0, 0, 0.05)', color: 'var(--text-color)', width: '85%', maxWidth: '400px', margin: '0 auto' }}>
              <Search size={20} color="var(--subtle-text)" style={{marginRight: '10px'}} />
              <input 
                 value={searchVal}
@@ -568,7 +992,7 @@ function Consumer_HomePage() {
                <div className="glass-card" style={{...cardStyle, backgroundImage: "url('https://img.freepik.com/premium-photo/tractor-watering-tractor-spraying-field-farm-landscape-agricultural-beautiful-countryside_114016-69.jpg')"}}>
                   <div style={cardTopOverlay}>
                      <div><h3 style={cardTitle}>Hire Machinery</h3><p style={cardSubtitle}>Tractors & Tools</p></div>
-                     <div style={whiteIconBox}><svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12h3l1-3h4l1 3h8"/><circle cx="6" cy="17" r="3"/><circle cx="18" cy="17" r="3"/><path d="M15 5h4l2 7h-6z"/></svg></div>
+                     <div style={whiteIconBox}><Tractor size={28} color="white"/></div>
                   </div>
                </div>
             </Link>
@@ -577,7 +1001,7 @@ function Consumer_HomePage() {
                <div className="glass-card" style={{...cardStyle, backgroundImage: "url('https://www.deere.ca/assets/images/region-4/products/harvesting/cornhead-R4A057928_RRD_1-1920x1080.jpg')"}}>
                   <div style={cardTopOverlay}>
                      <div><h3 style={cardTitle}>Business Zone</h3><p style={cardSubtitle}>Buy Harvest</p></div>
-                     <div style={whiteIconBox}><svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/><path d="M19 5H5"/></svg></div>
+                     <div style={whiteIconBox}><IndianRupee size={28} color="white"/></div>
                   </div>
                </div>
             </Link>
@@ -586,7 +1010,7 @@ function Consumer_HomePage() {
                <div className="glass-card" style={{...cardStyle, backgroundImage: "url('https://images.unsplash.com/photo-1542838132-92c53300491e?q=80&w=500')"}}>
                   <div style={cardTopOverlay}>
                      <div><h3 style={cardTitle}>Farm Fresh</h3><p style={cardSubtitle}>Daily Essentials</p></div>
-                     <div style={whiteIconBox}><svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 11-1 9"/><path d="m19 11-4-7"/><path d="M2 11h20"/><path d="m3.5 11 1.6 7.4a2 2 0 0 0 2 1.6h9.8a2 2 0 0 0 2-1.6l1.7-7.4"/><path d="M4.5 15.5h15"/><path d="m5 11 4-7"/><path d="m9 11 1 9"/></svg></div>
+                     <div style={whiteIconBox}><ShoppingBasket size={28} color="white"/></div>
                   </div>
                </div>
             </Link>
@@ -608,7 +1032,7 @@ function Consumer_HomePage() {
                <div className="glass-card" style={{...cardStyle, backgroundImage: "url('https://img.freepik.com/premium-photo/agronomist-with-tablet-taking-sample-his-crops-ar-23-v-61-job-id-619beb4c01e54b488b59fcdc87c74efc_1204450-66335.jpg')"}}>
                   <div style={cardTopOverlay}>
                      <div><h3 style={{...cardTitle}}>Crop Exp.</h3><p style={cardSubtitle}>Track Expenses</p></div>
-                     <div style={whiteIconBox}><svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line></svg></div>
+                     <div style={whiteIconBox}><FileText size={28} color="white"/></div>
                   </div>
                </div>
             </Link>
@@ -660,7 +1084,7 @@ function Consumer_HomePage() {
                   <div style={{display:'flex', flexDirection:'column', justifyContent:'space-between', height:'100%', width:'100%'}}>
                     <div style={{display:'flex', justifyContent:'space-between', width:'100%'}}>
                         <h3 style={{...cardTitle, margin:0, fontSize:'13px', opacity:0.8, textTransform:'uppercase'}}>Weather View</h3>
-                        <div style={whiteIconBox}><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="M20 12h2"/><path d="m19.07 4.93-1.41 1.41"/><path d="M15.947 12.65a4 4 0 0 0-5.925-4.128"/><path d="M13 22H7a4 4 0 1 1 0-8h1"/></svg></div>
+                        <div style={whiteIconBox}><CloudSun size={24} color="white"/></div>
                     </div>
                     {weatherData ? (
                         <div style={{display:'flex', flexDirection:'column', marginTop:'10px'}}>

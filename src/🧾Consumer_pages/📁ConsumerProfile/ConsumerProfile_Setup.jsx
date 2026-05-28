@@ -25,7 +25,7 @@ const gpsStatus = (status) => ({ fontSize: '14px', color: status === 'Missing' ?
 const actionBtn = { background:'#FFC107', color:'#333', border:'none', padding:'12px 18px', borderRadius:'8px', cursor:'pointer', fontWeight:'bold', fontSize:'14px', flexShrink: 0, marginTop: '15px', transition: 'background 0.2s ease' };
 const mainSaveBtn = { width:'100%', background:'#2E7D32', color:'white', border:'none', padding:'16px', borderRadius:'12px', fontSize:'17px', fontWeight:'bold', cursor:'pointer', marginTop:'20px', marginBottom: '80px', boxShadow: '0 4px 15px rgba(46, 125, 50, 0.3)' };
 
-function ConsumerProfile({ profileData, setProfileData, saveData, isSaving, setBaseLocation, setActiveView, NotificationBar }) {
+function ConsumerProfile_Setup({ profileData, setProfileData, saveData, isSaving, setBaseLocation, setActiveView, NotificationBar }) {
     const { homeAddress } = profileData; 
 
     const handleHomeAddressChange = (key, value) => {
@@ -89,4 +89,4 @@ function ConsumerProfile({ profileData, setProfileData, saveData, isSaving, setB
     );
 }
 
-export default ConsumerProfile;
+export default ConsumerProfile_Setup;

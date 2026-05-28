@@ -1,9 +1,9 @@
 import React from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { User, Palette, FileText, Settings } from 'lucide-react';
-import { useTheme } from '../⚙️Settings/ThemeSettings';
+import { useTheme } from '../⚙️Settings/Consumer_ThemeSettings';
 
-function MoreMenuPage() {
+function Consumer_MoreMenuPage() {
     const navigate = useNavigate();
     const { theme } = useTheme();
 
@@ -58,4 +58,4 @@ function MoreMenuPage() {
     );
 }
 
-export default MoreMenuPage;
+export default Consumer_MoreMenuPage;

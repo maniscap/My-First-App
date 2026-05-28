@@ -88,7 +88,7 @@ const Skeleton = ({ width, height }) => (
 );
 
 // --- MAIN COMPONENT ---
-const UserLocation = () => {
+const Consumer_UserLocation = () => {
   const navigate = useNavigate();
   const [view, setView] = useState('list'); 
   const [deviceLoc, setDeviceLoc] = useState(null); 
@@ -669,4 +669,4 @@ const styles = {
   gpsUseText: { fontWeight:'800', color:'#F84464' }
 };
 
-export default UserLocation;
+export default Consumer_UserLocation;

@@ -2,7 +2,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getAuth, signOut } from 'firebase/auth';
 
-// --- STYLING HELPERS (Extracted from Profile.jsx) ---
+// --- STYLING HELPERS (Extracted from Consumer_Profile.jsx) ---
 const pageStyle = { position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'var(--bg-color)', display:'flex', justifyContent:'center', overflowY:'auto' };
 const subPageCard = { width: '100%', maxWidth: '480px', background: 'var(--card-color)', padding: '20px', minHeight: '100vh', boxSizing:'border-box', boxShadow:'0 0 10px rgba(0,0,0,0.05)' };
 const backBtn = { background:'none', border:'none', fontSize:'14px', color:'var(--subtle-text)', cursor:'pointer', marginBottom:'20px', padding:0, fontWeight:'600' };
@@ -13,7 +13,7 @@ const logoutBtn = { width:'100%', background:'#d32f2f', color:'white', border:'n
 const arrow = { marginLeft:'auto', fontSize:'20px', color:'var(--subtle-text)' };
 
 
-function SettingsPage({ NotificationBar, handleLogout }) {
+function Consumer_SettingsPage({ NotificationBar, handleLogout }) {
     const navigate = useNavigate();
     
     // NOTE: Language state management can be implemented here later.
@@ -62,4 +62,4 @@ function SettingsPage({ NotificationBar, handleLogout }) {
     );
 }
 
-export default SettingsPage;
+export default Consumer_SettingsPage;

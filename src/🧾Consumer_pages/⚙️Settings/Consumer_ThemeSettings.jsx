@@ -1,7 +1,7 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CheckCircle } from 'lucide-react';
-import BottomNavigation from '../🎫BottomNavigationCard/BottomNavigation';
+import Consumer_BottomNavigation from '../🎫BottomNavigationCard/Consumer_BottomNavigation';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // 1. GLOBAL THEME CONTEXT LOGIC
@@ -157,7 +157,7 @@ export const useTheme = () => {
 // ─────────────────────────────────────────────────────────────────────────────
 // 2. THEME SETTINGS PAGE COMPONENT
 // ─────────────────────────────────────────────────────────────────────────────
-function ThemeSettingsPage() {
+function Consumer_ThemeSettings() {
     const navigate = useNavigate();
     const { theme, setTheme, availableThemes } = useTheme();
 
@@ -187,9 +187,9 @@ function ThemeSettingsPage() {
                     ))}
                 </div>
             </div>
-            <BottomNavigation />
+            <Consumer_BottomNavigation />
         </div>
     );
 }
 
-export default ThemeSettingsPage;
+export default Consumer_ThemeSettings;

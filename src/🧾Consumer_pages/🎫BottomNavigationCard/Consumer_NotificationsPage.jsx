@@ -1,14 +1,14 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 
-// --- STYLING HELPERS (Extracted from Profile.jsx) ---
+// --- STYLING HELPERS (Extracted from Consumer_Profile.jsx) ---
 const pageStyle = { position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'var(--bg-color)', display:'flex', justifyContent:'center', overflowY:'auto' };
 const subPageCard = { width: '100%', maxWidth: '480px', background: 'var(--card-color)', padding: '20px', minHeight: '100vh', boxSizing:'border-box', boxShadow:'0 0 10px rgba(0,0,0,0.05)' };
 const backBtn = { background:'none', border:'none', fontSize:'14px', color:'var(--subtle-text)', cursor:'pointer', marginBottom:'20px', padding:0, fontWeight:'600' };
 const sectionTitle = { margin:'0 0 25px 0', color:'var(--text-color)', fontSize:'22px' };
 const notifItem = { padding:'15px', border:'1px solid var(--border-color)', borderRadius:'12px', background:'var(--card-color)', marginBottom:'10px', borderLeft:'4px solid var(--primary-color)' };
 
-function NotificationsPage({ NotificationBar }) {
+function Consumer_NotificationsPage({ NotificationBar }) {
     const navigate = useNavigate();
 
     return (
@@ -34,4 +34,4 @@ function NotificationsPage({ NotificationBar }) {
     );
 }
 
-export default NotificationsPage;
+export default Consumer_NotificationsPage;

@@ -2,7 +2,7 @@ import React from 'react';
 // We assume 'db' is available via props if needed later, but for now, we just need navigation
 // Note: We use the Profile's setActiveView function to return to the main menu.
 
-// --- STYLING HELPERS (Extracted from Profile.jsx) ---
+// --- STYLING HELPERS (Extracted from Consumer_Profile.jsx) ---
 const pageStyle = { position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: '#f8f8f8', display:'flex', justifyContent:'center', overflowY:'auto' };
 const subPageCard = { width: '100%', maxWidth: '480px', background: '#fff', padding: '20px', minHeight: '100vh', boxSizing:'border-box', boxShadow:'0 0 10px rgba(0,0,0,0.05)' };
 const backBtn = { background:'none', border:'none', fontSize:'14px', color:'#555', cursor:'pointer', marginBottom:'20px', padding:0, fontWeight:'600' };

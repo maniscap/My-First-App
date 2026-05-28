@@ -70,7 +70,7 @@ const arrow = { marginLeft:'auto', fontSize:'24px', color:'#ccc' };
 
 
 // --- MAIN PROFILE COMPONENT ---
-function Profile() {
+function Consumer_Profile() {
     const navigate = useNavigate(); 
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -260,4 +260,4 @@ function Profile() {
     );
 }
 
-export default Profile;
+export default Consumer_Profile;
