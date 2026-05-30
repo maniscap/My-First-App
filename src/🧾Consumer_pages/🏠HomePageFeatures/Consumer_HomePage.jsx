@@ -1089,7 +1089,12 @@ function Consumer_HomePage() {
               <div style={cardTopOverlay}>
                   <div style={{display:'flex', flexDirection:'column', justifyContent:'space-between', height:'100%', width:'100%'}}>
                     <div style={{display:'flex', justifyContent:'space-between', width:'100%'}}>
-                        <h3 style={{...cardTitle, margin:0, fontSize:'13px', opacity:0.8, textTransform:'uppercase'}}>Weather View</h3>
+                        <div style={{display:'flex', alignItems:'center', gap:'8px'}}>
+                            <h3 style={{...cardTitle, margin:0, fontSize:'13px', opacity:0.8, textTransform:'uppercase'}}>Weather View</h3>
+                            {isValidWeatherData(weatherData) && (
+                                <span style={{background:'rgba(16, 185, 129, 0.25)', border:'1px solid rgba(16, 185, 129, 0.6)', color:'#10B981', fontSize:'9px', padding:'1px 6px', borderRadius:'10px', fontWeight:'900', textTransform:'uppercase', letterSpacing:'0.5px'}}>Live 🟢</span>
+                            )}
+                        </div>
                         <div style={whiteIconBox}><CloudSun size={24} color="white"/></div>
                     </div>
                     {isValidWeatherData(weatherData) ? (
