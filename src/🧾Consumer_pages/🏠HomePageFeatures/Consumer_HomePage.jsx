@@ -101,6 +101,7 @@ function Consumer_HomePage() {
   // Weather & UI State
   const [weatherData, setWeatherData] = useState(null);
   const [weatherImage, setWeatherImage] = useState(weatherImages.clearDay); 
+  const [weatherStatus, setWeatherStatus] = useState('loading'); // 'live' | 'cached' | 'offline' | 'demo'
   
   // Location State
   const [userLocation, setUserLocation] = useState('Select Location'); 
@@ -112,6 +113,10 @@ function Consumer_HomePage() {
   const TABS = ['AgriInsights', 'Agri commerce', 'tools and utils'];
   const [searchVal, setSearchVal] = useState('');
   const [isSearchFocused, setIsSearchFocused] = useState(false);
+
+  const isValidWeatherData = (data) => {
+    return !!(data && data.location && data.current && data.current.condition && data.forecast && data.forecast.forecastday && data.forecast.forecastday[0] && data.forecast.forecastday[0].day);
+  };
 
   // --- INITIALIZATION & LISTENER (ZOMATO STYLE FIX) ---
   useEffect(() => {
@@ -155,7 +160,23 @@ function Consumer_HomePage() {
             setShowLocModal(false);
         }
 
-        // 3. WEATHER FETCHING (Unchanged)
+        // Load Cached Weather Data Immediately for Instant Rendering & Zero Spinner UX
+        const cached = localStorage.getItem('farmBuddy_cachedHomePageWeather');
+        if (cached) {
+            try {
+                const parsed = JSON.parse(cached);
+                if (isValidWeatherData(parsed)) {
+                    setWeatherData(parsed);
+                    setWeatherStatus('cached');
+                    const assetUrl = getAssetLogic(parsed) || getBackgroundImage(parsed.current.condition.text);
+                    setWeatherImage(assetUrl);
+                }
+            } catch(e) {
+                console.error("Error loading cached home weather", e);
+            }
+        }
+
+        // 3. WEATHER FETCHING
         const lastWeatherCity = localStorage.getItem('farmBuddy_lastCity');
         if (lastWeatherCity) {
             const cityData = JSON.parse(lastWeatherCity);
@@ -202,10 +223,6 @@ function Consumer_HomePage() {
     trackMouse: true
   });
 
-  const isValidWeatherData = (data) => {
-    return !!(data && data.location && data.current && data.current.condition && data.forecast && data.forecast.forecastday && data.forecast.forecastday[0] && data.forecast.forecastday[0].day);
-  };
-
   const fetchLiveWeather = async (query) => {
       try {
           if(!query || query.includes('undefined')) return;
@@ -219,15 +236,28 @@ function Consumer_HomePage() {
           const data = response.data;
           if (isValidWeatherData(data)) {
               setWeatherData(data);
+              setWeatherStatus('live');
+              localStorage.setItem('farmBuddy_cachedHomePageWeather', JSON.stringify(data));
+              localStorage.setItem('farmBuddy_cachedHomePageWeatherTime', new Date().toISOString());
               const assetUrl = getAssetLogic(data) || getBackgroundImage(data.current.condition.text);
               setWeatherImage(assetUrl);
           } else {
               console.warn("Weather API returned incomplete schema:", data);
-              setWeatherData(null);
+              if (localStorage.getItem('farmBuddy_cachedHomePageWeather')) {
+                  setWeatherStatus('cached');
+              } else {
+                  setWeatherData(null);
+                  setWeatherStatus('offline');
+              }
           }
       } catch (err) { 
           console.error("Weather Fetch Error:", err); 
-          setWeatherData(null);
+          if (localStorage.getItem('farmBuddy_cachedHomePageWeather')) {
+              setWeatherStatus('cached');
+          } else {
+              setWeatherData(null);
+              setWeatherStatus('offline');
+          }
       }
   };
 
@@ -1092,7 +1122,17 @@ function Consumer_HomePage() {
                         <div style={{display:'flex', alignItems:'center', gap:'8px'}}>
                             <h3 style={{...cardTitle, margin:0, fontSize:'13px', opacity:0.8, textTransform:'uppercase'}}>Weather View</h3>
                             {isValidWeatherData(weatherData) && (
-                                <span style={{background:'rgba(16, 185, 129, 0.25)', border:'1px solid rgba(16, 185, 129, 0.6)', color:'#10B981', fontSize:'9px', padding:'1px 6px', borderRadius:'10px', fontWeight:'900', textTransform:'uppercase', letterSpacing:'0.5px'}}>Live 🟢</span>
+                                <>
+                                    {weatherStatus === 'live' && (
+                                        <span style={{background:'rgba(16, 185, 129, 0.25)', border:'1px solid rgba(16, 185, 129, 0.6)', color:'#10B981', fontSize:'9px', padding:'1px 6px', borderRadius:'10px', fontWeight:'900', textTransform:'uppercase', letterSpacing:'0.5px'}}>Live 🟢</span>
+                                    )}
+                                    {weatherStatus === 'cached' && (
+                                        <span style={{background:'rgba(245, 158, 11, 0.25)', border:'1px solid rgba(245, 158, 11, 0.6)', color:'#F59E0B', fontSize:'9px', padding:'1px 6px', borderRadius:'10px', fontWeight:'900', textTransform:'uppercase', letterSpacing:'0.5px'}}>Offline Cache ⚠️</span>
+                                    )}
+                                    {weatherStatus === 'demo' && (
+                                        <span style={{background:'rgba(59, 130, 246, 0.25)', border:'1px solid rgba(59, 130, 246, 0.6)', color:'#3B82F6', fontSize:'9px', padding:'1px 6px', borderRadius:'10px', fontWeight:'900', textTransform:'uppercase', letterSpacing:'0.5px'}}>Demo Mode 🧪</span>
+                                    )}
+                                </>
                             )}
                         </div>
                         <div style={whiteIconBox}><CloudSun size={24} color="white"/></div>
@@ -1107,6 +1147,19 @@ function Consumer_HomePage() {
                                 <span>🌧 Rain: {weatherData.forecast.forecastday[0].day.daily_chance_of_rain}%</span>
                                 <span>💧 Hum: {weatherData.current.humidity}%</span>
                             </div>
+                            {weatherStatus === 'cached' && (
+                                <div style={{fontSize:'10px', color:'#F59E0B', marginTop:'6px', display:'flex', alignItems:'center', gap:'4px', fontWeight:'bold'}}>
+                                    ⚠️ Stale Data. Cached: {(() => {
+                                        const cachedTime = localStorage.getItem('farmBuddy_cachedHomePageWeatherTime');
+                                        return cachedTime ? new Date(cachedTime).toLocaleDateString([], {month:'short', day:'numeric'}) + ' ' + new Date(cachedTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : 'Offline';
+                                    })()}
+                                </div>
+                            )}
+                            {weatherStatus === 'live' && (
+                                <div style={{fontSize:'10px', color:'#10B981', marginTop:'6px', display:'flex', alignItems:'center', gap:'4px', opacity:0.8, fontWeight:'bold'}}>
+                                    ✓ Verified Live Satellite Telemetry
+                                </div>
+                            )}
                         </div>
                     ) : (
                         <div style={{display:'flex', flexDirection:'column', marginTop:'15px'}}>
