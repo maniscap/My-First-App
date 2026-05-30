@@ -32,7 +32,7 @@ export const BannerWidget = ({
     <div style={{ 
       width: '100%', 
       margin: '16px 0 20px 0', /* Gap 1: 16px below top tabs | Gap 2: 20px above Bento Cards below */
-      padding: '0 10px', /* Small side padding for mobile aesthetics */
+      padding: '0', /* Covers the edges at the right and left sides completely */
       boxSizing: 'border-box',
       position: 'relative', 
       overflow: 'hidden', 
@@ -40,17 +40,17 @@ export const BannerWidget = ({
     }}>
       <div style={{ 
         width: '100%', 
-        height: '80px', /* Sleek compact height since it is blank/empty for now */
+        height: '72px', /* Sleek compact height, not big at all, just enough for the search bar */
         position: 'relative',
         overflow: 'hidden',
         background: getBannerBackground(),
-        borderRadius: '16px', /* Styled smooth curved border */
-        boxShadow: '0 6px 18px rgba(0,0,0,0.1)',
+        borderRadius: '0', /* Touches left & right screen edges flat in mobile layout */
+        boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
         transition: 'background 0.5s ease, box-shadow 0.3s ease',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        padding: '0 10px'
+        padding: '0 15px'
       }}>
         
         {/* COMPACT HALF-SIZE SEARCH BAR FOR MOBILE LAYOUT AT THE TOP */}
