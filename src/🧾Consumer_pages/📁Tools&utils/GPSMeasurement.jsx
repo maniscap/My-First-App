@@ -54,23 +54,35 @@ const LocationController = ({ isLocating, onLocationFound, isPreviewing, onError
 
     useEffect(() => {
         if (!navigator.geolocation) return;
-        const watchId = navigator.geolocation.watchPosition(
-            (position) => {
-                const { latitude, longitude, accuracy } = position.coords;
-                const newPos = { lat: latitude, lng: longitude, accuracy };
-                setPos(newPos);
-                if (!hasCenteredRef.current && !isPreviewing) { 
-                    map.flyTo([latitude, longitude], 18); 
-                    hasCenteredRef.current = true; 
-                }
-                if (onLocationFound) onLocationFound(newPos);
-            },
-            (err) => {
-                console.warn(err);
-                if (onError) onError(err);
-            },
-            { enableHighAccuracy: true, maximumAge: 10000, timeout: 10000 }
-        );
+        
+        let watchId;
+        const registerWatch = (highAccuracy) => {
+            watchId = navigator.geolocation.watchPosition(
+                (position) => {
+                    const { latitude, longitude, accuracy } = position.coords;
+                    const newPos = { lat: latitude, lng: longitude, accuracy };
+                    setPos(newPos);
+                    if (!hasCenteredRef.current && !isPreviewing) { 
+                        map.flyTo([latitude, longitude], 18); 
+                        hasCenteredRef.current = true; 
+                    }
+                    if (onLocationFound) onLocationFound(newPos);
+                },
+                (err) => {
+                    console.warn("watchPosition failed, highAccuracy=" + highAccuracy + ":", err.message);
+                    if (highAccuracy) {
+                        navigator.geolocation.clearWatch(watchId);
+                        console.warn("Retrying watchPosition with highAccuracy=false for desktop/Wi-Fi fallback");
+                        registerWatch(false);
+                    } else {
+                        if (onError) onError(err);
+                    }
+                },
+                { enableHighAccuracy: highAccuracy, maximumAge: 10000, timeout: 10000 }
+            );
+        };
+
+        registerWatch(true);
         return () => navigator.geolocation.clearWatch(watchId);
     }, [map, isPreviewing]); 
 

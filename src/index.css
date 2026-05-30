@@ -58,3 +58,80 @@ h1, h2, h3, h4, h5, h6, p {
 .card-agri { background-image: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.7)), url('https://images.unsplash.com/photo-1592982537447-6f2a6a0c7c18?auto=format&fit=crop&w=800&q=80'); }
 .card-service { background-image: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.7)), url('https://images.unsplash.com/photo-1530267981375-f0de937f5f13?auto=format&fit=crop&w=800&q=80'); }
 .card-business { background-image: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.7)), url('https://images.unsplash.com/photo-1628135800923-272e42994436?auto=format&fit=crop&w=800&q=80'); }
+
+/* --- PREMIUM ZEPI BANNER ANIMATIONS --- */
+
+/* 1. Mandi Price Ticker Scrolling */
+@keyframes mandi-ticker-scroll {
+  0% { transform: translate3d(0, 0, 0); }
+  100% { transform: translate3d(-50%, 0, 0); }
+}
+
+.mandi-ticker-wrapper {
+  display: flex;
+  white-space: nowrap;
+  animation: mandi-ticker-scroll 32s linear infinite;
+}
+
+.mandi-ticker-wrapper:hover {
+  animation-play-state: paused; /* Pause scrolling on hover for premium accessibility */
+}
+
+/* 2. Floating Leaf Particles (AgriInsights) */
+@keyframes float-leaf-1 {
+  0% { transform: translate3d(0, 40px, 0) scale(0.6) rotate(0deg); opacity: 0; }
+  15% { opacity: 0.6; }
+  85% { opacity: 0.6; }
+  100% { transform: translate3d(-60px, -140px, 0) scale(1) rotate(180deg); opacity: 0; }
+}
+
+@keyframes float-leaf-2 {
+  0% { transform: translate3d(0, 40px, 0) scale(0.8) rotate(0deg); opacity: 0; }
+  20% { opacity: 0.7; }
+  80% { opacity: 0.7; }
+  100% { transform: translate3d(50px, -180px, 0) scale(0.5) rotate(-240deg); opacity: 0; }
+}
+
+.leaf-float-1 {
+  animation: float-leaf-1 7s ease-in-out infinite;
+}
+
+.leaf-float-2 {
+  animation: float-leaf-2 9s ease-in-out infinite;
+}
+
+/* 3. Neon Scanning Laser Line (AgriCommerce) */
+@keyframes neon-scan {
+  0% { transform: translateY(0); opacity: 0.2; }
+  50% { transform: translateY(240px); opacity: 0.8; }
+  100% { transform: translateY(0); opacity: 0.2; }
+}
+
+.neon-scan-line {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background: linear-gradient(to right, transparent 5%, #F59E0B 50%, transparent 95%);
+  box-shadow: 0 0 10px #F59E0B, 0 0 20px rgba(245, 158, 11, 0.4);
+  animation: neon-scan 5s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* 4. Radio Soundwave Pulse (Tools & Utilities) */
+@keyframes soundwave-pulse {
+  0%, 100% { transform: scaleY(0.3); }
+  50% { transform: scaleY(1.2); }
+}
+
+.soundwave-bar {
+  width: 3px;
+  background-color: #F84464;
+  border-radius: 2px;
+  display: inline-block;
+  margin: 0 1.5px;
+  transform-origin: bottom;
+  animation: soundwave-pulse 1.2s ease-in-out infinite;
+}

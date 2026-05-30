@@ -5,6 +5,7 @@ import LocationSheet from '../../🔧Consumer_Components/LocationSheet';
 import { ChevronDown, Radio, Map, Briefcase, TrendingUp, Newspaper, BookOpen, Rocket, Search, Tractor, IndianRupee, ShoppingBasket, FileText, CloudSun } from 'lucide-react'; 
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSwipeable } from 'react-swipeable';
+import { BannerWidget } from './BannerPromo';
 
 // --- WEATHER IMAGE ASSETS (URLs) ---
 const weatherImages = {
@@ -201,6 +202,10 @@ function Consumer_HomePage() {
     trackMouse: true
   });
 
+  const isValidWeatherData = (data) => {
+    return !!(data && data.location && data.current && data.current.condition && data.forecast && data.forecast.forecastday && data.forecast.forecastday[0] && data.forecast.forecastday[0].day);
+  };
+
   const fetchLiveWeather = async (query) => {
       try {
           if(!query || query.includes('undefined')) return;
@@ -210,14 +215,24 @@ function Consumer_HomePage() {
               days: 1,
               aqi: 'no'
           });
-          setWeatherData(response.data);
           
-          const assetUrl = getAssetLogic(response.data) || getBackgroundImage(response.data.current.condition.text);
-          setWeatherImage(assetUrl);
-      } catch (err) { console.error("Weather Fetch Error:", err); }
+          const data = response.data;
+          if (isValidWeatherData(data)) {
+              setWeatherData(data);
+              const assetUrl = getAssetLogic(data) || getBackgroundImage(data.current.condition.text);
+              setWeatherImage(assetUrl);
+          } else {
+              console.warn("Weather API returned incomplete schema:", data);
+              setWeatherData(null);
+          }
+      } catch (err) { 
+          console.error("Weather Fetch Error:", err); 
+          setWeatherData(null);
+      }
   };
 
   const getAssetLogic = (data) => {
+    if (!data || !data.current || !data.current.condition) return weatherImages.defaultFallback;
     const code = data.current.condition.code;
     const isDay = data.current.is_day === 1;
     const hour = new Date().getHours();
@@ -906,24 +921,15 @@ function Consumer_HomePage() {
 
       {/* 2. BOTTOM CONTENT AREA (Browser Window) */}
       <div style={{...bottomContentContainer, background: 'var(--theme-bottom-bg)', transition: 'background-color 0.5s ease'}}>
-        {/* CUSTOM MULTI-COLOR SEARCH BAR */}
-        <div style={{ padding: '24px 10px 24px 10px', maxWidth: '1000px', margin: '0 auto' }}>
-          <div style={{ position: 'relative', display: 'flex', alignItems: 'center', background: 'var(--card-color)', borderRadius: '16px', padding: '10px 16px', border: '1px solid var(--border-color)', boxShadow: '0 6px 16px rgba(0, 0, 0, 0.05)', color: 'var(--text-color)', width: '85%', maxWidth: '400px', margin: '0 auto' }}>
-             <Search size={20} color="var(--subtle-text)" style={{marginRight: '10px'}} />
-             <input 
-                value={searchVal}
-                onChange={(e) => setSearchVal(e.target.value)}
-                onFocus={() => setIsSearchFocused(true)}
-                onBlur={() => setIsSearchFocused(false)}
-                style={{ flex: 1, background: 'transparent', border: 'none', outline: 'none', color: 'var(--text-color)', fontSize: '15px', position: 'relative', zIndex: 2, padding: 0, fontWeight: '600' }}
-             />
-             {(!isSearchFocused && searchVal === '') && (
-               <div style={{ position: 'absolute', left: '48px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', fontSize: '15px', fontWeight: '800', zIndex: 1, color: '#777', whiteSpace: 'nowrap' }}>
-                 Search for <span style={{color: '#EA580C'}}>Summer</span> <span style={{color: '#06B6D4'}}>Cool</span>
-               </div>
-             )}
-          </div>
-        </div>
+        {/* --- DYNAMIC TAB BANNERS WITH INTEGRATED SEARCH BAR (Zepto Style - Managed in BannerPromo.jsx) --- */}
+        <BannerWidget 
+          activeTab={activeTab} 
+          direction={direction} 
+          searchVal={searchVal}
+          setSearchVal={setSearchVal}
+          isSearchFocused={isSearchFocused}
+          setIsSearchFocused={setIsSearchFocused}
+        />
 
         {/* SWIPEABLE BENTO GRID AREA */}
         <div {...swipeHandlers} style={{ overflowX: 'hidden', width: '100%', minHeight: '350px' }}>
@@ -1086,7 +1092,7 @@ function Consumer_HomePage() {
                         <h3 style={{...cardTitle, margin:0, fontSize:'13px', opacity:0.8, textTransform:'uppercase'}}>Weather View</h3>
                         <div style={whiteIconBox}><CloudSun size={24} color="white"/></div>
                     </div>
-                    {weatherData ? (
+                    {isValidWeatherData(weatherData) ? (
                         <div style={{display:'flex', flexDirection:'column', marginTop:'10px'}}>
                             <div style={{fontSize:'22px', fontWeight:'700', lineHeight:'1.2'}}>
                                 {weatherData.location.name}
@@ -1098,7 +1104,14 @@ function Consumer_HomePage() {
                             </div>
                         </div>
                     ) : (
-                        <p style={{marginTop:'20px'}}>Loading Weather...</p>
+                        <div style={{display:'flex', flexDirection:'column', marginTop:'15px'}}>
+                            <div style={{fontSize:'20px', fontWeight:'700', lineHeight:'1.2', color: '#fff'}}>
+                                {locationTitle && locationTitle !== "Select Location" ? locationTitle : "Select Location"}
+                            </div>
+                            <div style={{fontSize:'13px', opacity:0.8, marginTop:'4px', color: '#ff8a80', fontWeight: 'bold'}}>
+                                Weather Service Offline (Tap to Configure)
+                            </div>
+                        </div>
                     )}
                   </div>
               </div>

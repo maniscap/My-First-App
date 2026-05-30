@@ -173,15 +173,21 @@ const Weather = () => {
       if (savedHistory) setSearchHistory(JSON.parse(savedHistory));
   }, []);
 
+  const isValidWeatherData = (data) => {
+    return !!(data && data.location && data.location.name && data.current && data.current.condition && data.forecast && data.forecast.forecastday && data.forecast.forecastday[0] && data.forecast.forecastday[0].day && data.forecast.forecastday[0].astro);
+  };
+
   // --- SYNC LAST CITY ---
   useEffect(() => {
     if (savedWeatherList.length > 0) {
       const currentCity = savedWeatherList[currentIndex];
-      localStorage.setItem('farmBuddy_lastCity', JSON.stringify({ 
-          name: currentCity.location.name, 
-          lat: currentCity.location.lat, 
-          lon: currentCity.location.lon 
-      }));
+      if (isValidWeatherData(currentCity)) {
+        localStorage.setItem('farmBuddy_lastCity', JSON.stringify({ 
+            name: currentCity.location.name, 
+            lat: currentCity.location.lat, 
+            lon: currentCity.location.lon 
+        }));
+      }
     }
   }, [currentIndex, savedWeatherList]);
 
@@ -265,19 +271,32 @@ const Weather = () => {
 
     if (citiesToFetch.length === 0) {
         if (navigator.geolocation) {
-             navigator.geolocation.getCurrentPosition(
-                async (pos) => {
-                    const data = await fetchSingleCity(`${pos.coords.latitude},${pos.coords.longitude}`);
-                    if(data) {
-                        setSavedWeatherList([data]);
-                        saveCityToLocal(data, data.location.name); 
-                        triggerToast(`Located: ${data.location.name}`);
-                    }
-                    setLoading(false);
-                },
-                (err) => { setLoading(false); triggerToast("GPS Failed. Please search manually."); },
-                { enableHighAccuracy: true } 
-            );
+             const tryGetLocation = (highAccuracy) => {
+                 navigator.geolocation.getCurrentPosition(
+                    async (pos) => {
+                        const data = await fetchSingleCity(`${pos.coords.latitude},${pos.coords.longitude}`);
+                        if(data && isValidWeatherData(data)) {
+                            setSavedWeatherList([data]);
+                            saveCityToLocal(data, data.location.name); 
+                            triggerToast(`Located: ${data.location.name}`);
+                        } else {
+                            triggerToast("Located but failed to fetch weather. Search manually.");
+                        }
+                        setLoading(false);
+                    },
+                    (err) => { 
+                        if (highAccuracy) {
+                            console.warn("High accuracy geolocation failed on weather boot, retrying low accuracy...");
+                            tryGetLocation(false);
+                        } else {
+                            setLoading(false); 
+                            triggerToast("GPS Failed. Please search manually."); 
+                        }
+                    },
+                    { enableHighAccuracy: highAccuracy, timeout: 8000 } 
+                 );
+             };
+             tryGetLocation(true);
         } else { setLoading(false); }
     } else {
         const promises = citiesToFetch.map(async (city) => {
@@ -313,7 +332,9 @@ const Weather = () => {
   };
 
   const getAssetLogic = (currentCityData) => {
-    if (!currentCityData) return weatherImages.clear.day;
+    if (!currentCityData || !currentCityData.current || !currentCityData.current.condition) {
+        return weatherImages.clear.day;
+    }
     
     const code = currentCityData.current.condition.code;
     const isDay = currentCityData.current.is_day === 1; // 1 = Day, 0 = Night strictly for target city
@@ -374,15 +395,23 @@ const Weather = () => {
   const handleGPSClick = () => {
       setIsSearchingGPS(true);
       if (navigator.geolocation) {
-          navigator.geolocation.getCurrentPosition(async (pos) => {
-              const data = await fetchSingleCity(`${pos.coords.latitude},${pos.coords.longitude}`);
-              setGpsResult(data);
-              setIsSearchingGPS(false);
-              triggerToast("Precise Location Found");
-          }, (err) => {
-              triggerToast("GPS Permission Denied");
-              setIsSearchingGPS(false);
-          }, { enableHighAccuracy: true, timeout: 10000 });
+          const tryGetGPS = (highAccuracy) => {
+              navigator.geolocation.getCurrentPosition(async (pos) => {
+                  const data = await fetchSingleCity(`${pos.coords.latitude},${pos.coords.longitude}`);
+                  setGpsResult(data);
+                  setIsSearchingGPS(false);
+                  triggerToast("Location Found");
+              }, (err) => {
+                  if (highAccuracy) {
+                      console.warn("High accuracy GPS search failed, retrying with low accuracy...", err);
+                      tryGetGPS(false);
+                  } else {
+                      triggerToast("GPS Position Unavailable");
+                      setIsSearchingGPS(false);
+                  }
+              }, { enableHighAccuracy: highAccuracy, timeout: 10000 });
+          };
+          tryGetGPS(true);
       }
   };
 
@@ -507,8 +536,9 @@ const Weather = () => {
 
   if (loading) return <div style={styles.loadingContainer}><SkeletonLoader /></div>;
 
-  const isEmpty = savedWeatherList.length === 0;
-  const weather = !isEmpty ? savedWeatherList[currentIndex] : null; 
+  const validSavedWeatherList = savedWeatherList.filter(isValidWeatherData);
+  const isEmpty = validSavedWeatherList.length === 0;
+  const weather = !isEmpty ? validSavedWeatherList[Math.min(currentIndex, validSavedWeatherList.length - 1)] : null; 
   const current = weather?.current;
   const location = weather?.location;
   const forecast = weather?.forecast;
@@ -546,13 +576,13 @@ const Weather = () => {
          </div>
       </div>
       
-      {savedWeatherList.length > 1 && (
+      {validSavedWeatherList.length > 1 && (
           <motion.div 
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
               style={styles.dotsContainer}
           >
-              {savedWeatherList.map((_, idx) => (
+              {validSavedWeatherList.map((_, idx) => (
                   <motion.div 
                       key={idx}
                       layoutId={`dot-${idx}`}
@@ -667,7 +697,7 @@ const Weather = () => {
                               <span style={{color:'#888', marginLeft:'10px'}}>Search for a city...</span>
                           </div>
                           <div style={styles.savedList}>
-                              {savedWeatherList.map((city, idx) => (
+                               {validSavedWeatherList.map((city, idx) => (
                                   <div key={idx} style={styles.cityCard} onClick={() => { setCurrentIndex(idx); handleCloseCityManager(); }}>
                                       <div style={styles.cardLeft}>
                                           <span style={styles.cardCityName}>{city.location.name}</span>
@@ -679,7 +709,7 @@ const Weather = () => {
                                           <span style={styles.cardTemp}>{getTemp(city.current.temp_c)}°</span>
                                           <div style={{display:'flex', gap:'10px', alignItems:'center'}}>
                                               <span style={styles.cardHighLow}>{getTemp(city.forecast.forecastday[0].day.maxtemp_c)}° / {getTemp(city.forecast.forecastday[0].day.mintemp_c)}°</span>
-                                              {savedWeatherList.length > 1 && <MdDelete size={20} color="#ff6b6b" onClick={(e) => handleRemoveCity(e, idx)} />}
+                                              {validSavedWeatherList.length > 1 && <MdDelete size={20} color="#ff6b6b" onClick={(e) => handleRemoveCity(e, idx)} />}
                                           </div>
                                       </div>
                                   </div>

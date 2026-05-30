@@ -20,6 +20,7 @@ import SearchResults from './🧾Consumer_pages/🏠HomePageFeatures/SearchResul
 import Expenditure from './🧾Consumer_pages/📁Tools&utils/Expenditure';
 import CropExpenses from './🧾Consumer_pages/📁Tools&utils/CropExpenses'; 
 import Consumer_UserLocation from './🧾Consumer_pages/🏠HomePageFeatures/Consumer_UserLocation'; 
+import BannerPromo from './🧾Consumer_pages/🏠HomePageFeatures/BannerPromo';
 import ModernTech from './🧾Consumer_pages/📁AgriInsights/ModernTech';
 
 // --- NEW PAGES ---
@@ -178,6 +179,7 @@ function App() {
               {/* Utilities & Admin */}
               <Route path="/admin" element={<Admin />} />
               <Route path="/search" element={<SearchResults />} />
+              <Route path="/banner-promo" element={<BannerPromo />} />
               
               {/* SmartLens Scanner */}
               <Route path="/scanner" element={<SmartLens />} />
