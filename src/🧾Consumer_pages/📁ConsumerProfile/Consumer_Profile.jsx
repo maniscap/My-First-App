@@ -23,7 +23,7 @@ const pageStyle = {
 };
 
 // Menu card background set to match page background for smooth transition
-const menuCard = { width: '100%', maxWidth: '480px', background: '#f8f8f8', padding: '20px', minHeight: '100%', boxSizing:'border-box', display: 'flex', flexDirection: 'column' };
+const menuCard = { width: '100%', maxWidth: '480px', background: '#f8f8f8', padding: '20px', paddingBottom: '40px', minHeight: '100%', boxSizing:'border-box', display: 'flex', flexDirection: 'column' };
 
 // Sub page card retains white background and clean padding
 const subPageCard = { 
@@ -619,10 +619,11 @@ function Consumer_Profile() {
                 {/* BOTTOM ACTION SWITCH BUTTON */}
                 <button
                     onClick={handleSwitchToSeller}
+                    disabled={isTransforming}
                     style={{
                         width: '100%',
                         padding: '16px',
-                        background: 'linear-gradient(135deg, #2c3e50, #1a252f)',
+                        background: isTransforming ? '#7f8c8d' : 'linear-gradient(135deg, #2c3e50, #1a252f)',
                         color: 'white',
                         border: 'none',
                         borderRadius: '12px',
@@ -636,10 +637,11 @@ function Consumer_Profile() {
                         gap: '12px',
                         boxShadow: '0 4px 15px rgba(44, 62, 80, 0.25)',
                         transition: 'all 0.2s ease',
-                        marginBottom: '10px'
+                        marginBottom: '10px',
+                        opacity: isTransforming ? 0.8 : 1
                     }}
                 >
-                    Switch to Seller Mode 💼
+                    {isTransforming ? 'Switching Workspace...' : 'Switch to Seller Mode 💼'}
                 </button>
             </div>
 

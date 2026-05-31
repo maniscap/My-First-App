@@ -17,7 +17,7 @@ function Seller_Profile() {
     };
 
     return (
-        <div style={{ padding: '20px', maxWidth: '480px', margin: '0 auto', minHeight: '100vh', backgroundColor: '#f4f7f6', boxSizing: 'border-box', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ padding: '20px', paddingBottom: '40px', maxWidth: '480px', margin: '0 auto', minHeight: '100dvh', backgroundColor: '#f4f7f6', boxSizing: 'border-box', display: 'flex', flexDirection: 'column' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
                     <div 
@@ -49,10 +49,11 @@ function Seller_Profile() {
             {/* BOTTOM ALTERNATIVE WORKSPACE SWITCH BUTTON - ANCHORED AT ABSOLUTE BOTTOM OF VIEWPORT */}
             <button
                 onClick={handleSwitchToConsumer}
+                disabled={isTransforming}
                 style={{
                     width: '100%',
                     padding: '16px',
-                    background: 'linear-gradient(135deg, #2E7D32, #4CAF50)',
+                    background: isTransforming ? '#7f8c8d' : 'linear-gradient(135deg, #2E7D32, #4CAF50)',
                     color: 'white',
                     border: 'none',
                     borderRadius: '12px',
@@ -66,10 +67,11 @@ function Seller_Profile() {
                     gap: '12px',
                     boxShadow: '0 4px 15px rgba(46, 125, 50, 0.25)',
                     transition: 'all 0.2s ease',
-                    marginBottom: '10px'
+                    marginBottom: '10px',
+                    opacity: isTransforming ? 0.8 : 1
                 }}
             >
-                Switch to Consumer Mode 🌾
+                {isTransforming ? 'Switching Workspace...' : 'Switch to Consumer Mode 🌾'}
             </button>
 
             {/* SLEEK BRANDED WORKSPACE TRANSFORMATION OVERLAY */}

@@ -181,6 +181,12 @@ export default function BrandedTransition3D({ isVisible, targetMode }) {
 
     return (
         <>
+            {/* PRELOAD IMAGES TO PREVENT MOBILE LAG ON CLICK */}
+            <div style={{ display: 'none' }}>
+                <img src="/indian_farm_mural.png" alt="preload" />
+                <img src="/farm_wood.png" alt="preload" />
+            </div>
+            
             <style>{STYLES}</style>
             <AnimatePresence>
                 {isVisible && (
