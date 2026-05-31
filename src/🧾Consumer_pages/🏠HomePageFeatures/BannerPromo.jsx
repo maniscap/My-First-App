@@ -14,94 +14,87 @@ export const BannerWidget = ({
   isSearchFocused = false, 
   setIsSearchFocused = () => {} 
 }) => {
-  // Select sleek theme gradients based on active tab
+  // Select sleek theme solid colors based on active tab to blend with tabs perfectly
   const getBannerBackground = () => {
     if (activeTab === 'AgriInsights') {
-      return 'linear-gradient(135deg, #0EA5E9 0%, #38BDF8 100%)'; // Sky Blue
+      return '#0EA5E9'; // Sky Blue (Solid)
     }
     if (activeTab === 'Agri commerce') {
-      return 'linear-gradient(135deg, #0B0F19 0%, #1E1B4B 100%)'; // Obsidian Gold / Night
+      return '#0B0F19'; // Obsidian Gold / Night (Solid)
     }
     if (activeTab === 'tools and utils') {
-      return 'linear-gradient(135deg, #0F172A 0%, #334155 100%)'; // Winter Indigo / Slate
+      return '#0F172A'; // Winter Indigo / Slate (Solid)
     }
-    return 'linear-gradient(135deg, #1A2E26 0%, #2E4C3E 100%)'; // Farm Green
+    return '#1A2E26'; // Farm Green (Solid)
   };
 
   return (
-    <div style={{ 
-      width: '100%', 
-      margin: '16px 0 20px 0', /* Gap 1: 16px below top tabs | Gap 2: 20px above Bento Cards below */
-      padding: '0', /* Covers the edges at the right and left sides completely */
-      boxSizing: 'border-box',
-      position: 'relative', 
-      overflow: 'hidden', 
-      zIndex: 10 
-    }}>
-      <div style={{ 
+    <motion.div 
+      animate={{ background: getBannerBackground() }}
+      transition={{ duration: 0.4, ease: "easeInOut" }}
+      style={{ 
         width: '100%', 
-        height: '72px', /* Sleek compact height, not big at all, just enough for the search bar */
-        position: 'relative',
-        overflow: 'hidden',
-        background: getBannerBackground(),
-        borderRadius: '0', /* Touches left & right screen edges flat in mobile layout */
-        boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
-        transition: 'background 0.5s ease, box-shadow 0.3s ease',
+        height: '260px', /* Taller height, expanded to double size */
+        margin: '0 0 20px 0', /* REMOVED TOP MARGIN: 0px below tabs to merge seamlessly without gap */
+        padding: '0 15px', /* Elegant horizontal padding for inner content */
+        boxSizing: 'border-box',
+        position: 'relative', 
+        overflow: 'hidden', 
+        zIndex: 10,
+        borderRadius: '0 0 24px 24px', /* Top corners are straight, bottom corners are curved */
+        boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
         display: 'flex',
         alignItems: 'center',
-        justifyContent: 'center',
-        padding: '0 15px'
+        justifyContent: 'center'
       }}>
-        
-        {/* COMPACT HALF-SIZE SEARCH BAR FOR MOBILE LAYOUT AT THE TOP */}
+      
+      {/* COMPACT HALF-SIZE SEARCH BAR FOR MOBILE LAYOUT AT THE TOP */}
+      <div style={{
+        width: '90%',
+        maxWidth: '320px', /* Not that big, just half size, perfect for mobile layout */
+        boxSizing: 'border-box'
+      }}>
         <div style={{
-          width: '90%',
-          maxWidth: '320px', /* Not that big, just half size, perfect for mobile layout */
+          position: 'relative',
+          display: 'flex',
+          alignItems: 'center',
+          background: 'rgba(255, 255, 255, 0.15)',
+          backdropFilter: 'blur(15px)',
+          WebkitBackdropFilter: 'blur(15px)',
+          borderRadius: '10px',
+          padding: '7px 12px',
+          border: '1px solid rgba(255, 255, 255, 0.25)',
+          boxShadow: '0 4px 10px rgba(0, 0, 0, 0.1)',
+          color: '#ffffff',
+          transition: 'all 0.3s ease',
+          height: '34px',
           boxSizing: 'border-box'
         }}>
-          <div style={{
-            position: 'relative',
-            display: 'flex',
-            alignItems: 'center',
-            background: 'rgba(255, 255, 255, 0.15)',
-            backdropFilter: 'blur(15px)',
-            WebkitBackdropFilter: 'blur(15px)',
-            borderRadius: '10px',
-            padding: '7px 12px',
-            border: '1px solid rgba(255, 255, 255, 0.25)',
-            boxShadow: '0 4px 10px rgba(0, 0, 0, 0.1)',
-            color: '#ffffff',
-            transition: 'all 0.3s ease',
-            height: '34px',
-            boxSizing: 'border-box'
-          }}>
-             <Search size={15} color="#ffffff" style={{ marginRight: '8px', opacity: 0.9, flexShrink: 0 }} />
-             <input 
-                value={searchVal}
-                onChange={(e) => setSearchVal(e.target.value)}
-                onFocus={() => setIsSearchFocused(true)}
-                onBlur={() => setIsSearchFocused(false)}
-                style={{
-                  flex: 1,
-                  background: 'transparent',
-                  border: 'none',
-                  outline: 'none',
-                  color: '#ffffff',
-                  fontSize: '13px',
-                  padding: 0,
-                  fontWeight: '600'
-                }}
-                placeholder={
-                  activeTab === 'AgriInsights' ? "Search news, subsidies..." :
-                  activeTab === 'Agri commerce' ? "Search machinery, workers..." :
-                  "Search GPS tools, radio..."
-                }
-             />
-          </div>
+           <Search size={15} color="#ffffff" style={{ marginRight: '8px', opacity: 0.9, flexShrink: 0 }} />
+           <input 
+              value={searchVal}
+              onChange={(e) => setSearchVal(e.target.value)}
+              onFocus={() => setIsSearchFocused(true)}
+              onBlur={() => setIsSearchFocused(false)}
+              style={{
+                flex: 1,
+                background: 'transparent',
+                border: 'none',
+                outline: 'none',
+                color: '#ffffff',
+                fontSize: '13px',
+                padding: 0,
+                fontWeight: '600'
+              }}
+              placeholder={
+                activeTab === 'AgriInsights' ? "Search news, subsidies..." :
+                activeTab === 'Agri commerce' ? "Search machinery, workers..." :
+                "Search GPS tools, radio..."
+              }
+           />
         </div>
-
       </div>
-    </div>
+    </motion.div>
   );
 };
 

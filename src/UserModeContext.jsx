@@ -1,10 +1,18 @@
-import React, { createContext, useState, useContext } from 'react';
+import React, { createContext, useState, useContext, useEffect } from 'react';
 
 export const UserModeContext = createContext();
 
 export const UserModeProvider = ({ children }) => {
-  // false = Consumer Mode (Default) | true = Seller Mode
-  const [isSellerMode, setIsSellerMode] = useState(false);
+  // Initialize from localStorage, or default to false (Consumer Mode)
+  const [isSellerMode, setIsSellerMode] = useState(() => {
+    const savedMode = localStorage.getItem('app_isSellerMode');
+    return savedMode ? JSON.parse(savedMode) : false;
+  });
+
+  // Save to localStorage whenever the mode changes
+  useEffect(() => {
+    localStorage.setItem('app_isSellerMode', JSON.stringify(isSellerMode));
+  }, [isSellerMode]);
 
   const toggleUserMode = () => {
     setIsSellerMode((prevMode) => !prevMode);

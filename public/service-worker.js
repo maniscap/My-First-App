@@ -4,7 +4,7 @@
 
 // VERSION CONTROL: Increment these versions to force a complete cache reset.
 // This is the "Master Reset Switch" for the application.
-const CACHE_VERSION = 9;
+const CACHE_VERSION = 11;
 const CACHE_NAME = `farmcap-core-v${CACHE_VERSION}`; 
 const DYNAMIC_CACHE = `farmcap-dynamic-images-v${CACHE_VERSION}`;
 

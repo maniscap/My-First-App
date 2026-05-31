@@ -80,19 +80,31 @@ const getThemeColors = (tab) => {
   if (tab === 'AgriInsights') return { 
     topHeader: '#0EA5E9', 
     bottomMain: 'var(--bg-color)', 
-    topImg: 'linear-gradient(180deg, #0EA5E9 0%, #38BDF8 40%, #BAE6FD 100%)' 
+    topImg: 'linear-gradient(180deg, #0EA5E9 0%, #38BDF8 40%, #BAE6FD 100%)',
+    tabGradient: '#0EA5E9',
+    tabColor: '#0EA5E9'
   }; // Vibrant Sky Blue Theme
   if (tab === 'Agri commerce') return { 
     topHeader: '#000000', 
     bottomMain: 'var(--bg-color)', 
-    topImg: 'linear-gradient(180deg, #000000 0%, #020202 50%, #050505 100%)' 
+    topImg: 'linear-gradient(180deg, #000000 0%, #020202 50%, #050505 100%)',
+    tabGradient: '#0B0F19',
+    tabColor: '#0B0F19'
   }; // Night Sky Theme
   if (tab === 'tools and utils') return { 
     topHeader: '#0B101E', 
     bottomMain: 'var(--bg-color)', 
-    topImg: 'linear-gradient(180deg, #0B101E 0%, #1B273D 60%, #2A3B5C 100%)'
+    topImg: 'linear-gradient(180deg, #0B101E 0%, #1B273D 60%, #2A3B5C 100%)',
+    tabGradient: '#0F172A',
+    tabColor: '#0F172A'
   }; 
-  return { topHeader: '#0F172A', bottomMain: 'var(--bg-color)', topImg: 'none' };
+  return { 
+    topHeader: '#0F172A', 
+    bottomMain: 'var(--bg-color)', 
+    topImg: 'none',
+    tabGradient: '#1A2E26',
+    tabColor: '#1A2E26'
+  };
 };
 
 function Consumer_HomePage() {
@@ -319,9 +331,10 @@ function Consumer_HomePage() {
   };
 
   const activeTheme = getThemeColors(activeTab);
+  const activeIndex = TABS.indexOf(activeTab);
 
   return (
-    <div style={{...pageStyle, background: 'var(--theme-bottom-bg)', transition: 'background-color 0.5s ease', '--theme-bottom-bg': activeTheme.bottomMain, '--theme-top-bg': activeTheme.topHeader, '--theme-top-img': activeTheme.topImg}}>
+    <div style={{...pageStyle, background: 'var(--theme-bottom-bg)', transition: 'background-color 0.5s ease', '--theme-bottom-bg': activeTheme.bottomMain, '--theme-top-bg': activeTheme.topHeader, '--theme-top-img': activeTheme.topImg, '--active-tab-gradient': activeTheme.tabGradient, '--active-tab-solid-color': activeTheme.tabColor}}>
       
       {/* 1. TOP SECTION (Dynamic Header) */}
       <div style={{...topSectionWrapper, backgroundColor: 'var(--theme-top-bg)', backgroundImage: 'var(--theme-top-img)', backgroundSize: 'cover', transition: 'background-color 0.5s ease'}}>
@@ -502,7 +515,7 @@ function Consumer_HomePage() {
         </div>
 
         {/* BROWSER-LIKE TABS */}
-        <div style={{ paddingTop: '8px', paddingBottom: '0', position: 'relative', zIndex: 1 }}>
+        <div style={{ paddingTop: '8px', paddingBottom: '0', position: 'relative', zIndex: 10 }}>
           <style>{`
             @import url('https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@700;800;900&display=swap');
             
@@ -874,10 +887,10 @@ function Consumer_HomePage() {
               left: 0;
               right: 0;
               bottom: 0;
-              background: var(--theme-bottom-bg);
+              background: var(--active-tab-gradient);
               border-radius: 16px 16px 0 0;
               z-index: 0;
-              transition: background-color 0.5s ease;
+              transition: background 0.5s ease, background-color 0.5s ease;
             }
             .active-tab-bg::before {
               content: "";
@@ -887,7 +900,7 @@ function Consumer_HomePage() {
               width: 16px;
               height: 16px;
               border-bottom-right-radius: 16px;
-              box-shadow: 10px 10px 0 10px var(--theme-bottom-bg);
+              box-shadow: 10px 10px 0 10px var(--active-tab-solid-color);
               pointer-events: none;
               transition: box-shadow 0.5s ease;
             }
@@ -899,12 +912,37 @@ function Consumer_HomePage() {
               width: 16px;
               height: 16px;
               border-bottom-left-radius: 16px;
-              box-shadow: -10px 10px 0 10px var(--theme-bottom-bg);
+              box-shadow: -10px 10px 0 10px var(--active-tab-solid-color);
               pointer-events: none;
               transition: box-shadow 0.5s ease;
             }
           `}</style>
-          <div style={tabCardsContainer}>
+          <div 
+            style={tabCardsContainer}
+            onClick={(e) => {
+              const rect = e.currentTarget.getBoundingClientRect();
+              const clickX = e.clientX - rect.left;
+              const zoneIndex = Math.min(2, Math.max(0, Math.floor((clickX / rect.width) * 3)));
+              changeTab(TABS[zoneIndex]);
+            }}
+          >
+            {/* SINGLE PERSISTENT SLIDING ACTIVE INDICATOR (Zero-Stretch Spring Slide) */}
+            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, padding: '0 10px', pointerEvents: 'none', zIndex: 0 }}>
+              <motion.div 
+                className="active-tab-bg" 
+                animate={{ 
+                  x: `calc(${activeIndex} * (100% + 10px))`,
+                  background: activeTheme.tabGradient
+                }}
+                transition={{ type: "spring", stiffness: 380, damping: 35 }}
+                style={{
+                  width: 'calc((100% - 20px) / 3)',
+                  height: '100%',
+                  position: 'relative'
+                }}
+              />
+            </div>
+
             {TABS.map(tab => {
               const isActive = activeTab === tab;
               const tabName = tab === 'AgriInsights' ? '🌱 Insights' : tab === 'Agri commerce' ? '🛒 Commerce' : '🔧 Tools';
@@ -934,9 +972,6 @@ function Consumer_HomePage() {
                   {/* INACTIVE BACKGROUND (Isolated layer, strictly smaller to give the float effect) */}
                 <div style={{ position: 'absolute', top: '10px', left: 0, right: 0, bottom: '8px', background: 'var(--card-color)', borderRadius: '12px', border: '1px solid var(--border-color)', boxShadow: '0 4px 10px rgba(0,0,0,0.05)', opacity: isActive ? 0 : 1, transition: 'opacity 0.3s ease', zIndex: 0 }} />
 
-                  {/* ACTIVE BACKGROUND (FRAMER MOTION) */}
-                  {isActive && <motion.div layoutId="activeTabIndicator" className="active-tab-bg" transition={{ type: "spring", stiffness: 300, damping: 30 }} />}
-
                   {/* TEXT CONTENT */}
                   <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', lineHeight: '1.1', position: 'relative', zIndex: 1, marginTop: isActive ? '2px' : '-2px' }}>
                      <span style={getTopTextStyle(tab, isActive)}>Agri</span>
@@ -963,7 +998,7 @@ function Consumer_HomePage() {
 
         {/* SWIPEABLE BENTO GRID AREA */}
         <div {...swipeHandlers} style={{ overflowX: 'hidden', width: '100%', minHeight: '350px' }}>
-          <AnimatePresence mode="wait">
+          <AnimatePresence mode="popLayout">
             <motion.div 
               key={activeTab}
               initial={{ opacity: 0, x: direction * 30 }}
@@ -1197,7 +1232,7 @@ const headerWrapper = { padding: '25px 20px 10px 20px' };
 const topRow = { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' };
 const locationClickableArea = { display:'flex', flexDirection:'column', justifyContent:'center', cursor: 'pointer' };
 const profileCircle = { width: '48px', height: '48px', borderRadius: '50%', background: 'rgba(0,0,0,0.05)', backdropFilter: 'blur(10px)', display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none', border: '1px solid rgba(0,0,0,0.1)' };
-const tabCardsContainer = { display: 'flex', gap: '10px', padding: '0 10px', maxWidth: '1000px', margin: '0 auto', alignItems: 'flex-end' };
+const tabCardsContainer = { display: 'flex', gap: '10px', padding: '0 10px', maxWidth: '1000px', margin: '0 auto', alignItems: 'flex-end', position: 'relative' };
 const inactiveCardTabStyle = { flex: 1, height: '75px', background: 'var(--card-color)', color: 'var(--text-color)', border: '2px solid transparent', borderRadius: '20px', padding: '8px 4px', cursor: 'pointer', textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', whiteSpace: 'normal', lineHeight: '1.2', transition: 'all 0.3s ease', boxShadow: 'none' };
 const bottomContentContainer = { background: 'var(--bg-color)', flex: 1, minHeight: '60vh', paddingTop: '0', position: 'relative', zIndex: 9 };
 const bentoGrid = { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', padding: '0 10px 24px 10px', maxWidth: '1000px', margin: '0 auto' };
@@ -1213,17 +1248,24 @@ const weatherContainer = { padding: '0 10px 100px 10px', maxWidth: '1000px', mar
 
 const getTopTextStyle = (tab, isActive) => {
   return {
-    color: 'var(--subtle-text)', fontSize: '10px', fontWeight: '900', textTransform: 'uppercase', letterSpacing: '1px', transition: 'color 0.5s ease',
+    color: isActive ? 'rgba(255, 255, 255, 0.85)' : 'var(--subtle-text)', 
+    fontSize: '10px', 
+    fontWeight: '900', 
+    textTransform: 'uppercase', 
+    letterSpacing: '1px', 
+    transition: 'color 0.5s ease',
     fontFamily: '"Nunito", sans-serif'
   };
 };
 
 const getBottomTextStyle = (tab, isActive) => {
   return {
-    color: 'var(--text-color)',
-    fontSize: isActive ? '18px' : '15px', fontWeight: 'normal', letterSpacing: '0.5px', 
+    color: isActive ? '#ffffff' : 'var(--text-color)',
+    fontSize: isActive ? '18px' : '15px', 
+    fontWeight: isActive ? '800' : 'normal', 
+    letterSpacing: '0.5px', 
     transition: 'all 0.5s ease',
-    textShadow: 'none'
+    textShadow: isActive ? '0 1px 3px rgba(0,0,0,0.2)' : 'none'
   };
 };
 

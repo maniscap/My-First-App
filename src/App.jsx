@@ -37,10 +37,20 @@ import Freelancing from './🧾Consumer_pages/📁AgriCommerce/Freelancing';
 import GPSMeasurement from './🧾Consumer_pages/📁Tools&utils/GPSMeasurement';
 
 // --- SELLER PAGES ---
-import Seller_HomePage from './🧾Seller_pages/Seller_HomePage';
-import Seller_Profile from './🧾Seller_pages/Seller_Profile';
-import SellerProfile_Setup from './🧾Seller_pages/SellerProfile_Setup';
-import Seller_NotificationsPage from './🧾Seller_pages/Seller_NotificationsPage';
+import Seller_HomePage from './🧾Seller_pages/📁Seller_Homepagethings/Seller_HomePage';
+import Seller_Profile from './🧾Seller_pages/📁Seller_Homepagethings/Seller_Profile';
+import SellerProfile_Setup from './🧾Seller_pages/📁Seller_Homepagethings/SellerProfile_Setup';
+import Seller_NotificationsPage from './🧾Seller_pages/📁seller_BottomNavigation/Seller_NotificationsPage';
+import Seller_Messages from './🧾Seller_pages/📁seller_BottomNavigation/Seller_Messages';
+import Seller_Settings from './🧾Seller_pages/📁seller_BottomNavigation/Seller_Settings';
+import Seller_MoreMenu from './🧾Seller_pages/📁seller_BottomNavigation/Seller_MoreMenu';
+import SellerBottomNavigation from './🧾Seller_pages/📁seller_BottomNavigation/SellerBottomNavigation';
+
+import Freelancing_ListingForm from './🧾Seller_pages/📁ListingForms/Freelancing_ListingForm';
+import HireMachinary_ListingForm from './🧾Seller_pages/📁ListingForms/HireMachinary_ListingForm';
+import BusinessZone_ListingForm from './🧾Seller_pages/📁ListingForms/BusinessZone_ListingForm';
+import HireWorkers_ListingForm from './🧾Seller_pages/📁ListingForms/HireWorkers_ListingForm';
+import FarmFresh_ListingForm from './🧾Seller_pages/📁ListingForms/FarmFresh_ListingForm';
 
 // --- IMPORT COMPONENTS ---
 import ChatBot from './🔧Consumer_Components/ChatBot';
@@ -121,6 +131,16 @@ function App() {
               <Route path="/profile" element={<Seller_Profile />} />
               <Route path="/seller-setup" element={<SellerProfile_Setup />} />
               <Route path="/seller-notifications" element={<Seller_NotificationsPage />} />
+              <Route path="/seller-messages" element={<Seller_Messages />} />
+              <Route path="/seller-settings" element={<Seller_Settings />} />
+              <Route path="/seller-more" element={<Seller_MoreMenu />} />
+
+              {/* --- ADD NEW LISTING FORMS --- */}
+              <Route path="/add-freelancing" element={<Freelancing_ListingForm />} />
+              <Route path="/add-machinery" element={<HireMachinary_ListingForm />} />
+              <Route path="/add-business" element={<BusinessZone_ListingForm />} />
+              <Route path="/add-workers" element={<HireWorkers_ListingForm />} />
+              <Route path="/add-farm-fresh" element={<FarmFresh_ListingForm />} />
 
               <Route path="*" element={
                 <div style={{ textAlign: 'center', marginTop: '100px', color: theme.colors.text }}>
@@ -202,7 +222,7 @@ function App() {
           )}
 
           {/* --- BOTTOM NAVIGATION DOCK --- */}
-          {!isSellerMode && <Consumer_BottomNavigation />}
+          {isSellerMode ? <SellerBottomNavigation /> : <Consumer_BottomNavigation />}
           
         </div>
       )}

@@ -253,7 +253,7 @@ const Consumer_BottomNavigation = () => {
           content: '';
           position: absolute;
           top: 0px; 
-          right: 100%;
+          right: calc(100% - 1px); /* Overlap by 1px to prevent sub-pixel rendering gap/line */
           width: 100vw;
           height: 66px;
           background: var(--text-color);
@@ -265,7 +265,7 @@ const Consumer_BottomNavigation = () => {
           content: '';
           position: absolute;
           top: 0px;
-          left: 100%;
+          left: calc(100% - 1px); /* Overlap by 1px to prevent sub-pixel rendering gap/line */
           width: 100vw;
           height: 66px;
           background: var(--text-color);

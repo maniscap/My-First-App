@@ -16,10 +16,23 @@ service cloud.firestore {
       allow write: if request.auth != null;
     }
 
-    // Users can only edit their own profile info
+    // Users can only view or edit their own profile info to protect GPS/address privacy
     match /users/{userId} {
-      allow read: if true;
-      allow write: if request.auth != null && request.auth.uid == userId;
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Orders collection: Contains shipping addresses & GPS. Only the buyer and seller can access.
+    match /orders/{orderId} {
+      allow read: if request.auth != null && (request.auth.uid == resource.data.buyerId || request.auth.uid == resource.data.sellerId);
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.buyerId;
+      allow update, delete: if request.auth != null && (request.auth.uid == resource.data.buyerId || request.auth.uid == resource.data.sellerId);
+    }
+
+    // Leads / Interests collection: Created when a consumer clicks "I am interested"
+    match /leads/{leadId} {
+      allow read: if request.auth != null && (request.auth.uid == resource.data.buyerId || request.auth.uid == resource.data.sellerId);
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.buyerId;
+      allow update, delete: if request.auth != null && (request.auth.uid == resource.data.buyerId || request.auth.uid == resource.data.sellerId);
     }
   }
 }
