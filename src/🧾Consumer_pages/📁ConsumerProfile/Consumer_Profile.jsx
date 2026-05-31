@@ -90,7 +90,12 @@ function Consumer_Profile() {
         setIsTransforming(true);
         setTimeout(() => {
             toggleUserMode();
-            navigate('/Seller_HomePage');
+            const status = localStorage.getItem('mock_seller_status');
+            if (status === 'approved') {
+                navigate('/Seller_HomePage');
+            } else {
+                navigate('/seller-setup');
+            }
         }, 3500);
     };
 

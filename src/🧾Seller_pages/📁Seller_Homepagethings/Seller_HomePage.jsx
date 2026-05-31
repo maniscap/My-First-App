@@ -1,5 +1,5 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { CircleUserRound } from 'lucide-react';
 import Seller_BannerPromo from './Seller_BannerPromo';
 
@@ -13,14 +13,45 @@ function Seller_HomePage() {
         freelance: "https://images.unsplash.com/photo-1601584115197-04ecc0da31d7?w=500&q=80"   /* Delivery truck / Logistics */
     };
 
+    const navigate = useNavigate();
+    const [userLocation, setUserLocation] = useState('Select Shop Location'); 
+    const [locationTitle, setLocationTitle] = useState('My Shop'); 
+
+    useEffect(() => {
+        const loadLocation = () => {
+            const savedLoc = localStorage.getItem('userLocation'); 
+            const savedTitle = localStorage.getItem('locationTitle');
+            if (savedLoc) {
+                setUserLocation(savedLoc);
+                if(savedTitle) setLocationTitle(savedTitle); 
+            }
+        };
+        loadLocation();
+        window.addEventListener('storage', loadLocation);
+
+        // Security Check: Ensure user is approved!
+        const status = localStorage.getItem('mock_seller_status');
+        if (status !== 'approved') {
+            navigate('/seller-setup');
+        }
+
+        return () => window.removeEventListener('storage', loadLocation);
+    }, [navigate]);
+
     return (
         <div style={{ backgroundColor: '#f4f7f6', minHeight: '100vh', padding: '20px', paddingBottom: '100px', boxSizing: 'border-box' }}>
             
             {/* --- TOP HEADER --- */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#fff', padding: '15px 20px', borderRadius: '12px', boxShadow: '0 2px 10px rgba(0,0,0,0.05)', marginBottom: '20px' }}>
-                <div>
-                    <h1 style={{ margin: 0, fontSize: '20px', color: '#2c3e50', fontWeight: '800' }}>🛍️ Seller Workspace</h1>
-                    <p style={{ margin: '2px 0 0 0', fontSize: '11px', color: '#7f8c8d', fontStyle: 'italic' }}>FarmCap: Growing Smarter, Together 🌾</p>
+                <div onClick={() => navigate('/seller-location')} style={{ cursor: 'pointer', display: 'flex', flexDirection: 'column' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                        <span style={{color:'#4CAF50', fontSize: '18px'}}>📍</span>
+                        <h1 style={{ margin: 0, fontSize: '18px', color: '#2c3e50', fontWeight: '800' }}>{locationTitle}</h1>
+                        <span style={{ fontSize: '12px', color: '#2c3e50' }}>▼</span>
+                    </div>
+                    <p style={{ margin: '2px 0 0 26px', fontSize: '11px', color: '#7f8c8d', width: '200px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {userLocation}
+                    </p>
                 </div>
                 
                 <div style={{ display: 'flex', alignItems: 'center', gap: '25px' }}>
