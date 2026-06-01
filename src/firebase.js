@@ -1,6 +1,6 @@
 import { initializeApp } from "firebase/app";
-import { getFirestore } from "firebase/firestore";
-import { getAuth, GoogleAuthProvider } from "firebase/auth"; // <--- NEW IMPORTS
+import { initializeFirestore, memoryLocalCache } from "firebase/firestore";
+import { getAuth, GoogleAuthProvider } from "firebase/auth"; 
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
@@ -15,8 +15,13 @@ const firebaseConfig = {
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-const auth = getAuth(app); // <--- Enable Auth
-const googleProvider = new GoogleAuthProvider(); // <--- Enable Google
+
+// CRITICAL FIX: Bypass the persistent IndexedDB cache to prevent "BloomFilterError"
+const db = initializeFirestore(app, {
+  localCache: memoryLocalCache()
+});
+
+const auth = getAuth(app); 
+const googleProvider = new GoogleAuthProvider(); 
 
 export { db, auth, googleProvider };
