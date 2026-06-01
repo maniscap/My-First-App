@@ -29,12 +29,6 @@ function Seller_HomePage() {
         loadLocation();
         window.addEventListener('storage', loadLocation);
 
-        // Security Check: Ensure user is approved!
-        const status = localStorage.getItem('mock_seller_status');
-        if (status !== 'approved') {
-            navigate('/seller-setup');
-        }
-
         return () => window.removeEventListener('storage', loadLocation);
     }, [navigate]);
 
