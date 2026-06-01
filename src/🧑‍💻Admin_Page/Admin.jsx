@@ -63,10 +63,19 @@ function Admin() {
   }, [isAuthenticated]);
 
   // --- ACTION HANDLERS ---
-  const handleReject = async (id) => {
-    if(window.confirm("Are you sure you want to REJECT this application?")) {
-        const sellerRef = doc(db, "seller_applications", id);
-        await updateDoc(sellerRef, { status: 'rejected' });
+  const handleReject = async (app) => {
+    if(window.confirm("Are you sure you want to REJECT this application? Their personal data will be erased from the database.")) {
+        const sellerRef = doc(db, "seller_applications", app.id);
+        
+        const updates = { status: 'rejected' };
+        // Wipe all personal data
+        Object.keys(app).forEach(key => {
+            if (key !== 'id' && key !== 'status' && key !== 'accountType' && key !== 'sellerId') {
+                updates[key] = deleteField();
+            }
+        });
+        
+        await updateDoc(sellerRef, updates);
         fetchData();
     }
   };
@@ -213,7 +222,7 @@ function Admin() {
                                   key={app.id} 
                                   app={app} 
                                   onApprove={() => handleApproveSeller(app)} 
-                                  onReject={() => handleReject(app.id)} 
+                                  onReject={() => handleReject(app)} 
                               />
                           ))}
                       </div>
@@ -386,6 +395,33 @@ const styles = `
   }
 
   * { box-sizing: border-box; }
+
+  /* LOGIN PAGE STYLES */
+  .admin-login-page {
+      display: flex; align-items: center; justify-content: center;
+      min-height: 100vh; background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+      font-family: 'Inter', sans-serif;
+  }
+  .login-card {
+      background: white; padding: 40px; border-radius: 24px; width: 100%; max-width: 400px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.4); text-align: center;
+  }
+  .login-header .shield-icon { font-size: 48px; margin-bottom: 10px; }
+  .login-header h2 { margin: 0 0 5px; color: #0f172a; font-size: 24px; font-weight: 800; }
+  .login-header p { margin: 0 0 30px; color: #64748b; font-size: 14px; }
+  
+  .login-form { display: flex; flex-direction: column; gap: 20px; }
+  .login-form .input-group { display: flex; flex-direction: column; text-align: left; gap: 6px; }
+  .login-form label { font-size: 12px; font-weight: 700; color: #475569; text-transform: uppercase; }
+  .login-form input {
+      padding: 14px 16px; border-radius: 12px; border: 2px solid #e2e8f0; font-size: 15px; outline: none; transition: 0.2s;
+  }
+  .login-form input:focus { border-color: var(--primary); box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1); }
+  .btn-login {
+      padding: 14px; background: var(--primary); color: white; border: none; border-radius: 12px;
+      font-size: 16px; font-weight: 800; cursor: pointer; transition: 0.2s; margin-top: 10px;
+  }
+  .btn-login:hover { background: var(--primary-dark); transform: translateY(-2px); }
 
   /* DASHBOARD LAYOUT */
   .admin-dashboard {
