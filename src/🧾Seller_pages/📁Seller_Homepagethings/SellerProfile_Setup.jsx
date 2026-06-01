@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Building2, User, ShieldCheck, Clock, ChevronLeft, UploadCloud, MapPin, Briefcase, CheckCircle2 } from 'lucide-react';
 import { db } from '../../firebase';
-import { collection, addDoc } from 'firebase/firestore';
+import { collection, addDoc, getDoc, doc } from 'firebase/firestore';
 
 function SellerProfile_Setup() {
     const navigate = useNavigate();
@@ -16,6 +16,25 @@ function SellerProfile_Setup() {
     // Check if already applied
     const indId = localStorage.getItem('seller_individual_app_id');
     const orgId = localStorage.getItem('seller_organisation_app_id');
+    
+    const [indApp, setIndApp] = useState(null);
+    const [orgApp, setOrgApp] = useState(null);
+    const [loadingData, setLoadingData] = useState(true);
+
+    useEffect(() => {
+        const fetchStatus = async () => {
+            if (indId) {
+                const docSnap = await getDoc(doc(db, 'seller_applications', indId));
+                if (docSnap.exists()) setIndApp(docSnap.data());
+            }
+            if (orgId) {
+                const docSnap = await getDoc(doc(db, 'seller_applications', orgId));
+                if (docSnap.exists()) setOrgApp(docSnap.data());
+            }
+            setLoadingData(false);
+        };
+        fetchStatus();
+    }, [indId, orgId]);
     
     // Form Data State
     const [formData, setFormData] = useState({
@@ -204,47 +223,99 @@ function SellerProfile_Setup() {
                 
                 {/* Step 1: Choose Account Type */}
                 {!accountType ? (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                        <h3 style={{ margin: '10px 0', fontSize: '18px', color: '#1e293b', fontWeight: '800' }}>Select Account Type</h3>
-                        
-                        <div 
-                            onClick={() => {
-                                if (indId) alert("You already have an Individual Profile application.");
-                                else setAccountType('individual');
-                            }}
-                            style={{ backgroundColor: '#fff', padding: '30px', borderRadius: '24px', boxShadow: '0 8px 30px rgba(2, 132, 199, 0.1)', cursor: indId ? 'not-allowed' : 'pointer', opacity: indId ? 0.6 : 1, border: '2px solid transparent', transition: 'all 0.3s ease', position: 'relative', overflow: 'hidden' }}
-                        >
-                            <div style={{ position: 'absolute', top: 0, right: 0, width: '100px', height: '100px', background: 'radial-gradient(circle, rgba(2,132,199,0.1) 0%, rgba(2,132,199,0) 70%)', transform: 'translate(30%, -30%)' }}></div>
-                            <div style={{ width: '60px', height: '60px', backgroundColor: '#e0f2fe', borderRadius: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '20px' }}>
-                                <User size={32} color="#0284c7" />
-                            </div>
-                            <h4 style={{ margin: '0 0 8px', fontSize: '20px', fontWeight: '800', color: '#0f172a' }}>Single Person</h4>
-                            {indId ? (
-                                <p style={{ margin: 0, fontSize: '14px', color: '#dc2626', fontWeight: '700' }}>Application in Process / Submitted</p>
+                    loadingData ? (
+                        <div style={{ textAlign: 'center', padding: '40px', color: '#64748b' }}>Loading profile status...</div>
+                    ) : (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                            <h3 style={{ margin: '10px 0', fontSize: '18px', color: '#1e293b', fontWeight: '800' }}>Select Account Type</h3>
+                            
+                            {/* INDIVIDUAL CARD */}
+                            {indApp?.status === 'approved' ? (
+                                <div style={{ backgroundColor: '#ecfdf5', padding: '25px', borderRadius: '24px', boxShadow: '0 8px 30px rgba(16, 185, 129, 0.1)', border: '2px solid #a7f3d0' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '15px' }}>
+                                        <div style={{ width: '50px', height: '50px', backgroundColor: '#10b981', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                            <ShieldCheck size={28} color="#fff" />
+                                        </div>
+                                        <div>
+                                            <h4 style={{ margin: '0 0 4px', fontSize: '18px', fontWeight: '800', color: '#065f46' }}>Single Person Profile</h4>
+                                            <span style={{ fontSize: '12px', background: '#34d399', color: '#fff', padding: '2px 8px', borderRadius: '12px', fontWeight: 'bold' }}>Approved</span>
+                                        </div>
+                                    </div>
+                                    <div style={{ background: '#fff', padding: '15px', borderRadius: '12px' }}>
+                                        <p style={{ margin: '0 0 5px', fontSize: '14px', color: '#047857' }}><strong>Name:</strong> {indApp.fullName}</p>
+                                        <p style={{ margin: '0 0 5px', fontSize: '14px', color: '#047857' }}><strong>ID:</strong> {indApp.sellerId}</p>
+                                        <p style={{ margin: '0 0 5px', fontSize: '14px', color: '#047857' }}><strong>Address:</strong> {indApp.village}, {indApp.district}</p>
+                                        <p style={{ margin: '0', fontSize: '14px', color: '#047857' }}><strong>Interests:</strong> {indApp.categories?.join(', ')}</p>
+                                    </div>
+                                </div>
                             ) : (
-                                <p style={{ margin: 0, fontSize: '14px', color: '#64748b', lineHeight: '1.5' }}>Best for individual farmers, independent workers, or sole machinery owners.</p>
+                                <div 
+                                    onClick={() => {
+                                        if (indApp?.status === 'pending_approval') alert("Your Individual Profile application is under review.");
+                                        else setAccountType('individual');
+                                    }}
+                                    style={{ backgroundColor: '#fff', padding: '30px', borderRadius: '24px', boxShadow: '0 8px 30px rgba(2, 132, 199, 0.1)', cursor: indApp?.status === 'pending_approval' ? 'not-allowed' : 'pointer', opacity: indApp?.status === 'pending_approval' ? 0.6 : 1, border: '2px solid transparent', transition: 'all 0.3s ease', position: 'relative', overflow: 'hidden' }}
+                                >
+                                    <div style={{ position: 'absolute', top: 0, right: 0, width: '100px', height: '100px', background: 'radial-gradient(circle, rgba(2,132,199,0.1) 0%, rgba(2,132,199,0) 70%)', transform: 'translate(30%, -30%)' }}></div>
+                                    <div style={{ width: '60px', height: '60px', backgroundColor: '#e0f2fe', borderRadius: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '20px' }}>
+                                        <User size={32} color="#0284c7" />
+                                    </div>
+                                    <h4 style={{ margin: '0 0 8px', fontSize: '20px', fontWeight: '800', color: '#0f172a' }}>Single Person</h4>
+                                    
+                                    {indApp?.status === 'pending_approval' ? (
+                                        <p style={{ margin: 0, fontSize: '14px', color: '#d97706', fontWeight: '700' }}>Application in Process</p>
+                                    ) : indApp?.status === 'rejected' ? (
+                                        <p style={{ margin: 0, fontSize: '14px', color: '#dc2626', fontWeight: '700' }}>Previous Application Rejected. Click to Re-apply.</p>
+                                    ) : (
+                                        <p style={{ margin: 0, fontSize: '14px', color: '#64748b', lineHeight: '1.5' }}>Best for individual farmers, independent workers, or sole machinery owners.</p>
+                                    )}
+                                </div>
                             )}
-                        </div>
 
-                        <div 
-                            onClick={() => {
-                                if (orgId) alert("You already have an Organisation Profile application.");
-                                else setAccountType('organisation');
-                            }}
-                            style={{ backgroundColor: '#fff', padding: '30px', borderRadius: '24px', boxShadow: '0 8px 30px rgba(67, 56, 202, 0.1)', cursor: orgId ? 'not-allowed' : 'pointer', opacity: orgId ? 0.6 : 1, border: '2px solid transparent', transition: 'all 0.3s ease', position: 'relative', overflow: 'hidden' }}
-                        >
-                            <div style={{ position: 'absolute', top: 0, right: 0, width: '100px', height: '100px', background: 'radial-gradient(circle, rgba(67,56,202,0.1) 0%, rgba(67,56,202,0) 70%)', transform: 'translate(30%, -30%)' }}></div>
-                            <div style={{ width: '60px', height: '60px', backgroundColor: '#eef2ff', borderRadius: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '20px' }}>
-                                <Building2 size={32} color="#4338ca" />
-                            </div>
-                            <h4 style={{ margin: '0 0 8px', fontSize: '20px', fontWeight: '800', color: '#0f172a' }}>Organisation</h4>
-                            {orgId ? (
-                                <p style={{ margin: 0, fontSize: '14px', color: '#dc2626', fontWeight: '700' }}>Application in Process / Submitted</p>
+                            {/* ORGANISATION CARD */}
+                            {orgApp?.status === 'approved' ? (
+                                <div style={{ backgroundColor: '#ecfdf5', padding: '25px', borderRadius: '24px', boxShadow: '0 8px 30px rgba(16, 185, 129, 0.1)', border: '2px solid #a7f3d0' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '15px' }}>
+                                        <div style={{ width: '50px', height: '50px', backgroundColor: '#10b981', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                            <ShieldCheck size={28} color="#fff" />
+                                        </div>
+                                        <div>
+                                            <h4 style={{ margin: '0 0 4px', fontSize: '18px', fontWeight: '800', color: '#065f46' }}>Organisation Profile</h4>
+                                            <span style={{ fontSize: '12px', background: '#34d399', color: '#fff', padding: '2px 8px', borderRadius: '12px', fontWeight: 'bold' }}>Approved</span>
+                                        </div>
+                                    </div>
+                                    <div style={{ background: '#fff', padding: '15px', borderRadius: '12px' }}>
+                                        <p style={{ margin: '0 0 5px', fontSize: '14px', color: '#047857' }}><strong>Company:</strong> {orgApp.companyName}</p>
+                                        <p style={{ margin: '0 0 5px', fontSize: '14px', color: '#047857' }}><strong>ID:</strong> {orgApp.sellerId}</p>
+                                        <p style={{ margin: '0 0 5px', fontSize: '14px', color: '#047857' }}><strong>Address:</strong> {orgApp.village}, {orgApp.district}</p>
+                                        <p style={{ margin: '0', fontSize: '14px', color: '#047857' }}><strong>Interests:</strong> {orgApp.categories?.join(', ')}</p>
+                                    </div>
+                                </div>
                             ) : (
-                                <p style={{ margin: 0, fontSize: '14px', color: '#64748b', lineHeight: '1.5' }}>Best for registered farming co-ops, rental businesses, and suppliers.</p>
+                                <div 
+                                    onClick={() => {
+                                        if (orgApp?.status === 'pending_approval') alert("Your Organisation Profile application is under review.");
+                                        else setAccountType('organisation');
+                                    }}
+                                    style={{ backgroundColor: '#fff', padding: '30px', borderRadius: '24px', boxShadow: '0 8px 30px rgba(67, 56, 202, 0.1)', cursor: orgApp?.status === 'pending_approval' ? 'not-allowed' : 'pointer', opacity: orgApp?.status === 'pending_approval' ? 0.6 : 1, border: '2px solid transparent', transition: 'all 0.3s ease', position: 'relative', overflow: 'hidden' }}
+                                >
+                                    <div style={{ position: 'absolute', top: 0, right: 0, width: '100px', height: '100px', background: 'radial-gradient(circle, rgba(67,56,202,0.1) 0%, rgba(67,56,202,0) 70%)', transform: 'translate(30%, -30%)' }}></div>
+                                    <div style={{ width: '60px', height: '60px', backgroundColor: '#eef2ff', borderRadius: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '20px' }}>
+                                        <Building2 size={32} color="#4338ca" />
+                                    </div>
+                                    <h4 style={{ margin: '0 0 8px', fontSize: '20px', fontWeight: '800', color: '#0f172a' }}>Organisation</h4>
+                                    
+                                    {orgApp?.status === 'pending_approval' ? (
+                                        <p style={{ margin: 0, fontSize: '14px', color: '#d97706', fontWeight: '700' }}>Application in Process</p>
+                                    ) : orgApp?.status === 'rejected' ? (
+                                        <p style={{ margin: 0, fontSize: '14px', color: '#dc2626', fontWeight: '700' }}>Previous Application Rejected. Click to Re-apply.</p>
+                                    ) : (
+                                        <p style={{ margin: 0, fontSize: '14px', color: '#64748b', lineHeight: '1.5' }}>Best for registered farming co-ops, rental businesses, and suppliers.</p>
+                                    )}
+                                </div>
                             )}
                         </div>
-                    </div>
+                    )
                 ) : (
                     
                     /* Step 2: Fill Details with Dynamic Theme */
