@@ -151,7 +151,7 @@ function Seller_HomePage() {
                     <div style={{ borderRadius: '15px', overflow: 'hidden', boxShadow: '0 4px 15px rgba(0,0,0,0.08)', display: 'flex', flexDirection: 'column', backgroundColor: '#fff', height: '100%' }}>
                         <div style={{ height: '100px', width: '100%', position: 'relative' }}>
                             <img src={images.business} alt="Business Zone" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                            <div style={{ position: 'absolute', top: '10px', right: '10px', fontSize: '20px', backgroundColor: 'rgba(255,255,255,0.9)', padding: '5px', borderRadius: '50%', boxShadow: '0 2px 5px rgba(0,0,0,0.2)' }}>📦</div>
+                            <div style={{ position: 'absolute', top: '10px', right: '10px', fontSize: '20px', backgroundColor: 'rgba(255,255,255,0.9)', padding: '5px', borderRadius: '50%', boxShadow: '0 2px 5px rgba(0,0,0,0.2)' }}>🌾</div>
                         </div>
                         <div style={{ padding: '12px', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', borderTop: '3px solid #9b59b6' }}>
                             <h3 style={{ margin: '0 0 5px 0', fontSize: '15px', color: '#2c3e50', fontWeight: 'bold' }}>Business Zone</h3>
@@ -164,7 +164,7 @@ function Seller_HomePage() {
                     <div style={{ borderRadius: '15px', overflow: 'hidden', boxShadow: '0 4px 15px rgba(0,0,0,0.08)', display: 'flex', flexDirection: 'column', backgroundColor: '#fff', height: '100%' }}>
                         <div style={{ height: '100px', width: '100%', position: 'relative' }}>
                             <img src={images.farmFresh} alt="Farm Fresh" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                            <div style={{ position: 'absolute', top: '10px', right: '10px', fontSize: '20px', backgroundColor: 'rgba(255,255,255,0.9)', padding: '5px', borderRadius: '50%', boxShadow: '0 2px 5px rgba(0,0,0,0.2)' }}>🌾</div>
+                            <div style={{ position: 'absolute', top: '10px', right: '10px', fontSize: '20px', backgroundColor: 'rgba(255,255,255,0.9)', padding: '5px', borderRadius: '50%', boxShadow: '0 2px 5px rgba(0,0,0,0.2)' }}>🥬</div>
                         </div>
                         <div style={{ padding: '12px', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', borderTop: '3px solid #4CAF50' }}>
                             <h3 style={{ margin: '0 0 5px 0', fontSize: '15px', color: '#2c3e50', fontWeight: 'bold' }}>Farm Fresh</h3>
@@ -203,7 +203,7 @@ function Seller_HomePage() {
                     <div style={{ borderRadius: '15px', overflow: 'hidden', boxShadow: '0 4px 15px rgba(0,0,0,0.08)', display: 'flex', flexDirection: 'column', backgroundColor: '#fff', height: '100%' }}>
                         <div style={{ height: '100px', width: '100%', position: 'relative' }}>
                             <img src={images.freelance} alt="Freelancing" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                            <div style={{ position: 'absolute', top: '10px', right: '10px', fontSize: '20px', backgroundColor: 'rgba(255,255,255,0.9)', padding: '5px', borderRadius: '50%', boxShadow: '0 2px 5px rgba(0,0,0,0.2)' }}>🚚</div>
+                            <div style={{ position: 'absolute', top: '10px', right: '10px', fontSize: '20px', backgroundColor: 'rgba(255,255,255,0.9)', padding: '5px', borderRadius: '50%', boxShadow: '0 2px 5px rgba(0,0,0,0.2)' }}>👨</div>
                         </div>
                         <div style={{ padding: '12px', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', borderTop: '3px solid #e74c3c' }}>
                             <h3 style={{ margin: '0 0 5px 0', fontSize: '15px', color: '#2c3e50', fontWeight: 'bold' }}>Freelancing</h3>

@@ -6,7 +6,7 @@ import { IoMdArrowBack } from 'react-icons/io';
 import { CheckCircle, XCircle, User, Building, LayoutDashboard, ClipboardList, Users, List, LogOut, Lock } from 'lucide-react';
 
 function Admin() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(sessionStorage.getItem('adminAuth') === 'true');
   const [adminId, setAdminId] = useState('');
   const [password, setPassword] = useState('');
   
@@ -19,6 +19,7 @@ function Admin() {
   const handleLogin = (e) => {
       e.preventDefault();
       if (adminId === 'admin' && password === 'admin123') {
+          sessionStorage.setItem('adminAuth', 'true');
           setIsAuthenticated(true);
       } else {
           alert('Invalid Admin ID or Password');
@@ -169,7 +170,7 @@ function Admin() {
 
           <div className="sidebar-footer">
               <Link to="/" className="nav-item"><IoMdArrowBack size={20} /> Exit to App</Link>
-              <button className="nav-item btn-logout" onClick={() => setIsAuthenticated(false)}><LogOut size={20} /> Logout</button>
+              <button className="nav-item btn-logout" onClick={() => { sessionStorage.removeItem('adminAuth'); setIsAuthenticated(false); }}><LogOut size={20} /> Logout</button>
           </div>
       </aside>
 
@@ -198,11 +199,11 @@ function Admin() {
 
                   <h3 className="section-subtitle" style={{marginTop: '40px'}}>Live Listing Counts</h3>
                   <div className="stats-cards">
-                      <div className="stat-card neutral"><div className="icon">🌾</div><h3>{listingCounts.farmFresh}</h3><p>Farm Fresh</p></div>
+                      <div className="stat-card neutral"><div className="icon">🥬</div><h3>{listingCounts.farmFresh}</h3><p>Farm Fresh</p></div>
                       <div className="stat-card neutral"><div className="icon">🚜</div><h3>{listingCounts.machinery}</h3><p>Machinery</p></div>
                       <div className="stat-card neutral"><div className="icon">🧑‍🔧</div><h3>{listingCounts.workers}</h3><p>Workers</p></div>
-                      <div className="stat-card neutral"><div className="icon">📦</div><h3>{listingCounts.business}</h3><p>Business Zone</p></div>
-                      <div className="stat-card neutral"><div className="icon">🚚</div><h3>{listingCounts.freelance}</h3><p>Freelancing</p></div>
+                      <div className="stat-card neutral"><div className="icon">🌾</div><h3>{listingCounts.business}</h3><p>Business Zone</p></div>
+                      <div className="stat-card neutral"><div className="icon">👨</div><h3>{listingCounts.freelance}</h3><p>Freelancing</p></div>
                   </div>
               </div>
           )}
