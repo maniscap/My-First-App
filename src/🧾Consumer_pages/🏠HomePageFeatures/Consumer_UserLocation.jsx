@@ -272,8 +272,11 @@ const Consumer_UserLocation = () => {
       input { color: #111 !important; }
     `;
     document.head.appendChild(styleSheet);
-    requestGPS();
-    return () => document.head.removeChild(styleSheet);
+    const initialCheck = setTimeout(() => requestGPS(), 0);
+    return () => {
+      document.head.removeChild(styleSheet);
+      clearTimeout(initialCheck);
+    };
   }, []);
 
   const handleDirectCurrentLocation = () => {
