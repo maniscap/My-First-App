@@ -99,7 +99,7 @@ function App() {
   }, []);
 
   return (
-    <div style={{ width: '100%', height: '100vh', backgroundColor: theme.colors.background, color: theme.colors.text, transition: 'background-color 0.3s ease, color 0.3s ease' }}>
+    <div style={{ width: '100vw', minHeight: '100vh', backgroundColor: theme.colors.background, color: theme.colors.text, transition: 'background-color 0.3s ease, color 0.3s ease' }}>
       
       {/* --- THE SHIELD: Splash Screen sits on top --- */}
       {(isCheckingAuth || showSplash) && (
@@ -110,7 +110,7 @@ function App() {
 
       {/* --- THE ENGINE: Consumer_HomePage builds and paints invisibly in the background --- */}
       {!isCheckingAuth && (
-        <div style={{ height: '100%', width: '100%', overflow: showSplash ? 'hidden' : 'auto' }}>
+        <div style={{ minHeight: '100vh', width: '100vw', overflowX: 'hidden', overflowY: showSplash ? 'hidden' : 'auto' }}>
           
           {/* --- GLOBAL COMPONENTS --- */}
           <FloatingCalculator /> 

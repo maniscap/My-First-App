@@ -213,8 +213,8 @@ const Consumer_BottomNavigation = () => {
           background: var(--text-color); /* Creates the detached floating piece effect */
           color: var(--bg-color);
           opacity: 1;
-          transform: translateY(-6px); /* Adjusted for perfect centering with the new 66px height */
-          transition-delay: 0.25s;
+          transform: translateY(-12px); /* Makes the icon float clearly above the notch */
+          transition: transform 0.3s ease, background 0.3s ease;
         }
         
         /* --- THE MAGIC INDICATOR WRAPPER --- */
@@ -226,7 +226,7 @@ const Consumer_BottomNavigation = () => {
           height: 100%;
           display: flex;
           justify-content: center;
-          transition: transform 0.5s ease;
+          transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1); /* Slide perfectly */
           z-index: 1;
           pointer-events: none;
         }

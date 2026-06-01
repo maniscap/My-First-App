@@ -92,11 +92,11 @@ const getThemeColors = (tab) => {
     tabColor: '#0B0F19'
   }; // Night Sky Theme
   if (tab === 'tools and utils') return { 
-    topHeader: '#0B101E', 
+    topHeader: '#022C22', 
     bottomMain: 'var(--bg-color)', 
-    topImg: 'linear-gradient(180deg, #0B101E 0%, #1B273D 60%, #2A3B5C 100%)',
-    tabGradient: '#0F172A',
-    tabColor: '#0F172A'
+    topImg: 'linear-gradient(180deg, #1E3A8A 0%, #064E3B 60%, #022C22 100%)',
+    tabGradient: '#022C22',
+    tabColor: '#022C22'
   }; 
   return { 
     topHeader: '#0F172A', 
@@ -397,12 +397,22 @@ function Consumer_HomePage() {
               <div className="cine-nebula blue-nebula"></div>
 
               {/* 2. Star Shapes (Static) */}
+              {/* 2. Star Shapes (Static) - Enhanced Density */}
               <div className="night-star-shape glowing" style={{ top: '25%', left: '35%', fontSize: '9px' }}>★</div>
               <div className="night-star-shape glowing" style={{ top: '60%', left: '75%', fontSize: '12px', color: '#FDE047' }}>★</div>
               <div className="night-star-shape glowing" style={{ top: '15%', left: '65%', fontSize: '8px' }}>★</div>
               <div className="night-star-shape glowing" style={{ top: '85%', left: '15%', fontSize: '10px', color: '#FFD700' }}>★</div>
               <div className="night-star-shape glowing" style={{ top: '5%', left: '45%', fontSize: '7px' }}>★</div>
               <div className="night-star-shape glowing" style={{ top: '90%', left: '85%', fontSize: '11px' }}>★</div>
+              {/* Additional New Stars */}
+              <div className="night-star-shape glowing" style={{ top: '12%', left: '20%', fontSize: '6px' }}>★</div>
+              <div className="night-star-shape glowing" style={{ top: '35%', left: '80%', fontSize: '10px', color: '#FDE047' }}>★</div>
+              <div className="night-star-shape glowing" style={{ top: '55%', left: '25%', fontSize: '8px' }}>★</div>
+              <div className="night-star-shape glowing" style={{ top: '75%', left: '50%', fontSize: '14px', color: '#FFF9E6' }}>★</div>
+              <div className="night-star-shape glowing" style={{ top: '45%', left: '10%', fontSize: '9px' }}>★</div>
+              <div className="night-star-shape glowing" style={{ top: '80%', left: '95%', fontSize: '7px' }}>★</div>
+              <div className="night-star-shape glowing" style={{ top: '20%', left: '50%', fontSize: '11px', color: '#FFD700' }}>★</div>
+              <div className="night-star-shape glowing" style={{ top: '70%', left: '35%', fontSize: '8px' }}>★</div>
 
               {/* 3. Crisp Modern Moon */}
               <div style={{ position: 'absolute', top: '15%', right: '22%', width: '60px', height: '60px' }}>
@@ -423,74 +433,54 @@ function Consumer_HomePage() {
               transition={{ duration: 0.8 }}
               style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', overflow: 'hidden', zIndex: 0, pointerEvents: 'none' }}
             >
-              {/* Detailed Majestic Perfection SVG Landscape */}
+              {/* MASTERPIECE REALISTIC SUNSET MOUNTAINS */}
               <svg className="winter-svg-bg" viewBox="0 0 400 180" fill="none" preserveAspectRatio="xMidYMax slice">
                 <defs>
-                  {/* Perfect Jagged Pine Tree */}
-                  <path id="pine" d="M -15 0 L -10 -25 L -13 -25 L -7 -50 L -10 -50 L 0 -80 L 10 -50 L 7 -50 L 13 -25 L 10 -25 L 15 0 Z" fill="#1E293B" />
-                  <path id="pine-light" d="M -15 0 L -10 -25 L -13 -25 L -7 -50 L -10 -50 L 0 -80 L 10 -50 L 7 -50 L 13 -25 L 10 -25 L 15 0 Z" fill="#334155" />
-                  {/* Subtle Sky Gradient */}
-                  <linearGradient id="skyGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#CBD5E1" stopOpacity="0.3"/>
-                    <stop offset="100%" stopColor="transparent"/>
+                  {/* Sky Gradient: Deep Blue to Blazing Orange */}
+                  <linearGradient id="eveningSky" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#1E3A8A"/>   
+                    <stop offset="40%" stopColor="#3B82F6"/>  
+                    <stop offset="70%" stopColor="#F59E0B"/>  
+                    <stop offset="100%" stopColor="#EA580C"/> 
                   </linearGradient>
+
+                  {/* Intense Sun Glow */}
+                  <radialGradient id="sunsetGlow" cx="50%" cy="50%" r="50%">
+                    <stop offset="0%" stopColor="#FEF08A" stopOpacity="1"/>
+                    <stop offset="40%" stopColor="#F59E0B" stopOpacity="0.8"/>
+                    <stop offset="100%" stopColor="#EA580C" stopOpacity="0"/>
+                  </radialGradient>
                 </defs>
 
-                <rect width="400" height="180" fill="url(#skyGrad)" />
+                {/* 1. Sky Background */}
+                <rect width="400" height="180" fill="url(#eveningSky)" opacity="1"/>
 
-                {/* Back Mountain Range - Craggy & Detailed */}
-                <path d="M-50 180 L-20 120 L0 135 L30 85 L70 145 L100 110 L130 140 L160 80 L190 120 L230 75 L280 145 L320 100 L370 150 L420 90 L450 180 Z" fill="#475569" opacity="0.8"/>
-                {/* Back Snowcaps */}
-                <path d="M30 85 L45 110 L30 115 L20 100 Z M100 110 L115 130 L100 135 L85 125 Z M160 80 L175 105 L160 115 L145 100 Z M230 75 L250 105 L230 115 L215 95 Z M320 100 L340 130 L315 135 L300 120 Z M420 90 L435 115 L415 125 L405 105 Z" fill="#94A3B8" opacity="0.9"/>
+                {/* 2. Distant Hazy Mountains (Teal/Green) */}
+                <polygon points="10,180 90,95 180,180" fill="#166534" opacity="0.8"/>
+                <polygon points="250,180 350,85 430,180" fill="#166534" opacity="0.8"/>
 
-                {/* Mid Mountain Range - Taller, Sharper */}
-                <path d="M-30 180 L10 130 L40 150 L80 95 L120 140 L160 115 L190 150 L250 100 L290 140 L340 110 L390 160 L440 120 L480 180 Z" fill="#64748B"/>
-                {/* Mid Snowcaps */}
-                <path d="M80 95 L95 120 L80 125 L65 115 Z M160 115 L175 135 L160 140 L145 130 Z M250 100 L270 130 L245 135 L230 120 Z M340 110 L360 140 L340 145 L320 130 Z M440 120 L455 145 L435 150 L425 135 Z" fill="#E2E8F0"/>
+                {/* 3. The Sunset Orb (Nestled behind the main valley) */}
+                <circle cx="200" cy="115" r="50" fill="url(#sunsetGlow)"/>
+                <circle cx="200" cy="115" r="16" fill="#FFFBEB"/>
 
-                {/* Deep Background Forest */}
-                <use href="#pine-light" transform="translate(30, 175) scale(0.4)" />
-                <use href="#pine-light" transform="translate(50, 175) scale(0.5)" />
-                <use href="#pine-light" transform="translate(140, 175) scale(0.45)" />
-                <use href="#pine-light" transform="translate(290, 175) scale(0.55)" />
-                <use href="#pine-light" transform="translate(310, 175) scale(0.4)" />
-                <use href="#pine-light" transform="translate(380, 175) scale(0.6)" />
+                {/* 4. Left Majestic Snow Peak Mountain (Lowered) */}
+                <polygon points="-50,180 110,90 250,180" fill="#022C22"/>
+                {/* Left Snowcap (Sunset tinted) */}
+                <polygon points="74,110 85,115 95,105 105,118 115,108 130,118 140,110 110,90" fill="#FED7AA" opacity="0.85"/>
 
-                {/* Smooth Rolling Snow Banks (Midground) */}
-                <path d="M-20 180 C 80 140 150 160 250 180 Z" fill="#CBD5E1"/>
-                <path d="M180 180 C 280 130 350 150 450 180 Z" fill="#E2E8F0"/>
+                {/* 5. Right Majestic Snow Peak Mountain (Lowered) */}
+                <polygon points="150,180 310,75 450,180" fill="#011F18"/>
+                {/* Right Snowcap (Sunset tinted) */}
+                <polygon points="280,95 290,105 300,95 315,108 325,95 336,95 310,75" fill="#FED7AA" opacity="0.8"/>
 
-                {/* Detailed Foreground Pine Forest */}
-                <use href="#pine" transform="translate(70, 185) scale(0.7)" />
-                <use href="#pine" transform="translate(90, 190) scale(1)" />
-                <use href="#pine" transform="translate(115, 180) scale(0.6)" />
-                
-                <use href="#pine" transform="translate(310, 180) scale(0.75)" />
-                <use href="#pine" transform="translate(335, 195) scale(1.1)" />
-                <use href="#pine" transform="translate(365, 185) scale(0.85)" />
-
-                {/* Premium Cabin with Depth */}
-                <rect x="195" y="145" width="55" height="35" fill="#1E293B" rx="3"/>
-                <path d="M190 150 L 222 125 L 255 150 Z" fill="#F8FAFC"/>
-                <path d="M190 150 L 222 125 L 255 150" stroke="#0F172A" strokeWidth="3" fill="none"/>
-                
-                {/* Glowing Window */}
-                <rect x="205" y="155" width="12" height="16" fill="#FEF08A" rx="2"/>
-                <rect x="210" y="155" width="2" height="16" fill="#1E293B"/>
-                <rect x="205" y="162" width="12" height="2" fill="#1E293B"/>
-
-                <rect x="225" y="155" width="12" height="16" fill="#FEF08A" rx="2"/>
-                <rect x="230" y="155" width="2" height="16" fill="#1E293B"/>
-                <rect x="225" y="162" width="12" height="2" fill="#1E293B"/>
-                
-                {/* Chimney & Smoke */}
-                <rect x="235" y="125" width="8" height="20" fill="#334155" rx="1"/>
-                <circle cx="239" cy="118" r="4" fill="#E2E8F0" opacity="0.6"/>
-                <circle cx="242" cy="110" r="5" fill="#E2E8F0" opacity="0.4"/>
-                <circle cx="237" cy="100" r="6" fill="#E2E8F0" opacity="0.2"/>
-
-                {/* Ultra Smooth Foreground Snow Overlay */}
-                <path d="M-50 180 C 150 155 250 165 450 180 Z" fill="#F8FAFC"/>
+                {/* 6. Birds Flying IN FRONT OF THE SUN */}
+                <g fill="#020617" opacity="0.85">
+                  <path d="M 190 115 Q 194 111 198 115 Q 202 111 206 115 Q 202 112 198 116 Q 194 112 190 115 Z" transform="scale(1.2) translate(-38, -20)"/>
+                  <path d="M 190 115 Q 194 111 198 115 Q 202 111 206 115 Q 202 112 198 116 Q 194 112 190 115 Z" transform="scale(0.8) translate(55, 30)"/>
+                  <path d="M 190 115 Q 194 111 198 115 Q 202 111 206 115 Q 202 112 198 116 Q 194 112 190 115 Z" transform="scale(1) translate(-10, -10)"/>
+                  <path d="M 190 115 Q 194 111 198 115 Q 202 111 206 115 Q 202 112 198 116 Q 194 112 190 115 Z" transform="scale(0.6) translate(80, 45)"/>
+                  <path d="M 190 115 Q 194 111 198 115 Q 202 111 206 115 Q 202 112 198 116 Q 194 112 190 115 Z" transform="scale(0.9) translate(15, 10)"/>
+                </g>
               </svg>
             </motion.div>
           )}
@@ -787,7 +777,7 @@ function Consumer_HomePage() {
               background: var(--active-tab-gradient);
               border-radius: 16px 16px 0 0;
               z-index: 0;
-              transition: background 0.5s ease, background-color 0.5s ease;
+              transition: background 0.6s cubic-bezier(0.25, 1, 0.5, 1), background-color 0.6s cubic-bezier(0.25, 1, 0.5, 1);
             }
             .active-tab-bg::before {
               content: "";
@@ -831,7 +821,7 @@ function Consumer_HomePage() {
                   x: `calc(${activeIndex} * (100% + 10px))`,
                   background: activeTheme.tabGradient
                 }}
-                transition={{ type: "spring", stiffness: 380, damping: 35 }}
+                transition={{ type: "spring", stiffness: 250, damping: 28, mass: 0.8 }}
                 style={{
                   width: 'calc((100% - 20px) / 3)',
                   height: '100%',
@@ -898,10 +888,10 @@ function Consumer_HomePage() {
           <AnimatePresence mode="wait">
             <motion.div 
               key={activeTab}
-              initial={{ opacity: 0, scale: 0.98 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.98 }}
-              transition={{ duration: 0.2, ease: "easeOut" }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
               style={bentoGrid}
             >
 
@@ -1122,7 +1112,7 @@ function Consumer_HomePage() {
 }
 
 // --- STYLES ---
-const pageStyle = { position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', backgroundColor: 'var(--bg-color)', backgroundSize: 'cover', backgroundPosition: 'center', overflowY: 'auto', touchAction: 'pan-y', overscrollBehavior: 'none' };
+const pageStyle = { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, width: '100vw', height: '100dvh', backgroundColor: 'var(--bg-color)', backgroundSize: 'cover', backgroundPosition: 'center', overflowY: 'auto', overflowX: 'hidden', touchAction: 'pan-y', overscrollBehavior: 'none', WebkitOverflowScrolling: 'touch', scrollBehavior: 'smooth' };
 const topSectionWrapper = { position: 'relative', paddingBottom: 0 };
 const topSectionOverlay = { paddingTop: 'env(safe-area-inset-top)', paddingBottom: '0' };
 const headerWrapper = { padding: '25px 20px 10px 20px' };

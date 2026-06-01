@@ -23,7 +23,7 @@ export const BannerWidget = ({
       return '#0B0F19'; // Obsidian Gold / Night (Solid)
     }
     if (activeTab === 'tools and utils') {
-      return '#0F172A'; // Winter Indigo / Slate (Solid)
+      return '#022C22'; // Deep Forest Green (Matches the foreground mountains seamlessly)
     }
     return '#1A2E26'; // Farm Green (Solid)
   };
@@ -31,7 +31,7 @@ export const BannerWidget = ({
   return (
     <motion.div 
       animate={{ background: getBannerBackground() }}
-      transition={{ duration: 0.4, ease: "easeInOut" }}
+      transition={{ duration: 0.6, ease: [0.25, 1, 0.5, 1] }}
       style={{ 
         width: '100%', 
         height: '260px', /* Taller height, expanded to double size */
