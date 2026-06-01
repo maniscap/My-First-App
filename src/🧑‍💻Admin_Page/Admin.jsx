@@ -410,7 +410,7 @@ const styles = `
   .admin-login-page {
       display: flex; align-items: center; justify-content: center;
       min-height: 100vh; 
-      background: linear-gradient(rgba(15, 23, 42, 0.75), rgba(15, 23, 42, 0.9)), url('https://images.unsplash.com/photo-1605000797499-95a51c5269ae?w=1920&q=80') center/cover no-repeat;
+      background: linear-gradient(rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.4)), url('https://images.unsplash.com/photo-1605000797499-95a51c5269ae?w=1920&q=80') center/cover no-repeat;
       font-family: 'Inter', sans-serif;
       padding: 20px;
   }
@@ -424,18 +424,21 @@ const styles = `
       text-align: center;
   }
   .login-header .shield-icon { font-size: 56px; margin-bottom: 15px; }
-  .login-header h2 { margin: 0 0 8px; color: #0f172a; font-size: 28px; font-weight: 800; letter-spacing: -0.5px; }
-  .login-header p { margin: 0 0 35px; color: #475569; font-size: 15px; font-weight: 500; }
+  .login-header h2 { margin: 0 0 8px; color: #000000; font-size: 28px; font-weight: 900; letter-spacing: -0.5px; }
+  .login-header p { margin: 0 0 35px; color: #475569; font-size: 15px; font-weight: 600; }
   
   .login-form { display: flex; flex-direction: column; gap: 24px; width: 100%; }
   .login-form .input-group { display: flex; flex-direction: column; text-align: left; gap: 8px; width: 100%; }
-  .login-form label { font-size: 13px; font-weight: 800; color: #334155; text-transform: uppercase; letter-spacing: 0.5px; margin-left: 4px; }
+  .login-form label { font-size: 13px; font-weight: 800; color: #000000; text-transform: uppercase; letter-spacing: 0.5px; margin-left: 4px; }
   .login-form input {
       width: 100%;
-      padding: 16px 20px; border-radius: 12px; border: 2px solid #cbd5e1; font-size: 16px; outline: none; transition: 0.2s; background: #f8fafc; color: #0f172a; font-weight: 600;
+      padding: 16px 20px; border-radius: 12px; border: 2px solid #cbd5e1; font-size: 18px; outline: none; transition: 0.2s; 
+      background-color: #ffffff !important; 
+      color: #000000 !important; 
+      font-weight: 700 !important;
   }
-  .login-form input::placeholder { color: #94a3b8; font-weight: 400; }
-  .login-form input:focus { border-color: var(--primary); background: white; box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.15); }
+  .login-form input::placeholder { color: #94a3b8 !important; font-weight: 500 !important; }
+  .login-form input:focus { border-color: var(--primary); box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.15); }
   
   .btn-login {
       width: 100%;
