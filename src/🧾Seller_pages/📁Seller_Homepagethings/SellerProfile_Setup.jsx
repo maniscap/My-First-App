@@ -203,7 +203,15 @@ function SellerProfile_Setup() {
             const sellerId = `SLR-${timestampPart}-${randomPart}`;
             
             // Clean up formData by removing File objects (they cause Firestore errors without Storage upload)
-            const submissionData = { ...formData, sellerId: sellerId, status: 'pending_approval', accountType: accountType, submittedAt: new Date().toISOString() };
+            const submissionData = { 
+                ...formData, 
+                phone: `+91 ${formData.phone}`,
+                emergencyPhone: formData.emergencyPhone ? `+91 ${formData.emergencyPhone}` : '',
+                sellerId: sellerId, 
+                status: 'pending_approval', 
+                accountType: accountType, 
+                submittedAt: new Date().toISOString() 
+            };
             delete submissionData.profilePic;
             delete submissionData.organicCertificate;
             delete submissionData.machineryImages;
@@ -427,14 +435,15 @@ function SellerProfile_Setup() {
                                 <>
                                     <InputGroup label="Organisation Name" name="companyName" value={formData.companyName} onChange={handleChange} placeholder="e.g. Green Valley Co-op" themeColor={currentTheme.primary} />
                                     <InputGroup label="Contact Person Name" name="representativeName" value={formData.representativeName} onChange={handleChange} placeholder="Full Name" themeColor={currentTheme.primary} />
+                                    <InputGroup label="GST / Registration Number" name="gstNumber" value={formData.gstNumber} onChange={handleChange} placeholder="GSTIN / CIN" themeColor={currentTheme.primary} />
                                 </>
                             )}
                             
                             <InputGroup label="Business Email Address" name="email" type="email" value={formData.email} onChange={handleChange} placeholder="store@example.com" themeColor={currentTheme.primary} />
 
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
-                                <InputGroup label="Primary Phone" name="phone" type="tel" value={formData.phone} onChange={handleChange} placeholder="+91..." themeColor={currentTheme.primary} />
-                                <InputGroup label="Emergency Phone" name="emergencyPhone" type="tel" value={formData.emergencyPhone} onChange={handleChange} placeholder="Alternative No." themeColor={currentTheme.primary} />
+                                <InputGroup label="Primary Phone" name="phone" type="tel" value={formData.phone} onChange={handleChange} placeholder="9876543210" maxLength="10" prefix="+91" themeColor={currentTheme.primary} />
+                                <InputGroup label="Emergency Phone" name="emergencyPhone" type="tel" value={formData.emergencyPhone} onChange={handleChange} placeholder="9876543210" maxLength="10" prefix="+91" themeColor={currentTheme.primary} />
                             </div>
 
                             {/* Location Section */}
@@ -757,34 +766,44 @@ const SectionTitle = ({ title, icon, theme }) => (
     </div>
 );
 
-const InputGroup = ({ label, themeColor = '#0f172a', ...props }) => {
+const InputGroup = ({ label, themeColor = '#0f172a', prefix, ...props }) => {
     const [isFocused, setIsFocused] = useState(false);
     
     return (
         <div style={{ marginBottom: '20px' }}>
             <label style={{ display: 'block', fontSize: '13px', fontWeight: '700', color: isFocused ? themeColor : '#475569', marginBottom: '8px', transition: 'color 0.2s' }}>{label}</label>
-            <input 
-                required
-                onFocus={() => setIsFocused(true)}
-                onBlur={() => setIsFocused(false)}
-                style={{ 
-                    width: '100%', 
-                    padding: '14px 16px', 
-                    backgroundColor: isFocused ? '#fff' : '#f8fafc', 
-                    border: `1.5px solid ${isFocused ? themeColor : '#cbd5e1'}`, 
-                    borderRadius: '12px', 
-                    fontSize: '15px', 
-                    color: '#0f172a',
-                    fontWeight: '500',
-                    boxSizing: 'border-box',
-                    outline: 'none',
-                    boxShadow: isFocused ? `0 0 0 4px ${themeColor}15` : 'none',
-                    transition: 'all 0.2s ease',
-                    ...(props.readOnly ? { backgroundColor: '#f1f5f9', color: '#64748b' } : {}),
-                    ...props.style
-                }} 
-                {...props} 
-            />
+            <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                backgroundColor: isFocused ? '#fff' : '#f8fafc', 
+                border: `1.5px solid ${isFocused ? themeColor : '#cbd5e1'}`, 
+                borderRadius: '12px',
+                boxShadow: isFocused ? `0 0 0 4px ${themeColor}15` : 'none',
+                transition: 'all 0.2s ease',
+            }}>
+                {prefix && (
+                    <span style={{ padding: '14px 0 14px 16px', color: '#64748b', fontWeight: '700', fontSize: '15px' }}>{prefix}</span>
+                )}
+                <input 
+                    required
+                    onFocus={() => setIsFocused(true)}
+                    onBlur={() => setIsFocused(false)}
+                    style={{ 
+                        width: '100%', 
+                        padding: prefix ? '14px 16px 14px 8px' : '14px 16px', 
+                        backgroundColor: 'transparent', 
+                        border: 'none', 
+                        fontSize: '15px', 
+                        color: '#0f172a',
+                        fontWeight: '500',
+                        boxSizing: 'border-box',
+                        outline: 'none',
+                        ...(props.readOnly ? { backgroundColor: '#f1f5f9', color: '#64748b' } : {}),
+                        ...props.style
+                    }} 
+                    {...props} 
+                />
+            </div>
         </div>
     );
 };

@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { db } from '../firebase';
-import { collection, getDocs, doc, updateDoc, deleteField, addDoc, setDoc, deleteDoc } from 'firebase/firestore';
+import { collection, getDocs, doc, updateDoc, deleteField, deleteDoc } from 'firebase/firestore';
 import { IoMdArrowBack } from 'react-icons/io';
-import { CheckCircle, XCircle, Clock, User, Building, MapPin, Phone, Briefcase, LayoutDashboard, ClipboardList, Users, List, LogOut, Lock } from 'lucide-react';
+import { CheckCircle, XCircle, User, Building, LayoutDashboard, ClipboardList, Users, List, LogOut, Lock } from 'lucide-react';
 
 function Admin() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
