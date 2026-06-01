@@ -423,35 +423,74 @@ function Consumer_HomePage() {
               transition={{ duration: 0.8 }}
               style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', overflow: 'hidden', zIndex: 0, pointerEvents: 'none' }}
             >
-              {/* Organic Nature SVG Landscape */}
+              {/* Detailed Majestic Perfection SVG Landscape */}
               <svg className="winter-svg-bg" viewBox="0 0 400 180" fill="none" preserveAspectRatio="xMidYMax slice">
-                {/* Soft Distant Mountains */}
-                <path d="M-50 180 Q 80 80 180 180 Z" fill="#94A3B8" opacity="0.4"/>
-                <path d="M120 180 Q 250 50 400 180 Z" fill="#CBD5E1" opacity="0.5"/>
+                <defs>
+                  {/* Perfect Jagged Pine Tree */}
+                  <path id="pine" d="M -15 0 L -10 -25 L -13 -25 L -7 -50 L -10 -50 L 0 -80 L 10 -50 L 7 -50 L 13 -25 L 10 -25 L 15 0 Z" fill="#1E293B" />
+                  <path id="pine-light" d="M -15 0 L -10 -25 L -13 -25 L -7 -50 L -10 -50 L 0 -80 L 10 -50 L 7 -50 L 13 -25 L 10 -25 L 15 0 Z" fill="#334155" />
+                  {/* Subtle Sky Gradient */}
+                  <linearGradient id="skyGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#CBD5E1" stopOpacity="0.3"/>
+                    <stop offset="100%" stopColor="transparent"/>
+                  </linearGradient>
+                </defs>
+
+                <rect width="400" height="180" fill="url(#skyGrad)" />
+
+                {/* Back Mountain Range - Craggy & Detailed */}
+                <path d="M-50 180 L-20 120 L0 135 L30 85 L70 145 L100 110 L130 140 L160 80 L190 120 L230 75 L280 145 L320 100 L370 150 L420 90 L450 180 Z" fill="#475569" opacity="0.8"/>
+                {/* Back Snowcaps */}
+                <path d="M30 85 L45 110 L30 115 L20 100 Z M100 110 L115 130 L100 135 L85 125 Z M160 80 L175 105 L160 115 L145 100 Z M230 75 L250 105 L230 115 L215 95 Z M320 100 L340 130 L315 135 L300 120 Z M420 90 L435 115 L415 125 L405 105 Z" fill="#94A3B8" opacity="0.9"/>
+
+                {/* Mid Mountain Range - Taller, Sharper */}
+                <path d="M-30 180 L10 130 L40 150 L80 95 L120 140 L160 115 L190 150 L250 100 L290 140 L340 110 L390 160 L440 120 L480 180 Z" fill="#64748B"/>
+                {/* Mid Snowcaps */}
+                <path d="M80 95 L95 120 L80 125 L65 115 Z M160 115 L175 135 L160 140 L145 130 Z M250 100 L270 130 L245 135 L230 120 Z M340 110 L360 140 L340 145 L320 130 Z M440 120 L455 145 L435 150 L425 135 Z" fill="#E2E8F0"/>
+
+                {/* Deep Background Forest */}
+                <use href="#pine-light" transform="translate(30, 175) scale(0.4)" />
+                <use href="#pine-light" transform="translate(50, 175) scale(0.5)" />
+                <use href="#pine-light" transform="translate(140, 175) scale(0.45)" />
+                <use href="#pine-light" transform="translate(290, 175) scale(0.55)" />
+                <use href="#pine-light" transform="translate(310, 175) scale(0.4)" />
+                <use href="#pine-light" transform="translate(380, 175) scale(0.6)" />
+
+                {/* Smooth Rolling Snow Banks (Midground) */}
+                <path d="M-20 180 C 80 140 150 160 250 180 Z" fill="#CBD5E1"/>
+                <path d="M180 180 C 280 130 350 150 450 180 Z" fill="#E2E8F0"/>
+
+                {/* Detailed Foreground Pine Forest */}
+                <use href="#pine" transform="translate(70, 185) scale(0.7)" />
+                <use href="#pine" transform="translate(90, 190) scale(1)" />
+                <use href="#pine" transform="translate(115, 180) scale(0.6)" />
                 
-                {/* Rolling Snow Banks */}
-                <path d="M-20 180 C 80 130 150 150 250 180 Z" fill="#E2E8F0"/>
-                <path d="M180 180 C 280 120 350 140 450 180 Z" fill="#F1F5F9"/>
+                <use href="#pine" transform="translate(310, 180) scale(0.75)" />
+                <use href="#pine" transform="translate(335, 195) scale(1.1)" />
+                <use href="#pine" transform="translate(365, 185) scale(0.85)" />
 
-                {/* Snow-covered Bushes / Organic Trees */}
-                <circle cx="75" cy="155" r="16" fill="#F8FAFC" opacity="0.9"/>
-                <circle cx="90" cy="165" r="12" fill="#E2E8F0" opacity="0.8"/>
-                <circle cx="65" cy="165" r="10" fill="#E2E8F0" opacity="0.8"/>
+                {/* Premium Cabin with Depth */}
+                <rect x="195" y="145" width="55" height="35" fill="#1E293B" rx="3"/>
+                <path d="M190 150 L 222 125 L 255 150 Z" fill="#F8FAFC"/>
+                <path d="M190 150 L 222 125 L 255 150" stroke="#0F172A" strokeWidth="3" fill="none"/>
+                
+                {/* Glowing Window */}
+                <rect x="205" y="155" width="12" height="16" fill="#FEF08A" rx="2"/>
+                <rect x="210" y="155" width="2" height="16" fill="#1E293B"/>
+                <rect x="205" y="162" width="12" height="2" fill="#1E293B"/>
 
-                <circle cx="320" cy="145" r="20" fill="#F8FAFC" opacity="0.9"/>
-                <circle cx="300" cy="155" r="14" fill="#E2E8F0" opacity="0.8"/>
-                <circle cx="340" cy="160" r="12" fill="#E2E8F0" opacity="0.8"/>
+                <rect x="225" y="155" width="12" height="16" fill="#FEF08A" rx="2"/>
+                <rect x="230" y="155" width="2" height="16" fill="#1E293B"/>
+                <rect x="225" y="162" width="12" height="2" fill="#1E293B"/>
+                
+                {/* Chimney & Smoke */}
+                <rect x="235" y="125" width="8" height="20" fill="#334155" rx="1"/>
+                <circle cx="239" cy="118" r="4" fill="#E2E8F0" opacity="0.6"/>
+                <circle cx="242" cy="110" r="5" fill="#E2E8F0" opacity="0.4"/>
+                <circle cx="237" cy="100" r="6" fill="#E2E8F0" opacity="0.2"/>
 
-                {/* Cozy Wood Cottage with Curved Roof */}
-                <rect x="210" y="140" width="50" height="35" fill="#292524" rx="4"/>
-                <path d="M205 145 C 225 125 245 125 265 145 Z" fill="#FFFFFF"/>
-                <rect x="220" y="150" width="12" height="14" fill="#FDE047" rx="3" opacity="0.9"/>
-                <rect x="238" y="150" width="12" height="14" fill="#FDE047" rx="3" opacity="0.9"/>
-                <circle cx="235" cy="130" r="6" fill="#FFFFFF"/> {/* Roof snow puff */}
-                <circle cx="245" cy="132" r="5" fill="#FFFFFF"/>
-
-                {/* Foreground Soft Snow Drift */}
-                <path d="M-50 180 C 100 150 250 160 450 180 Z" fill="#FFFFFF"/>
+                {/* Ultra Smooth Foreground Snow Overlay */}
+                <path d="M-50 180 C 150 155 250 165 450 180 Z" fill="#F8FAFC"/>
               </svg>
             </motion.div>
           )}
