@@ -329,8 +329,8 @@ function SellerProfile_Setup() {
                                         <p style={{ margin: 0, fontSize: '14px', color: '#d97706', fontWeight: '700' }}>Application in Process</p>
                                     ) : cachedIndReject ? (
                                         <div style={{ marginTop: '5px' }}>
-                                            <p style={{ margin: '0 0 4px', fontSize: '13px', color: '#dc2626', fontWeight: '700' }}>Previous Application Rejected</p>
-                                            <p style={{ margin: 0, fontSize: '12px', color: '#7f1d1d', background: '#fef2f2', padding: '6px', borderRadius: '6px' }}>Reason: {cachedIndReject}</p>
+                                            <p style={{ margin: '0 0 4px', fontSize: '13px', color: '#dc2626', fontWeight: '700' }}>❌ Application Rejected</p>
+                                            <p style={{ margin: 0, fontSize: '12px', color: '#7f1d1d', background: '#fef2f2', padding: '6px', borderRadius: '6px' }}>Your previous application was rejected and securely erased. Please correct your details and re-apply.</p>
                                             <p style={{ margin: '6px 0 0', fontSize: '12px', color: '#0284c7', fontWeight: 'bold' }}>Click to Re-apply</p>
                                         </div>
                                     ) : (
@@ -376,8 +376,8 @@ function SellerProfile_Setup() {
                                         <p style={{ margin: 0, fontSize: '14px', color: '#d97706', fontWeight: '700' }}>Application in Process</p>
                                     ) : cachedOrgReject ? (
                                         <div style={{ marginTop: '5px' }}>
-                                            <p style={{ margin: '0 0 4px', fontSize: '13px', color: '#dc2626', fontWeight: '700' }}>Previous Application Rejected</p>
-                                            <p style={{ margin: 0, fontSize: '12px', color: '#7f1d1d', background: '#fef2f2', padding: '6px', borderRadius: '6px' }}>Reason: {cachedOrgReject}</p>
+                                            <p style={{ margin: '0 0 4px', fontSize: '13px', color: '#dc2626', fontWeight: '700' }}>❌ Application Rejected</p>
+                                            <p style={{ margin: 0, fontSize: '12px', color: '#7f1d1d', background: '#fef2f2', padding: '6px', borderRadius: '6px' }}>Your previous application was rejected and securely erased. Please correct your details and re-apply.</p>
                                             <p style={{ margin: '6px 0 0', fontSize: '12px', color: '#4338ca', fontWeight: 'bold' }}>Click to Re-apply</p>
                                         </div>
                                     ) : (

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { db } from '../firebase';
-import { collection, getDocs, doc, updateDoc, deleteField, addDoc, setDoc } from 'firebase/firestore';
+import { collection, getDocs, doc, updateDoc, deleteField, addDoc, setDoc, deleteDoc } from 'firebase/firestore';
 import { IoMdArrowBack } from 'react-icons/io';
 import { CheckCircle, XCircle, Clock, User, Building, MapPin, Phone, Briefcase, LayoutDashboard, ClipboardList, Users, List, LogOut, Lock } from 'lucide-react';
 
@@ -63,52 +63,47 @@ function Admin() {
       if (isAuthenticated) fetchData(); 
   }, [isAuthenticated]);
 
-  const handleReject = async (app, reason) => {
-      try {
-          // 1. Add to rejected_applications to keep the count (catch permission errors)
-          await addDoc(collection(db, "rejected_applications"), {
-              rejectedAt: new Date().toISOString(),
-              reason: reason || "Does not meet requirements."
-          });
-      } catch (err) {
-          console.warn("Could not save to rejected_applications. Check Firestore rules.", err);
-      }
-
-      try {
-          // 2. Update the original document so the user sees the reason once
-          const sellerRef = doc(db, "seller_applications", app.id);
-          
-          // Using setDoc completely overwrites the document, securely erasing everything else
-          await setDoc(sellerRef, { 
-              status: 'rejected', 
-              rejectionReason: reason || "Does not meet requirements.",
-              accountType: app.accountType || 'unknown',
-              sellerId: app.sellerId || 'unknown'
-          });
-          
-          fetchData();
-      } catch (error) {
-          console.error("Error rejecting application:", error);
-          alert("Failed to reject application. Check your connection or Firestore rules.");
+  const handleReject = async (app) => {
+      if(window.confirm("Are you sure you want to completely reject and erase this application from Firebase?")) {
+          try {
+              await deleteDoc(doc(db, "seller_applications", app.id));
+              fetchData();
+          } catch (error) {
+              console.error("Error deleting application:", error);
+              alert("Failed to reject and delete application.");
+          }
       }
   };
 
   const handleApproveSeller = async (app) => {
       if(window.confirm("Approve this seller? Application will be moved to verified.")) {
-          // Update Firestore: Mark as approved and erase image fields completely (in case they exist)
-          const sellerRef = doc(db, "seller_applications", app.id);
-          await updateDoc(sellerRef, { 
-              status: 'approved',
-              profilePic: deleteField(),
-              idProof: deleteField(),
-              organicCertificate: deleteField(),
-              machineryImages: deleteField(),
-              orgProduceImages: deleteField(),
-              orgMachineryImages: deleteField(),
-              orgHarvestImages: deleteField()
-          });
-          
-          fetchData();
+          try {
+              const sellerRef = doc(db, "seller_applications", app.id);
+              await updateDoc(sellerRef, { 
+                  status: 'approved',
+                  approvedAt: new Date().toISOString(),
+                  profilePic: deleteField(),
+                  idProof: deleteField(),
+                  organicCertificate: deleteField(),
+                  machineryImages: deleteField(),
+                  orgProduceImages: deleteField(),
+                  orgMachineryImages: deleteField(),
+                  orgHarvestImages: deleteField()
+              });
+              fetchData();
+          } catch (error) {
+              console.error("Error approving:", error);
+              alert("Failed to approve application.");
+          }
+      }
+  };
+
+  const handleDeleteApproved = async (id) => {
+      if(window.confirm("Are you sure you want to permanently delete this verified seller from Firebase?")) {
+          try {
+              await deleteDoc(doc(db, "seller_applications", id));
+              fetchData();
+          } catch (err) { alert("Failed to delete seller."); }
       }
   };
 
@@ -199,10 +194,6 @@ function Admin() {
                           <h3>{approvedApps.length}</h3>
                           <p>Verified Sellers</p>
                       </div>
-                      <div className="stat-card rejected">
-                          <h3>{listingCounts.rejected}</h3>
-                          <p>Total Rejected</p>
-                      </div>
                   </div>
 
                   <h3 className="section-subtitle" style={{marginTop: '40px'}}>Live Listing Counts</h3>
@@ -238,7 +229,7 @@ function Admin() {
                                   key={app.id} 
                                   app={app} 
                                   onApprove={() => handleApproveSeller(app)} 
-                                  onReject={(reason) => handleReject(app, reason)} 
+                                  onReject={() => handleReject(app)} 
                               />
                           ))}
                       </div>
@@ -258,11 +249,16 @@ function Admin() {
                       <div className="text-list">
                           {approvedApps.length === 0 && <p style={{color:'#64748b'}}>No approved sellers yet.</p>}
                           {approvedApps.map(app => (
-                              <div key={app.id} className="text-row">
-                                  <strong>{app.sellerId}</strong> &mdash; 
-                                  {app.accountType === 'organisation' ? app.companyName : app.fullName} 
-                                  ({app.categories?.join(', ') || 'No categories'}) &mdash; 
-                                  {app.phone} &mdash; {app.village}, {app.district}
+                              <div key={app.id} className="text-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'white', padding: '15px', borderRadius: '8px', border: '1px solid #e2e8f0', marginBottom: '10px' }}>
+                                  <div>
+                                      <strong>{app.sellerId}</strong> &mdash; 
+                                      {app.accountType === 'organisation' ? app.companyName : app.fullName} 
+                                      ({app.categories?.join(', ') || 'No categories'}) &mdash; 
+                                      {app.phone} &mdash; {app.village}, {app.district}
+                                      <br/>
+                                      <span style={{ fontSize: '13px', color: '#64748b', fontWeight: '600' }}>Approved At: {app.approvedAt ? new Date(app.approvedAt).toLocaleString() : 'N/A'}</span>
+                                  </div>
+                                  <button onClick={() => handleDeleteApproved(app.id)} style={{ padding: '10px 16px', background: '#ef4444', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>Delete Seller</button>
                               </div>
                           ))}
                       </div>
@@ -291,18 +287,6 @@ function Admin() {
 
 // Sub-component for the application card (Shows FULL DETAILS for employee to verify)
 const ApplicationCard = ({ app, onApprove, onReject }) => {
-    const [showReject, setShowReject] = React.useState(false);
-    const [rejectReason, setRejectReason] = React.useState("");
-
-    const handleConfirmReject = () => {
-        if (!rejectReason.trim()) {
-            alert("Please provide a reason for rejection.");
-            return;
-        }
-        setShowReject(false);
-        onReject(rejectReason);
-    };
-
     return (
         <div className="app-card">
             <div className="card-header">
@@ -314,26 +298,10 @@ const ApplicationCard = ({ app, onApprove, onReject }) => {
                     </div>
                 </div>
                 <div className="card-actions">
-                    <button onClick={() => setShowReject(!showReject)} className="btn-action btn-reject"><XCircle size={18} /> {showReject ? "Cancel" : "Reject"}</button>
+                    <button onClick={onReject} className="btn-action btn-reject"><XCircle size={18} /> Reject & Delete</button>
                     <button onClick={onApprove} className="btn-action btn-approve"><CheckCircle size={18} /> Approve Application</button>
                 </div>
             </div>
-
-            {showReject && (
-                <div style={{ padding: '20px 24px', background: '#fef2f2', borderBottom: '1px solid #fee2e2' }}>
-                    <label style={{ display: 'block', fontSize: '14px', fontWeight: '800', color: '#991b1b', marginBottom: '8px' }}>Reason for Rejection:</label>
-                    <textarea 
-                        style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #fca5a5', minHeight: '80px', marginBottom: '15px', fontSize: '14px', outline: 'none' }}
-                        placeholder="Explain why this application is being rejected..."
-                        value={rejectReason}
-                        onChange={(e) => setRejectReason(e.target.value)}
-                    ></textarea>
-                    <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
-                        <button onClick={() => setShowReject(false)} style={{ padding: '10px 16px', borderRadius: '8px', border: '1px solid #fca5a5', background: 'white', color: '#991b1b', cursor: 'pointer', fontWeight: 'bold' }}>Cancel</button>
-                        <button onClick={handleConfirmReject} style={{ padding: '10px 20px', borderRadius: '8px', border: 'none', background: '#dc2626', color: 'white', cursor: 'pointer', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '8px' }}><XCircle size={16} /> Confirm Reject</button>
-                    </div>
-                </div>
-            )}
 
             <div className="card-body">
                 
