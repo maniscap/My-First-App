@@ -423,18 +423,35 @@ function Consumer_HomePage() {
               transition={{ duration: 0.8 }}
               style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', overflow: 'hidden', zIndex: 0, pointerEvents: 'none' }}
             >
-              {/* Cozy Winter House */}
-              <div className="cozy-house">
-                <div className="roof"></div>
-                <div className="walls"></div>
-                <div className="window glowing-window"></div>
-                <div className="door"></div>
-              </div>
+              {/* Sleek Minimalist SVG Winter Landscape */}
+              <svg className="winter-svg-bg" viewBox="0 0 400 180" fill="none" preserveAspectRatio="xMidYMax slice">
+                {/* Back Mountain */}
+                <path d="M-50 180L100 60L250 180Z" fill="#CBD5E1" opacity="0.6"/>
+                <path d="M150 180L280 80L450 180Z" fill="#94A3B8" opacity="0.4"/>
+                
+                {/* Mid Ground Hills */}
+                <path d="M-20 180 Q100 120 250 180 Z" fill="#E2E8F0"/>
+                <path d="M150 180 Q300 100 450 180 Z" fill="#F1F5F9"/>
 
-              {/* Thick Snow Ground Layers */}
-              <div className="snow-ground ground-back"></div>
-              <div className="snow-ground ground-mid"></div>
-              <div className="snow-ground ground-front"></div>
+                {/* Minimalist Pine Trees */}
+                <path d="M80 160 L90 120 L100 160 Z" fill="#475569"/>
+                <path d="M85 160 L90 130 L95 160 Z" fill="#334155"/>
+                
+                <path d="M300 170 L315 110 L330 170 Z" fill="#475569"/>
+                <path d="M307 170 L315 120 L323 170 Z" fill="#334155"/>
+                <path d="M330 180 L340 130 L350 180 Z" fill="#475569"/>
+
+                {/* Modern Cabin */}
+                <rect x="230" y="140" width="40" height="30" fill="#1E293B" rx="2"/>
+                <path d="M225 140 L250 120 L275 140 Z" fill="#F8FAFC"/>
+                <rect x="255" y="150" width="8" height="20" fill="#334155" rx="1"/>
+                <rect x="235" y="150" width="12" height="12" fill="#FDE047" rx="1"/>
+                <rect x="240" y="150" width="2" height="12" fill="#1E293B"/>
+                <rect x="235" y="155" width="12" height="2" fill="#1E293B"/>
+
+                {/* Front Snow Ground */}
+                <path d="M-50 180 Q150 140 450 180 Z" fill="#FFFFFF"/>
+              </svg>
             </motion.div>
           )}
         </AnimatePresence>
@@ -478,124 +495,16 @@ function Consumer_HomePage() {
               isolation: isolate;
             }
 
-            /* --- WINTER SNOWFALL THEME (Tools & Utils) --- */
-            .snow-ground {
+            /* --- WINTER THEME (Tools & Utils) --- */
+            .winter-svg-bg {
               position: absolute;
-              bottom: -30px;
-              border-radius: 120% 120% 0 0;
-            }
-            .ground-back {
-              left: -30%; width: 160%; height: 45%;
-              background: linear-gradient(180deg, #E2E8F0 0%, #CBD5E1 100%);
-              z-index: 2;
-            }
-            .ground-mid {
-              right: -30%; width: 150%; height: 35%;
-              background: linear-gradient(180deg, #F1F5F9 0%, #E2E8F0 100%);
-              z-index: 3;
-              box-shadow: 0 -10px 20px rgba(255,255,255,0.6);
-            }
-            .ground-front {
-              left: -20%; width: 140%; height: 25%;
-              background: linear-gradient(180deg, #FFFFFF 0%, #F8FAFC 100%);
-              z-index: 4;
-              box-shadow: 0 -15px 25px rgba(255,255,255,0.9);
-            }
-
-            .snow-layer {
-              position: absolute;
-              top: 0;
+              bottom: 0;
               left: 0;
-              background: transparent;
-              border-radius: 50%;
-              pointer-events: none;
-            }
-            .snow-1 { width: 3px; height: 3px; animation: cinematic-snowfall 15s linear infinite; opacity: 0.5; z-index: 1; }
-            .snow-2 { width: 5px; height: 5px; animation: cinematic-snowfall 10s linear infinite; opacity: 0.8; filter: blur(1px); z-index: 2; }
-            .snow-1 { width: 3px; height: 3px; animation: cinematic-snowfall 24s linear infinite; opacity: 0.5; z-index: 1; }
-            .snow-2 { width: 5px; height: 5px; animation: cinematic-snowfall 16s linear infinite; opacity: 0.8; filter: blur(1px); z-index: 2; }
-            /* The heavy bokeh layer goes in front of the house and snow mounds for 3D depth */
-            .snow-3 { width: 16px; height: 16px; animation: cinematic-snowfall 6s linear infinite; opacity: 0.9; filter: blur(5px); z-index: 10; }
-            .snow-3 { width: 16px; height: 16px; animation: cinematic-snowfall 10s linear infinite; opacity: 0.9; filter: blur(5px); z-index: 10; }
-
-            @keyframes cinematic-snowfall {
-              0% { transform: translateY(0) translateX(0); }
-              100% { transform: translateY(120vh) translateX(15vw); }
+              width: 100%;
+              z-index: 2;
+              opacity: 0.95;
             }
 
-            /* Cozy Winter House */
-            .cozy-house {
-              position: absolute;
-              bottom: 20%;
-              right: 15%;
-              width: 80px;
-              height: 60px;
-              z-index: 3;
-            }
-            .cozy-house .walls {
-              position: absolute; bottom: 0; width: 80px; height: 45px;
-              background: #4E342E;
-              border-radius: 4px;
-            }
-            .cozy-house .roof {
-              position: absolute; top: -10px; left: -10px; width: 0; height: 0;
-              border-left: 50px solid transparent;
-              border-right: 50px solid transparent;
-              border-bottom: 30px solid #F8FAFC; 
-              filter: drop-shadow(0 4px 2px rgba(0,0,0,0.15));
-              z-index: 2;
-            }
-            .cozy-house .window {
-              position: absolute; top: 12px; left: 15px; width: 16px; height: 16px;
-              background: #FEF08A; 
-              box-shadow: 0 0 15px 5px rgba(254, 240, 138, 0.6), inset 0 0 4px rgba(234, 88, 12, 0.8);
-              border: 2px solid #3E2723;
-              border-radius: 2px;
-              z-index: 2;
-            }
-            .cozy-house .window::after {
-              content: ''; position: absolute; top: 0; left: 6px; width: 2px; height: 16px; background: #3E2723;
-            }
-            .cozy-house .window::before {
-              content: ''; position: absolute; top: 6px; left: 0; width: 16px; height: 2px; background: #3E2723;
-            }
-            .cozy-house .door {
-              position: absolute; bottom: 0; right: 15px; width: 16px; height: 26px;
-              background: #271410;
-              border-radius: 2px 2px 0 0;
-              z-index: 2;
-            }
-            .cozy-house .chimney {
-              position: absolute; top: -20px; right: 10px; width: 12px; height: 25px;
-              background: linear-gradient(to right, #4E342E, #271410); /* Realistic depth */
-              z-index: 1;
-            }
-            .cozy-house .chimney::after {
-              content: ''; position: absolute; top: -4px; left: -3px; width: 18px; height: 5px;
-              background: #1A0D0A; border-radius: 2px; z-index: 60; /* The cap frame */
-              box-shadow: 0 2px 3px rgba(0,0,0,0.4);
-            }
-            .cozy-house .smoke {
-              position: absolute; 
-              bottom: calc(100% - 2px); /* Start slightly inside the cap */
-              left: 50%;
-              transform: translateX(-50%);
-              background-color: #f6f3eb; /* Warm white vector fill */
-              /* Hard, unblurred inset shadows for Cel-Shading scaled down for mini-chimney */
-              box-shadow: inset -1px -1.5px 0px 0px #b5c7d8, inset -2px -3px 0px 0px #829cb8; 
-              animation: vector-rise 5s linear infinite;
-              pointer-events: none;
-            }
-            @keyframes vector-rise {
-              0% { transform: translate(-50%, 0) scale(0.2); opacity: 0; }
-              5% { opacity: 1; }
-              80% { opacity: 1; }
-              100% { transform: translate(calc(-50% + var(--drift)), -120px) scale(var(--scale)); opacity: 0; }
-            }
-            @keyframes sun-breathe {
-              0%, 100% { transform: scale(1); opacity: 1; }
-              50% { transform: scale(1.08); opacity: 0.85; }
-            }
             @keyframes bokeh-drift {
               0% { transform: translate(0, 0) scale(1); opacity: 0.6; }
               100% { transform: translate(-10px, 10px) scale(1.05); opacity: 0.9; }
