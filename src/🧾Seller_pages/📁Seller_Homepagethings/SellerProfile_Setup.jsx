@@ -115,8 +115,10 @@ function SellerProfile_Setup() {
 
         setIsSubmitting(true);
         try {
-            // Generate a unique alphanumeric Seller ID (e.g. SLR-4X9A2B)
-            const sellerId = 'SLR-' + Math.random().toString(36).substring(2, 8).toUpperCase();
+            // Generate an absolutely unique alphanumeric Seller ID (e.g. SLR-LWMX1Y2Z-9A2B)
+            const timestampPart = Date.now().toString(36).toUpperCase();
+            const randomPart = Math.random().toString(36).substring(2, 6).toUpperCase();
+            const sellerId = `SLR-${timestampPart}-${randomPart}`;
             
             // Clean up formData by removing File objects (they cause Firestore errors without Storage upload)
             const submissionData = { ...formData, sellerId: sellerId, status: 'pending_approval', accountType: accountType, submittedAt: new Date().toISOString() };

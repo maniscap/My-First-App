@@ -48,12 +48,6 @@ import SellerBottomNavigation from './🧾Seller_pages/📁seller_BottomNavigati
 
 import Seller_UserLocation from './🧾Seller_pages/📁Seller_Homepagethings/Seller_UserLocation';
 
-import Freelancing_ListingForm from './🧾Seller_pages/📁ListingForms/Freelancing_ListingForm';
-import HireMachinary_ListingForm from './🧾Seller_pages/📁ListingForms/HireMachinary_ListingForm';
-import BusinessZone_ListingForm from './🧾Seller_pages/📁ListingForms/BusinessZone_ListingForm';
-import HireWorkers_ListingForm from './🧾Seller_pages/📁ListingForms/HireWorkers_ListingForm';
-import FarmFresh_ListingForm from './🧾Seller_pages/📁ListingForms/FarmFresh_ListingForm';
-import Seller_TermsAndConditions from './🧾Seller_pages/📁ListingForms/Seller_TermsAndConditions';
 
 // --- IMPORT COMPONENTS ---
 import ChatBot from './🔧Consumer_Components/ChatBot';
@@ -138,18 +132,11 @@ function App() {
               <Route path="/seller-settings" element={<Seller_Settings />} />
               <Route path="/seller-more" element={<Seller_MoreMenu />} />
 
-              {/* --- ADD NEW LISTING FORMS --- */}
-              <Route path="/add-freelancing" element={<Freelancing_ListingForm />} />
-              <Route path="/add-machinery" element={<HireMachinary_ListingForm />} />
-              <Route path="/add-business" element={<BusinessZone_ListingForm />} />
-              <Route path="/add-workers" element={<HireWorkers_ListingForm />} />
-              <Route path="/add-farm-fresh" element={<FarmFresh_ListingForm />} />
+
               
               {/* --- LOCATION --- */}
               <Route path="/seller-location" element={<Seller_UserLocation />} />
               
-              {/* --- LEGAL TERMS --- */}
-              <Route path="/seller-terms" element={<Seller_TermsAndConditions />} />
 
               <Route path="*" element={
                 <div style={{ textAlign: 'center', marginTop: '100px', color: theme.colors.text }}>
