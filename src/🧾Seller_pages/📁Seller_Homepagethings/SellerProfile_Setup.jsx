@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Building2, User, ShieldCheck, Clock, ChevronLeft, UploadCloud, MapPin, Briefcase, CheckCircle2 } from 'lucide-react';
 import { db } from '../../firebase';
-import { collection, addDoc, getDoc, doc } from 'firebase/firestore';
+import { collection, addDoc, getDoc, doc, deleteDoc } from 'firebase/firestore';
 
 function SellerProfile_Setup() {
     const navigate = useNavigate();
@@ -21,15 +21,45 @@ function SellerProfile_Setup() {
     const [orgApp, setOrgApp] = useState(null);
     const [loadingData, setLoadingData] = useState(true);
 
+    const [cachedIndReject, setCachedIndReject] = useState(localStorage.getItem('cached_reject_ind'));
+    const [cachedOrgReject, setCachedOrgReject] = useState(localStorage.getItem('cached_reject_org'));
+
     useEffect(() => {
         const fetchStatus = async () => {
             if (indId) {
                 const docSnap = await getDoc(doc(db, 'seller_applications', indId));
-                if (docSnap.exists()) setIndApp(docSnap.data());
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    if (data.status === 'rejected') {
+                        localStorage.setItem('cached_reject_ind', data.rejectionReason || "Does not meet requirements");
+                        setCachedIndReject(data.rejectionReason || "Does not meet requirements");
+                        await deleteDoc(doc(db, 'seller_applications', indId));
+                        localStorage.removeItem('seller_individual_app_id');
+                        // Also clear global app id if it matches
+                        if(localStorage.getItem('seller_app_id') === indId) localStorage.removeItem('seller_app_id');
+                    } else {
+                        setIndApp(data);
+                    }
+                } else {
+                    localStorage.removeItem('seller_individual_app_id');
+                }
             }
             if (orgId) {
                 const docSnap = await getDoc(doc(db, 'seller_applications', orgId));
-                if (docSnap.exists()) setOrgApp(docSnap.data());
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    if (data.status === 'rejected') {
+                        localStorage.setItem('cached_reject_org', data.rejectionReason || "Does not meet requirements");
+                        setCachedOrgReject(data.rejectionReason || "Does not meet requirements");
+                        await deleteDoc(doc(db, 'seller_applications', orgId));
+                        localStorage.removeItem('seller_organisation_app_id');
+                        if(localStorage.getItem('seller_app_id') === orgId) localStorage.removeItem('seller_app_id');
+                    } else {
+                        setOrgApp(data);
+                    }
+                } else {
+                    localStorage.removeItem('seller_organisation_app_id');
+                }
             }
             setLoadingData(false);
         };
@@ -264,8 +294,12 @@ function SellerProfile_Setup() {
                                     
                                     {indApp?.status === 'pending_approval' ? (
                                         <p style={{ margin: 0, fontSize: '14px', color: '#d97706', fontWeight: '700' }}>Application in Process</p>
-                                    ) : indApp?.status === 'rejected' ? (
-                                        <p style={{ margin: 0, fontSize: '14px', color: '#dc2626', fontWeight: '700' }}>Previous Application Rejected. Click to Re-apply.</p>
+                                    ) : cachedIndReject ? (
+                                        <div style={{ marginTop: '5px' }}>
+                                            <p style={{ margin: '0 0 4px', fontSize: '13px', color: '#dc2626', fontWeight: '700' }}>Previous Application Rejected</p>
+                                            <p style={{ margin: 0, fontSize: '12px', color: '#7f1d1d', background: '#fef2f2', padding: '6px', borderRadius: '6px' }}>Reason: {cachedIndReject}</p>
+                                            <p style={{ margin: '6px 0 0', fontSize: '12px', color: '#0284c7', fontWeight: 'bold' }}>Click to Re-apply</p>
+                                        </div>
                                     ) : (
                                         <p style={{ margin: 0, fontSize: '14px', color: '#64748b', lineHeight: '1.5' }}>Best for individual farmers, independent workers, or sole machinery owners.</p>
                                     )}
@@ -307,8 +341,12 @@ function SellerProfile_Setup() {
                                     
                                     {orgApp?.status === 'pending_approval' ? (
                                         <p style={{ margin: 0, fontSize: '14px', color: '#d97706', fontWeight: '700' }}>Application in Process</p>
-                                    ) : orgApp?.status === 'rejected' ? (
-                                        <p style={{ margin: 0, fontSize: '14px', color: '#dc2626', fontWeight: '700' }}>Previous Application Rejected. Click to Re-apply.</p>
+                                    ) : cachedOrgReject ? (
+                                        <div style={{ marginTop: '5px' }}>
+                                            <p style={{ margin: '0 0 4px', fontSize: '13px', color: '#dc2626', fontWeight: '700' }}>Previous Application Rejected</p>
+                                            <p style={{ margin: 0, fontSize: '12px', color: '#7f1d1d', background: '#fef2f2', padding: '6px', borderRadius: '6px' }}>Reason: {cachedOrgReject}</p>
+                                            <p style={{ margin: '6px 0 0', fontSize: '12px', color: '#4338ca', fontWeight: 'bold' }}>Click to Re-apply</p>
+                                        </div>
                                     ) : (
                                         <p style={{ margin: 0, fontSize: '14px', color: '#64748b', lineHeight: '1.5' }}>Best for registered farming co-ops, rental businesses, and suppliers.</p>
                                     )}

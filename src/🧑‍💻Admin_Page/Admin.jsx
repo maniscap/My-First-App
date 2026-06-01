@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { db } from '../firebase';
-import { collection, getDocs, doc, updateDoc, deleteField } from 'firebase/firestore';
+import { collection, getDocs, doc, updateDoc, deleteField, addDoc } from 'firebase/firestore';
 import { IoMdArrowBack } from 'react-icons/io';
 import { CheckCircle, XCircle, Clock, User, Building, MapPin, Phone, Briefcase, LayoutDashboard, ClipboardList, Users, List, LogOut } from 'lucide-react';
 
@@ -12,7 +12,7 @@ function Admin() {
   
   const [activeTab, setActiveTab] = useState('dashboard'); // dashboard, verifications, approved, listings
   const [sellerApplications, setSellerApplications] = useState([]);
-  const [listingCounts, setListingCounts] = useState({ farmFresh: 0, machinery: 0, workers: 0, business: 0, freelance: 0 });
+  const [listingCounts, setListingCounts] = useState({ farmFresh: 0, machinery: 0, workers: 0, business: 0, freelance: 0, rejected: 0 });
   const [loading, setLoading] = useState(false);
 
   // --- LOGIN ---
@@ -41,15 +41,16 @@ function Admin() {
             } catch(e) { return 0; }
         };
         
-        const [c1, c2, c3, c4, c5] = await Promise.all([
+        const [c1, c2, c3, c4, c5, rejCount] = await Promise.all([
             fetchCount("listings_farm_fresh"),
             fetchCount("listings_machinery"),
             fetchCount("listings_workers"),
             fetchCount("listings_business"),
-            fetchCount("listings_freelancing")
+            fetchCount("listings_freelancing"),
+            fetchCount("rejected_applications")
         ]);
 
-        setListingCounts({ farmFresh: c1, machinery: c2, workers: c3, business: c4, freelance: c5 });
+        setListingCounts({ farmFresh: c1, machinery: c2, workers: c3, business: c4, freelance: c5, rejected: rejCount });
 
     } catch (error) {
         console.error("Error fetching data:", error);
@@ -62,13 +63,22 @@ function Admin() {
       if (isAuthenticated) fetchData(); 
   }, [isAuthenticated]);
 
-  // --- ACTION HANDLERS ---
   const handleReject = async (app) => {
-    if(window.confirm("Are you sure you want to REJECT this application? Their personal data will be erased from the database.")) {
+    const reason = window.prompt("Enter the reason for rejection:");
+    if (reason === null) return; // User cancelled
+    
+    if(window.confirm("Are you sure you want to REJECT this application?")) {
+        // 1. Add to rejected_applications to keep the count
+        await addDoc(collection(db, "rejected_applications"), {
+            rejectedAt: new Date().toISOString(),
+            reason: reason || "Does not meet requirements."
+        });
+
+        // 2. Update the original document so the user sees the reason once
         const sellerRef = doc(db, "seller_applications", app.id);
+        const updates = { status: 'rejected', rejectionReason: reason || "Does not meet requirements." };
         
-        const updates = { status: 'rejected' };
-        // Wipe all personal data
+        // Wipe all personal data from the main document to ensure privacy
         Object.keys(app).forEach(key => {
             if (key !== 'id' && key !== 'status' && key !== 'accountType' && key !== 'sellerId') {
                 updates[key] = deleteField();
@@ -184,8 +194,8 @@ function Admin() {
                           <p>Verified Sellers</p>
                       </div>
                       <div className="stat-card rejected">
-                          <h3>{rejectedApps.length}</h3>
-                          <p>Rejected</p>
+                          <h3>{listingCounts.rejected}</h3>
+                          <p>Total Rejected</p>
                       </div>
                   </div>
 
@@ -399,29 +409,39 @@ const styles = `
   /* LOGIN PAGE STYLES */
   .admin-login-page {
       display: flex; align-items: center; justify-content: center;
-      min-height: 100vh; background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+      min-height: 100vh; 
+      background: linear-gradient(rgba(15, 23, 42, 0.8), rgba(15, 23, 42, 0.9)), url('https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=1920&q=80') center/cover no-repeat;
       font-family: 'Inter', sans-serif;
+      padding: 20px;
   }
   .login-card {
-      background: white; padding: 40px; border-radius: 24px; width: 100%; max-width: 400px;
-      box-shadow: 0 20px 40px rgba(0,0,0,0.4); text-align: center;
+      background: rgba(255, 255, 255, 0.95); 
+      padding: 50px 40px; 
+      border-radius: 30px; 
+      width: 100%; 
+      max-width: 420px;
+      box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); 
+      text-align: center;
+      backdrop-filter: blur(10px);
   }
-  .login-header .shield-icon { font-size: 48px; margin-bottom: 10px; }
-  .login-header h2 { margin: 0 0 5px; color: #0f172a; font-size: 24px; font-weight: 800; }
-  .login-header p { margin: 0 0 30px; color: #64748b; font-size: 14px; }
+  .login-header .shield-icon { font-size: 56px; margin-bottom: 15px; text-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+  .login-header h2 { margin: 0 0 8px; color: #0f172a; font-size: 28px; font-weight: 800; letter-spacing: -0.5px; }
+  .login-header p { margin: 0 0 35px; color: #64748b; font-size: 15px; font-weight: 500; }
   
-  .login-form { display: flex; flex-direction: column; gap: 20px; }
-  .login-form .input-group { display: flex; flex-direction: column; text-align: left; gap: 6px; }
-  .login-form label { font-size: 12px; font-weight: 700; color: #475569; text-transform: uppercase; }
+  .login-form { display: flex; flex-direction: column; gap: 24px; }
+  .login-form .input-group { display: flex; flex-direction: column; text-align: left; gap: 8px; }
+  .login-form label { font-size: 13px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.5px; margin-left: 4px; }
   .login-form input {
-      padding: 14px 16px; border-radius: 12px; border: 2px solid #e2e8f0; font-size: 15px; outline: none; transition: 0.2s;
+      padding: 16px 20px; border-radius: 16px; border: 2px solid #e2e8f0; font-size: 16px; outline: none; transition: 0.2s; background: #f8fafc;
   }
-  .login-form input:focus { border-color: var(--primary); box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1); }
+  .login-form input:focus { border-color: var(--primary); background: white; box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.15); }
   .btn-login {
-      padding: 14px; background: var(--primary); color: white; border: none; border-radius: 12px;
-      font-size: 16px; font-weight: 800; cursor: pointer; transition: 0.2s; margin-top: 10px;
+      padding: 18px; background: linear-gradient(135deg, var(--primary) 0%, #2563eb 100%); color: white; border: none; border-radius: 16px;
+      font-size: 18px; font-weight: 800; cursor: pointer; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); margin-top: 15px;
+      box-shadow: 0 10px 25px -5px rgba(59, 130, 246, 0.4);
   }
-  .btn-login:hover { background: var(--primary-dark); transform: translateY(-2px); }
+  .btn-login:hover { transform: translateY(-3px); box-shadow: 0 15px 35px -5px rgba(59, 130, 246, 0.5); }
+  .btn-login:active { transform: translateY(0); }
 
   /* DASHBOARD LAYOUT */
   .admin-dashboard {
