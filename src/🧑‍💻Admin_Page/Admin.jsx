@@ -6,7 +6,7 @@ import { IoMdArrowBack } from 'react-icons/io';
 import { CheckCircle, XCircle, User, Building, LayoutDashboard, ClipboardList, Users, List, LogOut, Lock } from 'lucide-react';
 
 function Admin() {
-  const [isAuthenticated, setIsAuthenticated] = useState(sessionStorage.getItem('adminAuth') === 'true');
+  const [isAuthenticated, setIsAuthenticated] = useState(localStorage.getItem('adminAuth') === 'true');
   const [adminId, setAdminId] = useState('');
   const [password, setPassword] = useState('');
   
@@ -19,7 +19,7 @@ function Admin() {
   const handleLogin = (e) => {
       e.preventDefault();
       if (adminId === 'admin' && password === 'admin123') {
-          sessionStorage.setItem('adminAuth', 'true');
+          localStorage.setItem('adminAuth', 'true');
           setIsAuthenticated(true);
       } else {
           alert('Invalid Admin ID or Password');
@@ -170,7 +170,7 @@ function Admin() {
 
           <div className="sidebar-footer">
               <Link to="/" className="nav-item"><IoMdArrowBack size={20} /> Exit to App</Link>
-              <button className="nav-item btn-logout" onClick={() => { sessionStorage.removeItem('adminAuth'); setIsAuthenticated(false); }}><LogOut size={20} /> Logout</button>
+              <button className="nav-item btn-logout" onClick={() => { localStorage.removeItem('adminAuth'); setIsAuthenticated(false); }}><LogOut size={20} /> Logout</button>
           </div>
       </aside>
 
