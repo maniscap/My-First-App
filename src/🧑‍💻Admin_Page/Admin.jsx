@@ -266,7 +266,16 @@ function Admin() {
 
 // Sub-component for the application card (Shows FULL DETAILS for employee to verify)
 const ApplicationCard = ({ app, onApprove, onReject }) => {
-    
+    return (
+        <div className="app-card">
+            <div className="card-header">
+                <div className="card-title-group">
+                    {app.accountType === 'organisation' ? <Building size={24} color="#3b82f6" /> : <User size={24} color="#8b5cf6" />}
+                    <div>
+                        <h3 className="seller-name">{app.accountType === 'organisation' ? app.companyName : app.fullName}</h3>
+                        <p className="seller-id-text">ID: {app.sellerId} • {app.accountType?.toUpperCase()}</p>
+                    </div>
+                </div>
                 <div className="card-actions">
                     <button onClick={onReject} className="btn-action btn-reject"><XCircle size={18} /> Reject</button>
                     <button onClick={onApprove} className="btn-action btn-approve"><CheckCircle size={18} /> Approve Application</button>
