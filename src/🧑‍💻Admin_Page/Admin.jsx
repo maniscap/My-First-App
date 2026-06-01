@@ -64,27 +64,25 @@ function Admin() {
   }, [isAuthenticated]);
 
   const handleReject = async (app, reason) => {
-    if(window.confirm("Are you sure you want to REJECT this application?")) {
-        // 1. Add to rejected_applications to keep the count
-        await addDoc(collection(db, "rejected_applications"), {
-            rejectedAt: new Date().toISOString(),
-            reason: reason || "Does not meet requirements."
-        });
+      // 1. Add to rejected_applications to keep the count
+      await addDoc(collection(db, "rejected_applications"), {
+          rejectedAt: new Date().toISOString(),
+          reason: reason || "Does not meet requirements."
+      });
 
-        // 2. Update the original document so the user sees the reason once
-        const sellerRef = doc(db, "seller_applications", app.id);
-        const updates = { status: 'rejected', rejectionReason: reason || "Does not meet requirements." };
-        
-        // Wipe all personal data from the main document to ensure privacy
-        Object.keys(app).forEach(key => {
-            if (key !== 'id' && key !== 'status' && key !== 'accountType' && key !== 'sellerId') {
-                updates[key] = deleteField();
-            }
-        });
-        
-        await updateDoc(sellerRef, updates);
-        fetchData();
-    }
+      // 2. Update the original document so the user sees the reason once
+      const sellerRef = doc(db, "seller_applications", app.id);
+      const updates = { status: 'rejected', rejectionReason: reason || "Does not meet requirements." };
+      
+      // Wipe all personal data from the main document to ensure privacy
+      Object.keys(app).forEach(key => {
+          if (key !== 'id' && key !== 'status' && key !== 'accountType' && key !== 'sellerId') {
+              updates[key] = deleteField();
+          }
+      });
+      
+      await updateDoc(sellerRef, updates);
+      fetchData();
   };
 
   const handleApproveSeller = async (app) => {
