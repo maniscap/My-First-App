@@ -156,11 +156,44 @@ function SellerProfile_Setup() {
     };
 
     const handleSubmit = async () => {
-        // Basic Validation
-        if (!formData.phone || !formData.village) {
-            alert("Please fill your Phone Number and Village at minimum.");
+        // --- STRICT FORM VALIDATION ---
+        
+        // 1. Validate Phone Number (exactly 10 digits)
+        const phoneRegex = /^[0-9]{10}$/;
+        if (!formData.phone || !phoneRegex.test(formData.phone)) {
+            alert("Please enter a valid 10-digit Phone Number.");
             return;
         }
+
+        // 2. Validate Identity Details
+        if (accountType === 'individual') {
+            if (!formData.fullName.trim()) { alert("Please enter your Full Legal Name."); return; }
+            if (!formData.aadharNumber.trim()) { alert("Please enter your Aadhar / Govt ID Number."); return; }
+        } else {
+            if (!formData.companyName.trim()) { alert("Please enter your Organisation Name."); return; }
+            if (!formData.representativeName.trim()) { alert("Please enter the Contact Person Name."); return; }
+            if (!formData.gstNumber.trim()) { alert("Please enter your GST / Registration Number."); return; }
+        }
+
+        // 3. Validate Location / Address Details
+        const missingAddress = [];
+        if (!formData.village.trim()) missingAddress.push("Village/Town");
+        if (!formData.mandal.trim()) missingAddress.push("Mandal/Tehsil");
+        if (!formData.district.trim()) missingAddress.push("District");
+        if (!formData.state.trim()) missingAddress.push("State");
+        if (!formData.pincode.trim()) missingAddress.push("Pincode");
+        
+        if (missingAddress.length > 0) {
+            alert(`Please fill all required Location details. Missing: ${missingAddress.join(', ')}`);
+            return;
+        }
+
+        // 4. Validate Categories
+        if (!formData.categories || formData.categories.length === 0) {
+            alert("Please select at least one Business Category from the 'Your Business Categories' section.");
+            return;
+        }
+        // ------------------------------
 
         setIsSubmitting(true);
         try {
