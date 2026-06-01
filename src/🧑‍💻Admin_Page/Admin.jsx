@@ -63,10 +63,7 @@ function Admin() {
       if (isAuthenticated) fetchData(); 
   }, [isAuthenticated]);
 
-  const handleReject = async (app) => {
-    const reason = window.prompt("Enter the reason for rejection:");
-    if (reason === null) return; // User cancelled
-    
+  const handleReject = async (app, reason) => {
     if(window.confirm("Are you sure you want to REJECT this application?")) {
         // 1. Add to rejected_applications to keep the count
         await addDoc(collection(db, "rejected_applications"), {
@@ -232,7 +229,7 @@ function Admin() {
                                   key={app.id} 
                                   app={app} 
                                   onApprove={() => handleApproveSeller(app)} 
-                                  onReject={() => handleReject(app)} 
+                                  onReject={(reason) => handleReject(app, reason)} 
                               />
                           ))}
                       </div>
@@ -285,6 +282,17 @@ function Admin() {
 
 // Sub-component for the application card (Shows FULL DETAILS for employee to verify)
 const ApplicationCard = ({ app, onApprove, onReject }) => {
+    const [showReject, setShowReject] = React.useState(false);
+    const [rejectReason, setRejectReason] = React.useState("");
+
+    const handleConfirmReject = () => {
+        if (!rejectReason.trim()) {
+            alert("Please provide a reason for rejection.");
+            return;
+        }
+        onReject(rejectReason);
+    };
+
     return (
         <div className="app-card">
             <div className="card-header">
@@ -296,10 +304,26 @@ const ApplicationCard = ({ app, onApprove, onReject }) => {
                     </div>
                 </div>
                 <div className="card-actions">
-                    <button onClick={onReject} className="btn-action btn-reject"><XCircle size={18} /> Reject</button>
+                    <button onClick={() => setShowReject(!showReject)} className="btn-action btn-reject"><XCircle size={18} /> {showReject ? "Cancel" : "Reject"}</button>
                     <button onClick={onApprove} className="btn-action btn-approve"><CheckCircle size={18} /> Approve Application</button>
                 </div>
             </div>
+
+            {showReject && (
+                <div style={{ padding: '20px 24px', background: '#fef2f2', borderBottom: '1px solid #fee2e2' }}>
+                    <label style={{ display: 'block', fontSize: '14px', fontWeight: '800', color: '#991b1b', marginBottom: '8px' }}>Reason for Rejection:</label>
+                    <textarea 
+                        style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #fca5a5', minHeight: '80px', marginBottom: '15px', fontSize: '14px', outline: 'none' }}
+                        placeholder="Explain why this application is being rejected..."
+                        value={rejectReason}
+                        onChange={(e) => setRejectReason(e.target.value)}
+                    ></textarea>
+                    <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+                        <button onClick={() => setShowReject(false)} style={{ padding: '10px 16px', borderRadius: '8px', border: '1px solid #fca5a5', background: 'white', color: '#991b1b', cursor: 'pointer', fontWeight: 'bold' }}>Cancel</button>
+                        <button onClick={handleConfirmReject} style={{ padding: '10px 20px', borderRadius: '8px', border: 'none', background: '#dc2626', color: 'white', cursor: 'pointer', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '8px' }}><XCircle size={16} /> Confirm Reject</button>
+                    </div>
+                </div>
+            )}
 
             <div className="card-body">
                 
@@ -442,12 +466,18 @@ const styles = `
   
   .btn-login {
       width: 100%;
-      padding: 18px; background: linear-gradient(135deg, var(--primary) 0%, #2563eb 100%); color: white; border: none; border-radius: 12px;
-      font-size: 18px; font-weight: 800; cursor: pointer; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); margin-top: 10px;
-      box-shadow: 0 10px 25px -5px rgba(59, 130, 246, 0.4);
+      padding: 16px; 
+      background-color: #10b981; 
+      color: #ffffff; 
+      border: none; 
+      border-radius: 12px;
+      font-size: 16px; 
+      font-weight: 800; 
+      cursor: pointer; 
+      transition: background-color 0.2s ease; 
+      margin-top: 15px;
   }
-  .btn-login:hover { transform: translateY(-3px); box-shadow: 0 15px 35px -5px rgba(59, 130, 246, 0.5); }
-  .btn-login:active { transform: translateY(0); }
+  .btn-login:hover { background-color: #059669; }
 
   /* DASHBOARD LAYOUT */
   .admin-dashboard {
