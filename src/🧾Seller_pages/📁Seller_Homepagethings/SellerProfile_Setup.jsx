@@ -131,11 +131,12 @@ function SellerProfile_Setup() {
             delete submissionData.orgHarvestImages;
 
             // Submit to Firebase
-            await addDoc(collection(db, 'seller_applications'), submissionData);
+            const docRef = await addDoc(collection(db, 'seller_applications'), submissionData);
             
             alert(`Application Submitted Successfully!\n\nYour Seller ID is: ${sellerId}\n\nOur Admin team will review your application shortly.`);
             
-            // Mark locally as pending
+            // Save the document ID locally so the HomePage can track live status
+            localStorage.setItem('seller_app_id', docRef.id);
             localStorage.setItem('mock_seller_status', 'pending');
             navigate('/Seller_HomePage');
         } catch (error) {
