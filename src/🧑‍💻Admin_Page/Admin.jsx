@@ -9,16 +9,7 @@ function Admin() {
   const [adminId, setAdminId] = useState('');
   const [password, setPassword] = useState('');
   
-  const [activeTab, setActiveTab] = useState('applications');
-  
   // --- STATES ---
-  const [rate, setRate] = useState({ 
-      crop: '', price: '', trend: 'up', 
-      date: new Date().toISOString().split('T')[0], 
-      state: '', district: '', market: '' 
-  });
-
-  const [ratesList, setRatesList] = useState([]);
   const [sellerApplications, setSellerApplications] = useState([]);
 
   // --- LOGIN ---
@@ -35,9 +26,6 @@ function Admin() {
   // --- FETCH DATA ---
   const fetchData = async () => {
     try {
-        const r = await getDocs(collection(db, "market_rates"));
-        setRatesList(r.docs.map(d => ({id:d.id, ...d.data()})));
-
         const apps = await getDocs(collection(db, "seller_applications"));
         setSellerApplications(apps.docs.map(d => ({id:d.id, ...d.data()})));
     } catch (error) {
@@ -51,13 +39,7 @@ function Admin() {
       }
   }, [isAuthenticated]);
 
-  // --- SUBMIT HANDLERS ---
-  const handleRateSubmit = async (e) => {
-    e.preventDefault();
-    await addDoc(collection(db, "market_rates"), rate);
-    alert("Rate Added (Manual Override)");
-    fetchData();
-  };
+
 
   // --- ACTION HANDLERS ---
   const handleDelete = async (col, id) => {
@@ -115,79 +97,42 @@ function Admin() {
       </div>
 
       <div style={styles.tabsContainer}>
-          <button onClick={() => setActiveTab('applications')} style={activeTab === 'applications' ? styles.activeTab : styles.tab}>
+          <button style={styles.activeTab}>
               Seller Applications ({sellerApplications.filter(a => a.status === 'pending_approval').length})
-          </button>
-          <button onClick={() => setActiveTab('rates')} style={activeTab === 'rates' ? styles.activeTab : styles.tab}>
-              Market Rates
           </button>
       </div>
 
       <div style={styles.container}>
-          {activeTab === 'applications' && (
-              <div>
-                  <h2 style={{marginTop: 0}}>Pending Seller Applications</h2>
-                  {sellerApplications.length === 0 ? <p style={{color: '#888'}}>No applications found.</p> : null}
-                  
-                  <div style={styles.list}>
-                      {sellerApplications.map(app => (
-                          <div key={app.id} style={styles.appCard}>
-                              <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '15px'}}>
-                                  <div>
-                                      <span style={{background: app.status === 'approved' ? '#065f46' : '#854d0e', color: '#fff', padding: '4px 8px', borderRadius: '4px', fontSize: '12px', fontWeight: 'bold', textTransform: 'uppercase'}}>{app.status}</span>
-                                      <h3 style={{margin: '10px 0 5px'}}>{app.accountType === 'organisation' ? app.companyName : app.fullName}</h3>
-                                      <p style={{margin: 0, color: '#aaa', fontSize: '14px'}}>ID: <b>{app.sellerId}</b> | Type: {app.accountType}</p>
-                                  </div>
-                                  <div style={{display: 'flex', gap: '10px'}}>
-                                      {app.status === 'pending_approval' && (
-                                          <button onClick={() => handleApproveSeller(app.id)} style={{...styles.btn, background: '#10b981'}}>Approve</button>
-                                      )}
-                                      <button onClick={() => handleDelete('seller_applications', app.id)} style={styles.delBtn}>Reject / Delete</button>
-                                  </div>
+          <div>
+              <h2 style={{marginTop: 0}}>Pending Seller Applications</h2>
+              {sellerApplications.length === 0 ? <p style={{color: '#888'}}>No applications found.</p> : null}
+              
+              <div style={styles.list}>
+                  {sellerApplications.map(app => (
+                      <div key={app.id} style={styles.appCard}>
+                          <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '15px'}}>
+                              <div>
+                                  <span style={{background: app.status === 'approved' ? '#065f46' : '#854d0e', color: '#fff', padding: '4px 8px', borderRadius: '4px', fontSize: '12px', fontWeight: 'bold', textTransform: 'uppercase'}}>{app.status}</span>
+                                  <h3 style={{margin: '10px 0 5px'}}>{app.accountType === 'organisation' ? app.companyName : app.fullName}</h3>
+                                  <p style={{margin: 0, color: '#aaa', fontSize: '14px'}}>ID: <b>{app.sellerId}</b> | Type: {app.accountType}</p>
                               </div>
-                              <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', fontSize: '14px', background: '#222', padding: '15px', borderRadius: '8px'}}>
-                                  <p style={{margin:0}}><b>Phone:</b> {app.phone}</p>
-                                  <p style={{margin:0}}><b>Location:</b> {app.village}, {app.district}</p>
-                                  <p style={{margin:0}}><b>Categories:</b> {app.categories?.join(', ')}</p>
-                                  <p style={{margin:0}}><b>Submitted:</b> {new Date(app.submittedAt).toLocaleDateString()}</p>
+                              <div style={{display: 'flex', gap: '10px'}}>
+                                  {app.status === 'pending_approval' && (
+                                      <button onClick={() => handleApproveSeller(app.id)} style={{...styles.btn, background: '#10b981'}}>Approve</button>
+                                  )}
+                                  <button onClick={() => handleDelete('seller_applications', app.id)} style={styles.delBtn}>Reject / Delete</button>
                               </div>
                           </div>
-                      ))}
-                  </div>
+                          <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', fontSize: '14px', background: '#222', padding: '15px', borderRadius: '8px'}}>
+                              <p style={{margin:0}}><b>Phone:</b> {app.phone}</p>
+                              <p style={{margin:0}}><b>Location:</b> {app.village}, {app.district}</p>
+                              <p style={{margin:0}}><b>Categories:</b> {app.categories?.join(', ')}</p>
+                              <p style={{margin:0}}><b>Submitted:</b> {new Date(app.submittedAt).toLocaleDateString()}</p>
+                          </div>
+                      </div>
+                  ))}
               </div>
-          )}
-
-          {activeTab === 'rates' && (
-              <div>
-                  <div style={styles.card}>
-                      <h3>➕ Add Custom Rate</h3>
-                      <form onSubmit={handleRateSubmit} style={styles.form}>
-                          <div style={styles.row}>
-                              <input type="date" value={rate.date} onChange={e=>setRate({...rate, date:e.target.value})} style={styles.input} required/>
-                              <input placeholder="Market Name" value={rate.market} onChange={e=>setRate({...rate, market:e.target.value})} style={styles.input} required/>
-                          </div>
-                          <div style={styles.row}>
-                              <input placeholder="State" value={rate.state} onChange={e=>setRate({...rate, state:e.target.value})} style={styles.input} required/>
-                              <input placeholder="District" value={rate.district} onChange={e=>setRate({...rate, district:e.target.value})} style={styles.input} required/>
-                          </div>
-                          <div style={styles.row}>
-                              <input placeholder="Crop Name" value={rate.crop} onChange={e=>setRate({...rate, crop:e.target.value})} style={styles.input} required/>
-                              <input placeholder="Price (₹)" value={rate.price} onChange={e=>setRate({...rate, price:e.target.value})} style={styles.input} required/>
-                          </div>
-                          <button type="submit" style={styles.btn}>Publish Rate</button>
-                      </form>
-                  </div>
-
-                  <div style={styles.list}>
-                      {ratesList.map(r => (
-                          <div key={r.id} style={styles.listItem}>
-                              <span><b>{r.crop}</b> - ₹{r.price} ({r.market})</span>
-                              <button onClick={()=>handleDelete('market_rates', r.id)} style={styles.delBtn}>X</button>
-                          </div>
-                      ))}
-                  </div>
-              </div>
-          )}
+          </div>
       </div>
     </div>
   );
