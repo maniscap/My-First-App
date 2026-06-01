@@ -302,20 +302,58 @@ const ApplicationCard = ({ app, onApprove, onReject }) => {
                     </div>
                 </div>
 
-                {/* 2. RAW DATA DUMP */}
-                <div className="detail-section">
-                    <h4>Other specific answers</h4>
-                    <pre className="raw-data-box">
-                        {JSON.stringify({
-                            isOrganic: app.isOrganic,
-                            freshProduceTypes: app.freshProduceTypes,
-                            machineryDetails: app.machineryDetails,
-                            workerSkills: app.workerSkills,
-                            freelanceSkillSet: app.freelanceSkillSet,
-                            orgWorkerCount: app.orgWorkerCount,
-                            // (omitting empty fields dynamically for brevity)
-                        }, (k,v) => v ? v : undefined, 2)}
-                    </pre>
+                {/* 2. SPECIFIC AGRICULTURE & BUSINESS DETAILS */}
+                <div className="detail-section" style={{ marginTop: '10px' }}>
+                    <h4>Agriculture & Business Specifics</h4>
+                    <div className="detail-grid">
+                        {(app.isOrganic || app.freshProduceTypes) && (
+                            <div className="info-block">
+                                <span className="lbl">Farm & Produce</span>
+                                <span className="val">
+                                    {app.isOrganic === 'yes' ? <span style={{color: '#10b981', fontWeight: 'bold'}}>100% Organic 🌱</span> : 'Conventional'} 
+                                    {app.freshProduceTypes && <><br/>Crops: {app.freshProduceTypes}</>}
+                                    {app.orgProduceCapacity && <><br/>Capacity: {app.orgProduceCapacity}</>}
+                                </span>
+                            </div>
+                        )}
+                        {(app.machineryDetails || app.orgMachineryDetails) && (
+                            <div className="info-block">
+                                <span className="lbl">Machinery / Vehicles</span>
+                                <span className="val">
+                                    {app.machineryDetails || app.orgMachineryDetails}
+                                    {(app.orgMachineryCapacity) && ` (Capacity: ${app.orgMachineryCapacity})`}
+                                </span>
+                            </div>
+                        )}
+                        {(app.harvestCrops || app.orgHarvestCrops) && (
+                            <div className="info-block">
+                                <span className="lbl">Harvest Output</span>
+                                <span className="val">
+                                    {app.harvestCrops || app.orgHarvestCrops} 
+                                    {(app.harvestQuantity || app.orgHarvestCapacity) && ` - ${app.harvestQuantity || app.orgHarvestCapacity}`}
+                                </span>
+                            </div>
+                        )}
+                        {(app.workerSkills || app.orgWorkerSkills || app.orgWorkerCount) && (
+                            <div className="info-block">
+                                <span className="lbl">Labor / Workers</span>
+                                <span className="val">
+                                    {app.workerSkills || app.orgWorkerSkills}
+                                    {app.orgWorkerCount && ` (Count: ${app.orgWorkerCount})`}
+                                </span>
+                            </div>
+                        )}
+                        {(app.freelanceWorks || app.freelanceSkillSet || app.orgFreelancerSkills) && (
+                            <div className="info-block">
+                                <span className="lbl">Freelance / Skills</span>
+                                <span className="val">
+                                    {app.freelanceWorks || app.freelanceSkillSet || app.orgFreelancerSkills}
+                                    {app.freelanceExperience && ` (${app.freelanceExperience} Yrs Exp)`}
+                                    {app.orgFreelancerCount && ` (Count: ${app.orgFreelancerCount})`}
+                                </span>
+                            </div>
+                        )}
+                    </div>
                 </div>
 
             </div>

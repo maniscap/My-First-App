@@ -13,6 +13,10 @@ function SellerProfile_Setup() {
     // Form Selection State
     const [accountType, setAccountType] = useState(null); // 'individual' or 'organisation'
     
+    // Check if already applied
+    const indId = localStorage.getItem('seller_individual_app_id');
+    const orgId = localStorage.getItem('seller_organisation_app_id');
+    
     // Form Data State
     const [formData, setFormData] = useState({
         phone: '', emergencyPhone: '', email: '', shopName: '',
@@ -131,7 +135,16 @@ function SellerProfile_Setup() {
             
             alert(`Application Submitted Successfully!\n\nYour Seller ID is: ${sellerId}\n\nOur Admin team will review your application shortly.`);
             
+            // Primary tracker for homepage
             localStorage.setItem('seller_app_id', docRef.id);
+            
+            // Specific trackers for preventing duplicates
+            if (accountType === 'individual') {
+                localStorage.setItem('seller_individual_app_id', docRef.id);
+            } else {
+                localStorage.setItem('seller_organisation_app_id', docRef.id);
+            }
+            
             navigate('/Seller_HomePage');
         } catch (error) {
             console.error("Submission failed:", error);
@@ -195,27 +208,41 @@ function SellerProfile_Setup() {
                         <h3 style={{ margin: '10px 0', fontSize: '18px', color: '#1e293b', fontWeight: '800' }}>Select Account Type</h3>
                         
                         <div 
-                            onClick={() => setAccountType('individual')}
-                            style={{ backgroundColor: '#fff', padding: '30px', borderRadius: '24px', boxShadow: '0 8px 30px rgba(2, 132, 199, 0.1)', cursor: 'pointer', border: '2px solid transparent', transition: 'all 0.3s ease', position: 'relative', overflow: 'hidden' }}
+                            onClick={() => {
+                                if (indId) alert("You already have an Individual Profile application.");
+                                else setAccountType('individual');
+                            }}
+                            style={{ backgroundColor: '#fff', padding: '30px', borderRadius: '24px', boxShadow: '0 8px 30px rgba(2, 132, 199, 0.1)', cursor: indId ? 'not-allowed' : 'pointer', opacity: indId ? 0.6 : 1, border: '2px solid transparent', transition: 'all 0.3s ease', position: 'relative', overflow: 'hidden' }}
                         >
                             <div style={{ position: 'absolute', top: 0, right: 0, width: '100px', height: '100px', background: 'radial-gradient(circle, rgba(2,132,199,0.1) 0%, rgba(2,132,199,0) 70%)', transform: 'translate(30%, -30%)' }}></div>
                             <div style={{ width: '60px', height: '60px', backgroundColor: '#e0f2fe', borderRadius: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '20px' }}>
                                 <User size={32} color="#0284c7" />
                             </div>
                             <h4 style={{ margin: '0 0 8px', fontSize: '20px', fontWeight: '800', color: '#0f172a' }}>Single Person</h4>
-                            <p style={{ margin: 0, fontSize: '14px', color: '#64748b', lineHeight: '1.5' }}>Best for individual farmers, independent workers, or sole machinery owners.</p>
+                            {indId ? (
+                                <p style={{ margin: 0, fontSize: '14px', color: '#dc2626', fontWeight: '700' }}>Application in Process / Submitted</p>
+                            ) : (
+                                <p style={{ margin: 0, fontSize: '14px', color: '#64748b', lineHeight: '1.5' }}>Best for individual farmers, independent workers, or sole machinery owners.</p>
+                            )}
                         </div>
 
                         <div 
-                            onClick={() => setAccountType('organisation')}
-                            style={{ backgroundColor: '#fff', padding: '30px', borderRadius: '24px', boxShadow: '0 8px 30px rgba(67, 56, 202, 0.1)', cursor: 'pointer', border: '2px solid transparent', transition: 'all 0.3s ease', position: 'relative', overflow: 'hidden' }}
+                            onClick={() => {
+                                if (orgId) alert("You already have an Organisation Profile application.");
+                                else setAccountType('organisation');
+                            }}
+                            style={{ backgroundColor: '#fff', padding: '30px', borderRadius: '24px', boxShadow: '0 8px 30px rgba(67, 56, 202, 0.1)', cursor: orgId ? 'not-allowed' : 'pointer', opacity: orgId ? 0.6 : 1, border: '2px solid transparent', transition: 'all 0.3s ease', position: 'relative', overflow: 'hidden' }}
                         >
                             <div style={{ position: 'absolute', top: 0, right: 0, width: '100px', height: '100px', background: 'radial-gradient(circle, rgba(67,56,202,0.1) 0%, rgba(67,56,202,0) 70%)', transform: 'translate(30%, -30%)' }}></div>
                             <div style={{ width: '60px', height: '60px', backgroundColor: '#eef2ff', borderRadius: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '20px' }}>
                                 <Building2 size={32} color="#4338ca" />
                             </div>
                             <h4 style={{ margin: '0 0 8px', fontSize: '20px', fontWeight: '800', color: '#0f172a' }}>Organisation</h4>
-                            <p style={{ margin: 0, fontSize: '14px', color: '#64748b', lineHeight: '1.5' }}>Best for registered farming co-ops, rental businesses, and suppliers.</p>
+                            {orgId ? (
+                                <p style={{ margin: 0, fontSize: '14px', color: '#dc2626', fontWeight: '700' }}>Application in Process / Submitted</p>
+                            ) : (
+                                <p style={{ margin: 0, fontSize: '14px', color: '#64748b', lineHeight: '1.5' }}>Best for registered farming co-ops, rental businesses, and suppliers.</p>
+                            )}
                         </div>
                     </div>
                 ) : (

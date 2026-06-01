@@ -132,6 +132,14 @@ function Seller_HomePage() {
                 </div>
             )}
 
+            {(appStatus === 'pending_approval' || appStatus === 'approved') && (
+                <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+                    <Link to="/seller-setup" style={{ fontSize: '14px', color: '#2563eb', fontWeight: '800', textDecoration: 'none', background: '#e0e7ff', padding: '10px 20px', borderRadius: '10px', display: 'inline-block' }}>
+                        + Add Another Seller Profile (Individual / Organisation)
+                    </Link>
+                </div>
+            )}
+
             <Seller_BannerPromo />
 
             <h2 style={{ fontSize: '18px', color: '#2c3e50', marginBottom: '15px', fontWeight: '800' }}>Add New Listings</h2>
