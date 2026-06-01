@@ -360,38 +360,6 @@ function Consumer_HomePage() {
                 <div className="bokeh bokeh-4"></div>
                 <div className="bokeh bokeh-5"></div>
 
-                {/* Realistic Animated Birds (Sprite Sheet) */}
-                <motion.div 
-                  style={{ position: 'absolute', top: '15%', left: '-10%', zIndex: 10, opacity: 0.9, filter: 'drop-shadow(0px 8px 6px rgba(0,0,0,0.25))' }} 
-                  animate={{ x: ['-10vw', '120vw'], y: [0, -20, 15, -10] }} 
-                  transition={{ x: { duration: 18, ease: "linear", repeat: Infinity, delay: 0 }, y: { duration: 18, ease: "easeInOut", repeat: Infinity, delay: 0 } }}
-                >
-                  <div className="real-bird" style={{ animationDuration: '1s', transform: 'scale(0.6)' }}></div>
-                </motion.div>
-
-                <motion.div 
-                  style={{ position: 'absolute', top: '25%', left: '-10%', zIndex: 10, opacity: 0.75, filter: 'drop-shadow(0px 5px 4px rgba(0,0,0,0.15))' }} 
-                  animate={{ x: ['-10vw', '120vw'], y: [0, 15, -10, 0] }} 
-                  transition={{ x: { duration: 22, ease: "linear", repeat: Infinity, delay: 3 }, y: { duration: 22, ease: "easeInOut", repeat: Infinity, delay: 3 } }}
-                >
-                  <div className="real-bird" style={{ animationDuration: '0.8s', animationDelay: '-0.5s', transform: 'scale(0.4)' }}></div>
-                </motion.div>
-
-                <motion.div 
-                  style={{ position: 'absolute', top: '10%', left: '-10%', zIndex: 10, opacity: 0.5, filter: 'drop-shadow(0px 3px 3px rgba(0,0,0,0.1))' }} 
-                  animate={{ x: ['-10vw', '120vw'], y: [0, -10, 5, -5] }} 
-                  transition={{ x: { duration: 25, ease: "linear", repeat: Infinity, delay: 7 }, y: { duration: 25, ease: "easeInOut", repeat: Infinity, delay: 7 } }}
-                >
-                  <div className="real-bird" style={{ animationDuration: '1.2s', animationDelay: '-0.2s', transform: 'scale(0.25)' }}></div>
-                </motion.div>
-
-                <motion.div 
-                  style={{ position: 'absolute', top: '18%', left: '-10%', zIndex: 10, opacity: 0.65, filter: 'drop-shadow(0px 4px 4px rgba(0,0,0,0.2))' }} 
-                  animate={{ x: ['-10vw', '120vw'], y: [0, -5, 10, 0] }} 
-                  transition={{ x: { duration: 28, ease: "linear", repeat: Infinity, delay: 5 }, y: { duration: 28, ease: "easeInOut", repeat: Infinity, delay: 5 } }}
-                >
-                  <div className="real-bird" style={{ animationDuration: '0.9s', animationDelay: '-0.3s', transform: 'scale(0.35)' }}></div>
-                </motion.div>
               </div>
             </motion.div>
           )}
@@ -406,16 +374,7 @@ function Consumer_HomePage() {
               <div className="cine-nebula purple-nebula"></div>
               <div className="cine-nebula blue-nebula"></div>
 
-              {/* 2. Star Shapes */}
-              <div className="night-star-shape twinkling" style={{ top: '10%', left: '15%', fontSize: '8px', animationDelay: '0s' }}>★</div>
-              <div className="night-star-shape twinkling" style={{ top: '40%', left: '50%', fontSize: '10px', animationDelay: '1s' }}>★</div>
-              <div className="night-star-shape twinkling" style={{ top: '70%', left: '20%', fontSize: '7px', animationDelay: '2s' }}>★</div>
-              <div className="night-star-shape twinkling" style={{ top: '20%', left: '80%', fontSize: '11px', animationDelay: '0.5s' }}>★</div>
-              <div className="night-star-shape twinkling" style={{ top: '50%', left: '90%', fontSize: '8px', animationDelay: '1.5s' }}>★</div>
-              <div className="night-star-shape twinkling" style={{ top: '80%', left: '60%', fontSize: '9px', animationDelay: '2.5s' }}>★</div>
-              <div className="night-star-shape twinkling" style={{ top: '30%', left: '5%', fontSize: '6px', animationDelay: '0.3s' }}>★</div>
-              <div className="night-star-shape twinkling" style={{ top: '85%', left: '40%', fontSize: '10px', animationDelay: '1.2s' }}>★</div>
-              
+              {/* 2. Star Shapes (Static) */}
               <div className="night-star-shape glowing" style={{ top: '25%', left: '35%', fontSize: '9px' }}>★</div>
               <div className="night-star-shape glowing" style={{ top: '60%', left: '75%', fontSize: '12px', color: '#FDE047' }}>★</div>
               <div className="night-star-shape glowing" style={{ top: '15%', left: '65%', fontSize: '8px' }}>★</div>
@@ -428,20 +387,6 @@ function Consumer_HomePage() {
                 <div className="cine-moon-halo"></div>
                 <div className="cine-moon"></div>
               </div>
-
-              {/* 4. High-Velocity Shooting Stars */}
-              <div className="cine-shooting-star streak-1"></div>
-              <div className="cine-shooting-star streak-2"></div>
-              <div className="cine-shooting-star streak-3"></div>
-
-              {/* 5. Light Dark Clouds */}
-              <div className="cine-dark-cloud" style={{ top: '15%', left: '10%', width: '150px', height: '40px' }}></div>
-              <div className="cine-dark-cloud" style={{ top: '10%', right: '20%', width: '200px', height: '60px' }}></div>
-              <div className="cine-dark-cloud" style={{ top: '35%', left: '50%', width: '180px', height: '50px' }}></div>
-
-              {/* 6. Ethereal Horizon Mist */}
-              <div className="cine-mist back-mist"></div>
-              <div className="cine-mist front-mist"></div>
             </motion.div>
           )}
 
@@ -454,29 +399,8 @@ function Consumer_HomePage() {
               transition={{ duration: 0.8 }}
               style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', overflow: 'hidden', zIndex: 0, pointerEvents: 'none' }}
             >
-              {/* Cinematic Box-Shadow Snowfall */}
-              <div className="snow-layer snow-1" style={{ boxShadow: snowShadows1 }}></div>
-              <div className="snow-layer snow-2" style={{ boxShadow: snowShadows2 }}></div>
-              <div className="snow-layer snow-3" style={{ boxShadow: snowShadows3 }}></div>
-
               {/* Cozy Winter House */}
               <div className="cozy-house">
-                <div className="chimney">
-                  {VECTOR_SMOKE.map((puff, i) => (
-                    <div 
-                      key={`smoke-${i}`} 
-                      className="smoke puff"
-                      style={{
-                        width: `${puff.size}px`, height: `${puff.size}px`,
-                        borderRadius: `${puff.br1}% ${puff.br2}% ${puff.br3}% ${puff.br4}%`,
-                        marginLeft: `${puff.startX}px`,
-                        animationDelay: `${puff.delay}s`, animationDuration: `${puff.duration}s`,
-                        zIndex: 50 - i, // Replicates the prepend() stacking effect
-                        '--drift': `${puff.drift}px`, '--scale': puff.scale
-                      }}
-                    ></div>
-                  ))}
-                </div>
                 <div className="roof"></div>
                 <div className="walls"></div>
                 <div className="window glowing-window"></div>
