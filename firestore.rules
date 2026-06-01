@@ -34,5 +34,15 @@ service cloud.firestore {
       allow create: if request.auth != null && request.auth.uid == request.resource.data.buyerId;
       allow update, delete: if request.auth != null && (request.auth.uid == resource.data.buyerId || request.auth.uid == resource.data.sellerId);
     }
+
+    // Allow anyone to submit and view seller applications (Admin use)
+    match /seller_applications/{document=**} {
+      allow read, write: if true;
+    }
+
+    // Allow the Admin to post and everyone to read market rates
+    match /market_rates/{document=**} {
+      allow read, write: if true;
+    }
   }
 }
