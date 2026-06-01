@@ -359,6 +359,28 @@ function Consumer_HomePage() {
                 <div className="bokeh bokeh-3"></div>
                 <div className="bokeh bokeh-4"></div>
                 <div className="bokeh bokeh-5"></div>
+                
+                {/* Static Painted Birds */}
+                <div style={{ position: 'absolute', top: '15%', left: '20%', opacity: 0.85, transform: 'scale(0.5) rotate(-5deg)' }}>
+                  <svg width="40" height="20" viewBox="0 0 40 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M0 10 Q10 0 20 10 Q30 0 40 10 Q30 5 20 15 Q10 5 0 10 Z" fill="#2c3e50"/>
+                  </svg>
+                </div>
+                <div style={{ position: 'absolute', top: '22%', left: '35%', opacity: 0.7, transform: 'scale(0.35) rotate(-10deg)' }}>
+                  <svg width="40" height="20" viewBox="0 0 40 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M0 10 Q10 0 20 10 Q30 0 40 10 Q30 5 20 15 Q10 5 0 10 Z" fill="#2c3e50"/>
+                  </svg>
+                </div>
+                <div style={{ position: 'absolute', top: '12%', left: '55%', opacity: 0.6, transform: 'scale(0.3) rotate(5deg)' }}>
+                  <svg width="40" height="20" viewBox="0 0 40 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M0 10 Q10 0 20 10 Q30 0 40 10 Q30 5 20 15 Q10 5 0 10 Z" fill="#2c3e50"/>
+                  </svg>
+                </div>
+                <div style={{ position: 'absolute', top: '28%', left: '75%', opacity: 0.5, transform: 'scale(0.25) rotate(-2deg)' }}>
+                  <svg width="40" height="20" viewBox="0 0 40 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M0 10 Q10 0 20 10 Q30 0 40 10 Q30 5 20 15 Q10 5 0 10 Z" fill="#2c3e50"/>
+                  </svg>
+                </div>
 
               </div>
             </motion.div>
