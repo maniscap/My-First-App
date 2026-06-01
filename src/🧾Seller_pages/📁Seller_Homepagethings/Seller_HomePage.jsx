@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { CircleUserRound, ShieldAlert, ShieldCheck, ShieldX } from 'lucide-react';
 import Seller_BannerPromo from './Seller_BannerPromo';
-import { db } from '../firebase';
+import { db } from '../../firebase';
 import { doc, getDoc } from 'firebase/firestore';
 
 function Seller_HomePage() {
