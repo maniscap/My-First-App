@@ -404,10 +404,12 @@ function Consumer_HomePage() {
               <div className="night-star-shape glowing" style={{ top: '5%', left: '45%', fontSize: '7px' }}>★</div>
               <div className="night-star-shape glowing" style={{ top: '90%', left: '85%', fontSize: '11px' }}>★</div>
 
-              {/* 3. Radiant Poetic Moon */}
-              <div className="cine-moon-wrapper">
-                <div className="cine-moon-halo"></div>
-                <div className="cine-moon"></div>
+              {/* 3. Crisp Modern Moon */}
+              <div style={{ position: 'absolute', top: '15%', right: '22%', width: '60px', height: '60px' }}>
+                {/* Clean outer glow */}
+                <div style={{ position: 'absolute', top: '-10px', left: '-10px', width: '80px', height: '80px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(255, 249, 230, 0.2) 0%, transparent 70%)', zIndex: 1 }}></div>
+                {/* Sharp crescent illusion using box-shadow inset trick */}
+                <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', borderRadius: '50%', background: '#FFF9E6', boxShadow: 'inset -8px -4px 0 0px rgba(0,0,0,0.1), 0 0 15px rgba(255, 255, 255, 0.8)', zIndex: 2 }}></div>
               </div>
             </motion.div>
           )}
@@ -944,13 +946,13 @@ function Consumer_HomePage() {
 
         {/* SWIPEABLE BENTO GRID AREA */}
         <div {...swipeHandlers} style={{ overflowX: 'hidden', width: '100%', minHeight: '350px' }}>
-          <AnimatePresence mode="popLayout">
+          <AnimatePresence mode="wait">
             <motion.div 
               key={activeTab}
-              initial={{ opacity: 0, x: direction * 30 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: direction * -30 }}
-              transition={{ duration: 0.3, ease: "easeOut" }}
+              initial={{ opacity: 0, scale: 0.98 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.98 }}
+              transition={{ duration: 0.2, ease: "easeOut" }}
               style={bentoGrid}
             >
 
