@@ -423,34 +423,35 @@ function Consumer_HomePage() {
               transition={{ duration: 0.8 }}
               style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', overflow: 'hidden', zIndex: 0, pointerEvents: 'none' }}
             >
-              {/* Sleek Minimalist SVG Winter Landscape */}
+              {/* Organic Nature SVG Landscape */}
               <svg className="winter-svg-bg" viewBox="0 0 400 180" fill="none" preserveAspectRatio="xMidYMax slice">
-                {/* Back Mountain */}
-                <path d="M-50 180L100 60L250 180Z" fill="#CBD5E1" opacity="0.6"/>
-                <path d="M150 180L280 80L450 180Z" fill="#94A3B8" opacity="0.4"/>
+                {/* Soft Distant Mountains */}
+                <path d="M-50 180 Q 80 80 180 180 Z" fill="#94A3B8" opacity="0.4"/>
+                <path d="M120 180 Q 250 50 400 180 Z" fill="#CBD5E1" opacity="0.5"/>
                 
-                {/* Mid Ground Hills */}
-                <path d="M-20 180 Q100 120 250 180 Z" fill="#E2E8F0"/>
-                <path d="M150 180 Q300 100 450 180 Z" fill="#F1F5F9"/>
+                {/* Rolling Snow Banks */}
+                <path d="M-20 180 C 80 130 150 150 250 180 Z" fill="#E2E8F0"/>
+                <path d="M180 180 C 280 120 350 140 450 180 Z" fill="#F1F5F9"/>
 
-                {/* Minimalist Pine Trees */}
-                <path d="M80 160 L90 120 L100 160 Z" fill="#475569"/>
-                <path d="M85 160 L90 130 L95 160 Z" fill="#334155"/>
-                
-                <path d="M300 170 L315 110 L330 170 Z" fill="#475569"/>
-                <path d="M307 170 L315 120 L323 170 Z" fill="#334155"/>
-                <path d="M330 180 L340 130 L350 180 Z" fill="#475569"/>
+                {/* Snow-covered Bushes / Organic Trees */}
+                <circle cx="75" cy="155" r="16" fill="#F8FAFC" opacity="0.9"/>
+                <circle cx="90" cy="165" r="12" fill="#E2E8F0" opacity="0.8"/>
+                <circle cx="65" cy="165" r="10" fill="#E2E8F0" opacity="0.8"/>
 
-                {/* Modern Cabin */}
-                <rect x="230" y="140" width="40" height="30" fill="#1E293B" rx="2"/>
-                <path d="M225 140 L250 120 L275 140 Z" fill="#F8FAFC"/>
-                <rect x="255" y="150" width="8" height="20" fill="#334155" rx="1"/>
-                <rect x="235" y="150" width="12" height="12" fill="#FDE047" rx="1"/>
-                <rect x="240" y="150" width="2" height="12" fill="#1E293B"/>
-                <rect x="235" y="155" width="12" height="2" fill="#1E293B"/>
+                <circle cx="320" cy="145" r="20" fill="#F8FAFC" opacity="0.9"/>
+                <circle cx="300" cy="155" r="14" fill="#E2E8F0" opacity="0.8"/>
+                <circle cx="340" cy="160" r="12" fill="#E2E8F0" opacity="0.8"/>
 
-                {/* Front Snow Ground */}
-                <path d="M-50 180 Q150 140 450 180 Z" fill="#FFFFFF"/>
+                {/* Cozy Wood Cottage with Curved Roof */}
+                <rect x="210" y="140" width="50" height="35" fill="#292524" rx="4"/>
+                <path d="M205 145 C 225 125 245 125 265 145 Z" fill="#FFFFFF"/>
+                <rect x="220" y="150" width="12" height="14" fill="#FDE047" rx="3" opacity="0.9"/>
+                <rect x="238" y="150" width="12" height="14" fill="#FDE047" rx="3" opacity="0.9"/>
+                <circle cx="235" cy="130" r="6" fill="#FFFFFF"/> {/* Roof snow puff */}
+                <circle cx="245" cy="132" r="5" fill="#FFFFFF"/>
+
+                {/* Foreground Soft Snow Drift */}
+                <path d="M-50 180 C 100 150 250 160 450 180 Z" fill="#FFFFFF"/>
               </svg>
             </motion.div>
           )}
