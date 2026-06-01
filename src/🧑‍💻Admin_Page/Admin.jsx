@@ -64,25 +64,34 @@ function Admin() {
   }, [isAuthenticated]);
 
   const handleReject = async (app, reason) => {
-      // 1. Add to rejected_applications to keep the count
-      await addDoc(collection(db, "rejected_applications"), {
-          rejectedAt: new Date().toISOString(),
-          reason: reason || "Does not meet requirements."
-      });
+      try {
+          // 1. Add to rejected_applications to keep the count (catch permission errors)
+          await addDoc(collection(db, "rejected_applications"), {
+              rejectedAt: new Date().toISOString(),
+              reason: reason || "Does not meet requirements."
+          });
+      } catch (err) {
+          console.warn("Could not save to rejected_applications. Check Firestore rules.", err);
+      }
 
-      // 2. Update the original document so the user sees the reason once
-      const sellerRef = doc(db, "seller_applications", app.id);
-      const updates = { status: 'rejected', rejectionReason: reason || "Does not meet requirements." };
-      
-      // Wipe all personal data from the main document to ensure privacy
-      Object.keys(app).forEach(key => {
-          if (key !== 'id' && key !== 'status' && key !== 'accountType' && key !== 'sellerId') {
-              updates[key] = deleteField();
-          }
-      });
-      
-      await updateDoc(sellerRef, updates);
-      fetchData();
+      try {
+          // 2. Update the original document so the user sees the reason once
+          const sellerRef = doc(db, "seller_applications", app.id);
+          const updates = { status: 'rejected', rejectionReason: reason || "Does not meet requirements." };
+          
+          // Wipe all personal data from the main document to ensure privacy
+          Object.keys(app).forEach(key => {
+              if (key !== 'id' && key !== 'status' && key !== 'accountType' && key !== 'sellerId') {
+                  updates[key] = deleteField();
+              }
+          });
+          
+          await updateDoc(sellerRef, updates);
+          fetchData();
+      } catch (error) {
+          console.error("Error rejecting application:", error);
+          alert("Failed to reject application. Check your connection or Firestore rules.");
+      }
   };
 
   const handleApproveSeller = async (app) => {
