@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { db, storage } from '../firebase';
+import { db } from '../firebase';
 import { collection, getDocs, doc, updateDoc, deleteField } from 'firebase/firestore';
-import { ref, deleteObject } from 'firebase/storage';
 import { IoMdArrowBack } from 'react-icons/io';
-import { CheckCircle, XCircle, Clock, User, Building, MapPin, Phone, Briefcase, FileImage, LayoutDashboard, ClipboardList, Users, List, LogOut } from 'lucide-react';
+import { CheckCircle, XCircle, Clock, User, Building, MapPin, Phone, Briefcase, LayoutDashboard, ClipboardList, Users, List, LogOut } from 'lucide-react';
 
 function Admin() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -73,32 +72,8 @@ function Admin() {
   };
 
   const handleApproveSeller = async (app) => {
-      if(window.confirm("Approve this seller? All heavy images will be deleted from the database securely.")) {
-          
-          // 1. Helper to safely delete file from Firebase Storage
-          const deleteStorageFile = async (url) => {
-              if (!url) return;
-              try {
-                  const fileRef = ref(storage, url);
-                  await deleteObject(fileRef);
-              } catch(e) { console.error("Could not delete from storage", e); }
-          };
-
-          // 2. Delete all possible images from Storage
-          const imagesToDelete = [];
-          if(app.profilePic) imagesToDelete.push(app.profilePic);
-          if(app.idProof) imagesToDelete.push(app.idProof);
-          if(app.organicCertificate) imagesToDelete.push(app.organicCertificate);
-          
-          ['machineryImages', 'orgProduceImages', 'orgMachineryImages', 'orgHarvestImages'].forEach(arrField => {
-              if (app[arrField] && Array.isArray(app[arrField])) {
-                  app[arrField].forEach(url => imagesToDelete.push(url));
-              }
-          });
-
-          await Promise.all(imagesToDelete.map(url => deleteStorageFile(url)));
-
-          // 3. Update Firestore: Mark as approved and erase image fields completely
+      if(window.confirm("Approve this seller? Application will be moved to verified.")) {
+          // Update Firestore: Mark as approved and erase image fields completely (in case they exist)
           const sellerRef = doc(db, "seller_applications", app.id);
           await updateDoc(sellerRef, { 
               status: 'approved',
@@ -292,48 +267,9 @@ function Admin() {
 // Sub-component for the application card (Shows FULL DETAILS for employee to verify)
 const ApplicationCard = ({ app, onApprove, onReject }) => {
     
-    // Helper to render images securely
-    const renderImage = (url, label) => {
-        if (!url) return null;
-        return (
-            <div className="image-preview-box">
-                <span className="img-label"><FileImage size={12}/> {label}</span>
-                <a href={url} target="_blank" rel="noopener noreferrer">
-                    <img src={url} alt={label} className="preview-img" />
-                </a>
-            </div>
-        );
-    };
-
-    const renderImageArray = (urls, label) => {
-        if (!urls || urls.length === 0) return null;
-        return (
-            <div className="image-array-box">
-                <span className="img-label"><FileImage size={12}/> {label} ({urls.length})</span>
-                <div className="img-grid">
-                    {urls.map((u, i) => (
-                        <a key={i} href={u} target="_blank" rel="noopener noreferrer">
-                            <img src={u} alt={`${label} ${i+1}`} className="preview-img" />
-                        </a>
-                    ))}
-                </div>
-            </div>
-        );
-    };
-
-    return (
-        <div className="app-card">
-            <div className="card-header">
-                <div className="card-title-group">
-                    {app.accountType === 'organisation' ? <Building size={24} color="#3b82f6" /> : <User size={24} color="#8b5cf6" />}
-                    <div>
-                        <h3 className="seller-name">{app.accountType === 'organisation' ? app.companyName : app.fullName}</h3>
-                        <p className="seller-id-text">ID: {app.sellerId} • {app.accountType.toUpperCase()}</p>
-                    </div>
-                </div>
                 <div className="card-actions">
                     <button onClick={onReject} className="btn-action btn-reject"><XCircle size={18} /> Reject</button>
-                    <button onClick={onApprove} className="btn-action btn-approve"><CheckCircle size={18} /> Approve & Erase Media</button>
+                    <button onClick={onApprove} className="btn-action btn-approve"><CheckCircle size={18} /> Approve Application</button>
                 </div>
             </div>
 
@@ -366,24 +302,7 @@ const ApplicationCard = ({ app, onApprove, onReject }) => {
                     </div>
                 </div>
 
-                {/* 2. MEDIA UPLOADS (Will be deleted on approve) */}
-                <div className="detail-section warning-bg">
-                    <h4>Media Uploads (Will be deleted upon approval)</h4>
-                    <p className="helper-text">Click images to view full size.</p>
-                    
-                    <div className="media-container">
-                        {renderImage(app.profilePic, "Profile / Shop Photo")}
-                        {renderImage(app.idProof, "ID Proof Document")}
-                        {renderImage(app.organicCertificate, "Organic Certificate")}
-                        
-                        {renderImageArray(app.machineryImages, "Machinery Images")}
-                        {renderImageArray(app.orgProduceImages, "Produce Images")}
-                        {renderImageArray(app.orgMachineryImages, "Org Machinery Images")}
-                        {renderImageArray(app.orgHarvestImages, "Harvest Images")}
-                    </div>
-                </div>
-
-                {/* 3. RAW DATA DUMP */}
+                {/* 2. RAW DATA DUMP */}
                 <div className="detail-section">
                     <h4>Other specific answers</h4>
                     <pre className="raw-data-box">
