@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Building2, User, ShieldCheck, Clock, ChevronLeft, UploadCloud, MapPin, Briefcase, CheckCircle2 } from 'lucide-react';
-import { db } from '../../firebase';
+import { db, storage } from '../../firebase';
 import { collection, addDoc } from 'firebase/firestore';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
 function SellerProfile_Setup() {
     const navigate = useNavigate();
@@ -116,15 +117,39 @@ function SellerProfile_Setup() {
             const randomPart = Math.random().toString(36).substring(2, 6).toUpperCase();
             const sellerId = `SLR-${timestampPart}-${randomPart}`;
             
-            // Clean up formData by removing File objects (they cause Firestore errors without Storage upload)
+            // Upload helper
+            const uploadFile = async (file, path) => {
+                if (!file) return null;
+                const fileRef = ref(storage, path);
+                await uploadBytes(fileRef, file);
+                return await getDownloadURL(fileRef);
+            };
+
+            const uploadMultipleFiles = async (files, basePath) => {
+                if (!files) return null;
+                // If it's a single file accidentally passed as multiple
+                if (!Array.isArray(files) && !(files instanceof FileList)) {
+                    return [await uploadFile(files, `${basePath}_0`)];
+                }
+                const urls = [];
+                for (let i = 0; i < files.length; i++) {
+                    const url = await uploadFile(files[i], `${basePath}_${i}`);
+                    if (url) urls.push(url);
+                }
+                return urls.length > 0 ? urls : null;
+            };
+
             const submissionData = { ...formData, sellerId: sellerId, status: 'pending_approval', accountType: accountType, submittedAt: new Date().toISOString() };
-            delete submissionData.profilePic;
-            delete submissionData.organicCertificate;
-            delete submissionData.machineryImages;
-            delete submissionData.idProof;
-            delete submissionData.orgProduceImages;
-            delete submissionData.orgMachineryImages;
-            delete submissionData.orgHarvestImages;
+            
+            // Upload images and replace File objects with strings/arrays of strings
+            if (formData.profilePic) submissionData.profilePic = await uploadFile(formData.profilePic, `applications/${sellerId}/profilePic`);
+            if (formData.idProof) submissionData.idProof = await uploadFile(formData.idProof, `applications/${sellerId}/idProof`);
+            if (formData.organicCertificate) submissionData.organicCertificate = await uploadFile(formData.organicCertificate, `applications/${sellerId}/organicCertificate`);
+            if (formData.machineryImages) submissionData.machineryImages = await uploadMultipleFiles(formData.machineryImages, `applications/${sellerId}/machinery`);
+            
+            if (formData.orgProduceImages) submissionData.orgProduceImages = await uploadMultipleFiles(formData.orgProduceImages, `applications/${sellerId}/orgProduce`);
+            if (formData.orgMachineryImages) submissionData.orgMachineryImages = await uploadMultipleFiles(formData.orgMachineryImages, `applications/${sellerId}/orgMachinery`);
+            if (formData.orgHarvestImages) submissionData.orgHarvestImages = await uploadMultipleFiles(formData.orgHarvestImages, `applications/${sellerId}/orgHarvest`);
 
             // Submit to Firebase
             const docRef = await addDoc(collection(db, 'seller_applications'), submissionData);

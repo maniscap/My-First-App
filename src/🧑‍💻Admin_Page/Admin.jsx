@@ -1,16 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { db } from '../firebase';
-import { collection, getDocs, doc, updateDoc } from 'firebase/firestore';
+import { db, storage } from '../firebase';
+import { collection, getDocs, doc, updateDoc, deleteField } from 'firebase/firestore';
+import { ref, deleteObject } from 'firebase/storage';
 import { IoMdArrowBack } from 'react-icons/io';
-import { CheckCircle, XCircle, Clock, User, Building, MapPin, Phone, Briefcase } from 'lucide-react';
+import { CheckCircle, XCircle, Clock, User, Building, MapPin, Phone, Briefcase, FileImage, LayoutDashboard, ClipboardList, Users, List, LogOut } from 'lucide-react';
 
 function Admin() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [adminId, setAdminId] = useState('');
   const [password, setPassword] = useState('');
   
+  const [activeTab, setActiveTab] = useState('dashboard'); // dashboard, verifications, approved, listings
   const [sellerApplications, setSellerApplications] = useState([]);
+  const [listingCounts, setListingCounts] = useState({ farmFresh: 0, machinery: 0, workers: 0, business: 0, freelance: 0 });
   const [loading, setLoading] = useState(false);
 
   // --- LOGIN ---
@@ -27,8 +30,28 @@ function Admin() {
   const fetchData = async () => {
     setLoading(true);
     try {
+        // Fetch Seller Applications
         const apps = await getDocs(collection(db, "seller_applications"));
         setSellerApplications(apps.docs.map(d => ({id:d.id, ...d.data()})));
+
+        // Fetch Listing Counts
+        const fetchCount = async (colName) => {
+            try {
+                const snap = await getDocs(collection(db, colName));
+                return snap.size;
+            } catch(e) { return 0; }
+        };
+        
+        const [c1, c2, c3, c4, c5] = await Promise.all([
+            fetchCount("listings_farm_fresh"),
+            fetchCount("listings_machinery"),
+            fetchCount("listings_workers"),
+            fetchCount("listings_business"),
+            fetchCount("listings_freelancing")
+        ]);
+
+        setListingCounts({ farmFresh: c1, machinery: c2, workers: c3, business: c4, freelance: c5 });
+
     } catch (error) {
         console.error("Error fetching data:", error);
     } finally {
@@ -37,26 +60,57 @@ function Admin() {
   };
 
   useEffect(() => { 
-      if (isAuthenticated) {
-          fetchData(); 
-      }
+      if (isAuthenticated) fetchData(); 
   }, [isAuthenticated]);
 
   // --- ACTION HANDLERS ---
   const handleReject = async (id) => {
     if(window.confirm("Are you sure you want to REJECT this application?")) {
         const sellerRef = doc(db, "seller_applications", id);
-        await updateDoc(sellerRef, { status: 'rejected' }); // Mark as rejected instead of deleting
+        await updateDoc(sellerRef, { status: 'rejected' });
         fetchData();
     }
   };
 
-  const handleApproveSeller = async (id) => {
-      if(window.confirm("Approve this seller? All heavy data/images will be stripped from the database.")) {
-          const sellerRef = doc(db, "seller_applications", id);
-          // When approved, we update status to approved. 
-          // Note: Images were never sent to Firestore, so we just mark it approved.
-          await updateDoc(sellerRef, { status: 'approved' });
+  const handleApproveSeller = async (app) => {
+      if(window.confirm("Approve this seller? All heavy images will be deleted from the database securely.")) {
+          
+          // 1. Helper to safely delete file from Firebase Storage
+          const deleteStorageFile = async (url) => {
+              if (!url) return;
+              try {
+                  const fileRef = ref(storage, url);
+                  await deleteObject(fileRef);
+              } catch(e) { console.error("Could not delete from storage", e); }
+          };
+
+          // 2. Delete all possible images from Storage
+          const imagesToDelete = [];
+          if(app.profilePic) imagesToDelete.push(app.profilePic);
+          if(app.idProof) imagesToDelete.push(app.idProof);
+          if(app.organicCertificate) imagesToDelete.push(app.organicCertificate);
+          
+          ['machineryImages', 'orgProduceImages', 'orgMachineryImages', 'orgHarvestImages'].forEach(arrField => {
+              if (app[arrField] && Array.isArray(app[arrField])) {
+                  app[arrField].forEach(url => imagesToDelete.push(url));
+              }
+          });
+
+          await Promise.all(imagesToDelete.map(url => deleteStorageFile(url)));
+
+          // 3. Update Firestore: Mark as approved and erase image fields completely
+          const sellerRef = doc(db, "seller_applications", app.id);
+          await updateDoc(sellerRef, { 
+              status: 'approved',
+              profilePic: deleteField(),
+              idProof: deleteField(),
+              organicCertificate: deleteField(),
+              machineryImages: deleteField(),
+              orgProduceImages: deleteField(),
+              orgMachineryImages: deleteField(),
+              orgHarvestImages: deleteField()
+          });
+          
           fetchData();
       }
   };
@@ -96,69 +150,113 @@ function Admin() {
     <div className="admin-dashboard">
       <style>{styles}</style>
       
-      {/* Desktop & Mobile Navbar */}
-      <nav className="admin-navbar">
-          <div className="nav-left">
-              <Link to="/" className="nav-back"><IoMdArrowBack size={24}/></Link>
-              <div className="nav-brand">
-                  <span className="brand-icon">💼</span>
-                  <span className="brand-text">Admin Dashboard</span>
-              </div>
+      {/* SIDEBAR */}
+      <aside className="sidebar">
+          <div className="sidebar-brand">
+              <span className="brand-icon">💼</span>
+              <span className="brand-text">Admin Panel</span>
           </div>
-          <button onClick={() => setIsAuthenticated(false)} className="btn-logout">Logout</button>
-      </nav>
+          
+          <nav className="sidebar-nav">
+              <button className={`nav-item ${activeTab === 'dashboard' ? 'active' : ''}`} onClick={() => setActiveTab('dashboard')}>
+                  <LayoutDashboard size={20} /> Dashboard Overview
+              </button>
+              <button className={`nav-item ${activeTab === 'verifications' ? 'active' : ''}`} onClick={() => setActiveTab('verifications')}>
+                  <ClipboardList size={20} /> Verifications <span className="badge">{pendingApps.length}</span>
+              </button>
+              <button className={`nav-item ${activeTab === 'approved' ? 'active' : ''}`} onClick={() => setActiveTab('approved')}>
+                  <Users size={20} /> Approved Sellers
+              </button>
+              <button className={`nav-item ${activeTab === 'listings' ? 'active' : ''}`} onClick={() => setActiveTab('listings')}>
+                  <List size={20} /> Active Listings
+              </button>
+          </nav>
 
-      <main className="dashboard-content">
-          <div className="dashboard-header">
-              <div className="header-titles">
-                  <h1>Verification Hub</h1>
-                  <p>Review full details of incoming applications.</p>
-              </div>
-              <div className="stats-cards">
-                  <div className="stat-card pending">
-                      <h3>{pendingApps.length}</h3>
-                      <p>Pending Review</p>
-                  </div>
-                  <div className="stat-card approved">
-                      <h3>{approvedApps.length}</h3>
-                      <p>Verified / Approved</p>
-                  </div>
-                  <div className="stat-card rejected">
-                      <h3>{rejectedApps.length}</h3>
-                      <p>Rejected</p>
-                  </div>
-              </div>
+          <div className="sidebar-footer">
+              <Link to="/" className="nav-item"><IoMdArrowBack size={20} /> Exit to App</Link>
+              <button className="nav-item btn-logout" onClick={() => setIsAuthenticated(false)}><LogOut size={20} /> Logout</button>
           </div>
+      </aside>
 
-          <div className="applications-section">
-              <h2 className="section-title">Applications Pending Review</h2>
-              
-              {loading ? (
-                  <div className="loading-state">Loading applications...</div>
-              ) : pendingApps.length === 0 ? (
-                  <div className="empty-state">
-                      <CheckCircle size={48} color="#10b981" />
-                      <p>You're all caught up! No pending applications.</p>
+      {/* MAIN CONTENT */}
+      <main className="main-content">
+          
+          {/* DASHBOARD TAB */}
+          {activeTab === 'dashboard' && (
+              <div className="tab-content">
+                  <div className="header-titles">
+                      <h1>Dashboard Overview</h1>
+                      <p>High-level statistics and system health.</p>
                   </div>
-              ) : (
-                  <div className="cards-grid">
-                      {pendingApps.map(app => (
-                          <ApplicationCard 
-                              key={app.id} 
-                              app={app} 
-                              onApprove={() => handleApproveSeller(app.id)} 
-                              onReject={() => handleReject(app.id)} 
-                          />
-                      ))}
+                  
+                  <h3 className="section-subtitle">Application Status</h3>
+                  <div className="stats-cards">
+                      <div className="stat-card pending">
+                          <h3>{pendingApps.length}</h3>
+                          <p>Pending Review</p>
+                      </div>
+                      <div className="stat-card approved">
+                          <h3>{approvedApps.length}</h3>
+                          <p>Verified Sellers</p>
+                      </div>
+                      <div className="stat-card rejected">
+                          <h3>{rejectedApps.length}</h3>
+                          <p>Rejected</p>
+                      </div>
                   </div>
-              )}
 
-              {/* APPROVED SELLERS TEXT LIST */}
-              {approvedApps.length > 0 && (
+                  <h3 className="section-subtitle" style={{marginTop: '40px'}}>Live Listing Counts</h3>
+                  <div className="stats-cards">
+                      <div className="stat-card neutral"><div className="icon">🌾</div><h3>{listingCounts.farmFresh}</h3><p>Farm Fresh</p></div>
+                      <div className="stat-card neutral"><div className="icon">🚜</div><h3>{listingCounts.machinery}</h3><p>Machinery</p></div>
+                      <div className="stat-card neutral"><div className="icon">🧑‍🔧</div><h3>{listingCounts.workers}</h3><p>Workers</p></div>
+                      <div className="stat-card neutral"><div className="icon">📦</div><h3>{listingCounts.business}</h3><p>Business Zone</p></div>
+                      <div className="stat-card neutral"><div className="icon">🚚</div><h3>{listingCounts.freelance}</h3><p>Freelancing</p></div>
+                  </div>
+              </div>
+          )}
+
+          {/* VERIFICATIONS TAB */}
+          {activeTab === 'verifications' && (
+              <div className="tab-content">
+                  <div className="header-titles">
+                      <h1>Pending Verifications</h1>
+                      <p>Review full details and documents before approving.</p>
+                  </div>
+                  
+                  {loading ? (
+                      <div className="loading-state">Loading applications...</div>
+                  ) : pendingApps.length === 0 ? (
+                      <div className="empty-state">
+                          <CheckCircle size={48} color="#10b981" />
+                          <p>You're all caught up! No pending applications.</p>
+                      </div>
+                  ) : (
+                      <div className="cards-list">
+                          {pendingApps.map(app => (
+                              <ApplicationCard 
+                                  key={app.id} 
+                                  app={app} 
+                                  onApprove={() => handleApproveSeller(app)} 
+                                  onReject={() => handleReject(app.id)} 
+                              />
+                          ))}
+                      </div>
+                  )}
+              </div>
+          )}
+
+          {/* APPROVED SELLERS TAB */}
+          {activeTab === 'approved' && (
+              <div className="tab-content">
+                  <div className="header-titles">
+                      <h1>Approved Sellers Directory</h1>
+                      <p>Lightweight text-only directory of verified sellers.</p>
+                  </div>
+                  
                   <div className="approved-directory">
-                      <h2 className="section-title" style={{marginTop: '40px'}}>Approved Sellers Directory</h2>
-                      <p className="directory-subtitle">Stored as pure text data.</p>
                       <div className="text-list">
+                          {approvedApps.length === 0 && <p style={{color:'#64748b'}}>No approved sellers yet.</p>}
                           {approvedApps.map(app => (
                               <div key={app.id} className="text-row">
                                   <strong>{app.sellerId}</strong> &mdash; 
@@ -169,8 +267,23 @@ function Admin() {
                           ))}
                       </div>
                   </div>
-              )}
-          </div>
+              </div>
+          )}
+
+          {/* LISTINGS TAB */}
+          {activeTab === 'listings' && (
+              <div className="tab-content">
+                  <div className="header-titles">
+                      <h1>Active Listings</h1>
+                      <p>Manage all active market listings.</p>
+                  </div>
+                  <div className="empty-state">
+                      <List size={48} color="#64748b" />
+                      <p>Listing management UI will be built alongside the listing forms.</p>
+                  </div>
+              </div>
+          )}
+
       </main>
     </div>
   );
@@ -178,54 +291,114 @@ function Admin() {
 
 // Sub-component for the application card (Shows FULL DETAILS for employee to verify)
 const ApplicationCard = ({ app, onApprove, onReject }) => {
+    
+    // Helper to render images securely
+    const renderImage = (url, label) => {
+        if (!url) return null;
+        return (
+            <div className="image-preview-box">
+                <span className="img-label"><FileImage size={12}/> {label}</span>
+                <a href={url} target="_blank" rel="noopener noreferrer">
+                    <img src={url} alt={label} className="preview-img" />
+                </a>
+            </div>
+        );
+    };
+
+    const renderImageArray = (urls, label) => {
+        if (!urls || urls.length === 0) return null;
+        return (
+            <div className="image-array-box">
+                <span className="img-label"><FileImage size={12}/> {label} ({urls.length})</span>
+                <div className="img-grid">
+                    {urls.map((u, i) => (
+                        <a key={i} href={u} target="_blank" rel="noopener noreferrer">
+                            <img src={u} alt={`${label} ${i+1}`} className="preview-img" />
+                        </a>
+                    ))}
+                </div>
+            </div>
+        );
+    };
+
     return (
         <div className="app-card">
             <div className="card-header">
                 <div className="card-title-group">
-                    {app.accountType === 'organisation' ? <Building size={20} color="#3b82f6" /> : <User size={20} color="#8b5cf6" />}
-                    <h3 className="seller-name">{app.accountType === 'organisation' ? app.companyName : app.fullName}</h3>
+                    {app.accountType === 'organisation' ? <Building size={24} color="#3b82f6" /> : <User size={24} color="#8b5cf6" />}
+                    <div>
+                        <h3 className="seller-name">{app.accountType === 'organisation' ? app.companyName : app.fullName}</h3>
+                        <p className="seller-id-text">ID: {app.sellerId} • {app.accountType.toUpperCase()}</p>
+                    </div>
                 </div>
-                <span className="status-badge badge-orange">Pending Review</span>
-            </div>
-
-            <div className="seller-id-badge">
-                <span className="id-label">SELLER ID</span>
-                <span className="id-value">{app.sellerId}</span>
+                <div className="card-actions">
+                    <button onClick={onReject} className="btn-action btn-reject"><XCircle size={18} /> Reject</button>
+                    <button onClick={onApprove} className="btn-action btn-approve"><CheckCircle size={18} /> Approve & Erase Media</button>
+                </div>
             </div>
 
             <div className="card-body">
-                {/* Basic Info */}
-                <div className="detail-group">
-                    <h4>Basic Information</h4>
-                    <p><strong>Phone:</strong> {app.phone}</p>
-                    <p><strong>Aadhaar/ID:</strong> {app.aadhaarNumber || 'N/A'}</p>
-                    <p><strong>Location:</strong> {app.village}, {app.mandal}, {app.district}, {app.state} - {app.pincode}</p>
-                    <p><strong>Categories:</strong> {app.categories?.join(', ') || 'None'}</p>
+                
+                {/* 1. TEXT DETAILS (Will be saved permanently) */}
+                <div className="detail-section">
+                    <h4>Text Information (Saved Permanently)</h4>
+                    <div className="detail-grid">
+                        <div className="info-block">
+                            <span className="lbl">Phone</span>
+                            <span className="val">{app.phone} {app.emergencyPhone && ` / ${app.emergencyPhone}`}</span>
+                        </div>
+                        <div className="info-block">
+                            <span className="lbl">{app.accountType === 'organisation' ? 'GST Number' : 'Aadhaar / ID'}</span>
+                            <span className="val">{app.accountType === 'organisation' ? app.gstNumber : app.aadharNumber}</span>
+                        </div>
+                        <div className="info-block">
+                            <span className="lbl">Location</span>
+                            <span className="val">{app.village}, {app.mandal}, {app.district}, {app.state} - {app.pincode}</span>
+                        </div>
+                        <div className="info-block">
+                            <span className="lbl">Categories</span>
+                            <span className="val">{app.categories?.join(', ') || 'None'}</span>
+                        </div>
+                        <div className="info-block">
+                            <span className="lbl">Experience / Size</span>
+                            <span className="val">{app.experienceYears ? `${app.experienceYears} Yrs` : ''} {app.farmSize ? `/ ${app.farmSize} Acres` : ''}</span>
+                        </div>
+                    </div>
                 </div>
 
-                {/* Specific details based on categories */}
-                {app.categories && app.categories.length > 0 && (
-                    <div className="detail-group">
-                        <h4>Application Specifics</h4>
-                        {app.categories.map(cat => (
-                            <div key={cat} style={{marginBottom: '10px'}}>
-                                <strong>{cat}:</strong>
-                                <pre style={{fontSize: '11px', background: '#f8fafc', padding: '5px', borderRadius: '4px', overflowX: 'auto'}}>
-                                    {JSON.stringify(app[cat] || 'No specific data provided', null, 2)}
-                                </pre>
-                            </div>
-                        ))}
+                {/* 2. MEDIA UPLOADS (Will be deleted on approve) */}
+                <div className="detail-section warning-bg">
+                    <h4>Media Uploads (Will be deleted upon approval)</h4>
+                    <p className="helper-text">Click images to view full size.</p>
+                    
+                    <div className="media-container">
+                        {renderImage(app.profilePic, "Profile / Shop Photo")}
+                        {renderImage(app.idProof, "ID Proof Document")}
+                        {renderImage(app.organicCertificate, "Organic Certificate")}
+                        
+                        {renderImageArray(app.machineryImages, "Machinery Images")}
+                        {renderImageArray(app.orgProduceImages, "Produce Images")}
+                        {renderImageArray(app.orgMachineryImages, "Org Machinery Images")}
+                        {renderImageArray(app.orgHarvestImages, "Harvest Images")}
                     </div>
-                )}
-            </div>
+                </div>
 
-            <div className="card-actions">
-                <button onClick={onReject} className="btn-action btn-reject">
-                    <XCircle size={18} /> Reject
-                </button>
-                <button onClick={onApprove} className="btn-action btn-approve">
-                    <CheckCircle size={18} /> Approve
-                </button>
+                {/* 3. RAW DATA DUMP */}
+                <div className="detail-section">
+                    <h4>Other specific answers</h4>
+                    <pre className="raw-data-box">
+                        {JSON.stringify({
+                            isOrganic: app.isOrganic,
+                            freshProduceTypes: app.freshProduceTypes,
+                            machineryDetails: app.machineryDetails,
+                            workerSkills: app.workerSkills,
+                            freelanceSkillSet: app.freelanceSkillSet,
+                            orgWorkerCount: app.orgWorkerCount,
+                            // (omitting empty fields dynamically for brevity)
+                        }, (k,v) => v ? v : undefined, 2)}
+                    </pre>
+                </div>
+
             </div>
         </div>
     );
@@ -234,363 +407,203 @@ const ApplicationCard = ({ app, onApprove, onReject }) => {
 // --- CSS STYLES FOR RESPONSIVENESS AND PREMIUM UI ---
 const styles = `
   :root {
-      --bg-color: #f8fafc;
+      --bg-color: #f1f5f9;
       --card-bg: #ffffff;
       --text-main: #0f172a;
       --text-muted: #64748b;
       --primary: #3b82f6;
+      --primary-dark: #2563eb;
       --success: #10b981;
       --danger: #ef4444;
       --border: #e2e8f0;
+      --sidebar-w: 260px;
   }
 
-  /* LOGIN PAGE */
-  .admin-login-page {
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
-      font-family: 'Inter', sans-serif;
-      padding: 20px;
-  }
-  .login-card {
-      background: white;
-      padding: 40px;
-      border-radius: 24px;
-      width: 100%;
-      max-width: 400px;
-      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
-  }
-  .login-header {
-      text-align: center;
-      margin-bottom: 30px;
-  }
-  .shield-icon {
-      font-size: 48px;
-      margin-bottom: 10px;
-  }
-  .login-header h2 {
-      margin: 0 0 5px 0;
-      color: #0f172a;
-      font-size: 24px;
-      font-weight: 800;
-  }
-  .login-header p {
-      margin: 0;
-      color: #64748b;
-      font-size: 14px;
-  }
-  .input-group {
-      margin-bottom: 20px;
-  }
-  .input-group label {
-      display: block;
-      margin-bottom: 8px;
-      font-size: 13px;
-      font-weight: 700;
-      color: #475569;
-  }
-  .input-group input {
-      width: 100%;
-      padding: 12px 16px;
-      border: 2px solid #e2e8f0;
-      border-radius: 12px;
-      font-size: 15px;
-      box-sizing: border-box;
-      outline: none;
-      transition: border-color 0.2s;
-  }
-  .input-group input:focus {
-      border-color: #3b82f6;
-  }
-  .btn-primary {
-      width: 100%;
-      padding: 14px;
-      background: #3b82f6;
-      color: white;
-      border: none;
-      border-radius: 12px;
-      font-size: 16px;
-      font-weight: 700;
-      cursor: pointer;
-      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
-      transition: transform 0.1s;
-  }
-  .btn-primary:active {
-      transform: scale(0.98);
-  }
-  .back-link {
-      display: block;
-      text-align: center;
-      margin-top: 20px;
-      color: #94a3b8;
-      text-decoration: none;
-      font-size: 14px;
-      font-weight: 600;
-  }
+  * { box-sizing: border-box; }
 
-  /* DASHBOARD */
+  /* DASHBOARD LAYOUT */
   .admin-dashboard {
+      display: flex;
       min-height: 100vh;
       background-color: var(--bg-color);
       font-family: 'Inter', sans-serif;
       color: var(--text-main);
   }
-  .admin-navbar {
+
+  /* SIDEBAR */
+  .sidebar {
+      width: var(--sidebar-w);
+      background: #0f172a;
+      color: #f8fafc;
       display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 16px 24px;
-      background: white;
-      border-bottom: 1px solid var(--border);
-      position: sticky;
-      top: 0;
+      flex-direction: column;
+      position: fixed;
+      top: 0; left: 0; bottom: 0;
       z-index: 100;
   }
-  .nav-left {
-      display: flex;
-      align-items: center;
-      gap: 16px;
-  }
-  .nav-back {
-      color: var(--text-main);
-      display: flex;
-      align-items: center;
-  }
-  .nav-brand {
-      display: flex;
-      align-items: center;
-      gap: 8px;
+  .sidebar-brand {
+      padding: 24px;
+      font-size: 20px;
       font-weight: 800;
-      font-size: 18px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      border-bottom: 1px solid #1e293b;
   }
-  .btn-logout {
-      background: #f1f5f9;
+  .sidebar-nav {
+      flex: 1;
+      padding: 24px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+  }
+  .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 16px;
+      background: transparent;
       border: none;
-      color: #475569;
-      padding: 8px 16px;
-      border-radius: 8px;
+      color: #94a3b8;
+      font-size: 15px;
       font-weight: 600;
+      border-radius: 8px;
       cursor: pointer;
+      text-align: left;
+      text-decoration: none;
+      transition: all 0.2s;
+  }
+  .nav-item:hover { background: #1e293b; color: #f8fafc; }
+  .nav-item.active { background: var(--primary); color: white; }
+  
+  .badge {
+      margin-left: auto;
+      background: #ef4444;
+      color: white;
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 800;
   }
 
-  .dashboard-content {
-      max-width: 1200px;
-      margin: 0 auto;
-      padding: 30px 24px;
+  .sidebar-footer {
+      padding: 24px 12px;
+      border-top: 1px solid #1e293b;
   }
-  .dashboard-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-end;
-      margin-bottom: 40px;
-      flex-wrap: wrap;
-      gap: 20px;
+  .btn-logout { width: 100%; color: #fca5a5; }
+  .btn-logout:hover { background: #7f1d1d; color: white; }
+
+  /* MAIN CONTENT */
+  .main-content {
+      flex: 1;
+      margin-left: var(--sidebar-w);
+      padding: 40px;
+      overflow-y: auto;
   }
-  .header-titles h1 {
-      margin: 0 0 8px 0;
-      font-size: 28px;
-      font-weight: 800;
-  }
-  .header-titles p {
-      margin: 0;
-      color: var(--text-muted);
-  }
+  .header-titles { margin-bottom: 30px; }
+  .header-titles h1 { margin: 0 0 8px 0; font-size: 28px; font-weight: 800; }
+  .header-titles p { margin: 0; color: var(--text-muted); font-size: 15px; }
+
+  .section-subtitle { font-size: 18px; font-weight: 700; margin-bottom: 15px; color: #334155; }
+
+  /* STAT CARDS */
   .stats-cards {
       display: flex;
-      gap: 16px;
+      gap: 20px;
       flex-wrap: wrap;
   }
   .stat-card {
       background: white;
-      padding: 16px 24px;
+      padding: 20px 24px;
       border-radius: 16px;
       border: 1px solid var(--border);
-      min-width: 140px;
+      min-width: 160px;
+      flex: 1;
+      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
   }
-  .stat-card h3 {
-      margin: 0 0 4px 0;
-      font-size: 24px;
-      font-weight: 800;
-  }
-  .stat-card p {
-      margin: 0;
-      font-size: 13px;
-      font-weight: 600;
-  }
+  .stat-card h3 { margin: 0 0 4px 0; font-size: 28px; font-weight: 800; }
+  .stat-card p { margin: 0; font-size: 14px; font-weight: 600; color: var(--text-muted); }
   .stat-card.pending h3 { color: #f59e0b; }
   .stat-card.approved h3 { color: #10b981; }
   .stat-card.rejected h3 { color: #ef4444; }
+  
+  .stat-card.neutral { display: flex; flex-direction: column; align-items: center; text-align: center; }
+  .stat-card.neutral .icon { font-size: 32px; margin-bottom: 10px; }
+  .stat-card.neutral h3 { color: #0f172a; }
 
-  .section-title {
-      font-size: 20px;
-      font-weight: 800;
-      margin-bottom: 20px;
-      border-bottom: 2px solid var(--border);
-      padding-bottom: 10px;
-  }
-
-  /* GRID SYSTEM */
-  .cards-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-      gap: 24px;
-  }
-
-  /* CARDS */
+  /* FULL WIDTH CARDS LIST */
+  .cards-list { display: flex; flex-direction: column; gap: 24px; }
+  
   .app-card {
       background: white;
-      border-radius: 20px;
+      border-radius: 16px;
       border: 1px solid var(--border);
-      padding: 24px;
-      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-      transition: transform 0.2s, box-shadow 0.2s;
-      display: flex;
-      flex-direction: column;
-  }
-  .app-card:hover {
-      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-      transform: translateY(-2px);
+      box-shadow: 0 4px 15px rgba(0,0,0,0.03);
+      overflow: hidden;
   }
   .card-header {
       display: flex;
       justify-content: space-between;
-      align-items: flex-start;
-      margin-bottom: 15px;
-  }
-  .card-title-group {
-      display: flex;
       align-items: center;
-      gap: 10px;
+      padding: 20px 24px;
+      border-bottom: 1px solid var(--border);
+      background: #f8fafc;
   }
-  .seller-name {
-      margin: 0;
-      font-size: 18px;
-      font-weight: 800;
-  }
-  .status-badge {
-      padding: 4px 10px;
-      border-radius: 20px;
-      font-size: 12px;
-      font-weight: 700;
-      text-transform: uppercase;
-  }
-  .badge-orange { background: #fffbeb; color: #b45309; border: 1px solid #fde68a; }
-
-  .seller-id-badge {
-      background: #f1f5f9;
-      padding: 8px 12px;
-      border-radius: 8px;
-      display: flex;
-      justify-content: space-between;
-      margin-bottom: 20px;
-      border: 1px dashed #cbd5e1;
-  }
-  .id-label { font-size: 11px; font-weight: 800; color: #64748b; }
-  .id-value { font-size: 13px; font-weight: 800; color: #0f172a; font-family: monospace; }
-
-  .card-body {
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-      margin-bottom: 24px;
-      flex-grow: 1;
-  }
-  .detail-group h4 {
-      margin: 0 0 8px 0;
-      font-size: 14px;
-      color: var(--primary);
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-  }
-  .detail-group p {
-      margin: 0 0 4px 0;
-      font-size: 13px;
-      color: #334155;
-  }
-
-  .card-actions {
-      display: flex;
-      gap: 12px;
-  }
+  .card-title-group { display: flex; align-items: center; gap: 15px; }
+  .seller-name { margin: 0; font-size: 20px; font-weight: 800; color: #0f172a; }
+  .seller-id-text { margin: 4px 0 0 0; font-size: 13px; font-weight: 600; color: #64748b; font-family: monospace; }
+  
+  .card-actions { display: flex; gap: 12px; }
   .btn-action {
-      flex: 1;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      padding: 12px;
-      border-radius: 10px;
-      border: none;
-      font-weight: 700;
-      font-size: 14px;
-      cursor: pointer;
+      display: flex; align-items: center; gap: 8px;
+      padding: 10px 16px; border-radius: 8px; border: none;
+      font-weight: 700; font-size: 14px; cursor: pointer; transition: 0.2s;
   }
-  .btn-reject {
-      background: #fef2f2;
-      color: #dc2626;
-  }
+  .btn-reject { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
   .btn-reject:hover { background: #fee2e2; }
-  .btn-approve {
-      background: var(--success);
-      color: white;
-      box-shadow: 0 4px 10px rgba(16, 185, 129, 0.3);
-  }
+  .btn-approve { background: var(--success); color: white; box-shadow: 0 4px 10px rgba(16, 185, 129, 0.3); }
   .btn-approve:hover { background: #059669; }
 
-  .empty-state {
-      text-align: center;
-      padding: 60px 20px;
-      background: white;
-      border-radius: 20px;
-      border: 1px dashed var(--border);
-  }
-  .empty-state p { margin-top: 15px; color: var(--text-muted); font-weight: 500; }
+  .card-body { padding: 24px; display: flex; flex-direction: column; gap: 24px; }
+  
+  .detail-section h4 { margin: 0 0 15px 0; font-size: 14px; color: var(--primary); text-transform: uppercase; letter-spacing: 0.5px; }
+  .detail-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 20px; }
+  .info-block { display: flex; flex-direction: column; gap: 4px; }
+  .info-block .lbl { font-size: 12px; font-weight: 700; color: #94a3b8; text-transform: uppercase; }
+  .info-block .val { font-size: 14px; font-weight: 600; color: #1e293b; }
+
+  /* MEDIA STYLES */
+  .warning-bg { background: #fffbeb; padding: 20px; border-radius: 12px; border: 1px dashed #fcd34d; }
+  .warning-bg h4 { color: #b45309; margin-bottom: 5px; }
+  .helper-text { margin: 0 0 15px 0; font-size: 12px; color: #d97706; font-weight: 500; }
+  
+  .media-container { display: flex; flex-wrap: wrap; gap: 15px; }
+  .image-preview-box, .image-array-box { background: white; padding: 10px; border-radius: 8px; border: 1px solid #fde68a; }
+  .img-label { display: flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 700; color: #b45309; margin-bottom: 8px; }
+  .preview-img { width: 100px; height: 100px; object-fit: cover; border-radius: 6px; border: 1px solid #e2e8f0; transition: 0.2s; cursor: pointer; }
+  .preview-img:hover { transform: scale(1.05); }
+  .img-grid { display: flex; gap: 8px; flex-wrap: wrap; }
+
+  .raw-data-box { background: #f8fafc; padding: 15px; border-radius: 8px; font-size: 12px; color: #475569; overflow-x: auto; border: 1px solid #e2e8f0; }
 
   /* APPROVED DIRECTORY - PRINT STYLE */
-  .approved-directory {
-      margin-top: 50px;
-      background: white;
-      padding: 30px;
-      border-radius: 16px;
-      border: 1px solid var(--border);
-  }
-  .directory-subtitle {
-      color: var(--text-muted);
-      font-size: 14px;
-      margin-top: -15px;
-      margin-bottom: 20px;
-  }
-  .text-list {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-  }
-  .text-row {
-      font-family: 'Courier New', monospace;
-      font-size: 13px;
-      padding: 10px;
-      border-bottom: 1px solid #f1f5f9;
-      color: #1e293b;
-  }
+  .approved-directory { background: white; padding: 30px; border-radius: 16px; border: 1px solid var(--border); }
+  .text-list { display: flex; flex-direction: column; gap: 10px; }
+  .text-row { font-family: 'Courier New', monospace; font-size: 14px; padding: 12px; border-bottom: 1px solid #f1f5f9; color: #1e293b; }
 
-  /* MOBILE RESPONSIVENESS */
+  /* RESPONSIVE */
+  @media (max-width: 1024px) {
+      .sidebar { width: 80px; }
+      .sidebar-text, .brand-text { display: none; }
+      .main-content { margin-left: 80px; padding: 20px; }
+      .nav-item { justify-content: center; padding: 12px; }
+      .badge { display: none; }
+  }
   @media (max-width: 768px) {
-      .dashboard-header {
-          flex-direction: column;
-          align-items: flex-start;
-      }
-      .stats-cards {
-          width: 100%;
-      }
-      .stat-card {
-          flex: 1;
-          padding: 12px 16px;
-      }
-      .cards-grid {
-          grid-template-columns: 1fr;
-      }
+      .admin-dashboard { flex-direction: column; }
+      .sidebar { position: static; width: 100%; height: auto; flex-direction: row; padding: 10px; overflow-x: auto; }
+      .main-content { margin-left: 0; padding: 15px; }
+      .card-header { flex-direction: column; align-items: flex-start; gap: 15px; }
   }
 `;
 
