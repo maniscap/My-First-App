@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { db } from '../firebase';
 import { collection, getDocs, doc, updateDoc, deleteField, addDoc } from 'firebase/firestore';
 import { IoMdArrowBack } from 'react-icons/io';
-import { CheckCircle, XCircle, Clock, User, Building, MapPin, Phone, Briefcase, LayoutDashboard, ClipboardList, Users, List, LogOut } from 'lucide-react';
+import { CheckCircle, XCircle, Clock, User, Building, MapPin, Phone, Briefcase, LayoutDashboard, ClipboardList, Users, List, LogOut, Lock } from 'lucide-react';
 
 function Admin() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -117,15 +117,18 @@ function Admin() {
                       <p>FarmCap Management System</p>
                   </div>
                   <form onSubmit={handleLogin} className="login-form">
-                      <div className="input-group">
-                          <label>Admin ID</label>
-                          <input type="text" placeholder="Enter Admin ID" value={adminId} onChange={(e) => setAdminId(e.target.value)} required />
+                      <div className="input-wrapper">
+                          <User className="input-icon" size={20} />
+                          <input type="text" placeholder="Admin ID" value={adminId} onChange={(e) => setAdminId(e.target.value)} required className="auth-input" />
                       </div>
-                      <div className="input-group">
-                          <label>Password</label>
-                          <input type="password" placeholder="Enter Password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+                      <div className="input-wrapper">
+                          <Lock className="input-icon" size={20} />
+                          <input type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} required className="auth-input" />
                       </div>
-                      <button type="submit" className="btn-primary">Secure Login</button>
+                      <button type="submit" className="btn-login">
+                          <span>Secure Login</span>
+                          <Lock size={18} />
+                      </button>
                   </form>
                   <Link to="/" className="back-link">← Back to Main Site</Link>
               </div>
@@ -434,35 +437,60 @@ const styles = `
   .admin-login-page {
       display: flex; align-items: center; justify-content: center;
       min-height: 100vh; 
-      background: linear-gradient(rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.4)), url('https://images.unsplash.com/photo-1605000797499-95a51c5269ae?w=1920&q=80') center/cover no-repeat;
+      background: linear-gradient(rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0.5)), url('https://images.unsplash.com/photo-1605000797499-95a51c5269ae?w=1920&q=80') center/cover no-repeat;
       font-family: 'Inter', sans-serif;
       padding: 20px;
   }
   .login-card {
-      background: #ffffff; 
+      background: rgba(255, 255, 255, 0.85); 
       padding: 50px 40px; 
       border-radius: 24px; 
       width: 100%; 
       max-width: 420px;
       box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); 
       text-align: center;
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.5);
   }
   .login-header .shield-icon { font-size: 56px; margin-bottom: 15px; }
   .login-header h2 { margin: 0 0 8px; color: #000000; font-size: 28px; font-weight: 900; letter-spacing: -0.5px; }
-  .login-header p { margin: 0 0 35px; color: #475569; font-size: 15px; font-weight: 600; }
+  .login-header p { margin: 0 0 35px; color: #334155; font-size: 15px; font-weight: 700; }
   
-  .login-form { display: flex; flex-direction: column; gap: 24px; width: 100%; }
-  .login-form .input-group { display: flex; flex-direction: column; text-align: left; gap: 8px; width: 100%; }
-  .login-form label { font-size: 13px; font-weight: 800; color: #000000; text-transform: uppercase; letter-spacing: 0.5px; margin-left: 4px; }
-  .login-form input {
+  .login-form { display: flex; flex-direction: column; gap: 20px; width: 100%; }
+  
+  .input-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
       width: 100%;
-      padding: 16px 20px; border-radius: 12px; border: 2px solid #cbd5e1; font-size: 18px; outline: none; transition: 0.2s; 
-      background-color: #ffffff !important; 
+  }
+  .input-icon {
+      position: absolute;
+      left: 18px;
+      color: #64748b;
+      transition: 0.3s;
+  }
+  .auth-input {
+      width: 100%;
+      padding: 16px 20px 16px 50px !important;
+      border-radius: 12px; 
+      border: 2px solid #cbd5e1; 
+      font-size: 16px; 
+      outline: none; 
+      transition: all 0.3s ease; 
+      background-color: rgba(255, 255, 255, 0.9) !important; 
       color: #000000 !important; 
       font-weight: 700 !important;
   }
-  .login-form input::placeholder { color: #94a3b8 !important; font-weight: 500 !important; }
-  .login-form input:focus { border-color: var(--primary); box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.15); }
+  .auth-input::placeholder { color: #94a3b8 !important; font-weight: 500 !important; }
+  .auth-input:focus { 
+      border-color: #10b981; 
+      background-color: #ffffff !important; 
+      box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.15); 
+  }
+  .auth-input:focus + .input-icon, .input-wrapper:focus-within .input-icon {
+      color: #10b981;
+  }
   
   .btn-login {
       width: 100%;
@@ -474,10 +502,30 @@ const styles = `
       font-size: 16px; 
       font-weight: 800; 
       cursor: pointer; 
-      transition: background-color 0.2s ease; 
-      margin-top: 15px;
+      transition: all 0.3s ease; 
+      margin-top: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      box-shadow: 0 10px 20px rgba(16, 185, 129, 0.3);
   }
-  .btn-login:hover { background-color: #059669; }
+  .btn-login:hover { 
+      background-color: #059669; 
+      transform: translateY(-2px);
+      box-shadow: 0 12px 25px rgba(16, 185, 129, 0.4);
+  }
+  
+  .back-link {
+      display: inline-block;
+      margin-top: 25px;
+      color: #475569;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 14px;
+      transition: color 0.2s;
+  }
+  .back-link:hover { color: #000000; }
 
   /* DASHBOARD LAYOUT */
   .admin-dashboard {
