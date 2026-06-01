@@ -1,5 +1,5 @@
-import { initializeApp } from "firebase/app";
-import { initializeFirestore, memoryLocalCache } from "firebase/firestore";
+import { initializeApp, getApps, getApp } from "firebase/app";
+import { initializeFirestore, memoryLocalCache, getFirestore } from "firebase/firestore";
 import { getAuth, GoogleAuthProvider } from "firebase/auth"; 
 
 // Your web app's Firebase configuration
@@ -13,13 +13,20 @@ const firebaseConfig = {
   measurementId: "G-3L79Q2FHTC"
 };
 
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
+// Initialize Firebase (Safely for Vite Hot Reloads)
+const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 
 // CRITICAL FIX: Bypass the persistent IndexedDB cache to prevent "BloomFilterError"
-const db = initializeFirestore(app, {
-  localCache: memoryLocalCache()
-});
+// We use a try/catch block because Vite's Hot Reload will try to run this code twice.
+let db;
+try {
+  db = initializeFirestore(app, {
+    localCache: memoryLocalCache()
+  });
+} catch (error) {
+  // If it throws an error during Hot Reload, just get the already initialized instance
+  db = getFirestore(app);
+}
 
 const auth = getAuth(app); 
 const googleProvider = new GoogleAuthProvider(); 
