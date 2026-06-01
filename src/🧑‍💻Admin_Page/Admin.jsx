@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { db } from '../firebase';
-import { collection, getDocs, doc, updateDoc, deleteField, addDoc } from 'firebase/firestore';
+import { collection, getDocs, doc, updateDoc, deleteField, addDoc, setDoc } from 'firebase/firestore';
 import { IoMdArrowBack } from 'react-icons/io';
 import { CheckCircle, XCircle, Clock, User, Building, MapPin, Phone, Briefcase, LayoutDashboard, ClipboardList, Users, List, LogOut, Lock } from 'lucide-react';
 
@@ -77,16 +77,15 @@ function Admin() {
       try {
           // 2. Update the original document so the user sees the reason once
           const sellerRef = doc(db, "seller_applications", app.id);
-          const updates = { status: 'rejected', rejectionReason: reason || "Does not meet requirements." };
           
-          // Wipe all personal data from the main document to ensure privacy
-          Object.keys(app).forEach(key => {
-              if (key !== 'id' && key !== 'status' && key !== 'accountType' && key !== 'sellerId') {
-                  updates[key] = deleteField();
-              }
+          // Using setDoc completely overwrites the document, securely erasing everything else
+          await setDoc(sellerRef, { 
+              status: 'rejected', 
+              rejectionReason: reason || "Does not meet requirements.",
+              accountType: app.accountType || 'unknown',
+              sellerId: app.sellerId || 'unknown'
           });
           
-          await updateDoc(sellerRef, updates);
           fetchData();
       } catch (error) {
           console.error("Error rejecting application:", error);
@@ -300,6 +299,7 @@ const ApplicationCard = ({ app, onApprove, onReject }) => {
             alert("Please provide a reason for rejection.");
             return;
         }
+        setShowReject(false);
         onReject(rejectReason);
     };
 
