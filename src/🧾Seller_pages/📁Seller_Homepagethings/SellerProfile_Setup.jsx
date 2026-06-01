@@ -50,10 +50,6 @@ function SellerProfile_Setup() {
     const [isDetecting, setIsDetecting] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    useEffect(() => {
-        const savedStatus = localStorage.getItem('mock_seller_status');
-        if (savedStatus) setApplicationStatus(savedStatus);
-    }, []);
 
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -135,9 +131,7 @@ function SellerProfile_Setup() {
             
             alert(`Application Submitted Successfully!\n\nYour Seller ID is: ${sellerId}\n\nOur Admin team will review your application shortly.`);
             
-            // Save the document ID locally so the HomePage can track live status
             localStorage.setItem('seller_app_id', docRef.id);
-            localStorage.setItem('mock_seller_status', 'pending');
             navigate('/Seller_HomePage');
         } catch (error) {
             console.error("Submission failed:", error);
@@ -171,31 +165,6 @@ function SellerProfile_Setup() {
 
     const currentTheme = accountType ? themeConfig[accountType] : null;
 
-    // --- RENDER: PENDING REVIEW SCREEN ---
-    if (applicationStatus === 'pending') {
-        return (
-            <div style={{ minHeight: '100dvh', backgroundColor: '#f8fafc', padding: '20px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-                <div style={{ backgroundColor: '#fff', padding: '40px 30px', borderRadius: '24px', boxShadow: '0 10px 40px rgba(0,0,0,0.05)', maxWidth: '400px', width: '100%', textAlign: 'center' }}>
-                    <div style={{ width: '80px', height: '80px', backgroundColor: '#FEF3C7', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
-                        <Clock size={40} color="#D97706" />
-                    </div>
-                    <h2 style={{ fontSize: '24px', fontWeight: '800', color: '#1e293b', marginBottom: '10px' }}>Application Under Review</h2>
-                    <p style={{ color: '#64748b', fontSize: '15px', lineHeight: '1.6', marginBottom: '30px' }}>
-                        Your seller application has been securely securely transmitted to the FarmCap Admin team. We are verifying your documents to ensure a safe marketplace. 
-                    </p>
-                    <div style={{ backgroundColor: '#F1F5F9', padding: '15px', borderRadius: '12px', fontSize: '13px', color: '#475569', fontWeight: '600', marginBottom: '30px' }}>
-                        Estimated verification time: 24-48 Hours
-                    </div>
-                    <button onClick={() => navigate('/Consumer_HomePage')} style={{ width: '100%', padding: '15px', backgroundColor: '#0f172a', color: '#fff', border: 'none', borderRadius: '12px', fontWeight: '700', fontSize: '15px', cursor: 'pointer' }}>
-                        Return to Consumer Mode
-                    </button>
-                    <button onClick={() => { localStorage.setItem('mock_seller_status', 'approved'); window.location.href='/Seller_HomePage'; }} style={{ marginTop: '20px', fontSize: '10px', color: '#ccc', background: 'none', border: 'none', cursor: 'pointer' }}>
-                        [Demo: Force Admin Approve]
-                    </button>
-                </div>
-            </div>
-        );
-    }
 
     // --- RENDER: REGISTRATION FORM ---
     return (
