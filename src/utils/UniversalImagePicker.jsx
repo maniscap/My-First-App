@@ -2,36 +2,36 @@ import React, { useState, useEffect } from 'react';
 import { CheckCircle2, Search, Loader2, Image as ImageIcon, RefreshCw, Grid } from 'lucide-react';
 
 const defaultImages = [
-    "https://images.unsplash.com/photo-1610832958506-aa56368176cf?w=400", 
-    "https://images.unsplash.com/photo-1519999482648-25049ddd37b1?w=400",
-    "https://images.unsplash.com/photo-1471194402529-8e0f5a675de6?w=400",
-    "https://images.unsplash.com/photo-1550258987-190a2d41a8ba?w=400",
-    "https://images.unsplash.com/photo-1566385101042-1a0aa0c1268c?w=400", 
-    "https://images.unsplash.com/photo-1595853035070-59a39fe84ee3?w=400",
-    "https://images.unsplash.com/photo-1557844352-761f2565b576?w=400",
-    "https://images.unsplash.com/photo-1518843875459-f738682238a6?w=400",
-    "https://images.unsplash.com/photo-1528698827591-e19ccd7bc23d?w=400", 
-    "https://images.unsplash.com/photo-1563636619-e9143da7973b?w=400",
-    "https://images.unsplash.com/photo-1600788886242-5c96aabe3757?w=400",
-    "https://images.unsplash.com/photo-1550583724-b2692b85b150?w=400",
-    "https://images.unsplash.com/photo-1587049352847-81a56d773c1c?w=400", 
-    "https://images.unsplash.com/photo-1620313627725-bdfbc92d19b4?w=400",
-    "https://images.unsplash.com/photo-1611162458324-aae1eb4129a4?w=400",
-    "https://images.unsplash.com/photo-1599598425947-3300262118ff?w=400",
-    "https://images.unsplash.com/photo-1626200419109-3820202e8d35?w=400", 
-    "https://images.unsplash.com/photo-1599785209707-a456fc1337bb?w=400",
-    "https://images.unsplash.com/photo-1550617931-e17a7b70dce2?w=400",
-    "https://images.unsplash.com/photo-1509440159596-0249088772ff?w=400",
-    "https://images.unsplash.com/photo-1586201375761-83865001e31c?w=400", 
-    "https://images.unsplash.com/photo-1515543237350-b3eea1ec8082?w=400",
-    "https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?w=400",
-    "https://images.unsplash.com/photo-1533758223637-251f50a80e46?w=400",
-    "https://images.unsplash.com/photo-1596040033229-a9821ebd058d?w=400", 
-    "https://images.unsplash.com/photo-1553456558-aff63285aaa1?w=400",
-    "https://images.unsplash.com/photo-1604328471151-b52226907017?w=400",
-    "https://images.unsplash.com/photo-1587595431973-160d0d94add1?w=400", 
-    "https://images.unsplash.com/photo-1604544026362-72d8294a2b96?w=400",
-    "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=400"
+    "https://live.staticflickr.com/8519/8474947839_95d1ae895e_b.jpg",
+    "https://live.staticflickr.com/5600/15445225125_466a65d8f0_b.jpg",
+    "https://live.staticflickr.com/1366/1429183106_b84ca1eff6_m.jpg",
+    "https://live.staticflickr.com/2841/10724352873_f4c1f1d62a_b.jpg",
+    "https://live.staticflickr.com/2281/2409582661_22387a9d53.jpg",
+    "https://live.staticflickr.com/18/23695009_f6588835f5.jpg",
+    "https://live.staticflickr.com/199/499458167_fa582f64f4_b.jpg",
+    "https://live.staticflickr.com/3383/4643773329_e84829b56a_b.jpg",
+    "https://live.staticflickr.com/2636/3726819581_d900b78430_b.jpg",
+    "https://live.staticflickr.com/227/513371114_f048acf9c3_b.jpg",
+    "https://live.staticflickr.com/5097/5409192966_91c4e02a62.jpg",
+    "https://live.staticflickr.com/6208/6064227108_201e743d6f_b.jpg",
+    "https://live.staticflickr.com/130/411317929_1a62e5343d_b.jpg",
+    "https://live.staticflickr.com/3505/3221086251_86961ee330_b.jpg",
+    "https://live.staticflickr.com/5038/7199375694_91f04413ee_b.jpg",
+    "https://live.staticflickr.com/4024/4415406430_d8433ae034_b.jpg",
+    "https://live.staticflickr.com/1353/5143600065_6e398f1f6a_b.jpg",
+    "https://live.staticflickr.com/2334/2223030510_f0b5139bc2_b.jpg",
+    "https://live.staticflickr.com/2134/2212907384_a3114ecff5_b.jpg",
+    "https://live.staticflickr.com/3262/3190155469_905aab7757.jpg",
+    "https://live.staticflickr.com/7231/7206713736_6354fec037_b.jpg",
+    "https://live.staticflickr.com/26/102791309_e99b16ee6e.jpg",
+    "https://live.staticflickr.com/2909/14579916743_2e490e16aa_b.jpg",
+    "https://live.staticflickr.com/8214/8302732166_89fcc9bf6b_b.jpg",
+    "https://live.staticflickr.com/221/475600565_7a460f012e_b.jpg",
+    "https://live.staticflickr.com/65535/50397215321_8fb28d1abe_b.jpg",
+    "https://live.staticflickr.com/1359/745530631_7afb916353_b.jpg",
+    "https://live.staticflickr.com/4135/4782183732_0ce56a8eb4_b.jpg",
+    "https://live.staticflickr.com/3109/4558690694_014902bc07_b.jpg",
+    "https://live.staticflickr.com/32/57128856_be5648209e_b.jpg"
 ];
 
 const UniversalImagePicker = ({ searchTerm, categoryContext, onSelectImage, currentSelection }) => {
@@ -176,26 +176,34 @@ const UniversalImagePicker = ({ searchTerm, categoryContext, onSelectImage, curr
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px', marginBottom: '16px' }}>
                 {currentDisplayImages.map((imgUrl, index) => {
                     const isSelected = currentSelection === imgUrl;
+                    const globalIndex = showDefaults ? (defaultPage * 3) + index + 1 : index + 1;
+                    
                     return (
-                        <div 
-                            key={index}
-                            onClick={() => onSelectImage(imgUrl)}
-                            style={{ 
-                                height: '100px', borderRadius: '16px', overflow: 'hidden', cursor: 'pointer', position: 'relative',
-                                border: isSelected ? '3px solid #4CAF50' : '2px solid transparent',
-                                boxShadow: isSelected ? '0 8px 20px rgba(76, 175, 80, 0.3)' : '0 2px 8px rgba(0,0,0,0.05)',
-                                transition: 'all 0.2s ease', transform: isSelected ? 'scale(1.02)' : 'scale(1)',
-                                backgroundColor: '#f1f5f9'
-                            }}
-                        >
-                            <img src={imgUrl} alt={`Option ${index + 1}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                            <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '40%', background: 'linear-gradient(to top, rgba(0,0,0,0.5), transparent)' }}></div>
+                        <div key={index} style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                            <div 
+                                onClick={() => onSelectImage(imgUrl)}
+                                style={{ 
+                                    height: '100px', borderRadius: '16px', overflow: 'hidden', cursor: 'pointer', position: 'relative',
+                                    border: isSelected ? '3px solid #4CAF50' : '2px solid transparent',
+                                    boxShadow: isSelected ? '0 8px 20px rgba(76, 175, 80, 0.3)' : '0 2px 8px rgba(0,0,0,0.05)',
+                                    transition: 'all 0.2s ease', transform: isSelected ? 'scale(1.02)' : 'scale(1)',
+                                    backgroundColor: '#f1f5f9'
+                                }}
+                            >
+                                <img src={imgUrl} alt={`Option ${globalIndex}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '40%', background: 'linear-gradient(to top, rgba(0,0,0,0.5), transparent)' }}></div>
+                                
+                                {isSelected && (
+                                    <div style={{ position: 'absolute', top: '6px', right: '6px', backgroundColor: '#fff', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2px', boxShadow: '0 2px 6px rgba(0,0,0,0.2)' }}>
+                                        <CheckCircle2 size={16} color="#4CAF50" fill="#e8f5e9" />
+                                    </div>
+                                )}
+                            </div>
                             
-                            {isSelected && (
-                                <div style={{ position: 'absolute', top: '6px', right: '6px', backgroundColor: '#fff', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2px', boxShadow: '0 2px 6px rgba(0,0,0,0.2)' }}>
-                                    <CheckCircle2 size={16} color="#4CAF50" fill="#e8f5e9" />
-                                </div>
-                            )}
+                            {/* Display image number for easy identification */}
+                            <div style={{ textAlign: 'center', fontSize: '11px', fontWeight: '700', color: '#64748b' }}>
+                                Image {globalIndex}
+                            </div>
                         </div>
                     );
                 })}
