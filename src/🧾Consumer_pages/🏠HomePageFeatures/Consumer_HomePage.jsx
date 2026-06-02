@@ -981,6 +981,15 @@ function Consumer_HomePage() {
                   </div>
                </div>
             </Link>
+
+            <Link to="/agri-goods" style={cardLink}>
+               <div className="glass-card" style={{...cardStyle, backgroundImage: "url('https://images.unsplash.com/photo-1590004953392-5aba2e72269a?w=500&q=80')"}}>
+                  <div style={cardTopOverlay}>
+                     <div><h3 style={cardTitle}>Local Goods</h3><p style={cardSubtitle}>Handmade & Tools</p></div>
+                     <div style={whiteIconBox}><Briefcase size={28} color="white"/></div>
+                  </div>
+               </div>
+            </Link>
           </>
         )}
 

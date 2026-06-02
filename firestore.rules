@@ -2,46 +2,43 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Anyone can read the public markets, but only logged-in users can post
-    match /crops/{document=**} {
+    // --- 1. PROFILES ---
+    // Anyone can read profiles, but only the owner can write to them
+    match /consumer_profiles/{userId} {
       allow read: if true;
-      allow write: if request.auth != null;
+      allow write: if request.auth != null && request.auth.uid == userId;
     }
-    match /daily_products/{document=**} {
+    match /seller_profiles/{document=**} {
       allow read: if true;
-      allow write: if request.auth != null;
+      allow write: if true;
     }
-    match /services/{document=**} {
-      allow read: if true;
-      allow write: if request.auth != null;
-    }
-
-    // Users can only view or edit their own profile info to protect GPS/address privacy
-    match /users/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
-    }
-
-    // Orders collection: Contains shipping addresses & GPS. Only the buyer and seller can access.
-    match /orders/{orderId} {
-      allow read: if request.auth != null && (request.auth.uid == resource.data.buyerId || request.auth.uid == resource.data.sellerId);
-      allow create: if request.auth != null && request.auth.uid == request.resource.data.buyerId;
-      allow update, delete: if request.auth != null && (request.auth.uid == resource.data.buyerId || request.auth.uid == resource.data.sellerId);
-    }
-
-    // Leads / Interests collection: Created when a consumer clicks "I am interested"
-    match /leads/{leadId} {
-      allow read: if request.auth != null && (request.auth.uid == resource.data.buyerId || request.auth.uid == resource.data.sellerId);
-      allow create: if request.auth != null && request.auth.uid == request.resource.data.buyerId;
-      allow update, delete: if request.auth != null && (request.auth.uid == resource.data.buyerId || request.auth.uid == resource.data.sellerId);
-    }
-
-    // Allow anyone to submit and view seller applications (Admin use)
+    
+    // --- 2. SELLER APPROVALS & ADMIN ---
     match /seller_applications/{document=**} {
       allow read, write: if true;
     }
-
-    // Allow the Admin to post and everyone to read market rates
     match /market_rates/{document=**} {
+      allow read, write: if true;
+    }
+
+    // --- 3. THE 6 SELLER LISTINGS ---
+    // Anyone can view listings, but sellers will write to them
+    match /listings_farm_fresh/{document=**} {
+      allow read, write: if true;
+    }
+    match /listings_machinery/{document=**} {
+      allow read, write: if true;
+    }
+    match /listings_workers/{document=**} {
+      allow read, write: if true;
+    }
+    match /listings_business/{document=**} {
+      allow read, write: if true;
+    }
+    match /listings_freelancing/{document=**} {
+      allow read, write: if true;
+    }
+    match /listings_local_goods/{document=**} {
       allow read, write: if true;
     }
   }

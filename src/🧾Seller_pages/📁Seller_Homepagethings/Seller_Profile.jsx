@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useUserMode } from '../../UserModeContext';
 import BrandedTransition3D from '../../🛠️Shared_Components/BrandedTransition3D';
+import { ChevronLeft, Edit3, Settings, HelpCircle, Package, Wallet, ShieldCheck, MapPin, Building2, User } from 'lucide-react';
 
 function Seller_Profile() {
     const navigate = useNavigate();
@@ -17,62 +18,142 @@ function Seller_Profile() {
     };
 
     return (
-        <div style={{ padding: '20px', paddingBottom: '40px', maxWidth: '480px', margin: '0 auto', minHeight: '100dvh', backgroundColor: '#f4f7f6', boxSizing: 'border-box', display: 'flex', flexDirection: 'column' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-                    <div 
-                        onClick={() => navigate('/Seller_HomePage')} 
-                        style={{ cursor: 'pointer', fontSize: '24px', backgroundColor: '#fff', width: '40px', height: '40px', display: 'flex', justifyContent: 'center', alignItems: 'center', borderRadius: '50%', boxShadow: '0 2px 5px rgba(0,0,0,0.1)' }}
-                    >
-                        ⬅️
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: '#f8fafc', overflowY: 'auto', overflowX: 'hidden', touchAction: 'pan-y', WebkitOverflowScrolling: 'touch', display: 'flex', flexDirection: 'column' }}>
+            
+            {/* --- PREMIUM HEADER --- */}
+            <div style={{ backgroundColor: '#0f172a', color: '#fff', padding: '20px 20px 60px', position: 'relative' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '25px' }}>
+                    <div onClick={() => navigate('/Seller_HomePage')} style={{ cursor: 'pointer', padding: '5px', borderRadius: '50%', background: 'rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <ChevronLeft size={24} color="#fff" />
                     </div>
-                    <h1 style={{ margin: 0, fontSize: '22px', fontWeight: '800', color: '#2c3e50' }}>Seller Profile</h1>
+                    <div style={{ display: 'flex', gap: '15px' }}>
+                        <div style={{ padding: '8px', borderRadius: '50%', background: 'rgba(255,255,255,0.1)', display: 'flex', cursor: 'pointer' }}>
+                            <Settings size={20} color="#fff" />
+                        </div>
+                    </div>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+                    <div style={{ width: '80px', height: '80px', borderRadius: '24px', background: 'linear-gradient(135deg, #3b82f6, #2563eb)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 8px 24px rgba(0,0,0,0.3)', border: '2px solid rgba(255,255,255,0.2)', position: 'relative', flexShrink: 0 }}>
+                        <Building2 size={36} color="#fff" />
+                        <div style={{ position: 'absolute', bottom: '-5px', right: '-5px', background: '#10b981', width: '22px', height: '22px', borderRadius: '50%', border: '3px solid #0f172a', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <ShieldCheck size={12} color="#fff" />
+                        </div>
+                    </div>
+                    <div style={{ flex: 1, overflow: 'hidden' }}>
+                        <h1 style={{ margin: '0 0 4px', fontSize: '24px', fontWeight: '800', letterSpacing: '-0.5px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>My Awesome Shop</h1>
+                        <p style={{ margin: '0 0 8px', fontSize: '14px', color: '#94a3b8', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                            <MapPin size={14} /> Global Market, IND
+                        </p>
+                        <span style={{ fontSize: '11px', fontWeight: '700', color: '#fff', textTransform: 'uppercase', letterSpacing: '1px', background: 'rgba(255,255,255,0.15)', padding: '4px 10px', borderRadius: '12px' }}>Verified Seller</span>
+                    </div>
                 </div>
             </div>
 
-            <div style={{ background: '#fff', padding: '25px', borderRadius: '15px', boxShadow: '0 4px 15px rgba(0,0,0,0.05)', marginBottom: '20px' }}>
-                <h2 style={{ fontSize: '18px', fontWeight: '800', color: '#333', marginBottom: '15px' }}>Shop Information</h2>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '14px', color: '#555', marginBottom: '25px' }}>
-                    <p style={{ margin: 0 }}><strong>Shop Name:</strong> My Awesome Shop</p>
-                    <p style={{ margin: 0 }}><strong>Contact Email:</strong> seller@example.com</p>
-                    <p style={{ margin: 0, color: '#777', lineHeight: '1.4' }}>This is your business console. Manage inventory, coordinate worker bookings, list rental machinery, and fulfill farm-fresh crop orders here.</p>
+            {/* --- QUICK STATS OVERLAPPING HEADER --- */}
+            <div style={{ padding: '0 20px', marginTop: '-35px', position: 'relative', zIndex: 10 }}>
+                <div style={{ background: '#fff', borderRadius: '24px', padding: '20px', display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '15px', boxShadow: '0 10px 30px rgba(0,0,0,0.05)', border: '1px solid #e2e8f0' }}>
+                    <div style={{ textAlign: 'center' }}>
+                        <h3 style={{ margin: '0 0 4px', fontSize: '20px', fontWeight: '800', color: '#0f172a' }}>12</h3>
+                        <p style={{ margin: 0, fontSize: '12px', color: '#64748b', fontWeight: '600' }}>Listings</p>
+                    </div>
+                    <div style={{ textAlign: 'center', borderLeft: '1px solid #e2e8f0', borderRight: '1px solid #e2e8f0' }}>
+                        <h3 style={{ margin: '0 0 4px', fontSize: '20px', fontWeight: '800', color: '#0f172a' }}>4.9</h3>
+                        <p style={{ margin: 0, fontSize: '12px', color: '#64748b', fontWeight: '600' }}>Rating</p>
+                    </div>
+                    <div style={{ textAlign: 'center' }}>
+                        <h3 style={{ margin: '0 0 4px', fontSize: '20px', fontWeight: '800', color: '#0f172a' }}>48</h3>
+                        <p style={{ margin: 0, fontSize: '12px', color: '#64748b', fontWeight: '600' }}>Orders</p>
+                    </div>
                 </div>
+            </div>
+
+            {/* --- MENU OPTIONS --- */}
+            <div style={{ padding: '25px 20px', flex: 1 }}>
                 
-                {/* Link to the Setup Form */}
-                <Link to="/seller-setup" style={{ textDecoration: 'none' }}>
-                    <button style={{ width: '100%', padding: '12px', backgroundColor: '#2c3e50', color: 'white', border: 'none', borderRadius: '10px', cursor: 'pointer', fontWeight: 'bold', fontSize: '14px', transition: 'all 0.2s ease' }}>
-                        Edit Shop Details ✏️
-                    </button>
-                </Link>
-            </div>
+                <h2 style={{ fontSize: '16px', fontWeight: '800', color: '#0f172a', marginBottom: '15px' }}>Business Console</h2>
+                
+                <div style={{ background: '#fff', borderRadius: '24px', padding: '10px', boxShadow: '0 4px 15px rgba(0,0,0,0.03)', border: '1px solid #e2e8f0', marginBottom: '25px' }}>
+                    
+                    <Link to="/seller-setup" style={{ textDecoration: 'none', color: 'inherit' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', padding: '15px', borderBottom: '1px solid #f1f5f9' }}>
+                            <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: '#e0f2fe', display: 'flex', alignItems: 'center', justifyContent: 'center', marginRight: '15px' }}>
+                                <Edit3 size={20} color="#0284c7" />
+                            </div>
+                            <div style={{ flex: 1 }}>
+                                <h4 style={{ margin: '0 0 3px', fontSize: '15px', fontWeight: '700', color: '#1e293b' }}>Edit Shop Details</h4>
+                                <p style={{ margin: 0, fontSize: '12px', color: '#64748b' }}>Update your business information</p>
+                            </div>
+                            <ChevronLeft size={20} color="#cbd5e1" style={{ transform: 'rotate(180deg)' }} />
+                        </div>
+                    </Link>
 
-            {/* BOTTOM ALTERNATIVE WORKSPACE SWITCH BUTTON - ANCHORED AT ABSOLUTE BOTTOM OF VIEWPORT */}
-            <button
-                onClick={handleSwitchToConsumer}
-                disabled={isTransforming}
-                style={{
-                    width: '100%',
-                    padding: '16px',
-                    background: isTransforming ? '#7f8c8d' : 'linear-gradient(135deg, #2E7D32, #4CAF50)',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '12px',
-                    fontWeight: '800',
-                    fontSize: '15px',
-                    cursor: 'pointer',
-                    marginTop: 'auto',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '12px',
-                    boxShadow: '0 4px 15px rgba(46, 125, 50, 0.25)',
-                    transition: 'all 0.2s ease',
-                    marginBottom: '10px',
-                    opacity: isTransforming ? 0.8 : 1
-                }}
-            >
-                {isTransforming ? 'Switching Workspace...' : 'Switch to Consumer Mode 🌾'}
-            </button>
+                    <div style={{ display: 'flex', alignItems: 'center', padding: '15px', borderBottom: '1px solid #f1f5f9', cursor: 'pointer' }}>
+                        <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: '#ecfdf5', display: 'flex', alignItems: 'center', justifyContent: 'center', marginRight: '15px' }}>
+                            <Package size={20} color="#10b981" />
+                        </div>
+                        <div style={{ flex: 1 }}>
+                            <h4 style={{ margin: '0 0 3px', fontSize: '15px', fontWeight: '700', color: '#1e293b' }}>Manage Inventory</h4>
+                            <p style={{ margin: 0, fontSize: '12px', color: '#64748b' }}>View and edit active listings</p>
+                        </div>
+                        <ChevronLeft size={20} color="#cbd5e1" style={{ transform: 'rotate(180deg)' }} />
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', padding: '15px', cursor: 'pointer' }}>
+                        <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: '#fef3c7', display: 'flex', alignItems: 'center', justifyContent: 'center', marginRight: '15px' }}>
+                            <Wallet size={20} color="#d97706" />
+                        </div>
+                        <div style={{ flex: 1 }}>
+                            <h4 style={{ margin: '0 0 3px', fontSize: '15px', fontWeight: '700', color: '#1e293b' }}>Payments & Earnings</h4>
+                            <p style={{ margin: 0, fontSize: '12px', color: '#64748b' }}>Track your revenue</p>
+                        </div>
+                        <ChevronLeft size={20} color="#cbd5e1" style={{ transform: 'rotate(180deg)' }} />
+                    </div>
+                </div>
+
+                <h2 style={{ fontSize: '16px', fontWeight: '800', color: '#0f172a', marginBottom: '15px' }}>Support</h2>
+                
+                <div style={{ background: '#fff', borderRadius: '24px', padding: '10px', boxShadow: '0 4px 15px rgba(0,0,0,0.03)', border: '1px solid #e2e8f0', marginBottom: '30px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', padding: '15px', cursor: 'pointer' }}>
+                        <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', marginRight: '15px' }}>
+                            <HelpCircle size={20} color="#475569" />
+                        </div>
+                        <div style={{ flex: 1 }}>
+                            <h4 style={{ margin: '0 0 3px', fontSize: '15px', fontWeight: '700', color: '#1e293b' }}>Help Center</h4>
+                            <p style={{ margin: 0, fontSize: '12px', color: '#64748b' }}>Get assistance with selling</p>
+                        </div>
+                        <ChevronLeft size={20} color="#cbd5e1" style={{ transform: 'rotate(180deg)' }} />
+                    </div>
+                </div>
+
+                {/* BOTTOM ALTERNATIVE WORKSPACE SWITCH BUTTON */}
+                <button
+                    onClick={handleSwitchToConsumer}
+                    disabled={isTransforming}
+                    style={{
+                        width: '100%',
+                        padding: '16px',
+                        background: isTransforming ? '#94a3b8' : 'linear-gradient(135deg, #10b981, #059669)',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '16px',
+                        fontWeight: '800',
+                        fontSize: '16px',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '12px',
+                        boxShadow: '0 8px 25px rgba(16, 185, 129, 0.3)',
+                        transition: 'all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                        marginBottom: '30px',
+                        transform: isTransforming ? 'scale(0.98)' : 'scale(1)',
+                        opacity: isTransforming ? 0.8 : 1
+                    }}
+                >
+                    {isTransforming ? 'Switching Workspace...' : 'Switch to Consumer Mode 🌾'}
+                </button>
+            </div>
 
             {/* SLEEK BRANDED WORKSPACE TRANSFORMATION OVERLAY */}
             <BrandedTransition3D isVisible={isTransforming} targetMode="consumer" />

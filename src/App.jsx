@@ -32,6 +32,7 @@ import HireWorkers from './🧾Consumer_pages/📁AgriCommerce/HireWorkers';
 import Business from './🧾Consumer_pages/📁AgriCommerce/Business';
 import FarmFresh from './🧾Consumer_pages/📁AgriCommerce/FarmFresh';
 import Freelancing from './🧾Consumer_pages/📁AgriCommerce/Freelancing';
+import LocalAgriGoods from './🧾Consumer_pages/📁AgriCommerce/LocalAgriGoods';
 
 // --- FIXED IMPORT ---
 import GPSMeasurement from './🧾Consumer_pages/📁Tools&utils/GPSMeasurement';
@@ -47,7 +48,8 @@ import Seller_MoreMenu from './🧾Seller_pages/📁seller_BottomNavigation/Sell
 import SellerBottomNavigation from './🧾Seller_pages/📁seller_BottomNavigation/SellerBottomNavigation';
 
 import Seller_UserLocation from './🧾Seller_pages/📁Seller_Homepagethings/Seller_UserLocation';
-
+import FarmFresh_ListingForm from './🧾Seller_pages/📁Seller_ListingForms/FarmFresh_ListingForm';
+import LocalAgriGoods_ListingForm from './🧾Seller_pages/📁Seller_ListingForms/LocalAgriGoods_ListingForm';
 
 // --- IMPORT COMPONENTS ---
 import ChatBot from './🔧Consumer_Components/ChatBot';
@@ -131,7 +133,8 @@ function App() {
               <Route path="/seller-messages" element={<Seller_Messages />} />
               <Route path="/seller-settings" element={<Seller_Settings />} />
               <Route path="/seller-more" element={<Seller_MoreMenu />} />
-
+              <Route path="/add-farm-fresh" element={<FarmFresh_ListingForm />} />
+              <Route path="/add-local-goods" element={<LocalAgriGoods_ListingForm />} />
 
               
               {/* --- LOCATION --- */}
@@ -188,6 +191,7 @@ function App() {
               {/* --- NEW FEATURE ROUTES --- */}
               <Route path="/radio" element={<Radio />} />
               <Route path="/freelancing" element={<Freelancing />} />
+              <Route path="/agri-goods" element={<LocalAgriGoods />} />
               
               {/* GPS ROUTE */}
               <Route path="/gps-measurement" element={<GPSMeasurement />} />

@@ -271,7 +271,7 @@ function SellerProfile_Setup() {
 
     // --- RENDER: REGISTRATION FORM ---
     return (
-        <div style={{ backgroundColor: '#f8fafc', minHeight: '100dvh', paddingBottom: '60px' }}>
+        <div style={{ backgroundColor: '#f8fafc', position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, width: '100vw', height: '100dvh', overflowY: 'auto', overflowX: 'hidden', touchAction: 'pan-y', WebkitOverflowScrolling: 'touch', paddingBottom: '60px' }}>
             
             {/* Header */}
             <div style={{ backgroundColor: '#0f172a', color: '#fff', padding: '20px', paddingBottom: '40px', borderBottomLeftRadius: '30px', borderBottomRightRadius: '30px' }}>
@@ -325,24 +325,35 @@ function SellerProfile_Setup() {
                                         if (indApp?.status === 'pending_approval') alert("Your Individual Profile application is under review.");
                                         else setAccountType('individual');
                                     }}
-                                    style={{ backgroundColor: '#fff', padding: '30px', borderRadius: '24px', boxShadow: '0 8px 30px rgba(2, 132, 199, 0.1)', cursor: indApp?.status === 'pending_approval' ? 'not-allowed' : 'pointer', opacity: indApp?.status === 'pending_approval' ? 0.6 : 1, border: '2px solid transparent', transition: 'all 0.3s ease', position: 'relative', overflow: 'hidden' }}
+                                    style={{ background: 'linear-gradient(145deg, #ffffff, #f8fafc)', padding: '32px 24px', borderRadius: '28px', boxShadow: '0 12px 36px rgba(15, 23, 42, 0.05)', cursor: indApp?.status === 'pending_approval' ? 'not-allowed' : 'pointer', opacity: indApp?.status === 'pending_approval' ? 0.6 : 1, border: '1px solid #e2e8f0', position: 'relative', overflow: 'hidden', display: 'flex', flexDirection: 'column', alignItems: 'flex-start', transition: 'all 0.3s ease' }}
                                 >
-                                    <div style={{ position: 'absolute', top: 0, right: 0, width: '100px', height: '100px', background: 'radial-gradient(circle, rgba(2,132,199,0.1) 0%, rgba(2,132,199,0) 70%)', transform: 'translate(30%, -30%)' }}></div>
-                                    <div style={{ width: '60px', height: '60px', backgroundColor: '#e0f2fe', borderRadius: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '20px' }}>
-                                        <User size={32} color="#0284c7" />
+                                    <div style={{ position: 'absolute', top: '-30px', right: '-30px', width: '160px', height: '160px', background: 'radial-gradient(circle, rgba(2,132,199,0.06) 0%, rgba(2,132,199,0) 70%)', borderRadius: '50%', pointerEvents: 'none' }}></div>
+                                    
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '16px', width: '100%', position: 'relative', zIndex: 1 }}>
+                                        <div style={{ width: '64px', height: '64px', background: 'linear-gradient(135deg, #e0f2fe, #bae6fd)', borderRadius: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: 'inset 0 2px 4px rgba(255,255,255,0.5), 0 4px 10px rgba(2,132,199,0.1)' }}>
+                                            <User size={32} color="#0284c7" strokeWidth={2.5} />
+                                        </div>
+                                        <div>
+                                            <h4 style={{ margin: '0 0 4px', fontSize: '22px', fontWeight: '800', color: '#0f172a', letterSpacing: '-0.5px' }}>Single Person</h4>
+                                            <span style={{ fontSize: '11px', fontWeight: '700', color: '#0284c7', textTransform: 'uppercase', letterSpacing: '1px', background: '#e0f2fe', padding: '4px 10px', borderRadius: '12px' }}>Individual Profile</span>
+                                        </div>
                                     </div>
-                                    <h4 style={{ margin: '0 0 8px', fontSize: '20px', fontWeight: '800', color: '#0f172a' }}>Single Person</h4>
                                     
                                     {indApp?.status === 'pending_approval' ? (
-                                        <p style={{ margin: 0, fontSize: '14px', color: '#d97706', fontWeight: '700' }}>Application in Process</p>
+                                        <div style={{ width: '100%', padding: '12px', background: '#fffbeb', border: '1px solid #fde68a', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                            <Clock size={18} color="#d97706" />
+                                            <p style={{ margin: 0, fontSize: '14px', color: '#d97706', fontWeight: '700' }}>Application in Process</p>
+                                        </div>
                                     ) : cachedIndReject ? (
-                                        <div style={{ marginTop: '5px' }}>
-                                            <p style={{ margin: '0 0 4px', fontSize: '13px', color: '#dc2626', fontWeight: '700' }}>❌ Application Rejected</p>
-                                            <p style={{ margin: 0, fontSize: '12px', color: '#7f1d1d', background: '#fef2f2', padding: '6px', borderRadius: '6px' }}>Your previous application was rejected and securely erased. Please correct your details and re-apply.</p>
-                                            <p style={{ margin: '6px 0 0', fontSize: '12px', color: '#0284c7', fontWeight: 'bold' }}>Click to Re-apply</p>
+                                        <div style={{ width: '100%', padding: '15px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '16px', marginTop: '5px' }}>
+                                            <p style={{ margin: '0 0 8px', fontSize: '14px', color: '#dc2626', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '6px' }}><ShieldCheck size={18} /> Application Rejected</p>
+                                            <p style={{ margin: 0, fontSize: '13px', color: '#7f1d1d', lineHeight: '1.4' }}>Your previous application was rejected. Please correct your details and re-apply.</p>
+                                            <button style={{ margin: '12px 0 0', padding: '8px 16px', background: '#dc2626', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: 'bold', cursor: 'pointer' }}>Re-apply Now</button>
                                         </div>
                                     ) : (
-                                        <p style={{ margin: 0, fontSize: '14px', color: '#64748b', lineHeight: '1.5' }}>Best for individual farmers, independent workers, or sole machinery owners.</p>
+                                        <p style={{ margin: 0, fontSize: '15px', color: '#475569', lineHeight: '1.6', fontWeight: '500', position: 'relative', zIndex: 1 }}>
+                                            Designed for independent farmers, sole machinery owners, or individual gig workers.
+                                        </p>
                                     )}
                                 </div>
                             )}
@@ -372,24 +383,35 @@ function SellerProfile_Setup() {
                                         if (orgApp?.status === 'pending_approval') alert("Your Organisation Profile application is under review.");
                                         else setAccountType('organisation');
                                     }}
-                                    style={{ backgroundColor: '#fff', padding: '30px', borderRadius: '24px', boxShadow: '0 8px 30px rgba(67, 56, 202, 0.1)', cursor: orgApp?.status === 'pending_approval' ? 'not-allowed' : 'pointer', opacity: orgApp?.status === 'pending_approval' ? 0.6 : 1, border: '2px solid transparent', transition: 'all 0.3s ease', position: 'relative', overflow: 'hidden' }}
+                                    style={{ background: 'linear-gradient(145deg, #ffffff, #f8fafc)', padding: '32px 24px', borderRadius: '28px', boxShadow: '0 12px 36px rgba(15, 23, 42, 0.05)', cursor: orgApp?.status === 'pending_approval' ? 'not-allowed' : 'pointer', opacity: orgApp?.status === 'pending_approval' ? 0.6 : 1, border: '1px solid #e2e8f0', position: 'relative', overflow: 'hidden', display: 'flex', flexDirection: 'column', alignItems: 'flex-start', transition: 'all 0.3s ease' }}
                                 >
-                                    <div style={{ position: 'absolute', top: 0, right: 0, width: '100px', height: '100px', background: 'radial-gradient(circle, rgba(67,56,202,0.1) 0%, rgba(67,56,202,0) 70%)', transform: 'translate(30%, -30%)' }}></div>
-                                    <div style={{ width: '60px', height: '60px', backgroundColor: '#eef2ff', borderRadius: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '20px' }}>
-                                        <Building2 size={32} color="#4338ca" />
+                                    <div style={{ position: 'absolute', top: '-30px', right: '-30px', width: '160px', height: '160px', background: 'radial-gradient(circle, rgba(67,56,202,0.06) 0%, rgba(67,56,202,0) 70%)', borderRadius: '50%', pointerEvents: 'none' }}></div>
+                                    
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '16px', width: '100%', position: 'relative', zIndex: 1 }}>
+                                        <div style={{ width: '64px', height: '64px', background: 'linear-gradient(135deg, #e0e7ff, #c7d2fe)', borderRadius: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: 'inset 0 2px 4px rgba(255,255,255,0.5), 0 4px 10px rgba(67,56,202,0.1)' }}>
+                                            <Building2 size={32} color="#4338ca" strokeWidth={2.5} />
+                                        </div>
+                                        <div>
+                                            <h4 style={{ margin: '0 0 4px', fontSize: '22px', fontWeight: '800', color: '#0f172a', letterSpacing: '-0.5px' }}>Organisation</h4>
+                                            <span style={{ fontSize: '11px', fontWeight: '700', color: '#4338ca', textTransform: 'uppercase', letterSpacing: '1px', background: '#e0e7ff', padding: '4px 10px', borderRadius: '12px' }}>Company Profile</span>
+                                        </div>
                                     </div>
-                                    <h4 style={{ margin: '0 0 8px', fontSize: '20px', fontWeight: '800', color: '#0f172a' }}>Organisation</h4>
                                     
                                     {orgApp?.status === 'pending_approval' ? (
-                                        <p style={{ margin: 0, fontSize: '14px', color: '#d97706', fontWeight: '700' }}>Application in Process</p>
+                                        <div style={{ width: '100%', padding: '12px', background: '#fffbeb', border: '1px solid #fde68a', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                            <Clock size={18} color="#d97706" />
+                                            <p style={{ margin: 0, fontSize: '14px', color: '#d97706', fontWeight: '700' }}>Application in Process</p>
+                                        </div>
                                     ) : cachedOrgReject ? (
-                                        <div style={{ marginTop: '5px' }}>
-                                            <p style={{ margin: '0 0 4px', fontSize: '13px', color: '#dc2626', fontWeight: '700' }}>❌ Application Rejected</p>
-                                            <p style={{ margin: 0, fontSize: '12px', color: '#7f1d1d', background: '#fef2f2', padding: '6px', borderRadius: '6px' }}>Your previous application was rejected and securely erased. Please correct your details and re-apply.</p>
-                                            <p style={{ margin: '6px 0 0', fontSize: '12px', color: '#4338ca', fontWeight: 'bold' }}>Click to Re-apply</p>
+                                        <div style={{ width: '100%', padding: '15px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '16px', marginTop: '5px' }}>
+                                            <p style={{ margin: '0 0 8px', fontSize: '14px', color: '#dc2626', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '6px' }}><ShieldCheck size={18} /> Application Rejected</p>
+                                            <p style={{ margin: 0, fontSize: '13px', color: '#7f1d1d', lineHeight: '1.4' }}>Your previous application was rejected. Please correct your details and re-apply.</p>
+                                            <button style={{ margin: '12px 0 0', padding: '8px 16px', background: '#dc2626', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: 'bold', cursor: 'pointer' }}>Re-apply Now</button>
                                         </div>
                                     ) : (
-                                        <p style={{ margin: 0, fontSize: '14px', color: '#64748b', lineHeight: '1.5' }}>Best for registered farming co-ops, rental businesses, and suppliers.</p>
+                                        <p style={{ margin: 0, fontSize: '15px', color: '#475569', lineHeight: '1.6', fontWeight: '500', position: 'relative', zIndex: 1 }}>
+                                            Ideal for registered farming co-ops, equipment rental agencies, and large suppliers.
+                                        </p>
                                     )}
                                 </div>
                             )}
@@ -496,7 +518,7 @@ function SellerProfile_Setup() {
                             <div style={{ marginBottom: '30px' }}>
                                 <label style={{ display: 'block', fontSize: '13px', fontWeight: '700', color: '#475569', marginBottom: '12px' }}>What services do you plan to offer?</label>
                                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
-                                    {['Farm Fresh Produce', 'Harvested Crops', 'Machinery Rental', 'Agriculture Worker', 'Freelance Services', 'Not Sure'].map(cat => (
+                                    {['Farm Fresh Produce', 'Harvested Crops', 'Machinery Rental', 'Agriculture Worker', 'Freelance Services', 'Local Agri Goods & Products', 'Not Sure'].map(cat => (
                                         <div 
                                             key={cat}
                                             onClick={() => handleCategoryToggle(cat)}
