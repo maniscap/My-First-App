@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Leaf, CheckCircle2 } from 'lucide-react';
 import { farmFreshCategories } from '../../utils/ProductLibrary';
+import UniversalImagePicker from '../../utils/UniversalImagePicker';
 
 // Custom iOS-style toggle switch
 const OrganicToggle = ({ checked, onChange }) => (
@@ -21,66 +22,6 @@ const OrganicToggle = ({ checked, onChange }) => (
     </div>
 );
 
-const DynamicWikiImage = ({ itemName, category }) => {
-    const [imgSrc, setImgSrc] = useState(null);
-    const [loading, setLoading] = useState(true);
-
-    React.useEffect(() => {
-        if (!itemName) return;
-        setLoading(true);
-        let cleanName = itemName.split('(')[0].split('/')[0].trim();
-        if (cleanName.toLowerCase().includes('other') && !category) {
-            setImgSrc('https://images.unsplash.com/photo-1566385101042-1a0aa0c1268c?auto=format&q=100');
-            setLoading(false);
-            return;
-        }
-
-        const fetchImage = async () => {
-            try {
-                let suffix = category?.includes('Fruit') ? ' fruit' : (category?.includes('Vegetable') ? ' vegetable' : '');
-                const primaryQuery = suffix ? `${cleanName} ${suffix}` : cleanName;
-                
-                const url = `https://en.wikipedia.org/w/api.php?origin=*&action=query&generator=search&gsrsearch=${encodeURIComponent(primaryQuery)}&prop=pageimages&format=json&piprop=original&gsrlimit=1`;
-                const res = await fetch(url);
-                const data = await res.json();
-                if (data.query && data.query.pages) {
-                    const pageId = Object.keys(data.query.pages)[0];
-                    if (data.query.pages[pageId].original) {
-                        setImgSrc(data.query.pages[pageId].original.source);
-                        return;
-                    }
-                }
-                
-                // Fallback to just the clean name if the strictly categorized search failed
-                if (suffix) {
-                    const res2 = await fetch(`https://en.wikipedia.org/w/api.php?origin=*&action=query&generator=search&gsrsearch=${encodeURIComponent(cleanName)}&prop=pageimages&format=json&piprop=original&gsrlimit=1`);
-                    const data2 = await res2.json();
-                    if (data2.query && data2.query.pages) {
-                        const pageId2 = Object.keys(data2.query.pages)[0];
-                        if (data2.query.pages[pageId2].original) {
-                            setImgSrc(data2.query.pages[pageId2].original.source);
-                            return;
-                        }
-                    }
-                }
-                
-                setImgSrc('https://images.unsplash.com/photo-1595853035070-59a39fe84ee3?auto=format&q=100');
-            } catch (err) {
-                setImgSrc('https://images.unsplash.com/photo-1595853035070-59a39fe84ee3?auto=format&q=100');
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchImage();
-    }, [itemName, category]);
-
-    if (loading) {
-        return <div style={{ width: '100%', height: '100%', backgroundColor: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94a3b8', fontSize: '11px', fontWeight: '500' }}>Searching...</div>;
-    }
-    
-    return <img src={imgSrc} alt={itemName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />;
-};
-
 export default function FarmFresh_ListingForm() {
     const navigate = useNavigate();
     const [selectedCategory, setSelectedCategory] = useState('');
@@ -90,6 +31,7 @@ export default function FarmFresh_ListingForm() {
     const [price, setPrice] = useState('');
     const [unit, setUnit] = useState('kg');
     const [isOrganic, setIsOrganic] = useState(false);
+    const [selectedImageUrl, setSelectedImageUrl] = useState(null);
 
     // Derived logic for dropdowns
     const activeCategoryObj = farmFreshCategories.find(c => c.category === selectedCategory);
@@ -172,17 +114,14 @@ export default function FarmFresh_ListingForm() {
                         </div>
                     )}
 
-                    {/* Image Preview (Appears instantly when item is chosen) */}
+                    {/* Universal Image Picker */}
                     {selectedItemName && (
-                        <div style={{ marginBottom: '24px', borderRadius: '20px', backgroundColor: '#fff', padding: '16px', border: '1px solid #e2e8f0', boxShadow: '0 4px 15px rgba(0,0,0,0.03)', display: 'flex', alignItems: 'center', gap: '16px' }}>
-                            <div style={{ width: '80px', height: '80px', borderRadius: '16px', overflow: 'hidden', backgroundColor: '#f1f5f9', flexShrink: 0 }}>
-                                <DynamicWikiImage itemName={selectedItemName} category={selectedCategory} />
-                            </div>
-                            <div>
-                                <h4 style={{ margin: '0 0 4px 0', fontSize: '15px', color: '#0f172a', fontWeight: '700' }}>Dynamic Image Found</h4>
-                                <p style={{ margin: 0, fontSize: '12px', color: '#64748b', lineHeight: '1.4' }}>This high-quality thumbnail was retrieved instantly from the web.</p>
-                            </div>
-                        </div>
+                        <UniversalImagePicker 
+                            searchTerm={selectedItemName} 
+                            categoryContext={selectedCategory} 
+                            onSelectImage={setSelectedImageUrl} 
+                            currentSelection={selectedImageUrl} 
+                        />
                     )}
 
                     {/* 3. Custom Name Input (Only shows if "Other..." is selected) */}
