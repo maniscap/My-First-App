@@ -256,90 +256,98 @@ export default function FarmFresh_ListingForm() {
 
     if (showSuccess && submittedData) {
         return (
-            <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: '#16a34a', color: 'white', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', zIndex: 99999, padding: '24px', overflowY: 'auto', WebkitOverflowScrolling: 'touch', boxSizing: 'border-box' }}>
-                <div style={{ animation: 'fadeIn 0.5s ease-out', display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', maxWidth: '340px', boxSizing: 'border-box' }}>
-                    <CheckCircle2 size={48} color="white" style={{ marginBottom: '12px', animation: 'scaleUp 0.5s ease-out' }} />
-                    <h1 style={{ fontSize: '24px', fontWeight: '800', marginBottom: '8px', textAlign: 'center' }}>Listing Live!</h1>
-                    <p style={{ fontSize: '14px', fontWeight: '500', marginBottom: '24px', opacity: 0.9, textAlign: 'center' }}>Here is your official listing receipt.</p>
+            <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)', color: 'white', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', zIndex: 99999, padding: '24px', overflowY: 'auto', WebkitOverflowScrolling: 'touch', boxSizing: 'border-box' }}>
+                
+                {/* Floating glowing orbs in background for premium feel */}
+                <div style={{ position: 'absolute', top: '-10%', left: '-10%', width: '300px', height: '300px', background: 'radial-gradient(circle, rgba(34,197,94,0.15) 0%, rgba(0,0,0,0) 70%)', borderRadius: '50%', pointerEvents: 'none', animation: 'pulseOrb 4s infinite alternate' }} />
+                <div style={{ position: 'absolute', bottom: '-10%', right: '-10%', width: '250px', height: '250px', background: 'radial-gradient(circle, rgba(59,130,246,0.15) 0%, rgba(0,0,0,0) 70%)', borderRadius: '50%', pointerEvents: 'none', animation: 'pulseOrb 3s infinite alternate-reverse' }} />
+
+                <div style={{ animation: 'slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1)', display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', maxWidth: '360px', position: 'relative', zIndex: 1, boxSizing: 'border-box' }}>
                     
-                    <div style={{ backgroundColor: 'white', color: '#0f172a', borderRadius: '12px', width: '100%', boxShadow: '0 20px 40px rgba(0,0,0,0.2)', animation: 'slideUp 0.6s ease-out', position: 'relative', overflow: 'hidden', boxSizing: 'border-box' }}>
-                        {/* Receipt Top Jagged Edge Effect (Optional CSS trick, omitted for simplicity, using solid box) */}
-                        <div style={{ padding: '20px', borderBottom: '2px dashed #e2e8f0' }}>
-                            <h2 style={{ margin: '0 0 4px 0', fontSize: '18px', fontWeight: '800', textAlign: 'center' }}>{submittedData.itemName}</h2>
-                            <p style={{ margin: '0', fontSize: '12px', color: '#64748b', textAlign: 'center', textTransform: 'uppercase', letterSpacing: '1px' }}>{submittedData.category}</p>
-                        </div>
+                    {/* The Premium Receipt Card */}
+                    <div style={{ backgroundColor: '#ffffff', borderRadius: '24px', width: '100%', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)', overflow: 'hidden', display: 'flex', flexDirection: 'column', boxSizing: 'border-box' }}>
                         
-                        {submittedData.imageUrl && (
-                            <div style={{ width: '100%', height: '160px', backgroundColor: '#f1f5f9' }}>
-                                <img src={submittedData.imageUrl} alt={submittedData.itemName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        {/* Hero Header of Receipt */}
+                        <div style={{ background: 'linear-gradient(180deg, #f0fdf4 0%, #ffffff 100%)', padding: '32px 24px 24px 24px', display: 'flex', flexDirection: 'column', alignItems: 'center', borderBottom: '2px dashed #e2e8f0', position: 'relative' }}>
+                            <div style={{ width: '64px', height: '64px', borderRadius: '50%', backgroundColor: '#16a34a', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '16px', boxShadow: '0 8px 20px rgba(22,163,74,0.3)', animation: 'scaleUpBounce 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards' }}>
+                                <CheckCircle2 size={32} color="white" />
                             </div>
-                        )}
+                            <h2 style={{ margin: '0 0 4px 0', fontSize: '22px', fontWeight: '800', color: '#0f172a', textAlign: 'center' }}>{submittedData.itemName}</h2>
+                            <span style={{ fontSize: '12px', color: '#16a34a', fontWeight: '700', backgroundColor: '#dcfce7', padding: '4px 12px', borderRadius: '20px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{submittedData.category}</span>
+                        </div>
 
-                        <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                <span style={{ fontSize: '13px', color: '#64748b', fontWeight: '600' }}>Price</span>
-                                <span style={{ fontSize: '14px', fontWeight: '800', color: '#16a34a' }}>₹{submittedData.price} / {submittedData.unit}</span>
-                            </div>
-                            
-                            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                <span style={{ fontSize: '13px', color: '#64748b', fontWeight: '600' }}>Organic Status</span>
-                                <span style={{ fontSize: '13px', fontWeight: '700', color: submittedData.isOrganic ? '#16a34a' : '#0f172a' }}>{submittedData.isOrganic ? 'Yes (Certified)' : 'Standard'}</span>
-                            </div>
-
-                            {submittedData.isOrganic && submittedData.organicCertName && (
-                                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                    <span style={{ fontSize: '13px', color: '#64748b', fontWeight: '600' }}>Certifier</span>
-                                    <span style={{ fontSize: '13px', fontWeight: '700', color: '#0f172a' }}>{submittedData.organicCertName}</span>
+                        {/* Image & Price Section */}
+                        <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                                {submittedData.imageUrl ? (
+                                    <div style={{ width: '70px', height: '70px', borderRadius: '16px', overflow: 'hidden', flexShrink: 0, boxShadow: '0 4px 10px rgba(0,0,0,0.05)' }}>
+                                        <img src={submittedData.imageUrl} alt={submittedData.itemName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                    </div>
+                                ) : (
+                                    <div style={{ width: '70px', height: '70px', borderRadius: '16px', backgroundColor: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                        <span style={{ fontSize: '20px' }}>🌱</span>
+                                    </div>
+                                )}
+                                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                    <span style={{ fontSize: '13px', color: '#64748b', fontWeight: '600', marginBottom: '2px' }}>Selling Price</span>
+                                    <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px' }}>
+                                        <span style={{ fontSize: '24px', fontWeight: '800', color: '#0f172a' }}>₹{submittedData.price}</span>
+                                        <span style={{ fontSize: '14px', fontWeight: '600', color: '#64748b' }}>/ {submittedData.unit}</span>
+                                    </div>
                                 </div>
-                            )}
-
-                            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                <span style={{ fontSize: '13px', color: '#64748b', fontWeight: '600' }}>Listing Date</span>
-                                <span style={{ fontSize: '13px', fontWeight: '700', color: '#0f172a' }}>{submittedData.listingDate}</span>
                             </div>
 
-                            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                <span style={{ fontSize: '13px', color: '#64748b', fontWeight: '600' }}>Shelf Life</span>
-                                <span style={{ fontSize: '13px', fontWeight: '700', color: '#0f172a' }}>{submittedData.shelfLife}</span>
+                            {/* Details Grid */}
+                            <div style={{ backgroundColor: '#f8fafc', borderRadius: '16px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px', border: '1px solid #f1f5f9' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <span style={{ fontSize: '13px', color: '#64748b', fontWeight: '600' }}>Listed On</span>
+                                    <span style={{ fontSize: '14px', fontWeight: '700', color: '#0f172a' }}>{submittedData.listingDate}</span>
+                                </div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <span style={{ fontSize: '13px', color: '#64748b', fontWeight: '600' }}>Shelf Life</span>
+                                    <span style={{ fontSize: '14px', fontWeight: '700', color: '#0f172a' }}>{submittedData.shelfLife}</span>
+                                </div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <span style={{ fontSize: '13px', color: '#64748b', fontWeight: '600' }}>Farming</span>
+                                    <span style={{ fontSize: '13px', fontWeight: '700', color: submittedData.isOrganic ? '#16a34a' : '#0f172a' }}>{submittedData.isOrganic ? '100% Organic' : 'Standard'}</span>
+                                </div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <span style={{ fontSize: '13px', color: '#64748b', fontWeight: '600' }}>Quality Check</span>
+                                    <span style={{ fontSize: '13px', fontWeight: '700', color: submittedData.qualityGuarantee ? '#16a34a' : '#ef4444' }}>{submittedData.qualityGuarantee ? 'Guaranteed ✓' : 'Unverified'}</span>
+                                </div>
                             </div>
+                        </div>
 
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                                <span style={{ fontSize: '13px', color: '#64748b', fontWeight: '600', whiteSpace: 'nowrap', marginRight: '16px' }}>Quality</span>
-                                <span style={{ fontSize: '12px', fontWeight: '600', color: submittedData.qualityGuarantee ? '#16a34a' : '#ef4444', textAlign: 'right' }}>
-                                    {submittedData.qualityGuarantee ? 'Guaranteed Fresh ✓' : 'Not Guaranteed'}
-                                </span>
-                            </div>
-
-                            <div style={{ marginTop: '8px', paddingTop: '12px', borderTop: '1px solid #f1f5f9' }}>
-                                <span style={{ display: 'block', fontSize: '11px', color: '#94a3b8', fontWeight: '600', marginBottom: '4px', textTransform: 'uppercase' }}>Description</span>
-                                <p style={{ margin: '0', fontSize: '12px', color: '#475569', lineHeight: '1.5' }}>{submittedData.description}</p>
-                            </div>
+                        {/* Bottom Action Area */}
+                        <div style={{ padding: '0 24px 24px 24px' }}>
+                            <button 
+                                onClick={() => navigate('/Seller_HomePage')} 
+                                style={{ width: '100%', padding: '16px', borderRadius: '16px', backgroundColor: '#0f172a', color: 'white', border: 'none', fontSize: '15px', fontWeight: '700', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', boxShadow: '0 10px 25px rgba(15,23,42,0.2)', transition: 'transform 0.2s ease, background 0.2s ease' }}
+                                onMouseDown={(e) => e.currentTarget.style.transform = 'scale(0.98)'}
+                                onMouseUp={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                                onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                            >
+                                Continue to Dashboard
+                            </button>
                         </div>
                     </div>
-                    
-                    <button 
-                    onClick={() => navigate('/Seller_HomePage')} 
-                    style={{ marginTop: '30px', background: 'rgba(255,255,255,0.2)', color: 'white', border: '1px solid rgba(255,255,255,0.5)', padding: '10px 20px', borderRadius: '30px', fontSize: '14px', fontWeight: '600', cursor: 'pointer' }}
-                >
-                    Return Home Now
-                </button>
+                </div>
                 
                 <style>{`
-                    @keyframes scaleUp {
+                    @keyframes scaleUpBounce {
                         0% { transform: scale(0); opacity: 0; }
-                        50% { transform: scale(1.2); }
+                        60% { transform: scale(1.1); opacity: 1; }
                         100% { transform: scale(1); opacity: 1; }
                     }
                     @keyframes slideUp {
-                        from { transform: translateY(30px); opacity: 0; }
+                        from { transform: translateY(40px); opacity: 0; }
                         to { transform: translateY(0); opacity: 1; }
                     }
-                    @keyframes fadeIn {
-                        from { opacity: 0; }
-                        to { opacity: 1; }
+                    @keyframes pulseOrb {
+                        from { transform: scale(1); opacity: 0.5; }
+                        to { transform: scale(1.2); opacity: 1; }
                     }
                 `}</style>
-                </div>
             </div>
         );
     }
