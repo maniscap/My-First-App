@@ -858,150 +858,150 @@ function Consumer_HomePage() {
           setIsSearchFocused={setIsSearchFocused}
         />
 
-        {/* SWIPEABLE BENTO GRID AREA */}
+        {/* SWIPEABLE BENTO GRID AREA (CAROUSEL ARCHITECTURE) */}
         <div {...swipeHandlers} style={{ overflowX: 'hidden', width: '100%', minHeight: '350px' }}>
-          <AnimatePresence mode="popLayout" custom={direction}>
-            <motion.div 
-              key={activeTab}
-              custom={direction}
-              initial={{ opacity: 0, x: direction * 40, scale: 0.98 }}
-              animate={{ opacity: 1, x: 0, scale: 1 }}
-              exit={{ opacity: 0, x: direction * -40, scale: 0.98 }}
-              transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-              style={{...bentoGrid, willChange: 'transform, opacity'}}
-            >
+          <motion.div 
+            style={{ 
+              display: 'flex', 
+              width: '300%', 
+              willChange: 'transform'
+            }}
+            animate={{ x: `-${activeIndex * 33.33333}%` }}
+            transition={{ type: 'spring', stiffness: 280, damping: 28, mass: 0.8 }}
+          >
+            {/* 1. AgriInsights Tab */}
+            <div style={{ width: '33.33333%', flexShrink: 0, padding: '0' }}>
+              <div style={{...bentoGrid, willChange: 'transform'}}>
+                <Link to="/market-rates" style={cardLink}>
+                   <div className="glass-card" style={{...cardStyle, backgroundImage: "url('https://img.freepik.com/premium-photo/graph-with-green-arrow-pointing-up-top-it_884497-464.jpg')"}}>
+                      <div style={cardTopOverlay}>
+                         <div><h3 style={cardTitle}>Market Pulse</h3><p style={cardSubtitle}>Mandi Rates</p></div>
+                         <div style={{ opacity: 0.9 }}><TrendingUp size={28} color="white"/></div>
+                      </div>
+                   </div>
+                </Link>
 
-        {activeTab === 'AgriInsights' && (
-          <>
-            <Link to="/market-rates" style={cardLink}>
-               <div className="glass-card" style={{...cardStyle, backgroundImage: "url('https://img.freepik.com/premium-photo/graph-with-green-arrow-pointing-up-top-it_884497-464.jpg')"}}>
-                  <div style={cardTopOverlay}>
-                     <div><h3 style={cardTitle}>Market Pulse</h3><p style={cardSubtitle}>Mandi Rates</p></div>
-                     <div style={whiteIconBox}><TrendingUp size={28} color="white"/></div>
-                  </div>
-               </div>
-            </Link>
+                <Link to="/NewsUpdates" style={cardLink}>
+                   <div className="glass-card" style={{...cardStyle, backgroundImage: "url('https://static.vecteezy.com/system/resources/previews/011/643/706/non_2x/business-newspaper-isolated-on-white-background-daily-newspaper-mock-up-concept-photo.jpg')"}}>
+                      <div style={cardTopOverlay}>
+                         <div><h3 style={cardTitle}>Agri News</h3><p style={cardSubtitle}>Daily Updates</p></div>
+                         <div style={{ opacity: 0.9 }}><Newspaper size={28} color="white"/></div>
+                      </div>
+                   </div>
+                </Link>
 
-            <Link to="/NewsUpdates" style={cardLink}>
-               <div className="glass-card" style={{...cardStyle, backgroundImage: "url('https://static.vecteezy.com/system/resources/previews/011/643/706/non_2x/business-newspaper-isolated-on-white-background-daily-newspaper-mock-up-concept-photo.jpg')"}}>
-                  <div style={cardTopOverlay}>
-                     <div><h3 style={cardTitle}>Agri News</h3><p style={cardSubtitle}>Daily Updates</p></div>
-                     <div style={whiteIconBox}><Newspaper size={28} color="white"/></div>
-                  </div>
-               </div>
-            </Link>
+                <Link to="/library" style={cardLink}>
+                   <div className="glass-card" style={{...cardStyle, backgroundImage: "url('https://static.vecteezy.com/system/resources/thumbnails/023/256/819/small_2x/happy-farmer-is-standing-in-his-pepper-plantation-photo.jpg')"}}>
+                      <div style={cardTopOverlay}>
+                         <div><h3 style={cardTitle}>Library</h3><p style={cardSubtitle}>Expert Guides</p></div>
+                         <div style={{ opacity: 0.9 }}><BookOpen size={28} color="white"/></div>
+                      </div>
+                   </div>
+                </Link>
 
-            <Link to="/library" style={cardLink}>
-               <div className="glass-card" style={{...cardStyle, backgroundImage: "url('https://static.vecteezy.com/system/resources/thumbnails/023/256/819/small_2x/happy-farmer-is-standing-in-his-pepper-plantation-photo.jpg')"}}>
-                  <div style={cardTopOverlay}>
-                     <div><h3 style={cardTitle}>Library</h3><p style={cardSubtitle}>Expert Guides</p></div>
-                     <div style={whiteIconBox}><BookOpen size={28} color="white"/></div>
-                  </div>
-               </div>
-            </Link>
+                <Link to="/modern-tech" style={cardLink}>
+                   <div className="glass-card" style={{...cardStyle, backgroundImage: "url('https://img.freepik.com/premium-photo/smart-agriculture-specialist-monitoring-drone-data_1280275-166272.jpg')"}}>
+                      <div style={cardTopOverlay}>
+                         <div><h3 style={cardTitle}>Modern Tech</h3><p style={cardSubtitle}>Drones & AI</p></div>
+                         <div style={{ opacity: 0.9 }}><Rocket size={28} color="white"/></div>
+                      </div>
+                   </div>
+                </Link>
+              </div>
+            </div>
 
-            <Link to="/modern-tech" style={cardLink}>
-               <div className="glass-card" style={{...cardStyle, backgroundImage: "url('https://img.freepik.com/premium-photo/smart-agriculture-specialist-monitoring-drone-data_1280275-166272.jpg')"}}>
-                  <div style={cardTopOverlay}>
-                     <div><h3 style={cardTitle}>Modern Tech</h3><p style={cardSubtitle}>Drones & AI</p></div>
-                     <div style={whiteIconBox}><Rocket size={28} color="white"/></div>
-                  </div>
-               </div>
-            </Link>
-          </>
-        )}
+            {/* 2. Agri commerce Tab */}
+            <div style={{ width: '33.33333%', flexShrink: 0, padding: '0' }}>
+              <div style={{...bentoGrid, willChange: 'transform'}}>
+                <Link to="/freelancing" style={cardLink}>
+                   <div className="glass-card" style={{...cardStyle, backgroundImage: "url('https://img.freepik.com/premium-photo/farmers-shake-hands-cornfield-partnership-agreement_875825-141614.jpg')"}}>
+                      <div style={cardTopOverlay}>
+                         <div><h3 style={cardTitle}>Freelancing</h3><p style={cardSubtitle}>Hire Professionals</p></div>
+                         <div style={{ opacity: 0.9 }}><Briefcase size={28} color="white"/></div>
+                      </div>
+                   </div>
+                </Link>
 
-        {activeTab === 'Agri commerce' && (
-          <>
-            <Link to="/freelancing" style={cardLink}>
-               <div className="glass-card" style={{...cardStyle, backgroundImage: "url('https://img.freepik.com/premium-photo/farmers-shake-hands-cornfield-partnership-agreement_875825-141614.jpg')"}}>
-                  <div style={cardTopOverlay}>
-                     <div><h3 style={cardTitle}>Freelancing</h3><p style={cardSubtitle}>Hire Professionals & Experts</p></div>
-                     <div style={whiteIconBox}><Briefcase size={28} color="white"/></div>
-                  </div>
-               </div>
-            </Link>
+                <Link to="/rent-machinery" style={cardLink}>
+                   <div className="glass-card" style={{...cardStyle, backgroundImage: "url('https://img.freepik.com/premium-photo/tractor-watering-tractor-spraying-field-farm-landscape-agricultural-beautiful-countryside_114016-69.jpg')"}}>
+                      <div style={cardTopOverlay}>
+                         <div><h3 style={cardTitle}>Hire Machinery</h3><p style={cardSubtitle}>Tractors & Tools</p></div>
+                         <div style={{ opacity: 0.9 }}><Tractor size={28} color="white"/></div>
+                      </div>
+                   </div>
+                </Link>
 
-            <Link to="/rent-machinery" style={cardLink}>
-               <div className="glass-card" style={{...cardStyle, backgroundImage: "url('https://img.freepik.com/premium-photo/tractor-watering-tractor-spraying-field-farm-landscape-agricultural-beautiful-countryside_114016-69.jpg')"}}>
-                  <div style={cardTopOverlay}>
-                     <div><h3 style={cardTitle}>Hire Machinery</h3><p style={cardSubtitle}>Tractors & Tools</p></div>
-                     <div style={whiteIconBox}><Tractor size={28} color="white"/></div>
-                  </div>
-               </div>
-            </Link>
+                <Link to="/business" style={cardLink}>
+                   <div className="glass-card" style={{...cardStyle, backgroundImage: "url('https://www.deere.ca/assets/images/region-4/products/harvesting/cornhead-R4A057928_RRD_1-1920x1080.jpg')"}}>
+                      <div style={cardTopOverlay}>
+                         <div><h3 style={cardTitle}>Business Zone</h3><p style={cardSubtitle}>Buy Harvest</p></div>
+                         <div style={{ opacity: 0.9 }}><IndianRupee size={28} color="white"/></div>
+                      </div>
+                   </div>
+                </Link>
 
-            <Link to="/business" style={cardLink}>
-               <div className="glass-card" style={{...cardStyle, backgroundImage: "url('https://www.deere.ca/assets/images/region-4/products/harvesting/cornhead-R4A057928_RRD_1-1920x1080.jpg')"}}>
-                  <div style={cardTopOverlay}>
-                     <div><h3 style={cardTitle}>Business Zone</h3><p style={cardSubtitle}>Buy Harvest</p></div>
-                     <div style={whiteIconBox}><IndianRupee size={28} color="white"/></div>
-                  </div>
-               </div>
-            </Link>
+                <Link to="/farm-fresh" style={cardLink}>
+                   <div className="glass-card" style={{...cardStyle, backgroundImage: "url('https://images.unsplash.com/photo-1542838132-92c53300491e?q=80&w=500')"}}>
+                      <div style={cardTopOverlay}>
+                         <div><h3 style={cardTitle}>Farm Fresh</h3><p style={cardSubtitle}>Daily Essentials</p></div>
+                         <div style={{ opacity: 0.9 }}><ShoppingBasket size={28} color="white"/></div>
+                      </div>
+                   </div>
+                </Link>
 
-            <Link to="/farm-fresh" style={cardLink}>
-               <div className="glass-card" style={{...cardStyle, backgroundImage: "url('https://images.unsplash.com/photo-1542838132-92c53300491e?q=80&w=500')"}}>
-                  <div style={cardTopOverlay}>
-                     <div><h3 style={cardTitle}>Farm Fresh</h3><p style={cardSubtitle}>Daily Essentials</p></div>
-                     <div style={whiteIconBox}><ShoppingBasket size={28} color="white"/></div>
-                  </div>
-               </div>
-            </Link>
+                <Link to="/hire-workers" style={cardLink}>
+                   <div className="glass-card" style={{...cardStyle, backgroundImage: "url('https://th.bing.com/th/id/R.e2c73dbf8a8f512a95ee3a2ec35f5d72?rik=DuUew48QLbwHzw&riu=http%3a%2f%2fvnmanpower.com%2fupload_images%2fimages%2fall%2ffarm-workers-from-vmst.jpg&ehk=s1NXBhEe0wVXkZGBnlrnXcEoGY1R4UtFvQ9kW7HVQ0Y%3d&risl=&pid=ImgRaw&r=0')"}}>
+                      <div style={cardTopOverlay}>
+                         <div><h3 style={cardTitle}>Hire Workers</h3><p style={cardSubtitle}>Farm Labor</p></div>
+                         <div style={{ opacity: 0.9 }}><Briefcase size={28} color="white"/></div>
+                      </div>
+                   </div>
+                </Link>
 
-            <Link to="/hire-workers" style={cardLink}>
-               <div className="glass-card" style={{...cardStyle, backgroundImage: "url('https://th.bing.com/th/id/R.e2c73dbf8a8f512a95ee3a2ec35f5d72?rik=DuUew48QLbwHzw&riu=http%3a%2f%2fvnmanpower.com%2fupload_images%2fimages%2fall%2ffarm-workers-from-vmst.jpg&ehk=s1NXBhEe0wVXkZGBnlrnXcEoGY1R4UtFvQ9kW7HVQ0Y%3d&risl=&pid=ImgRaw&r=0')"}}>
-                  <div style={cardTopOverlay}>
-                     <div><h3 style={cardTitle}>Hire Workers</h3><p style={cardSubtitle}>Farm Labor</p></div>
-                     <div style={whiteIconBox}><Briefcase size={28} color="white"/></div>
-                  </div>
-               </div>
-            </Link>
+                <Link to="/agri-goods" style={cardLink}>
+                   <div className="glass-card" style={{...cardStyle, backgroundImage: "url('https://images.unsplash.com/photo-1590004953392-5aba2e72269a?w=500&q=80')"}}>
+                      <div style={cardTopOverlay}>
+                         <div><h3 style={cardTitle}>Local Goods</h3><p style={cardSubtitle}>Handmade & Tools</p></div>
+                         <div style={{ opacity: 0.9 }}><Briefcase size={28} color="white"/></div>
+                      </div>
+                   </div>
+                </Link>
+              </div>
+            </div>
 
-            <Link to="/agri-goods" style={cardLink}>
-               <div className="glass-card" style={{...cardStyle, backgroundImage: "url('https://images.unsplash.com/photo-1590004953392-5aba2e72269a?w=500&q=80')"}}>
-                  <div style={cardTopOverlay}>
-                     <div><h3 style={cardTitle}>Local Goods</h3><p style={cardSubtitle}>Handmade & Tools</p></div>
-                     <div style={whiteIconBox}><Briefcase size={28} color="white"/></div>
-                  </div>
-               </div>
-            </Link>
-          </>
-        )}
+            {/* 3. tools and utils Tab */}
+            <div style={{ width: '33.33333%', flexShrink: 0, padding: '0' }}>
+              <div style={{...bentoGrid, willChange: 'transform'}}>
+                <Link to="/expenditure" style={cardLink}>
+                   <div className="glass-card" style={{...cardStyle, backgroundImage: "url('https://img.freepik.com/premium-photo/agronomist-with-tablet-taking-sample-his-crops-ar-23-v-61-job-id-619beb4c01e54b488b59fcdc87c74efc_1204450-66335.jpg')"}}>
+                      <div style={cardTopOverlay}>
+                         <div><h3 style={{...cardTitle}}>Crop Exp.</h3><p style={cardSubtitle}>Track Expenses</p></div>
+                         <div style={{ opacity: 0.9 }}><FileText size={28} color="white"/></div>
+                      </div>
+                   </div>
+                </Link>
 
-        {activeTab === 'tools and utils' && (
-          <>
-            <Link to="/expenditure" style={cardLink}>
-               <div className="glass-card" style={{...cardStyle, backgroundImage: "url('https://img.freepik.com/premium-photo/agronomist-with-tablet-taking-sample-his-crops-ar-23-v-61-job-id-619beb4c01e54b488b59fcdc87c74efc_1204450-66335.jpg')"}}>
-                  <div style={cardTopOverlay}>
-                     <div><h3 style={{...cardTitle}}>Crop Exp.</h3><p style={cardSubtitle}>Track Expenses</p></div>
-                     <div style={whiteIconBox}><FileText size={28} color="white"/></div>
-                  </div>
-               </div>
-            </Link>
+                <Link to="/gps-measurement" style={cardLink}>
+                   <div className="glass-card" style={{...cardStyle, backgroundImage: "url('https://static.eos.com/wp-content/uploads/2021/06/interface-tablet.jpg')"}}>
+                      <div style={cardTopOverlay}>
+                         <div><h3 style={cardTitle}>GPS Area</h3><p style={cardSubtitle}>Measure Land</p></div>
+                         <div style={{ opacity: 0.9 }}><Map size={28} color="white"/></div>
+                      </div>
+                   </div>
+                </Link>
 
-            <Link to="/gps-measurement" style={cardLink}>
-               <div className="glass-card" style={{...cardStyle, backgroundImage: "url('https://static.eos.com/wp-content/uploads/2021/06/interface-tablet.jpg')"}}>
-                  <div style={cardTopOverlay}>
-                     <div><h3 style={cardTitle}>GPS Area</h3><p style={cardSubtitle}>Measure Land</p></div>
-                     <div style={whiteIconBox}><Map size={28} color="white"/></div>
-                  </div>
-               </div>
-            </Link>
-
-            <Link to="/radio" style={cardLink}>
-               <div className="glass-card" style={{...cardStyle, backgroundImage: "url('https://images.unsplash.com/photo-1478737270239-2f02b77fc618?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D')"}}>
-                  <div style={cardTopOverlay}>
-                     <div><h3 style={cardTitle}>Farm Radio</h3><p style={cardSubtitle}>News & Songs</p></div>
-                     <div style={whiteIconBox}><Radio size={28} color="white"/></div>
-                  </div>
-               </div>
-            </Link>
-          </>
-        )}
+                <Link to="/radio" style={cardLink}>
+                   <div className="glass-card" style={{...cardStyle, backgroundImage: "url('https://images.unsplash.com/photo-1478737270239-2f02b77fc618?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D')"}}>
+                      <div style={cardTopOverlay}>
+                         <div><h3 style={cardTitle}>Farm Radio</h3><p style={cardSubtitle}>News & Songs</p></div>
+                         <div style={{ opacity: 0.9 }}><Radio size={28} color="white"/></div>
+                      </div>
+                   </div>
+                </Link>
+              </div>
+            </div>
           </motion.div>
-        </AnimatePresence>
-      </div>
+        </div>
 
       {/* 4. WEATHER BANNER (Always Visible) */}
       <div style={weatherContainer}>
