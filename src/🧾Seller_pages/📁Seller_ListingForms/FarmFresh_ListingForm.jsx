@@ -38,6 +38,8 @@ export default function FarmFresh_ListingForm() {
     const [showSuccess, setShowSuccess] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [submittedData, setSubmittedData] = useState(null);
+    const [isCategoryOpen, setIsCategoryOpen] = useState(false);
+    const [isItemOpen, setIsItemOpen] = useState(false);
     // Derived logic for dropdowns
     const activeCategoryObj = farmFreshCategories.find(c => c.category === selectedCategory);
     const activeItems = activeCategoryObj ? activeCategoryObj.items : [];
@@ -310,65 +312,91 @@ export default function FarmFresh_ListingForm() {
             <div style={{ padding: '24px 20px', paddingBottom: '100px' }}>
                 <form onSubmit={handleSave}>
                     
-                    {/* 1. Category Selection */}
-                    <div style={{ marginBottom: '28px' }}>
+                    {/* 1. Category Selection - CUSTOM DROPDOWN */}
+                    <div style={{ marginBottom: '28px', position: 'relative' }}>
                         <label style={{ display: 'block', fontSize: '15px', fontWeight: '700', color: '#1e293b', marginBottom: '10px' }}>Select Category <span style={{color: '#ef4444'}}>*</span></label>
-                        <div style={{ position: 'relative' }}>
-                            <select 
-                                value={selectedCategory} 
-                                onChange={(e) => { 
-                                    const val = e.target.value;
-                                    setSelectedCategory(val); 
-                                    if (val === 'Other') {
-                                        setSelectedItemId('custom_other_global');
-                                    } else {
-                                        setSelectedItemId(''); 
-                                    }
-                                    setCustomName(''); 
-                                    setUnit('');
-                                }}
-                                style={{ width: '100%', boxSizing: 'border-box', padding: '16px 20px', borderRadius: '14px', border: '2px solid #94a3b8', fontSize: '16px', fontWeight: '600', backgroundColor: '#f8fafc', color: '#0f172a', appearance: 'none', outline: 'none', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)', cursor: 'pointer' }}
-                                required
-                            >
-                                <option value="" disabled>-- Choose Category --</option>
-                                {farmFreshCategories.map(cat => (
-                                    <option key={cat.category} value={cat.category}>{cat.category}</option>
-                                ))}
-                                <option value="Other" style={{ color: '#16a34a', fontWeight: 'bold', backgroundColor: '#f0fdf4' }}>➕ Add Other Category...</option>
-                            </select>
-                            {/* Custom SVG Caret */}
-                            <div style={{ position: 'absolute', right: '18px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: '#64748b' }}>
-                                <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9l6 6 6-6"/></svg>
-                            </div>
+                        <div 
+                            onClick={() => { setIsCategoryOpen(!isCategoryOpen); setIsItemOpen(false); }}
+                            style={{ width: '100%', boxSizing: 'border-box', padding: '16px 20px', borderRadius: '14px', border: '2px solid #94a3b8', fontSize: '16px', fontWeight: '600', backgroundColor: '#f8fafc', color: selectedCategory ? '#0f172a' : '#64748b', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)' }}
+                        >
+                            <span>{selectedCategory || "-- Choose Category --"}</span>
+                            <svg width="20" height="20" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ transform: isCategoryOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}><path d="M6 9l6 6 6-6"/></svg>
                         </div>
-                    </div>
-
-                    {/* 2. Item Selection (Appears only after category is chosen, skips if 'Other' category) */}
-                    {selectedCategory && selectedCategory !== 'Other' && (
-                        <div style={{ marginBottom: '28px', animation: 'fadeIn 0.3s ease-in-out' }}>
-                            <label style={{ display: 'block', fontSize: '15px', fontWeight: '700', color: '#1e293b', marginBottom: '10px' }}>Select Item <span style={{color: '#ef4444'}}>*</span></label>
-                            <div style={{ position: 'relative' }}>
-                                <select 
-                                    value={selectedItemId} 
-                                    onChange={(e) => { setSelectedItemId(e.target.value); setCustomName(''); setUnit(''); }}
-                                    style={{ width: '100%', boxSizing: 'border-box', padding: '16px 20px', borderRadius: '14px', border: '2px solid #94a3b8', fontSize: '16px', fontWeight: '600', backgroundColor: '#f8fafc', color: '#0f172a', appearance: 'none', outline: 'none', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)', cursor: 'pointer' }}
-                                    required
+                        
+                        {isCategoryOpen && (
+                            <div style={{ position: 'absolute', top: 'calc(100% + 8px)', left: 0, width: '100%', maxHeight: '250px', overflowY: 'auto', backgroundColor: '#ffffff', borderRadius: '14px', border: '3px solid #1e293b', zIndex: 50, boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)' }}>
+                                {farmFreshCategories.map(cat => (
+                                    <div 
+                                        key={cat.category} 
+                                        onClick={() => { 
+                                            setSelectedCategory(cat.category); 
+                                            setSelectedItemId(''); 
+                                            setCustomName(''); 
+                                            setUnit('');
+                                            setIsCategoryOpen(false);
+                                        }}
+                                        style={{ padding: '14px 20px', borderBottom: '1px solid #e2e8f0', cursor: 'pointer', fontSize: '15px', fontWeight: selectedCategory === cat.category ? '700' : '500', backgroundColor: selectedCategory === cat.category ? '#f0fdf4' : '#ffffff', color: selectedCategory === cat.category ? '#16a34a' : '#1e293b' }}
+                                    >
+                                        {cat.category}
+                                    </div>
+                                ))}
+                                <div 
+                                    onClick={() => { 
+                                        setSelectedCategory('Other'); 
+                                        setSelectedItemId('custom_other_global'); 
+                                        setCustomName(''); 
+                                        setUnit('');
+                                        setIsCategoryOpen(false);
+                                    }}
+                                    style={{ padding: '14px 20px', cursor: 'pointer', fontSize: '15px', fontWeight: '700', backgroundColor: '#f0fdf4', color: '#16a34a' }}
                                 >
-                                    <option value="" disabled>-- Choose Item --</option>
-                                    {activeItems.map((item) => (
-                                        <option 
-                                            key={item.id} 
-                                            value={item.id}
-                                            style={item.id.includes('other') ? { color: '#16a34a', fontWeight: 'bold', backgroundColor: '#f0fdf4' } : {}}
-                                        >
-                                            {item.name}
-                                        </option>
-                                    ))}
-                                </select>
-                                <div style={{ position: 'absolute', right: '18px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: '#64748b' }}>
-                                    <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+                                    ➕ Add Other Category...
                                 </div>
                             </div>
+                        )}
+                    </div>
+
+                    {/* 2. Item Selection - CUSTOM DROPDOWN */}
+                    {selectedCategory && selectedCategory !== 'Other' && (
+                        <div style={{ marginBottom: '28px', position: 'relative', animation: 'fadeIn 0.3s ease-in-out' }}>
+                            <label style={{ display: 'block', fontSize: '15px', fontWeight: '700', color: '#1e293b', marginBottom: '10px' }}>Select Item <span style={{color: '#ef4444'}}>*</span></label>
+                            <div 
+                                onClick={() => setIsItemOpen(!isItemOpen)}
+                                style={{ width: '100%', boxSizing: 'border-box', padding: '16px 20px', borderRadius: '14px', border: '2px solid #94a3b8', fontSize: '16px', fontWeight: '600', backgroundColor: '#f8fafc', color: selectedItemId ? '#0f172a' : '#64748b', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)' }}
+                            >
+                                <span>{activeItems.find(i => i.id === selectedItemId)?.name || "-- Choose Item --"}</span>
+                                <svg width="20" height="20" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ transform: isItemOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}><path d="M6 9l6 6 6-6"/></svg>
+                            </div>
+                            
+                            {isItemOpen && (
+                                <div style={{ position: 'absolute', top: 'calc(100% + 8px)', left: 0, width: '100%', maxHeight: '250px', overflowY: 'auto', backgroundColor: '#ffffff', borderRadius: '14px', border: '3px solid #1e293b', zIndex: 40, boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)' }}>
+                                    {activeItems.map((item) => {
+                                        const isOther = item.id.includes('other');
+                                        return (
+                                            <div 
+                                                key={item.id} 
+                                                onClick={() => { 
+                                                    setSelectedItemId(item.id); 
+                                                    setCustomName(''); 
+                                                    setUnit('');
+                                                    setIsItemOpen(false);
+                                                }}
+                                                style={{ 
+                                                    padding: '14px 20px', 
+                                                    borderBottom: '1px solid #e2e8f0', 
+                                                    cursor: 'pointer', 
+                                                    fontSize: '15px', 
+                                                    fontWeight: selectedItemId === item.id || isOther ? '700' : '500', 
+                                                    backgroundColor: selectedItemId === item.id ? '#f0fdf4' : (isOther ? '#f0fdf4' : '#ffffff'), 
+                                                    color: selectedItemId === item.id ? '#16a34a' : (isOther ? '#16a34a' : '#1e293b') 
+                                                }}
+                                            >
+                                                {item.name}
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            )}
                         </div>
                     )}
 
