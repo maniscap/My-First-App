@@ -256,13 +256,13 @@ export default function FarmFresh_ListingForm() {
 
     if (showSuccess && submittedData) {
         return (
-            <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: '#16a34a', color: 'white', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', zIndex: 99999, padding: '20px', overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}>
-                <div style={{ animation: 'fadeIn 0.5s ease-out', display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', maxWidth: '340px' }}>
+            <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: '#16a34a', color: 'white', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', zIndex: 99999, padding: '24px', overflowY: 'auto', WebkitOverflowScrolling: 'touch', boxSizing: 'border-box' }}>
+                <div style={{ animation: 'fadeIn 0.5s ease-out', display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', maxWidth: '340px', boxSizing: 'border-box' }}>
                     <CheckCircle2 size={48} color="white" style={{ marginBottom: '12px', animation: 'scaleUp 0.5s ease-out' }} />
                     <h1 style={{ fontSize: '24px', fontWeight: '800', marginBottom: '8px', textAlign: 'center' }}>Listing Live!</h1>
                     <p style={{ fontSize: '14px', fontWeight: '500', marginBottom: '24px', opacity: 0.9, textAlign: 'center' }}>Here is your official listing receipt.</p>
                     
-                    <div style={{ backgroundColor: 'white', color: '#0f172a', borderRadius: '12px', width: '100%', boxShadow: '0 20px 40px rgba(0,0,0,0.2)', animation: 'slideUp 0.6s ease-out', position: 'relative', overflow: 'hidden' }}>
+                    <div style={{ backgroundColor: 'white', color: '#0f172a', borderRadius: '12px', width: '100%', boxShadow: '0 20px 40px rgba(0,0,0,0.2)', animation: 'slideUp 0.6s ease-out', position: 'relative', overflow: 'hidden', boxSizing: 'border-box' }}>
                         {/* Receipt Top Jagged Edge Effect (Optional CSS trick, omitted for simplicity, using solid box) */}
                         <div style={{ padding: '20px', borderBottom: '2px dashed #e2e8f0' }}>
                             <h2 style={{ margin: '0 0 4px 0', fontSize: '18px', fontWeight: '800', textAlign: 'center' }}>{submittedData.itemName}</h2>
