@@ -117,12 +117,22 @@ export default function FarmFresh_ListingForm() {
             alert("Please upload or provide an Image for your product.");
             return;
         }
-        if (!price || parseFloat(price) <= 0) {
-            alert("Please enter a valid Price.");
+        if (!price || isNaN(price) || parseFloat(price) <= 0) {
+            alert("Please enter a valid Price (numbers only, greater than 0).");
             return;
         }
-        if (!shelfLife.trim()) {
-            alert("Please specify the Estimated Shelf Life.");
+        if (!description || description.trim().length < 10) {
+            alert("Please provide a good, descriptive text about your produce (at least 10 characters).");
+            return;
+        }
+        
+        const shelfLifeRegex = /^\d+\s+(day|days|week|weeks|month|months|year|years)$/i;
+        if (!shelfLife || !shelfLifeRegex.test(shelfLife.trim())) {
+            alert("Please specify the Estimated Shelf Life in the correct format (e.g., '5 Days', '2 Weeks', '1 Month').");
+            return;
+        }
+        if (!qualityGuarantee) {
+            alert("You must check the Quality Guarantee box to list on Farm Fresh.");
             return;
         }
 
