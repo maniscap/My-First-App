@@ -46,9 +46,13 @@ const UniversalImagePicker = ({ searchTerm, categoryContext, onSelectImage, curr
     }, [searchTerm, categoryContext]);
 
     const getCleanQuery = () => {
+        // This splits by '(' to remove Hindi/regional names like (Kela)
+        // and also removes '/' for multi-names. 
         let cleanName = searchTerm.split('(')[0].split('/')[0].trim();
-        const suffix = categoryContext ? ` ${categoryContext}` : '';
-        return suffix ? `${cleanName}${suffix}` : cleanName;
+        
+        // We will NOT append categoryContext because searching "Banana" 
+        // yields far better API results than "Banana Fresh Fruits & Orchards".
+        return cleanName;
     };
 
     const fetchAllSources = (pageNum) => {
