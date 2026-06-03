@@ -96,6 +96,36 @@ export default function FarmFresh_ListingForm() {
     const handleSave = async (e) => {
         e.preventDefault();
         
+        // --- Strict Validations ---
+        if (!selectedCategory) {
+            alert("Please select a Category before submitting.");
+            return;
+        }
+        if (!selectedItemId) {
+            alert("Please select an Item to list.");
+            return;
+        }
+        if (isOtherSelected && !customName.trim()) {
+            alert("Please type the name of your custom item.");
+            return;
+        }
+        if (unit === 'custom_other_unit' && !customUnitName.trim()) {
+            alert("Please type the name of your custom unit.");
+            return;
+        }
+        if (!selectedImageUrl) {
+            alert("Please upload or provide an Image for your product.");
+            return;
+        }
+        if (!price || parseFloat(price) <= 0) {
+            alert("Please enter a valid Price.");
+            return;
+        }
+        if (!shelfLife.trim()) {
+            alert("Please specify the Estimated Shelf Life.");
+            return;
+        }
+
         if (isSubmitting) return; // Prevent double clicks
         setIsSubmitting(true);
         
