@@ -256,28 +256,68 @@ export default function FarmFresh_ListingForm() {
 
     if (showSuccess && submittedData) {
         return (
-            <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: '#16a34a', color: 'white', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', zIndex: 99999, padding: '20px', animation: 'fadeIn 0.5s ease-out' }}>
-                <CheckCircle2 size={48} color="white" style={{ marginBottom: '12px', animation: 'scaleUp 0.5s ease-out' }} />
-                <h1 style={{ fontSize: '24px', fontWeight: '800', marginBottom: '8px', textAlign: 'center' }}>Success!</h1>
-                <p style={{ fontSize: '14px', fontWeight: '500', marginBottom: '24px', opacity: 0.9, textAlign: 'center' }}>Your listing is now live.</p>
-                
-                <div style={{ backgroundColor: 'white', color: '#0f172a', borderRadius: '20px', padding: '16px', width: '90%', maxWidth: '280px', boxShadow: '0 20px 40px rgba(0,0,0,0.2)', animation: 'slideUp 0.6s ease-out' }}>
-                    <div style={{ width: '100%', height: '140px', borderRadius: '12px', backgroundColor: '#f1f5f9', overflow: 'hidden', marginBottom: '12px' }}>
-                        {submittedData.imageUrl ? (
-                            <img src={submittedData.imageUrl} alt={submittedData.itemName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                        ) : (
-                            <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94a3b8', fontSize: '12px' }}>No Image</div>
+            <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: '#16a34a', color: 'white', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', zIndex: 99999, padding: '20px', overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}>
+                <div style={{ animation: 'fadeIn 0.5s ease-out', display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', maxWidth: '340px' }}>
+                    <CheckCircle2 size={48} color="white" style={{ marginBottom: '12px', animation: 'scaleUp 0.5s ease-out' }} />
+                    <h1 style={{ fontSize: '24px', fontWeight: '800', marginBottom: '8px', textAlign: 'center' }}>Listing Live!</h1>
+                    <p style={{ fontSize: '14px', fontWeight: '500', marginBottom: '24px', opacity: 0.9, textAlign: 'center' }}>Here is your official listing receipt.</p>
+                    
+                    <div style={{ backgroundColor: 'white', color: '#0f172a', borderRadius: '12px', width: '100%', boxShadow: '0 20px 40px rgba(0,0,0,0.2)', animation: 'slideUp 0.6s ease-out', position: 'relative', overflow: 'hidden' }}>
+                        {/* Receipt Top Jagged Edge Effect (Optional CSS trick, omitted for simplicity, using solid box) */}
+                        <div style={{ padding: '20px', borderBottom: '2px dashed #e2e8f0' }}>
+                            <h2 style={{ margin: '0 0 4px 0', fontSize: '18px', fontWeight: '800', textAlign: 'center' }}>{submittedData.itemName}</h2>
+                            <p style={{ margin: '0', fontSize: '12px', color: '#64748b', textAlign: 'center', textTransform: 'uppercase', letterSpacing: '1px' }}>{submittedData.category}</p>
+                        </div>
+                        
+                        {submittedData.imageUrl && (
+                            <div style={{ width: '100%', height: '160px', backgroundColor: '#f1f5f9' }}>
+                                <img src={submittedData.imageUrl} alt={submittedData.itemName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                            </div>
                         )}
+
+                        <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                <span style={{ fontSize: '13px', color: '#64748b', fontWeight: '600' }}>Price</span>
+                                <span style={{ fontSize: '14px', fontWeight: '800', color: '#16a34a' }}>₹{submittedData.price} / {submittedData.unit}</span>
+                            </div>
+                            
+                            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                <span style={{ fontSize: '13px', color: '#64748b', fontWeight: '600' }}>Organic Status</span>
+                                <span style={{ fontSize: '13px', fontWeight: '700', color: submittedData.isOrganic ? '#16a34a' : '#0f172a' }}>{submittedData.isOrganic ? 'Yes (Certified)' : 'Standard'}</span>
+                            </div>
+
+                            {submittedData.isOrganic && submittedData.organicCertName && (
+                                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                    <span style={{ fontSize: '13px', color: '#64748b', fontWeight: '600' }}>Certifier</span>
+                                    <span style={{ fontSize: '13px', fontWeight: '700', color: '#0f172a' }}>{submittedData.organicCertName}</span>
+                                </div>
+                            )}
+
+                            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                <span style={{ fontSize: '13px', color: '#64748b', fontWeight: '600' }}>Listing Date</span>
+                                <span style={{ fontSize: '13px', fontWeight: '700', color: '#0f172a' }}>{submittedData.listingDate}</span>
+                            </div>
+
+                            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                <span style={{ fontSize: '13px', color: '#64748b', fontWeight: '600' }}>Shelf Life</span>
+                                <span style={{ fontSize: '13px', fontWeight: '700', color: '#0f172a' }}>{submittedData.shelfLife}</span>
+                            </div>
+
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                <span style={{ fontSize: '13px', color: '#64748b', fontWeight: '600', whiteSpace: 'nowrap', marginRight: '16px' }}>Quality</span>
+                                <span style={{ fontSize: '12px', fontWeight: '600', color: submittedData.qualityGuarantee ? '#16a34a' : '#ef4444', textAlign: 'right' }}>
+                                    {submittedData.qualityGuarantee ? 'Guaranteed Fresh ✓' : 'Not Guaranteed'}
+                                </span>
+                            </div>
+
+                            <div style={{ marginTop: '8px', paddingTop: '12px', borderTop: '1px solid #f1f5f9' }}>
+                                <span style={{ display: 'block', fontSize: '11px', color: '#94a3b8', fontWeight: '600', marginBottom: '4px', textTransform: 'uppercase' }}>Description</span>
+                                <p style={{ margin: '0', fontSize: '12px', color: '#475569', lineHeight: '1.5' }}>{submittedData.description}</p>
+                            </div>
+                        </div>
                     </div>
-                    <h2 style={{ margin: '0 0 6px 0', fontSize: '16px', fontWeight: '800', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{submittedData.itemName}</h2>
-                    <p style={{ margin: '0 0 12px 0', fontSize: '12px', color: '#64748b', lineHeight: '1.4', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{submittedData.description}</p>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #f1f5f9', paddingTop: '12px' }}>
-                        <span style={{ fontSize: '11px', color: '#64748b', fontWeight: '600' }}>Price</span>
-                        <span style={{ fontSize: '16px', fontWeight: '800', color: '#16a34a' }}>₹{submittedData.price} <span style={{ fontSize: '11px', color: '#64748b', fontWeight: '500' }}>/ {submittedData.unit}</span></span>
-                    </div>
-                </div>
-                
-                <button 
+                    
+                    <button 
                     onClick={() => navigate('/Seller_HomePage')} 
                     style={{ marginTop: '30px', background: 'rgba(255,255,255,0.2)', color: 'white', border: '1px solid rgba(255,255,255,0.5)', padding: '10px 20px', borderRadius: '30px', fontSize: '14px', fontWeight: '600', cursor: 'pointer' }}
                 >
