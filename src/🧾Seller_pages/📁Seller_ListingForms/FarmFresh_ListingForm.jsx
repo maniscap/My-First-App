@@ -389,20 +389,76 @@ export default function FarmFresh_ListingForm() {
                             />
                         </div>
 
-                        <div style={{ flex: 1 }}>
+                        <div style={{ flex: 1, position: 'relative' }}>
                             <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: '#1e293b', marginBottom: '8px' }}>Selling Unit</label>
-                            <div style={{ position: 'relative' }}>
-                                <select 
-                                    value={unit || dynamicUnits[0]?.val}
-                                    onChange={(e) => setUnit(e.target.value)}
-                                    style={{ width: '100%', padding: '16px 40px 16px 16px', borderRadius: '16px', border: '1px solid #cbd5e1', fontSize: '15px', backgroundColor: '#fff', outline: 'none', appearance: 'none', boxSizing: 'border-box', color: '#0f172a', fontWeight: '600' }}
-                                >
-                                    {dynamicUnits.map(u => (
-                                        <option key={u.val} value={u.val}>{u.label}</option>
-                                    ))}
-                                </select>
-                                <div style={{ position: 'absolute', right: '16px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', fontSize: '14px', color: '#64748b' }}>▼</div>
+                            
+                            <div 
+                                onClick={() => setIsUnitOpen(!isUnitOpen)}
+                                style={{ width: '100%', boxSizing: 'border-box', padding: '16px 20px', borderRadius: '14px', border: '2px solid #94a3b8', fontSize: '16px', fontWeight: '600', backgroundColor: '#f8fafc', color: unit ? '#0f172a' : '#64748b', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)' }}
+                            >
+                                <span>{farmFreshUnits.find(u => u.val === unit)?.label || unit || "-- Select Unit --"}</span>
+                                <svg width="20" height="20" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ transform: isUnitOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}><path d="M6 9l6 6 6-6"/></svg>
                             </div>
+
+                            {isUnitOpen && (
+                                <div style={{ position: 'absolute', top: 'calc(100% + 8px)', left: 0, width: '100%', maxHeight: '400px', display: 'flex', flexDirection: 'column', backgroundColor: '#ffffff', borderRadius: '14px', border: '3px solid #1e293b', zIndex: 60, boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)' }}>
+                                    
+                                    <div style={{ padding: '12px', borderBottom: '2px solid #e2e8f0', backgroundColor: '#f8fafc', borderTopLeftRadius: '11px', borderTopRightRadius: '11px', position: 'sticky', top: 0, zIndex: 2 }}>
+                                        <input
+                                            type="text"
+                                            placeholder="🔍 Search units (e.g. Kg, Box, Ton)..."
+                                            value={unitSearch}
+                                            onChange={(e) => setUnitSearch(e.target.value)}
+                                            onClick={(e) => e.stopPropagation()}
+                                            style={{ width: '100%', padding: '12px 16px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '14px', boxSizing: 'border-box', outline: 'none' }}
+                                        />
+                                    </div>
+                                    
+                                    <div style={{ overflowY: 'auto', flex: 1 }}>
+                                        {farmFreshUnits.filter(u => u.label.toLowerCase().includes(unitSearch.toLowerCase()) || u.val.toLowerCase().includes(unitSearch.toLowerCase())).map((u) => {
+                                            const isOther = u.val === 'custom_other_unit';
+                                            return (
+                                                <div 
+                                                    key={u.val} 
+                                                    onClick={() => { 
+                                                        setUnit(u.val); 
+                                                        setIsUnitOpen(false);
+                                                        setUnitSearch('');
+                                                    }}
+                                                    style={{ 
+                                                        padding: '14px 20px', 
+                                                        borderBottom: '1px solid #e2e8f0', 
+                                                        cursor: 'pointer', 
+                                                        fontSize: '15px', 
+                                                        fontWeight: unit === u.val || isOther ? '700' : '500', 
+                                                        backgroundColor: unit === u.val ? '#f0fdf4' : (isOther ? '#f0fdf4' : '#ffffff'), 
+                                                        color: unit === u.val ? '#16a34a' : (isOther ? '#16a34a' : '#1e293b') 
+                                                    }}
+                                                >
+                                                    {u.label}
+                                                </div>
+                                            );
+                                        })}
+                                        {farmFreshUnits.filter(u => u.label.toLowerCase().includes(unitSearch.toLowerCase()) || u.val.toLowerCase().includes(unitSearch.toLowerCase())).length === 0 && (
+                                            <div style={{ padding: '20px', textAlign: 'center', color: '#64748b', fontSize: '14px' }}>No units found. Try searching something else or use Custom Unit.</div>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+
+                            {unit === 'custom_other_unit' && (
+                                <div style={{ marginTop: '12px', animation: 'slideUp 0.3s ease-out' }}>
+                                    <input 
+                                        type="text" 
+                                        placeholder="Type custom unit (e.g. 30 Kg Tin)" 
+                                        value={unit === 'custom_other_unit' ? '' : unit}
+                                        onChange={(e) => setUnit(e.target.value)}
+                                        style={{ width: '100%', padding: '14px 16px', borderRadius: '12px', border: '2px solid #16a34a', fontSize: '14px', backgroundColor: '#f0fdf4', color: '#0f172a', outline: 'none', boxSizing: 'border-box' }}
+                                        required
+                                        autoFocus
+                                    />
+                                </div>
+                            )}
                         </div>
                     </div>
 
