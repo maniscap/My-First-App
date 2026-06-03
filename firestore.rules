@@ -41,5 +41,8 @@ service cloud.firestore {
     match /listings_local_goods/{document=**} {
       allow read, write: if true;
     }
+    match /seller_listings/{document=**} {
+      allow read, write: if true;
+    }
   }
 }
