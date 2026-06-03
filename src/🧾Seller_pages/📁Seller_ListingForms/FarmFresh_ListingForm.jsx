@@ -31,6 +31,7 @@ export default function FarmFresh_ListingForm() {
     const [description, setDescription] = useState('');
     const [price, setPrice] = useState('');
     const [unit, setUnit] = useState('1kg');
+    const [customUnitName, setCustomUnitName] = useState('');
     const [isUnitOpen, setIsUnitOpen] = useState(false);
     const [isOrganic, setIsOrganic] = useState(false);
     const [organicCertName, setOrganicCertName] = useState('');
@@ -115,8 +116,8 @@ export default function FarmFresh_ListingForm() {
                 itemId: selectedItemId,
                 itemName: selectedItemName,
                 description: description,
-                price: Number(price),
-                unit: unit,
+                price: parseFloat(price),
+                unit: unit === 'custom_other_unit' ? customUnitName : unit,
                 isOrganic: isOrganic,
                 organicCertName: isOrganic ? organicCertName : null,
                 organicCertNumber: isOrganic ? organicCertNumber : null,
@@ -480,8 +481,8 @@ export default function FarmFresh_ListingForm() {
                                     <input 
                                         type="text" 
                                         placeholder="Type custom unit (e.g. 30 Kg Tin)" 
-                                        value={unit === 'custom_other_unit' ? '' : unit}
-                                        onChange={(e) => setUnit(e.target.value)}
+                                        value={customUnitName}
+                                        onChange={(e) => setCustomUnitName(e.target.value)}
                                         style={{ width: '100%', padding: '14px 16px', borderRadius: '12px', border: '2px solid #16a34a', fontSize: '14px', backgroundColor: '#f0fdf4', color: '#0f172a', outline: 'none', boxSizing: 'border-box' }}
                                         required
                                         autoFocus
