@@ -1,33 +1,21 @@
 import React, { useState, useEffect } from 'react';
-import { CheckCircle2, Search, Loader2, Image as ImageIcon, RefreshCw, Grid } from 'lucide-react';
+import { CheckCircle2, Search, Loader2, Image as ImageIcon, RefreshCw, Grid, Check } from 'lucide-react';
 
 const defaultImages = [
-    // 1. Group of Assorted Fruits
     "https://images.pexels.com/photos/5677921/pexels-photo-5677921.jpeg?auto=compress&cs=tinysrgb&w=800",
-    // 2. Group of Fresh Vegetables
     "https://images.unsplash.com/photo-1566385101042-1a0aa0c1268c?auto=format&fit=crop&w=800&q=80",
-    // 3. Dairy Products (Milk, Cheese, Butter)
     "https://images.unsplash.com/photo-1628088062854-d1870b4553da?auto=format&fit=crop&w=800&q=80",
-    // 4. Leafy Green Vegetables
     "https://images.unsplash.com/photo-1576045057995-568f588f82fb?auto=format&fit=crop&w=800&q=80",
-    // 5. Farm Fresh Eggs (Daily Products)
     "https://images.unsplash.com/photo-1506976785307-8732e854ad03?auto=format&fit=crop&w=800&q=80",
-    // 6. Fresh Dairy & Honey (Daily Products)
     "https://images.pexels.com/photos/1393382/pexels-photo-1393382.jpeg?auto=compress&cs=tinysrgb&w=800",
-    // 7. Nuts and Seeds Group
     "https://images.pexels.com/photos/248412/pexels-photo-248412.jpeg?auto=compress&cs=tinysrgb&w=800",
-    // 8. Mixed Fresh Berries
     "https://images.pexels.com/photos/8248297/pexels-photo-8248297.jpeg?auto=compress&cs=tinysrgb&w=800",
-    // 9. Colorful Spices and Condiments
     "https://images.unsplash.com/photo-1596040033229-a9821ebd058d?auto=format&fit=crop&w=800&q=80",
-    // 10. Assorted Farm Produce Basket
     "https://images.unsplash.com/photo-1488459716781-31db52582fe9?auto=format&fit=crop&w=800&q=80",
-    // 11. Vibrant Display of Fresh Market Vegetables
     "https://images.pexels.com/photos/37321079/pexels-photo-37321079.jpeg?auto=compress&cs=tinysrgb&w=800"
 ];
 
 const UniversalImagePicker = ({ searchTerm, categoryContext, onSelectImage, currentSelection }) => {
-    // Each provider now holds an array of up to 3 images instead of just 1
     const [images, setImages] = useState({ pixabay: [], pexels: [], openverse: [], wikimedia: [] });
     const [loading, setLoading] = useState({ pixabay: false, pexels: false, openverse: false, wikimedia: false });
     const [pages, setPages] = useState({ pixabay: 1, pexels: 1, openverse: 1, wikimedia: 1 });
@@ -35,6 +23,9 @@ const UniversalImagePicker = ({ searchTerm, categoryContext, onSelectImage, curr
     
     const [showDefaults, setShowDefaults] = useState(false);
     const [defaultPage, setDefaultPage] = useState(0);
+    
+    // NEW: Collapse state to hide the huge picker once an image is chosen
+    const [isExpanded, setIsExpanded] = useState(!currentSelection);
 
     useEffect(() => {
         if (!searchTerm || searchTerm.length < 2) return;
@@ -42,6 +33,9 @@ const UniversalImagePicker = ({ searchTerm, categoryContext, onSelectImage, curr
         setShowDefaults(false); 
         setPages({ pixabay: 1, pexels: 1, openverse: 1, wikimedia: 1 });
         setImages({ pixabay: [], pexels: [], openverse: [], wikimedia: [] });
+        
+        // If searching a new term, auto expand so they can see results
+        setIsExpanded(true);
         
         const timeoutId = setTimeout(() => {
             setHasSearched(true);
@@ -88,13 +82,16 @@ const UniversalImagePicker = ({ searchTerm, categoryContext, onSelectImage, curr
                 }
             }
             else if (source === 'wikimedia') {
-                // Fetch a large limit, then paginate through it locally to ensure we get actual URLs
+                // FIXED: Aggressively filter out non-image files (.svg, .ogg) that break the UI
                 const offset = (pageNum - 1) * 3;
                 const res = await fetch(`https://commons.wikimedia.org/w/api.php?origin=*&action=query&generator=search&gsrsearch=${encodeURIComponent(query)}&gsrnamespace=6&prop=imageinfo&iiprop=url&format=json&gsrlimit=30`);
                 if (res.ok) {
                     const data = await res.json();
                     if (data.query && data.query.pages) {
-                        const pagesArr = Object.values(data.query.pages).filter(p => p.imageinfo && p.imageinfo[0] && p.imageinfo[0].url);
+                        const pagesArr = Object.values(data.query.pages).filter(p => {
+                            if (!p.imageinfo || !p.imageinfo[0] || !p.imageinfo[0].url) return false;
+                            return p.imageinfo[0].url.match(/\.(jpeg|jpg|png|gif)$/i);
+                        });
                         urls = pagesArr.slice(offset, offset + 3).map(p => p.imageinfo[0].url);
                     }
                 }
@@ -102,11 +99,6 @@ const UniversalImagePicker = ({ searchTerm, categoryContext, onSelectImage, curr
             
             if (urls.length > 0) {
                 setImages(prev => ({ ...prev, [source]: urls }));
-                
-                // If nothing is selected globally, auto-select the very first image that comes back
-                if (!currentSelection && urls[0]) {
-                    onSelectImage(urls[0]);
-                }
             }
         } catch (e) {
             console.error(`Failed to fetch ${source}:`, e);
@@ -121,8 +113,41 @@ const UniversalImagePicker = ({ searchTerm, categoryContext, onSelectImage, curr
         fetchSource(source, nextPage);
     };
 
+    const handleImageClick = (url) => {
+        onSelectImage(url);
+        setIsExpanded(false); // Instantly collapse the picker once an image is chosen
+    };
+
     if (!searchTerm || searchTerm.length < 2) return null;
 
+    // COLLAPSED VIEW: User selected an image and we just show the elegant preview box
+    if (!isExpanded && currentSelection) {
+        return (
+            <div style={{ marginTop: '16px', marginBottom: '24px', animation: 'fadeIn 0.3s ease' }}>
+                <label style={{ fontSize: '14px', fontWeight: '700', color: '#1e293b', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <CheckCircle2 size={16} color="#4CAF50" /> Selected Listing Image
+                </label>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '16px', backgroundColor: '#f8fafc', borderRadius: '16px', border: '1px solid #e2e8f0', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}>
+                    <div style={{ width: '120px', height: '120px', borderRadius: '12px', overflow: 'hidden', flexShrink: 0, border: '3px solid #fff', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
+                        <img src={currentSelection} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="Selected Listing" />
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        <div style={{ fontSize: '15px', fontWeight: '700', color: '#0f172a' }}>Image Selected Successfully</div>
+                        <div style={{ fontSize: '13px', color: '#64748b' }}>This beautiful image will be the face of your listing on the marketplace.</div>
+                        <button 
+                            type="button" 
+                            onClick={() => setIsExpanded(true)}
+                            style={{ alignSelf: 'flex-start', padding: '8px 16px', backgroundColor: '#fff', color: '#0f172a', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '13px', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', transition: 'all 0.2s', marginTop: '4px' }}
+                        >
+                            <RefreshCw size={14} /> Change Image
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    // EXPANDED VIEW: The massive 4-platform picker
     return (
         <div style={{ marginTop: '16px', marginBottom: '24px', animation: 'fadeIn 0.3s ease' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
@@ -130,6 +155,15 @@ const UniversalImagePicker = ({ searchTerm, categoryContext, onSelectImage, curr
                     <ImageIcon size={16} color={showDefaults ? "#f59e0b" : "#4CAF50"} />
                     {showDefaults ? "Default Image Gallery" : "Select Listing Image"}
                 </label>
+                {currentSelection && (
+                    <button 
+                        type="button" 
+                        onClick={() => setIsExpanded(false)}
+                        style={{ padding: '6px 12px', backgroundColor: '#e2e8f0', color: '#475569', border: 'none', borderRadius: '8px', fontSize: '12px', fontWeight: '700', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
+                    >
+                        <Check size={14} /> Done
+                    </button>
+                )}
             </div>
 
             {showDefaults ? (
@@ -139,7 +173,7 @@ const UniversalImagePicker = ({ searchTerm, categoryContext, onSelectImage, curr
                             const isSelected = currentSelection === imgUrl;
                             return (
                                 <div key={index} style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                                    <div onClick={() => onSelectImage(imgUrl)}
+                                    <div onClick={() => handleImageClick(imgUrl)}
                                         style={{ height: '90px', borderRadius: '12px', overflow: 'hidden', cursor: 'pointer', position: 'relative', border: isSelected ? '3px solid #4CAF50' : '2px solid transparent', boxShadow: isSelected ? '0 8px 20px rgba(76, 175, 80, 0.3)' : '0 2px 8px rgba(0,0,0,0.05)', transition: 'all 0.2s ease', transform: isSelected ? 'scale(1.02)' : 'scale(1)', backgroundColor: '#f1f5f9' }}
                                     >
                                         <img src={imgUrl} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -198,7 +232,7 @@ const UniversalImagePicker = ({ searchTerm, categoryContext, onSelectImage, curr
                                             return (
                                                 <div 
                                                     key={idx}
-                                                    onClick={() => onSelectImage(url)}
+                                                    onClick={() => handleImageClick(url)}
                                                     style={{ 
                                                         height: '80px', borderRadius: '10px', backgroundColor: '#f1f5f9', overflow: 'hidden', position: 'relative', cursor: 'pointer',
                                                         border: isSelected ? '3px solid #4CAF50' : '2px solid transparent',
