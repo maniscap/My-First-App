@@ -871,7 +871,7 @@ function Consumer_HomePage() {
             <div style={{ width: '33.33333%', flexShrink: 0, padding: '0 0 100px 0' }}>
               <div style={{...bentoGrid, willChange: 'transform'}}>
                 <Link to="/market-rates" style={cardLink}>
-                   <div className="glass-card" style={{...cardStyle, backgroundImage: "url('https://img.freepik.com/premium-photo/graph-with-green-arrow-pointing-up-top-it_884497-464.jpg')"}}>
+                   <div className="glass-card" style={{...cardStyle, backgroundImage: "url('/assets/images/market-pulse.webp')"}}>
                       <div style={cardTopOverlay}>
                          <div><h3 style={cardTitle}>Market Pulse</h3><p style={cardSubtitle}>Mandi Rates</p></div>
                          <div style={{ opacity: 0.9 }}><TrendingUp size={28} color="white"/></div>
