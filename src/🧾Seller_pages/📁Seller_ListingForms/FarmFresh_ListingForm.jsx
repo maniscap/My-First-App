@@ -51,15 +51,80 @@ export default function FarmFresh_ListingForm() {
         const cat = selectedCategory.toLowerCase();
         const item = selectedItemId.toLowerCase();
 
-        if (item.includes('egg')) return [ { val: 'dozen', label: 'Per Dozen' }, { val: 'tray', label: 'Per Tray (30)' }, { val: 'piece', label: 'Per Piece' } ];
-        if (item.includes('milk') || item.includes('lassi') || item.includes('buttermilk') || item.includes('water') || item.includes('juice') || item.includes('oil')) return [ { val: 'liter', label: 'Per Liter' }, { val: '500ml', label: 'Per 500ml' }, { val: 'packet', label: 'Per Packet' } ];
-        if (cat.includes('dairy') || item.includes('pickle') || item.includes('jam') || item.includes('butter') || item.includes('ghee') || item.includes('honey')) return [ { val: 'kg', label: 'Per Kg' }, { val: '500g', label: 'Per 500g' }, { val: '250g', label: 'Per 250g' }, { val: 'jar', label: 'Per Jar' }, { val: 'packet', label: 'Per Packet' } ];
-        if (item.includes('leaves') || item.includes('spinach') || item.includes('mint') || item.includes('coriander')) return [ { val: 'bunch', label: 'Per Bunch' }, { val: 'kg', label: 'Per 1 Kg' }, { val: '500g', label: 'Per 500g' }, { val: '250g', label: 'Per 250g' }, { val: 'gram', label: 'Per 100g' } ];
-        if (item.includes('bread') || item.includes('bun') || item.includes('biscuit') || item.includes('cookie') || item.includes('chikki') || item.includes('papad') || item.includes('chips') || item.includes('mathri')) return [ { val: 'packet', label: 'Per Packet' }, { val: 'piece', label: 'Per Piece' }, { val: 'box', label: 'Per Box' }, { val: 'kg', label: 'Per Kg' } ];
-        if (item.includes('banana') || item.includes('coconut')) return [ { val: 'dozen', label: 'Per Dozen' }, { val: 'piece', label: 'Per Piece' }, { val: 'kg', label: 'Per Kg' }, { val: 'quintal', label: 'Per Quintal' } ];
-        if (cat.includes('field')) return [ { val: 'quintal', label: 'Per Quintal (100kg)' }, { val: 'ton', label: 'Per Ton (1000kg)' }, { val: 'bag', label: 'Per Bag (50kg)' }, { val: 'kg', label: 'Per Kg' } ];
+        // Eggs
+        if (item.includes('egg')) return [ 
+            { val: 'tray', label: 'Per Tray (30 Eggs)' }, 
+            { val: 'box', label: 'Per Box/Peti' }, 
+            { val: 'dozen', label: 'Per Dozen' }, 
+            { val: 'piece', label: 'Per Piece' } 
+        ];
+        
+        // Liquids (Milk, Oil, Buttermilk, Juice)
+        if (item.includes('milk') || item.includes('lassi') || item.includes('buttermilk') || item.includes('water') || item.includes('juice') || item.includes('oil')) return [ 
+            { val: 'liter', label: 'Per Liter' }, 
+            { val: 'can', label: 'Per Can' }, 
+            { val: 'tin', label: 'Per Tin (15L)' }, 
+            { val: '500ml', label: 'Per 500ml' }, 
+            { val: 'packet', label: 'Per Packet' },
+            { val: 'bottle', label: 'Per Bottle' }
+        ];
+        
+        // Dairy & Preserves (Ghee, Butter, Honey, Pickles)
+        if (cat.includes('dairy') || item.includes('pickle') || item.includes('jam') || item.includes('butter') || item.includes('ghee') || item.includes('honey')) return [ 
+            { val: 'kg', label: 'Per Kg' }, 
+            { val: 'tin', label: 'Per Tin (15kg)' }, 
+            { val: 'jar', label: 'Per Jar/Bottle' }, 
+            { val: 'packet', label: 'Per Packet' },
+            { val: '500g', label: 'Per 500g' }
+        ];
 
-        return [ { val: 'kg', label: 'Per 1 Kg' }, { val: '500g', label: 'Per 500g' }, { val: '250g', label: 'Per 250g' }, { val: '2kg', label: 'Per 2 Kg' }, { val: '5kg', label: 'Per 5 Kg' }, { val: '10kg', label: 'Per 10 Kg' }, { val: 'quintal', label: 'Per Quintal' }, { val: 'ton', label: 'Per Ton' }, { val: 'box', label: 'Per Box/Crate' } ];
+        // Leafy Greens & Herbs
+        if (item.includes('leaves') || item.includes('spinach') || item.includes('mint') || item.includes('coriander')) return [ 
+            { val: 'bunch', label: 'Per Bunch (Gaddi)' }, 
+            { val: 'kg', label: 'Per Kg' }, 
+            { val: 'bag', label: 'Per Bag/Katta' },
+            { val: '100g', label: 'Per 100g' } 
+        ];
+
+        // Bakery & Dry Snacks
+        if (item.includes('bread') || item.includes('bun') || item.includes('biscuit') || item.includes('cookie') || item.includes('chikki') || item.includes('papad') || item.includes('chips') || item.includes('mathri')) return [ 
+            { val: 'packet', label: 'Per Packet' }, 
+            { val: 'box', label: 'Per Box' }, 
+            { val: 'carton', label: 'Per Carton' },
+            { val: 'piece', label: 'Per Piece' }, 
+            { val: 'kg', label: 'Per Kg' } 
+        ];
+
+        // Items typically sold by count (Bananas, Coconuts, Lemons)
+        if (item.includes('banana') || item.includes('coconut') || item.includes('lemon')) return [ 
+            { val: 'dozen', label: 'Per Dozen' }, 
+            { val: 'century', label: 'Per 100 Pieces' },
+            { val: 'piece', label: 'Per Piece' }, 
+            { val: 'bag', label: 'Per Bag/Katta' },
+            { val: 'box', label: 'Per Box/Carton' },
+            { val: 'ton', label: 'Per Ton' } 
+        ];
+
+        // Field Crops, Grains, Pulses (Bulk)
+        if (cat.includes('field') || item.includes('wheat') || item.includes('rice') || item.includes('dal')) return [ 
+            { val: 'quintal', label: 'Per Quintal (100kg)' }, 
+            { val: 'bag', label: 'Per Bag/Bori (50kg)' }, 
+            { val: 'ton', label: 'Per Ton (1000kg)' }, 
+            { val: 'kg', label: 'Per Kg' } 
+        ];
+
+        // Fruits and Vegetables (General Default)
+        return [ 
+            { val: 'kg', label: 'Per Kg' }, 
+            { val: 'box', label: 'Per Box/Crate' }, 
+            { val: 'carton', label: 'Per Carton' }, 
+            { val: 'bag', label: 'Per Bag/Katta' },
+            { val: 'quintal', label: 'Per Quintal (100kg)' }, 
+            { val: 'ton', label: 'Per Ton (1000kg)' }, 
+            { val: 'packet', label: 'Per Packet/Net' },
+            { val: '500g', label: 'Per 500g' },
+            { val: '250g', label: 'Per 250g' }
+        ];
     };
 
     const dynamicUnits = getDynamicUnits();
