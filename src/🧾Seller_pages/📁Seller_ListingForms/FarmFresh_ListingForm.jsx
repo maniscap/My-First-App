@@ -198,24 +198,31 @@ export default function FarmFresh_ListingForm() {
             { val: '1L', label: '1 Liter' }, 
             { val: '5L', label: '5 Liters' }, 
             { val: '10L', label: '10 Liters' }
-        ];
-    };
-
-    const getShelfLife = (category) => {
-        if (!category) return "Not specified";
+    const getShelfLifeData = (category) => {
+        if (!category) return { text: "Not specified", days: 0 };
         const cat = category.toLowerCase();
-        if (cat.includes('greens')) return '2 to 3 Days';
-        if (cat.includes('flowers')) return '1 to 2 Days';
-        if (cat.includes('fruits')) return '5 to 7 Days';
-        if (cat.includes('vegetable')) return '4 to 6 Days';
-        if (cat.includes('dairy') || cat.includes('poultry')) return '1 to 2 Days (Refrigerated)';
-        if (cat.includes('spice') || cat.includes('jaggery') || cat.includes('dry')) return '6 to 12 Months';
-        if (cat.includes('cash crop') || cat.includes('cereal') || cat.includes('pulse')) return '12+ Months';
-        return '3 to 5 Days';
+        if (cat.includes('greens')) return { text: '2 to 3 Days', days: 3 };
+        if (cat.includes('flowers')) return { text: '1 to 2 Days', days: 2 };
+        if (cat.includes('fruits')) return { text: '5 to 7 Days', days: 7 };
+        if (cat.includes('vegetable')) return { text: '4 to 6 Days', days: 6 };
+        if (cat.includes('dairy') || cat.includes('poultry')) return { text: '1 to 2 Days', days: 2 };
+        if (cat.includes('spice') || cat.includes('jaggery') || cat.includes('dry')) return { text: '6 to 12 Months', days: 365 };
+        if (cat.includes('cash crop') || cat.includes('cereal') || cat.includes('pulse')) return { text: '12+ Months', days: 365 };
+        return { text: '3 to 5 Days', days: 5 };
     };
 
     const dynamicUnits = getDynamicUnits();
-    const shelfLife = getShelfLife(selectedCategory);
+    const shelfLifeData = getShelfLifeData(selectedCategory);
+
+    // Calculate Expiry Date
+    const getExpiryDate = (daysToAdd) => {
+        if (daysToAdd === 0) return "N/A";
+        const date = new Date();
+        date.setDate(date.getDate() + daysToAdd);
+        return date.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+    };
+    
+    const expiryDate = getExpiryDate(shelfLifeData.days);
 
     const handleSave = async (e) => {
         e.preventDefault();
@@ -246,7 +253,8 @@ export default function FarmFresh_ListingForm() {
                 organicCertName: isOrganic ? organicCertName : null,
                 organicCertNumber: isOrganic ? organicCertNumber : null,
                 listingDate: new Date().toLocaleDateString('en-IN'),
-                shelfLife: shelfLife,
+                shelfLife: shelfLifeData.text,
+                expiryDate: expiryDate,
                 qualityGuarantee: qualityGuarantee,
                 imageUrl: selectedImageUrl,
                 createdAt: serverTimestamp(),
@@ -543,14 +551,18 @@ export default function FarmFresh_ListingForm() {
                             <h4 style={{ margin: 0, fontSize: '16px', color: '#15803d', fontWeight: '800' }}>Freshness Algorithm</h4>
                         </div>
                         
-                        <div style={{ display: 'flex', gap: '16px', marginBottom: '16px' }}>
-                            <div style={{ flex: 1, backgroundColor: '#fff', padding: '12px', borderRadius: '12px', border: '1px solid #bbf7d0' }}>
-                                <span style={{ display: 'block', fontSize: '12px', color: '#64748b', fontWeight: '600', marginBottom: '4px' }}>Listing Date</span>
-                                <span style={{ display: 'block', fontSize: '15px', color: '#0f172a', fontWeight: '700' }}>{new Date().toLocaleDateString('en-IN')}</span>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px', marginBottom: '16px' }}>
+                            <div style={{ backgroundColor: '#fff', padding: '12px', borderRadius: '12px', border: '1px solid #bbf7d0', textAlign: 'center' }}>
+                                <span style={{ display: 'block', fontSize: '11px', color: '#64748b', fontWeight: '700', marginBottom: '4px', textTransform: 'uppercase' }}>Listed On</span>
+                                <span style={{ display: 'block', fontSize: '14px', color: '#0f172a', fontWeight: '800' }}>{new Date().toLocaleDateString('en-IN', {day:'numeric', month:'short'})}</span>
                             </div>
-                            <div style={{ flex: 1, backgroundColor: '#fff', padding: '12px', borderRadius: '12px', border: '1px solid #bbf7d0' }}>
-                                <span style={{ display: 'block', fontSize: '12px', color: '#64748b', fontWeight: '600', marginBottom: '4px' }}>Estimated Shelf Life</span>
-                                <span style={{ display: 'block', fontSize: '15px', color: '#16a34a', fontWeight: '700' }}>{shelfLife}</span>
+                            <div style={{ backgroundColor: '#fff', padding: '12px', borderRadius: '12px', border: '1px solid #bbf7d0', textAlign: 'center' }}>
+                                <span style={{ display: 'block', fontSize: '11px', color: '#64748b', fontWeight: '700', marginBottom: '4px', textTransform: 'uppercase' }}>Shelf Life</span>
+                                <span style={{ display: 'block', fontSize: '14px', color: '#16a34a', fontWeight: '800' }}>{shelfLifeData.text}</span>
+                            </div>
+                            <div style={{ backgroundColor: '#fee2e2', padding: '12px', borderRadius: '12px', border: '1px solid #fecaca', textAlign: 'center' }}>
+                                <span style={{ display: 'block', fontSize: '11px', color: '#ef4444', fontWeight: '700', marginBottom: '4px', textTransform: 'uppercase' }}>Expiring By</span>
+                                <span style={{ display: 'block', fontSize: '14px', color: '#991b1b', fontWeight: '800' }}>{expiryDate}</span>
                             </div>
                         </div>
 
