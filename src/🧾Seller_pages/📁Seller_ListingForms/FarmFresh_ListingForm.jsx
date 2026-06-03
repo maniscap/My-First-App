@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Leaf, CheckCircle2 } from 'lucide-react';
 import { farmFreshCategories } from '../../utils/ProductLibrary';
 import UniversalImagePicker from '../../utils/UniversalImagePicker';
-
+import { db, auth } from '../../firebase';
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 // Custom iOS-style toggle switch
 const OrganicToggle = ({ checked, onChange }) => (
     <div 
@@ -61,11 +62,42 @@ export default function FarmFresh_ListingForm() {
 
     const dynamicUnits = getDynamicUnits();
 
-    const handleSave = (e) => {
+    const handleSave = async (e) => {
         e.preventDefault();
-        // Placeholder for Firebase save logic in the future
-        console.log("Saving...", { selectedCategory, selectedItemId, customName, description, price, unit, isOrganic, organicCertName, organicCertNumber, selectedImageUrl });
-        navigate('/Seller_HomePage');
+        
+        try {
+            const user = auth.currentUser;
+            if (!user) {
+                alert("You must be logged in to create a listing.");
+                return;
+            }
+
+            const listingData = {
+                sellerId: user.uid,
+                sellerName: user.displayName || 'Unknown Seller', // Could fetch from profile
+                shopName: localStorage.getItem('locationTitle') || 'My Shop',
+                listingType: 'farm_fresh',
+                category: selectedCategory,
+                itemId: selectedItemId,
+                itemName: selectedItemName,
+                description: description,
+                price: Number(price),
+                unit: unit,
+                isOrganic: isOrganic,
+                organicCertName: isOrganic ? organicCertName : null,
+                organicCertNumber: isOrganic ? organicCertNumber : null,
+                imageUrl: selectedImageUrl,
+                createdAt: serverTimestamp(),
+                updatedAt: serverTimestamp()
+            };
+
+            await addDoc(collection(db, 'seller_listings'), listingData);
+            
+            navigate('/Seller_HomePage');
+        } catch (error) {
+            console.error("Error adding document: ", error);
+            alert("Failed to save listing. Please try again.");
+        }
     };
 
     return (

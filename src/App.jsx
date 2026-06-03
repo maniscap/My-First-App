@@ -50,6 +50,7 @@ import SellerBottomNavigation from './🧾Seller_pages/📁seller_BottomNavigati
 import Seller_UserLocation from './🧾Seller_pages/📁Seller_Homepagethings/Seller_UserLocation';
 import FarmFresh_ListingForm from './🧾Seller_pages/📁Seller_ListingForms/FarmFresh_ListingForm';
 import LocalAgriGoods_ListingForm from './🧾Seller_pages/📁Seller_ListingForms/LocalAgriGoods_ListingForm';
+import ManageListings from './🧾Seller_pages/📁Seller_ListingForms/ManageListings';
 
 // --- IMPORT COMPONENTS ---
 import ChatBot from './🔧Consumer_Components/ChatBot';
@@ -135,6 +136,7 @@ function App() {
               <Route path="/seller-more" element={<Seller_MoreMenu />} />
               <Route path="/add-farm-fresh" element={<FarmFresh_ListingForm />} />
               <Route path="/add-local-goods" element={<LocalAgriGoods_ListingForm />} />
+              <Route path="/manage-listings" element={<ManageListings />} />
 
               
               {/* --- LOCATION --- */}

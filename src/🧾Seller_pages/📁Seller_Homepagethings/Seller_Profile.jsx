@@ -88,16 +88,18 @@ function Seller_Profile() {
                         </div>
                     </Link>
 
-                    <div style={{ display: 'flex', alignItems: 'center', padding: '15px', borderBottom: '1px solid #f1f5f9', cursor: 'pointer' }}>
-                        <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: '#ecfdf5', display: 'flex', alignItems: 'center', justifyContent: 'center', marginRight: '15px' }}>
-                            <Package size={20} color="#10b981" />
+                    <Link to="/manage-listings" style={{ textDecoration: 'none', color: 'inherit' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', padding: '15px', borderBottom: '1px solid #f1f5f9', cursor: 'pointer' }}>
+                            <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: '#ecfdf5', display: 'flex', alignItems: 'center', justifyContent: 'center', marginRight: '15px' }}>
+                                <Package size={20} color="#10b981" />
+                            </div>
+                            <div style={{ flex: 1 }}>
+                                <h4 style={{ margin: '0 0 3px', fontSize: '15px', fontWeight: '700', color: '#1e293b' }}>Manage Inventory</h4>
+                                <p style={{ margin: 0, fontSize: '12px', color: '#64748b' }}>View and edit active listings</p>
+                            </div>
+                            <ChevronLeft size={20} color="#cbd5e1" style={{ transform: 'rotate(180deg)' }} />
                         </div>
-                        <div style={{ flex: 1 }}>
-                            <h4 style={{ margin: '0 0 3px', fontSize: '15px', fontWeight: '700', color: '#1e293b' }}>Manage Inventory</h4>
-                            <p style={{ margin: 0, fontSize: '12px', color: '#64748b' }}>View and edit active listings</p>
-                        </div>
-                        <ChevronLeft size={20} color="#cbd5e1" style={{ transform: 'rotate(180deg)' }} />
-                    </div>
+                    </Link>
 
                     <div style={{ display: 'flex', alignItems: 'center', padding: '15px', cursor: 'pointer' }}>
                         <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: '#fef3c7', display: 'flex', alignItems: 'center', justifyContent: 'center', marginRight: '15px' }}>
