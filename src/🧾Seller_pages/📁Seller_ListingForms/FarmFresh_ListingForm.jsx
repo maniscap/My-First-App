@@ -192,6 +192,7 @@ export default function FarmFresh_ListingForm() {
                                 <CheckCircle2 size={32} color="white" />
                             </div>
                             <h2 style={{ margin: '0 0 4px 0', fontSize: '22px', fontWeight: '800', color: '#0f172a', textAlign: 'center' }}>{submittedData.itemName}</h2>
+                            <p style={{ margin: '0 0 12px 0', fontSize: '14px', color: '#64748b', textAlign: 'center', fontWeight: '500' }}>Your listing was added successfully!</p>
                             <span style={{ fontSize: '12px', color: '#16a34a', fontWeight: '700', backgroundColor: '#dcfce7', padding: '4px 12px', borderRadius: '20px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{submittedData.category}</span>
                         </div>
 
