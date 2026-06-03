@@ -94,7 +94,7 @@ function Seller_Profile() {
                                 <Package size={20} color="#10b981" />
                             </div>
                             <div style={{ flex: 1 }}>
-                                <h4 style={{ margin: '0 0 3px', fontSize: '15px', fontWeight: '700', color: '#1e293b' }}>Manage Inventory</h4>
+                                <h4 style={{ margin: '0 0 3px', fontSize: '15px', fontWeight: '700', color: '#1e293b' }}>Manage Listings</h4>
                                 <p style={{ margin: 0, fontSize: '12px', color: '#64748b' }}>View and edit active listings</p>
                             </div>
                             <ChevronLeft size={20} color="#cbd5e1" style={{ transform: 'rotate(180deg)' }} />

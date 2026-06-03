@@ -35,6 +35,7 @@ export default function FarmFresh_ListingForm() {
     const [organicCertName, setOrganicCertName] = useState('');
     const [organicCertNumber, setOrganicCertNumber] = useState('');
     const [selectedImageUrl, setSelectedImageUrl] = useState(null);
+    const [showSuccess, setShowSuccess] = useState(false);
 
     // Derived logic for dropdowns
     const activeCategoryObj = farmFreshCategories.find(c => c.category === selectedCategory);
@@ -93,7 +94,10 @@ export default function FarmFresh_ListingForm() {
 
             await addDoc(collection(db, 'seller_listings'), listingData);
             
-            navigate('/Seller_HomePage');
+            setShowSuccess(true);
+            setTimeout(() => {
+                navigate('/Seller_HomePage');
+            }, 2000);
         } catch (error) {
             console.error("Error adding document: ", error);
             alert("Failed to save listing. Please try again.");
@@ -103,6 +107,14 @@ export default function FarmFresh_ListingForm() {
     return (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: '#f8fafc', overflowY: 'auto', WebkitOverflowScrolling: 'touch', touchAction: 'pan-y' }}>
             
+            {/* Success Popup */}
+            {showSuccess && (
+                <div style={{ position: 'fixed', top: '20px', left: '50%', transform: 'translateX(-50%)', backgroundColor: '#10b981', color: 'white', padding: '16px 24px', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '12px', boxShadow: '0 4px 20px rgba(16, 185, 129, 0.4)', zIndex: 99999, animation: 'slideDown 0.3s ease-out' }}>
+                    <CheckCircle2 size={24} color="white" />
+                    <span style={{ fontWeight: '600', fontSize: '15px' }}>Your listing was successfully added!</span>
+                </div>
+            )}
+
             {/* Header */}
             <div style={{ position: 'sticky', top: 0, backgroundColor: '#ffffff', zIndex: 10, padding: '16px 20px', display: 'flex', alignItems: 'center', borderBottom: '1px solid #f1f5f9', boxShadow: '0 2px 10px rgba(0,0,0,0.02)' }}>
                 <button onClick={() => navigate(-1)} style={{ background: 'none', border: 'none', padding: '8px', marginRight: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '12px', backgroundColor: '#f8fafc', cursor: 'pointer' }}>
@@ -280,6 +292,10 @@ export default function FarmFresh_ListingForm() {
                 @keyframes fadeIn {
                     from { opacity: 0; transform: translateY(-10px); }
                     to { opacity: 1; transform: translateY(0); }
+                }
+                @keyframes slideDown {
+                    from { opacity: 0; transform: translate(-50%, -20px); }
+                    to { opacity: 1; transform: translate(-50%, 0); }
                 }
             `}</style>
         </div>
