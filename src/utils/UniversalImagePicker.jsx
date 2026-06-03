@@ -27,226 +27,203 @@ const defaultImages = [
 ];
 
 const UniversalImagePicker = ({ searchTerm, categoryContext, onSelectImage, currentSelection }) => {
-    const [images, setImages] = useState([]);
-    const [loading, setLoading] = useState(false);
+    const [images, setImages] = useState({ pixabay: null, pexels: null, openverse: null, wikimedia: null });
+    const [loading, setLoading] = useState({ pixabay: false, pexels: false, openverse: false, wikimedia: false });
+    const [pages, setPages] = useState({ pixabay: 1, pexels: 1, openverse: 1, wikimedia: 1 });
     const [hasSearched, setHasSearched] = useState(false);
-    const [page, setPage] = useState(1);
     
-    // Default Gallery States
     const [showDefaults, setShowDefaults] = useState(false);
     const [defaultPage, setDefaultPage] = useState(0);
 
-    // Run fetch whenever search term changes (reset page to 1)
+    // CRITICAL: Vite requires VITE_ prefix to load these into the browser safely
+    const pixabayKey = import.meta.env.VITE_PIXABAY_API_KEY; 
+    const pexelsKey = import.meta.env.VITE_PEXELS_API_KEY;
+
     useEffect(() => {
         if (!searchTerm || searchTerm.length < 2) return;
         
-        setPage(1);
-        setShowDefaults(false); // Close defaults if active
+        setShowDefaults(false); 
+        setPages({ pixabay: 1, pexels: 1, openverse: 1, wikimedia: 1 });
+        setImages({ pixabay: null, pexels: null, openverse: null, wikimedia: null });
         
         const timeoutId = setTimeout(() => {
-            fetchImages(1);
+            setHasSearched(true);
+            fetchAllSources(1);
         }, 800);
         
         return () => clearTimeout(timeoutId);
     }, [searchTerm, categoryContext]);
 
-    // Run fetch when 'page' state changes via Load More
-    useEffect(() => {
-        if (page > 1) {
-            fetchImages(page);
-        }
-    }, [page]);
+    const getCleanQuery = () => {
+        let cleanName = searchTerm.split('(')[0].split('/')[0].trim();
+        const suffix = categoryContext ? ` ${categoryContext}` : '';
+        return suffix ? `${cleanName}${suffix}` : cleanName;
+    };
 
-    const fetchImages = async (pageNum = 1) => {
-        setLoading(true);
-        if (pageNum === 1) setHasSearched(true);
-        if (pageNum === 1) setImages([]);
-        
+    const fetchAllSources = (pageNum) => {
+        fetchSource('pixabay', pageNum);
+        fetchSource('pexels', pageNum);
+        fetchSource('openverse', pageNum);
+        fetchSource('wikimedia', pageNum);
+    };
+
+    const fetchSource = async (source, pageNum) => {
+        const query = getCleanQuery();
+        setLoading(prev => ({ ...prev, [source]: true }));
+
         try {
-            let cleanName = searchTerm.split('(')[0].split('/')[0].trim();
-            const suffix = categoryContext ? ` ${categoryContext}` : '';
-            const primaryQuery = suffix ? `${cleanName}${suffix}` : cleanName;
-            
-            const results = [];
-
-            // We will collect exactly 1 image from each of the 4 sources
-            const pixabayKey = import.meta.env.VITE_PIXABAY_API_KEY || '44218659-1bc0dc9dbf1754e0c7104e171'; // Using a safe fallback if env is missing locally
-            const pexelsKey = import.meta.env.VITE_PEXELS_API_KEY || 'N2yTq0Yk3l26XU2jZz9cZ7wSIfK7K8H3Y7zZ4nF6F0k3T4B5bV8jI8O9'; // Safe fallback
-            
-            // Fire all 4 requests at the exact same time for maximum speed
-            const promises = [];
-
-            // 1. Pixabay
-            promises.push(
-                fetch(`https://pixabay.com/api/?key=${pixabayKey}&q=${encodeURIComponent(cleanName)}&image_type=photo&per_page=3&page=${pageNum}`)
-                .then(r => r.json()).then(d => d.hits && d.hits[0] ? d.hits[0].webformatURL : null).catch(() => null)
-            );
-
-            // 2. Pexels
-            promises.push(
-                fetch(`https://api.pexels.com/v1/search?query=${encodeURIComponent(cleanName)}&per_page=3&page=${pageNum}`, { headers: { Authorization: pexelsKey } })
-                .then(r => r.json()).then(d => d.photos && d.photos[0] ? d.photos[0].src.medium : null).catch(() => null)
-            );
-
-            // 3. Openverse
-            promises.push(
-                fetch(`https://api.openverse.org/v1/images/?q=${encodeURIComponent(cleanName)}&page=${pageNum}&page_size=3`)
-                .then(r => r.json()).then(d => d.results && d.results[0] ? d.results[0].url : null).catch(() => null)
-            );
-
-            // 4. Wikimedia (Only page 1)
-            if (pageNum === 1) {
-                promises.push(
-                    fetch(`https://commons.wikimedia.org/w/api.php?origin=*&action=query&generator=search&gsrsearch=${encodeURIComponent(primaryQuery)}&gsrnamespace=6&prop=imageinfo&iiprop=url&format=json&gsrlimit=1`)
-                    .then(r => r.json()).then(d => {
-                        if (d.query && d.query.pages) {
-                            const pages = Object.values(d.query.pages);
-                            return pages[0]?.imageinfo?.[0]?.url || null;
-                        }
-                        return null;
-                    }).catch(() => null)
-                );
-            } else {
-                // If not page 1, grab a second Openverse image to fill the 4th slot
-                promises.push(
-                    fetch(`https://api.openverse.org/v1/images/?q=${encodeURIComponent(cleanName)}&page=${pageNum}&page_size=3`)
-                    .then(r => r.json()).then(d => d.results && d.results[1] ? d.results[1].url : null).catch(() => null)
-                );
-            }
-
-            // Wait for all APIs to respond
-            const fetchedUrls = await Promise.all(promises);
-            
-            // Filter out nulls and duplicates
-            fetchedUrls.forEach(url => {
-                if (url && url.match(/\.(jpeg|jpg|gif|png)$/i) && !results.includes(url)) {
-                    results.push(url);
+            let url = null;
+            if (source === 'pixabay' || source === 'pexels') {
+                // Call our secure Vercel Serverless Function instead of the public APIs
+                const res = await fetch(`/api/fetchImages?source=${source}&query=${encodeURIComponent(query)}&page=${pageNum}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.url) url = data.url;
+                } else {
+                    console.error(`${source} Backend Error:`, res.statusText);
                 }
-            });
-
-            // Display generic fallback only if completely empty on page 1
-            if (pageNum === 1 && results.length === 0) {
-                results.push('https://images.unsplash.com/photo-1595853035070-59a39fe84ee3?auto=format&q=100');
             }
-
-            // Slice to EXACTLY 4 images to show variety from all sources
-            const finalImages = results.slice(0, 4);
-            setImages(finalImages);
+            else if (source === 'openverse') {
+                const res = await fetch(`https://api.openverse.org/v1/images/?q=${encodeURIComponent(query)}&page=${pageNum}&page_size=5`);
+                const data = await res.json();
+                if (data.results && data.results[0]) url = data.results[0].url;
+            }
+            else if (source === 'wikimedia') {
+                const res = await fetch(`https://commons.wikimedia.org/w/api.php?origin=*&action=query&generator=search&gsrsearch=${encodeURIComponent(query)}&gsrnamespace=6&prop=imageinfo&iiprop=url&format=json&gsrlimit=10`);
+                const data = await res.json();
+                if (data.query && data.query.pages) {
+                    const pagesArr = Object.values(data.query.pages);
+                    const item = pagesArr[pageNum - 1] || pagesArr[0];
+                    if (item && item.imageinfo) url = item.imageinfo[0].url;
+                }
+            }
             
-            if (pageNum === 1 && (!currentSelection || !finalImages.includes(currentSelection))) {
-                if (finalImages[0]) onSelectImage(finalImages[0]);
+            if (url) {
+                setImages(prev => ({ ...prev, [source]: url }));
+                if (!currentSelection) onSelectImage(url); // Auto select first found
             }
-
-        } catch (error) {
-            console.error("Image search error", error);
-            if (pageNum === 1) {
-                const fallback = 'https://images.unsplash.com/photo-1595853035070-59a39fe84ee3?auto=format&q=100';
-                setImages([fallback]);
-                onSelectImage(fallback);
-            }
+        } catch (e) {
+            console.error(`Failed to fetch ${source}:`, e);
         } finally {
-            setLoading(false);
+            setLoading(prev => ({ ...prev, [source]: false }));
         }
+    };
+
+    const handleReloadSource = (source) => {
+        const nextPage = pages[source] + 1;
+        setPages(prev => ({ ...prev, [source]: nextPage }));
+        fetchSource(source, nextPage);
     };
 
     if (!searchTerm || searchTerm.length < 2) return null;
 
-    // Determine which images to display
-    const currentDisplayImages = showDefaults 
-        ? defaultImages.slice(defaultPage * 4, (defaultPage * 4) + 4)
-        : images;
-
     return (
         <div style={{ marginTop: '16px', marginBottom: '24px', animation: 'fadeIn 0.3s ease' }}>
-            {/* Header Area */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
                 <label style={{ fontSize: '14px', fontWeight: '700', color: '#1e293b', display: 'flex', alignItems: 'center', gap: '6px' }}>
                     <ImageIcon size={16} color={showDefaults ? "#f59e0b" : "#4CAF50"} />
                     {showDefaults ? "Default Image Gallery" : "Select Listing Image"}
                 </label>
-                {loading && <span style={{ fontSize: '12px', color: '#64748b', display: 'flex', alignItems: 'center', gap: '4px' }}><Loader2 size={12} className="spin-animation" /> Searching...</span>}
             </div>
 
-            {hasSearched && !loading && images.length === 0 && !showDefaults && (
-                <p style={{ fontSize: '13px', color: '#64748b', fontStyle: 'italic', marginBottom: '12px' }}>No exact images found. Please try loading more or use defaults.</p>
-            )}
-
-            {/* Images Grid - Updated to show 4 images in a 2x2 or 4-col layout */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px', marginBottom: '16px' }}>
-                {currentDisplayImages.map((imgUrl, index) => {
-                    const isSelected = currentSelection === imgUrl;
-                    const globalIndex = showDefaults ? (defaultPage * 4) + index + 1 : index + 1;
-                    
-                    return (
-                        <div key={index} style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                            <div 
-                                onClick={() => onSelectImage(imgUrl)}
-                                style={{ 
-                                    height: '110px', borderRadius: '16px', overflow: 'hidden', cursor: 'pointer', position: 'relative',
-                                    border: isSelected ? '3px solid #4CAF50' : '2px solid transparent',
-                                    boxShadow: isSelected ? '0 8px 20px rgba(76, 175, 80, 0.3)' : '0 2px 8px rgba(0,0,0,0.05)',
-                                    transition: 'all 0.2s ease', transform: isSelected ? 'scale(1.02)' : 'scale(1)',
-                                    backgroundColor: '#f1f5f9'
-                                }}
-                            >
-                                <img src={imgUrl} alt={`Option ${globalIndex}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                                <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '40%', background: 'linear-gradient(to top, rgba(0,0,0,0.5), transparent)' }}></div>
-                                
-                                {isSelected && (
-                                    <div style={{ position: 'absolute', top: '6px', right: '6px', backgroundColor: '#fff', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2px', boxShadow: '0 2px 6px rgba(0,0,0,0.2)' }}>
-                                        <CheckCircle2 size={16} color="#4CAF50" fill="#e8f5e9" />
+            {showDefaults ? (
+                <>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px', marginBottom: '16px' }}>
+                        {defaultImages.slice(defaultPage * 4, (defaultPage * 4) + 4).map((imgUrl, index) => {
+                            const isSelected = currentSelection === imgUrl;
+                            const globalIndex = (defaultPage * 4) + index + 1;
+                            return (
+                                <div key={index} style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                    <div onClick={() => onSelectImage(imgUrl)}
+                                        style={{ height: '110px', borderRadius: '16px', overflow: 'hidden', cursor: 'pointer', position: 'relative', border: isSelected ? '3px solid #4CAF50' : '2px solid transparent', boxShadow: isSelected ? '0 8px 20px rgba(76, 175, 80, 0.3)' : '0 2px 8px rgba(0,0,0,0.05)', transition: 'all 0.2s ease', transform: isSelected ? 'scale(1.02)' : 'scale(1)', backgroundColor: '#f1f5f9' }}
+                                    >
+                                        <img src={imgUrl} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                        {isSelected && (
+                                            <div style={{ position: 'absolute', top: '6px', right: '6px', backgroundColor: '#fff', borderRadius: '50%', padding: '2px', boxShadow: '0 2px 6px rgba(0,0,0,0.2)' }}>
+                                                <CheckCircle2 size={16} color="#4CAF50" fill="#e8f5e9" />
+                                            </div>
+                                        )}
                                     </div>
-                                )}
-                            </div>
-                            
-                            {/* Display image number for easy identification */}
-                            <div style={{ textAlign: 'center', fontSize: '11px', fontWeight: '700', color: '#64748b' }}>
-                                Image {globalIndex}
-                            </div>
-                        </div>
-                    );
-                })}
-            </div>
-
-            {/* Action Buttons */}
-            <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-                {showDefaults ? (
-                    <>
-                        <button 
-                            type="button"
-                            onClick={() => setDefaultPage((prev) => (prev + 1) % Math.ceil(defaultImages.length / 4))}
-                            style={{ flex: 1, padding: '10px', backgroundColor: '#f1f5f9', color: '#0f172a', border: 'none', borderRadius: '12px', fontSize: '13px', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
-                        >
+                                    <div style={{ textAlign: 'center', fontSize: '11px', fontWeight: '700', color: '#64748b' }}>Image {globalIndex}</div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                    <div style={{ display: 'flex', gap: '12px' }}>
+                        <button type="button" onClick={() => setDefaultPage((prev) => (prev + 1) % Math.ceil(defaultImages.length / 4))} style={{ flex: 1, padding: '10px', backgroundColor: '#f1f5f9', color: '#0f172a', border: 'none', borderRadius: '12px', fontSize: '13px', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
                             <RefreshCw size={14} /> Next 4 Defaults
                         </button>
-                        <button 
-                            type="button"
-                            onClick={() => setShowDefaults(false)}
-                            style={{ padding: '10px 16px', backgroundColor: '#e2e8f0', color: '#475569', border: 'none', borderRadius: '12px', fontSize: '13px', fontWeight: '600', cursor: 'pointer' }}
-                        >
-                            Back
-                        </button>
-                    </>
-                ) : (
-                    <>
-                        <button 
-                            type="button"
-                            onClick={() => setPage(p => p + 1)}
-                            disabled={loading}
-                            style={{ flex: 1, padding: '10px', backgroundColor: '#f1f5f9', color: '#0f172a', border: 'none', borderRadius: '12px', fontSize: '13px', fontWeight: '600', cursor: loading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', opacity: loading ? 0.7 : 1 }}
-                        >
-                            <RefreshCw size={14} className={loading ? 'spin-animation' : ''} /> Load More Images
-                        </button>
-                        <button 
-                            type="button"
-                            onClick={() => { setShowDefaults(true); setDefaultPage(0); }}
-                            style={{ flex: 1, padding: '10px', backgroundColor: '#fff', color: '#f59e0b', border: '1px solid #fcd34d', borderRadius: '12px', fontSize: '13px', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
-                        >
-                            <Grid size={14} /> See Defaults
-                        </button>
-                    </>
-                )}
-            </div>
+                        <button type="button" onClick={() => setShowDefaults(false)} style={{ padding: '10px 16px', backgroundColor: '#e2e8f0', color: '#475569', border: 'none', borderRadius: '12px', fontSize: '13px', fontWeight: '600', cursor: 'pointer' }}>Back</button>
+                    </div>
+                </>
+            ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    
+                    {['pixabay', 'pexels', 'openverse', 'wikimedia'].map(source => {
+                        const imgUrl = images[source];
+                        const isLoading = loading[source];
+                        const isSelected = currentSelection === imgUrl;
+
+                        return (
+                            <div key={source} style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '10px', backgroundColor: '#fff', borderRadius: '16px', border: isSelected ? '2px solid #4CAF50' : '1px solid #e2e8f0', boxShadow: isSelected ? '0 4px 12px rgba(76, 175, 80, 0.15)' : '0 2px 4px rgba(0,0,0,0.02)', transition: 'all 0.2s ease' }}>
+                                
+                                <div onClick={() => imgUrl && onSelectImage(imgUrl)}
+                                    style={{ width: '90px', height: '70px', borderRadius: '10px', backgroundColor: '#f1f5f9', overflow: 'hidden', position: 'relative', cursor: imgUrl ? 'pointer' : 'default', flexShrink: 0 }}
+                                >
+                                    {isLoading ? (
+                                        <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Loader2 size={18} color="#94a3b8" className="spin-animation" /></div>
+                                    ) : imgUrl ? (
+                                        <>
+                                            <img src={imgUrl} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                            {isSelected && (
+                                                <div style={{ position: 'absolute', top: '4px', right: '4px', backgroundColor: '#fff', borderRadius: '50%', padding: '2px' }}>
+                                                    <CheckCircle2 size={12} color="#4CAF50" fill="#e8f5e9" />
+                                                </div>
+                                            )}
+                                        </>
+                                    ) : (
+                                        <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', color: '#94a3b8', textAlign: 'center', padding: '4px' }}>No image</div>
+                                    )}
+                                </div>
+
+                                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                    <div style={{ fontSize: '13px', fontWeight: '700', color: '#1e293b', textTransform: 'capitalize' }}>From {source}</div>
+                                    <button 
+                                        type="button"
+                                        onClick={() => handleReloadSource(source)}
+                                        disabled={isLoading}
+                                        style={{ alignSelf: 'flex-start', padding: '6px 12px', backgroundColor: '#f8fafc', color: '#475569', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '11px', fontWeight: '600', cursor: isLoading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: '4px', opacity: isLoading ? 0.7 : 1 }}
+                                    >
+                                        <RefreshCw size={12} className={isLoading ? 'spin-animation' : ''} /> {isLoading ? 'Searching...' : 'Try another'}
+                                    </button>
+                                </div>
+                            </div>
+                        );
+                    })}
+
+                    <button 
+                        type="button"
+                        onClick={() => { setShowDefaults(true); setDefaultPage(0); }}
+                        style={{ width: '100%', padding: '12px', backgroundColor: '#fff', color: '#f59e0b', border: '1px dashed #fcd34d', borderRadius: '12px', fontSize: '13px', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', marginTop: '4px' }}
+                    >
+                        <Grid size={16} /> See the Default Image Gallery instead
+                    </button>
+                </div>
+            )}
+            
+            <style>{`
+                @keyframes fadeIn {
+                    from { opacity: 0; transform: translateY(-10px); }
+                    to { opacity: 1; transform: translateY(0); }
+                }
+                .spin-animation {
+                    animation: spin 1s linear infinite;
+                }
+                @keyframes spin {
+                    from { transform: rotate(0deg); }
+                    to { transform: rotate(360deg); }
+                }
+            `}</style>
         </div>
     );
 };

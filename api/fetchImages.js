@@ -1,57 +1,47 @@
 export default async function handler(req, res) {
-    const { query, page = 1 } = req.query;
+    const { source, query, page = 1 } = req.query;
 
-    if (!query) {
-        return res.status(400).json({ error: "Missing query" });
+    if (!query || !source) {
+        return res.status(400).json({ error: "Missing query or source" });
     }
 
-    const PIXABAY_KEY = process.env.PIXABAY_API_KEY;
-    const PEXELS_KEY = process.env.PEXELS_API_KEY;
-    
-    let results = [];
+    // We can use the normal server variables! No VITE_ needed!
+    const PIXABAY_KEY = process.env.PIXABAY_API_KEY || process.env.VITE_PIXABAY_API_KEY;
+    const PEXELS_KEY = process.env.PEXELS_API_KEY || process.env.VITE_PEXELS_API_KEY;
 
-    // 1. Fetch from Pixabay
-    if (PIXABAY_KEY) {
-        try {
-            const pixabayUrl = `https://pixabay.com/api/?key=${PIXABAY_KEY}&q=${encodeURIComponent(query)}&image_type=photo&per_page=3&page=${page}`;
+    let url = null;
+
+    try {
+        if (source === 'pixabay' && PIXABAY_KEY) {
+            const pixabayUrl = `https://pixabay.com/api/?key=${PIXABAY_KEY}&q=${encodeURIComponent(query)}&image_type=photo&per_page=5&page=${page}`;
             const pixRes = await fetch(pixabayUrl);
             if (pixRes.ok) {
                 const data = await pixRes.json();
-                if (data.hits) {
-                    data.hits.forEach(hit => {
-                        if (hit.webformatURL) results.push(hit.webformatURL);
-                    });
-                }
+                if (data.hits && data.hits[0]) url = data.hits[0].webformatURL;
+            } else {
+                return res.status(pixRes.status).json({ error: "Pixabay API error" });
             }
-        } catch (error) {
-            console.error("Pixabay fetch failed:", error);
-        }
-    }
-
-    // 2. Fetch from Pexels
-    if (PEXELS_KEY) {
-        try {
-            const pexelsUrl = `https://api.pexels.com/v1/search?query=${encodeURIComponent(query)}&per_page=3&page=${page}`;
+        } 
+        else if (source === 'pexels' && PEXELS_KEY) {
+            const pexelsUrl = `https://api.pexels.com/v1/search?query=${encodeURIComponent(query)}&per_page=5&page=${page}`;
             const pexRes = await fetch(pexelsUrl, {
-                headers: {
-                    Authorization: PEXELS_KEY
-                }
+                headers: { Authorization: PEXELS_KEY }
             });
             if (pexRes.ok) {
                 const data = await pexRes.json();
-                if (data.photos) {
-                    data.photos.forEach(photo => {
-                        if (photo.src && photo.src.medium) results.push(photo.src.medium);
-                    });
-                }
+                if (data.photos && data.photos[0]) url = data.photos[0].src.medium;
+            } else {
+                return res.status(pexRes.status).json({ error: "Pexels API error" });
             }
-        } catch (error) {
-            console.error("Pexels fetch failed:", error);
         }
+        else {
+            return res.status(401).json({ error: "Missing API key on the server" });
+        }
+
+        return res.status(200).json({ url });
+
+    } catch (error) {
+        console.error(`Backend fetch failed for ${source}:`, error);
+        return res.status(500).json({ error: "Internal Server Error" });
     }
-
-    // Deduplicate and limit
-    const uniqueResults = [...new Set(results)].slice(0, 6);
-
-    return res.status(200).json({ images: uniqueResults });
 }
