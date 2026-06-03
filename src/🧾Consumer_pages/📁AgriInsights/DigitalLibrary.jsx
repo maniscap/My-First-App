@@ -12,7 +12,7 @@ import { processWithFarmBrain, generateEducationalBook, generateStoryBook, exten
 // --- PREMIUM GLASS CARD STYLE EXTRACTED FROM WEATHER.JSX ---
 const getGlassStyle = (theme) => ({
   background: theme === 'dark' ? 'rgba(20, 20, 25, 0.65)' : 'rgba(255, 255, 255, 0.5)',
-  backdropFilter: 'blur(16px) saturate(120%) brightness(110%)',
+  transform: 'translateZ(0)', willChange: 'transform, backdrop-filter', backdropFilter: 'blur(16px) saturate(120%) brightness(110%)',
   WebkitBackdropFilter: 'blur(16px) saturate(120%) brightness(110%)',
   border: '1px solid rgba(255, 255, 255, 0.1)',
   borderTop: '1px solid rgba(255, 255, 255, 0.3)',
@@ -697,7 +697,7 @@ const DigitalLibrary = () => {
 
   const glassCardStyle = {
     background: 'transparent',
-    backdropFilter: 'blur(16px) saturate(120%) brightness(110%)',
+    transform: 'translateZ(0)', willChange: 'transform, backdrop-filter', backdropFilter: 'blur(16px) saturate(120%) brightness(110%)',
     WebkitBackdropFilter: 'blur(16px) saturate(120%) brightness(110%)',
     border: '1px solid rgba(255, 255, 255, 0.1)',
     borderTop: '1px solid rgba(255, 255, 255, 0.3)',
@@ -716,7 +716,7 @@ const DigitalLibrary = () => {
 
   const glassHeaderStyle = {
     background: 'transparent', 
-    backdropFilter: 'blur(16px) saturate(120%) brightness(110%)', 
+    transform: 'translateZ(0)', willChange: 'transform, backdrop-filter', backdropFilter: 'blur(16px) saturate(120%) brightness(110%)', 
     WebkitBackdropFilter: 'blur(16px) saturate(120%) brightness(110%)', 
     border: '1px solid rgba(255, 255, 255, 0.1)', 
     borderTop: '1px solid rgba(255, 255, 255, 0.3)', 
@@ -915,7 +915,7 @@ const DigitalLibrary = () => {
       {!bookData && !loading && (
         <>
         {/* Search History Dropdown */}
-        <div style={{ background: 'transparent', backdropFilter: 'blur(16px) saturate(120%) brightness(110%)', WebkitBackdropFilter: 'blur(16px) saturate(120%) brightness(110%)', border: '1px solid rgba(255, 255, 255, 0.1)', borderTop: '1px solid rgba(255, 255, 255, 0.3)', borderLeft: '1px solid rgba(255, 255, 255, 0.2)', borderRadius: '24px', overflow: 'hidden', boxShadow: 'inset 0 1px 1px rgba(255, 255, 255, 0.3), 0 8px 32px rgba(0,0,0,0.15)', maxWidth: '500px', width: '100%', margin: '20px auto 0 auto', flexShrink: 0 }}>
+        <div style={{ background: 'transparent', transform: 'translateZ(0)', willChange: 'transform, backdrop-filter', backdropFilter: 'blur(16px) saturate(120%) brightness(110%)', WebkitBackdropFilter: 'blur(16px) saturate(120%) brightness(110%)', border: '1px solid rgba(255, 255, 255, 0.1)', borderTop: '1px solid rgba(255, 255, 255, 0.3)', borderLeft: '1px solid rgba(255, 255, 255, 0.2)', borderRadius: '24px', overflow: 'hidden', boxShadow: 'inset 0 1px 1px rgba(255, 255, 255, 0.3), 0 8px 32px rgba(0,0,0,0.15)', maxWidth: '500px', width: '100%', margin: '20px auto 0 auto', flexShrink: 0 }}>
           <button 
             onClick={() => {
               setIsHistoryOpen(!isHistoryOpen);
@@ -965,7 +965,7 @@ const DigitalLibrary = () => {
         </div>
 
       {/* Saved Books Dropdown */}
-        <div style={{ background: 'transparent', backdropFilter: 'blur(16px) saturate(120%) brightness(110%)', WebkitBackdropFilter: 'blur(16px) saturate(120%) brightness(110%)', border: '1px solid rgba(255, 255, 255, 0.1)', borderTop: '1px solid rgba(255, 255, 255, 0.3)', borderLeft: '1px solid rgba(255, 255, 255, 0.2)', borderRadius: '24px', overflow: 'hidden', boxShadow: 'inset 0 1px 1px rgba(255, 255, 255, 0.3), 0 8px 32px rgba(0,0,0,0.15)', maxWidth: '500px', width: '100%', margin: '20px auto 20px auto', flexShrink: 0 }}>
+        <div style={{ background: 'transparent', transform: 'translateZ(0)', willChange: 'transform, backdrop-filter', backdropFilter: 'blur(16px) saturate(120%) brightness(110%)', WebkitBackdropFilter: 'blur(16px) saturate(120%) brightness(110%)', border: '1px solid rgba(255, 255, 255, 0.1)', borderTop: '1px solid rgba(255, 255, 255, 0.3)', borderLeft: '1px solid rgba(255, 255, 255, 0.2)', borderRadius: '24px', overflow: 'hidden', boxShadow: 'inset 0 1px 1px rgba(255, 255, 255, 0.3), 0 8px 32px rgba(0,0,0,0.15)', maxWidth: '500px', width: '100%', margin: '20px auto 20px auto', flexShrink: 0 }}>
           <button 
             onClick={() => {
               setIsSavedBooksOpen(!isSavedBooksOpen);
@@ -1044,7 +1044,7 @@ const DigitalLibrary = () => {
         {showSavePrompt && (
           <motion.div
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(10px)', zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+            style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', transform: 'translateZ(0)', willChange: 'transform, backdrop-filter', backdropFilter: 'blur(10px)', zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
           >
             <motion.div
               initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
@@ -1405,7 +1405,7 @@ const GridViewModal = ({ show, onClose, bookData, bookTopic, coverImage, theme, 
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(20px) saturate(200%)', WebkitBackdropFilter: 'blur(20px) saturate(200%)', zIndex: 1000, display: 'flex', flexDirection: 'column' }}
+        style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', transform: 'translateZ(0)', willChange: 'transform, backdrop-filter', backdropFilter: 'blur(20px) saturate(200%)', WebkitBackdropFilter: 'blur(20px) saturate(200%)', zIndex: 1000, display: 'flex', flexDirection: 'column' }}
         onClick={onClose}
       >
         <div style={{ padding: '20px', display: 'flex', alignItems: 'center', gap: '15px', background: theme === 'dark' ? 'rgba(20,20,25,0.6)' : 'rgba(255,255,255,0.4)', borderBottom: theme === 'dark' ? '1px solid rgba(255,255,255,0.1)' : '1px solid rgba(255,255,255,0.4)' }}>
@@ -1418,7 +1418,7 @@ const GridViewModal = ({ show, onClose, bookData, bookTopic, coverImage, theme, 
           onWheel={e => e.stopPropagation()}
         >
           {/* Cover */}
-          <div onClick={() => { setCurrentPage(0); onClose(); }} style={{ cursor: 'pointer', border: `2px solid ${theme === 'dark' ? '#4db6ac' : '#00695c'}`, borderRadius: '16px', padding: '15px', background: theme === 'dark' ? 'rgba(0,0,0,0.3)' : 'rgba(255,255,255,0.6)', backdropFilter: 'blur(10px)', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', boxShadow: currentPage === 0 ? activeShadow : 'none' }}>
+          <div onClick={() => { setCurrentPage(0); onClose(); }} style={{ cursor: 'pointer', border: `2px solid ${theme === 'dark' ? '#4db6ac' : '#00695c'}`, borderRadius: '16px', padding: '15px', background: theme === 'dark' ? 'rgba(0,0,0,0.3)' : 'rgba(255,255,255,0.6)', transform: 'translateZ(0)', willChange: 'transform, backdrop-filter', backdropFilter: 'blur(10px)', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', boxShadow: currentPage === 0 ? activeShadow : 'none' }}>
             <div style={{ fontSize: '12px', fontWeight: 'bold' }}>Cover</div>
             {coverImage ? (
               <img src={coverImage} alt="Cover" style={{ width: '60px', height: '80px', objectFit: 'cover', borderRadius: '8px', marginBottom: '10px' }} />
@@ -1429,7 +1429,7 @@ const GridViewModal = ({ show, onClose, bookData, bookTopic, coverImage, theme, 
           </div>
 
           {/* ToC */}
-          <div onClick={() => { setCurrentPage(1); onClose(); }} style={{ cursor: 'pointer', border: theme === 'dark' ? '1px solid rgba(255,255,255,0.2)' : '1px solid rgba(255,255,255,0.6)', borderRadius: '16px', padding: '15px', background: theme === 'dark' ? 'rgba(0,0,0,0.3)' : 'rgba(255,255,255,0.6)', backdropFilter: 'blur(10px)', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', boxShadow: currentPage === 1 ? activeShadow : 'none' }}>
+          <div onClick={() => { setCurrentPage(1); onClose(); }} style={{ cursor: 'pointer', border: theme === 'dark' ? '1px solid rgba(255,255,255,0.2)' : '1px solid rgba(255,255,255,0.6)', borderRadius: '16px', padding: '15px', background: theme === 'dark' ? 'rgba(0,0,0,0.3)' : 'rgba(255,255,255,0.6)', transform: 'translateZ(0)', willChange: 'transform, backdrop-filter', backdropFilter: 'blur(10px)', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', boxShadow: currentPage === 1 ? activeShadow : 'none' }}>
             <div style={{ fontSize: '12px', fontWeight: 'bold' }}>Contents</div>
             <div style={{ fontSize: '24px', margin: '10px 0' }}>📑</div>
             <div style={{ fontSize: '10px', color: '#888' }}>Page 2</div>
@@ -1437,7 +1437,7 @@ const GridViewModal = ({ show, onClose, bookData, bookTopic, coverImage, theme, 
 
           {/* Pages */}
           {bookData.map((page, index) => (
-            <div key={index} onClick={() => { setCurrentPage(index + 2); onClose(); }} style={{ cursor: 'pointer', border: theme === 'dark' ? '1px solid rgba(255,255,255,0.2)' : '1px solid rgba(255,255,255,0.6)', borderRadius: '16px', padding: '15px', background: theme === 'dark' ? 'rgba(0,0,0,0.3)' : 'rgba(255,255,255,0.6)', backdropFilter: 'blur(10px)', boxShadow: currentPage === index + 2 ? activeShadow : 'none' }}>
+            <div key={index} onClick={() => { setCurrentPage(index + 2); onClose(); }} style={{ cursor: 'pointer', border: theme === 'dark' ? '1px solid rgba(255,255,255,0.2)' : '1px solid rgba(255,255,255,0.6)', borderRadius: '16px', padding: '15px', background: theme === 'dark' ? 'rgba(0,0,0,0.3)' : 'rgba(255,255,255,0.6)', transform: 'translateZ(0)', willChange: 'transform, backdrop-filter', backdropFilter: 'blur(10px)', boxShadow: currentPage === index + 2 ? activeShadow : 'none' }}>
               <div style={{ fontSize: '12px', fontWeight: 'bold', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{page.header_title || page.chapter_title}</div>
               <div style={{ fontSize: '10px', color: '#888', marginTop: '5px' }}>Page {index + 3}</div>
             </div>
@@ -1456,7 +1456,7 @@ const PageBookmarksModal = ({ show, onClose, bookData, theme, setCurrentPage, pa
     {show && (
       <motion.div
         initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-        style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(20px) saturate(200%)', WebkitBackdropFilter: 'blur(20px) saturate(200%)', zIndex: 1000, display: 'flex', flexDirection: 'column' }}
+        style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', transform: 'translateZ(0)', willChange: 'transform, backdrop-filter', backdropFilter: 'blur(20px) saturate(200%)', WebkitBackdropFilter: 'blur(20px) saturate(200%)', zIndex: 1000, display: 'flex', flexDirection: 'column' }}
         onClick={onClose}
       >
         <div style={{ padding: '20px', display: 'flex', alignItems: 'center', gap: '15px', background: theme === 'dark' ? 'rgba(20,20,25,0.6)' : 'rgba(255,255,255,0.4)', borderBottom: theme === 'dark' ? '1px solid rgba(255,255,255,0.1)' : '1px solid rgba(255,255,255,0.4)' }}>
@@ -1475,7 +1475,7 @@ const PageBookmarksModal = ({ show, onClose, bookData, theme, setCurrentPage, pa
                    const page = bookData[pageNum - 2];
                    if (!page) return null;
                    return (
-                       <div key={pageNum} onClick={() => { setCurrentPage(pageNum); onClose(); }} style={{ cursor: 'pointer', border: theme === 'dark' ? '1px solid rgba(255,255,255,0.2)' : '1px solid rgba(255,255,255,0.6)', borderRadius: '16px', padding: '15px', background: theme === 'dark' ? 'rgba(0,0,0,0.3)' : 'rgba(255,255,255,0.6)', backdropFilter: 'blur(10px)', textAlign: 'center', boxShadow: currentPage === pageNum ? activeShadow : 'none' }}>
+                       <div key={pageNum} onClick={() => { setCurrentPage(pageNum); onClose(); }} style={{ cursor: 'pointer', border: theme === 'dark' ? '1px solid rgba(255,255,255,0.2)' : '1px solid rgba(255,255,255,0.6)', borderRadius: '16px', padding: '15px', background: theme === 'dark' ? 'rgba(0,0,0,0.3)' : 'rgba(255,255,255,0.6)', transform: 'translateZ(0)', willChange: 'transform, backdrop-filter', backdropFilter: 'blur(10px)', textAlign: 'center', boxShadow: currentPage === pageNum ? activeShadow : 'none' }}>
                          <div style={{ fontSize: '12px', fontWeight: 'bold', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', color: theme === 'dark' ? '#fff' : '#000' }}>{page.header_title || page.chapter_title}</div>
                          <div style={{ fontSize: '10px', color: '#888', marginTop: '10px' }}>Page {pageNum + 1}</div>
                        </div>
@@ -1526,7 +1526,7 @@ const ChatModal = ({ show, onClose, theme, chatMessages, isChatLoading, userQues
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(5px)', zIndex: 1000, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}
+        style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', transform: 'translateZ(0)', willChange: 'transform, backdrop-filter', backdropFilter: 'blur(5px)', zIndex: 1000, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}
         onClick={onClose}
       >
         <motion.div
@@ -1534,7 +1534,7 @@ const ChatModal = ({ show, onClose, theme, chatMessages, isChatLoading, userQues
           animate={{ y: '0%' }}
           exit={{ y: '100%' }}
           transition={{ type: 'spring', bounce: 0.1, duration: 0.4 }}
-          style={{ width: '100%', maxWidth: '500px', height: '75vh', background: theme === 'dark' ? 'linear-gradient(135deg, rgba(30, 30, 35, 0.75) 0%, rgba(10, 10, 15, 0.85) 100%)' : 'linear-gradient(135deg, rgba(255, 255, 255, 0.65) 0%, rgba(255, 255, 255, 0.35) 100%)', backdropFilter: 'blur(25px) saturate(200%)', WebkitBackdropFilter: 'blur(25px) saturate(200%)', borderTop: theme === 'dark' ? '1.5px solid rgba(255,255,255,0.3)' : '1.5px solid rgba(255,255,255,0.8)', borderLeft: theme === 'dark' ? '1.5px solid rgba(255,255,255,0.2)' : '1.5px solid rgba(255,255,255,0.5)', borderRight: theme === 'dark' ? '1px solid rgba(255,255,255,0.1)' : '1px solid rgba(255,255,255,0.4)', borderTopLeftRadius: '36px', borderTopRightRadius: '36px', display: 'flex', flexDirection: 'column', boxShadow: '0 -20px 50px rgba(0,0,0,0.4), inset 0 2px 5px rgba(255,255,255,0.3)' }}
+          style={{ width: '100%', maxWidth: '500px', height: '75vh', background: theme === 'dark' ? 'linear-gradient(135deg, rgba(30, 30, 35, 0.75) 0%, rgba(10, 10, 15, 0.85) 100%)' : 'linear-gradient(135deg, rgba(255, 255, 255, 0.65) 0%, rgba(255, 255, 255, 0.35) 100%)', transform: 'translateZ(0)', willChange: 'transform, backdrop-filter', backdropFilter: 'blur(25px) saturate(200%)', WebkitBackdropFilter: 'blur(25px) saturate(200%)', borderTop: theme === 'dark' ? '1.5px solid rgba(255,255,255,0.3)' : '1.5px solid rgba(255,255,255,0.8)', borderLeft: theme === 'dark' ? '1.5px solid rgba(255,255,255,0.2)' : '1.5px solid rgba(255,255,255,0.5)', borderRight: theme === 'dark' ? '1px solid rgba(255,255,255,0.1)' : '1px solid rgba(255,255,255,0.4)', borderTopLeftRadius: '36px', borderTopRightRadius: '36px', display: 'flex', flexDirection: 'column', boxShadow: '0 -20px 50px rgba(0,0,0,0.4), inset 0 2px 5px rgba(255,255,255,0.3)' }}
           onClick={e => e.stopPropagation()}
         > 
           {/* Header */}
@@ -1557,7 +1557,7 @@ const ChatModal = ({ show, onClose, theme, chatMessages, isChatLoading, userQues
               <div key={msg.id} style={{ display: 'flex', justifyContent: msg.sender === 'user' ? 'flex-end' : 'flex-start', marginBottom: '12px' }}>
                 <div style={{
                   background: msg.sender === 'user' ? (theme === 'dark' ? 'rgba(77, 182, 172, 0.85)' : 'rgba(0, 105, 92, 0.85)') : (theme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(255, 255, 255, 0.7)'),
-                  backdropFilter: 'blur(10px)',
+                  transform: 'translateZ(0)', willChange: 'transform, backdrop-filter', backdropFilter: 'blur(10px)',
                   WebkitBackdropFilter: 'blur(10px)',
                   border: theme === 'dark' ? '1px solid rgba(255,255,255,0.1)' : '1px solid rgba(255,255,255,0.4)',
                   color: msg.sender === 'user' ? (theme === 'dark' ? '#000' : '#fff') : (theme === 'dark' ? '#fff' : '#000'),
@@ -1575,7 +1575,7 @@ const ChatModal = ({ show, onClose, theme, chatMessages, isChatLoading, userQues
                   {msg.expandable && (
                     <button 
                       onClick={() => handleOutOfBookAnswer(msg.originalQuestion, msg.id)}
-                      style={{ background: theme === 'dark' ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.08)', color: theme === 'dark' ? 'white' : 'black', border: theme === 'dark' ? '1px solid rgba(255,255,255,0.3)' : '1px solid rgba(0,0,0,0.15)', borderTop: theme === 'dark' ? '1.5px solid rgba(255,255,255,0.4)' : '1.5px solid rgba(0,0,0,0.2)', borderRadius: '12px', padding: '10px 14px', marginTop: '12px', cursor: 'pointer', width: '100%', fontWeight: '700', backdropFilter: 'blur(10px)', boxShadow: '0 4px 10px rgba(0,0,0,0.15)' }}
+                      style={{ background: theme === 'dark' ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.08)', color: theme === 'dark' ? 'white' : 'black', border: theme === 'dark' ? '1px solid rgba(255,255,255,0.3)' : '1px solid rgba(0,0,0,0.15)', borderTop: theme === 'dark' ? '1.5px solid rgba(255,255,255,0.4)' : '1.5px solid rgba(0,0,0,0.2)', borderRadius: '12px', padding: '10px 14px', marginTop: '12px', cursor: 'pointer', width: '100%', fontWeight: '700', transform: 'translateZ(0)', willChange: 'transform, backdrop-filter', backdropFilter: 'blur(10px)', boxShadow: '0 4px 10px rgba(0,0,0,0.15)' }}
                     >
                       Search Outside Book
                     </button>
@@ -1583,7 +1583,7 @@ const ChatModal = ({ show, onClose, theme, chatMessages, isChatLoading, userQues
                 </div>
               </div>
             ))}
-            {isChatLoading && <div style={{ display: 'flex', justifyContent: 'flex-start' }}><div style={{ background: theme === 'dark' ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.8)', backdropFilter: 'blur(15px)', border: theme === 'dark' ? '1px solid rgba(255,255,255,0.2)' : '1px solid rgba(255,255,255,0.6)', color: theme === 'dark' ? '#fff' : '#000', padding: '10px 15px', borderRadius: '20px', boxShadow: '0 8px 25px rgba(0,0,0,0.15), inset 0 1px 2px rgba(255,255,255,0.2)' }}>Thinking...</div></div>}
+            {isChatLoading && <div style={{ display: 'flex', justifyContent: 'flex-start' }}><div style={{ background: theme === 'dark' ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.8)', transform: 'translateZ(0)', willChange: 'transform, backdrop-filter', backdropFilter: 'blur(15px)', border: theme === 'dark' ? '1px solid rgba(255,255,255,0.2)' : '1px solid rgba(255,255,255,0.6)', color: theme === 'dark' ? '#fff' : '#000', padding: '10px 15px', borderRadius: '20px', boxShadow: '0 8px 25px rgba(0,0,0,0.15), inset 0 1px 2px rgba(255,255,255,0.2)' }}>Thinking...</div></div>}
           </div>
 
           {/* Input Form */}
@@ -1591,12 +1591,12 @@ const ChatModal = ({ show, onClose, theme, chatMessages, isChatLoading, userQues
             <button 
               type="button" 
               onClick={startListening}
-              style={{ background: isListening ? '#d32f2f' : (theme === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.4)'), border: theme === 'dark' ? '1px solid rgba(255,255,255,0.15)' : '1px solid rgba(255,255,255,0.6)', color: isListening ? 'white' : (theme === 'dark' ? '#fff' : '#000'), width: '48px', height: '48px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'background 0.3s', flexShrink: 0, backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)' }}
+              style={{ background: isListening ? '#d32f2f' : (theme === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.4)'), border: theme === 'dark' ? '1px solid rgba(255,255,255,0.15)' : '1px solid rgba(255,255,255,0.6)', color: isListening ? 'white' : (theme === 'dark' ? '#fff' : '#000'), width: '48px', height: '48px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'background 0.3s', flexShrink: 0, transform: 'translateZ(0)', willChange: 'transform, backdrop-filter', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)' }}
             >
               {isListening ? <IoMdMicOff size={20} /> : <IoMdMic size={20} />}
             </button>
-            <input type="text" value={userQuestion} onChange={(e) => setUserQuestion(e.target.value)} placeholder="Ask a question..." style={{ flex: 1, padding: '14px 18px', borderRadius: '30px', border: '1px solid rgba(255, 255, 255, 0.2)', borderTop: '1.5px solid rgba(255, 255, 255, 0.4)', borderLeft: '1.5px solid rgba(255, 255, 255, 0.3)', background: 'rgba(0,0,0,0.1)', color: theme === 'dark' ? '#fff' : '#000', outline: 'none', backdropFilter: 'blur(16px) saturate(150%)', WebkitBackdropFilter: 'blur(16px) saturate(150%)', boxShadow: 'inset 0 4px 12px rgba(0,0,0,0.2), 0 4px 15px rgba(0,0,0,0.1)' }} />
-            <button type="submit" style={{ background: theme === 'dark' ? 'linear-gradient(135deg, rgba(77, 182, 172, 0.9) 0%, rgba(0, 105, 92, 0.9) 100%)' : 'linear-gradient(135deg, rgba(0, 105, 92, 0.9) 0%, rgba(0, 77, 64, 0.9) 100%)', border: theme === 'dark' ? '1.5px solid rgba(255,255,255,0.4)' : '1.5px solid rgba(255,255,255,0.6)', color: 'white', width: '48px', height: '48px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 8px 20px rgba(0,0,0,0.25), inset 0 2px 4px rgba(255,255,255,0.5)', backdropFilter: 'blur(10px)' }}>
+            <input type="text" value={userQuestion} onChange={(e) => setUserQuestion(e.target.value)} placeholder="Ask a question..." style={{ flex: 1, padding: '14px 18px', borderRadius: '30px', border: '1px solid rgba(255, 255, 255, 0.2)', borderTop: '1.5px solid rgba(255, 255, 255, 0.4)', borderLeft: '1.5px solid rgba(255, 255, 255, 0.3)', background: 'rgba(0,0,0,0.1)', color: theme === 'dark' ? '#fff' : '#000', outline: 'none', transform: 'translateZ(0)', willChange: 'transform, backdrop-filter', backdropFilter: 'blur(16px) saturate(150%)', WebkitBackdropFilter: 'blur(16px) saturate(150%)', boxShadow: 'inset 0 4px 12px rgba(0,0,0,0.2), 0 4px 15px rgba(0,0,0,0.1)' }} />
+            <button type="submit" style={{ background: theme === 'dark' ? 'linear-gradient(135deg, rgba(77, 182, 172, 0.9) 0%, rgba(0, 105, 92, 0.9) 100%)' : 'linear-gradient(135deg, rgba(0, 105, 92, 0.9) 0%, rgba(0, 77, 64, 0.9) 100%)', border: theme === 'dark' ? '1.5px solid rgba(255,255,255,0.4)' : '1.5px solid rgba(255,255,255,0.6)', color: 'white', width: '48px', height: '48px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 8px 20px rgba(0,0,0,0.25), inset 0 2px 4px rgba(255,255,255,0.5)', transform: 'translateZ(0)', willChange: 'transform, backdrop-filter', backdropFilter: 'blur(10px)' }}>
               <IoMdSend size={20} />
             </button>
           </form>

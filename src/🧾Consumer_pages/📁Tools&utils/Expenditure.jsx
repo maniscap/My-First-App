@@ -200,12 +200,21 @@ function Expenditure() {
     <div style={styles.page}>
       <style>{`
         @keyframes pulseGlow {
-          0% { box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.7); transform: scale(1); }
-          50% { box-shadow: 0 0 0 15px rgba(76, 175, 80, 0); transform: scale(1.05); }
-          100% { box-shadow: 0 0 0 0 rgba(76, 175, 80, 0); transform: scale(1); }
+          0% { transform: scale(1); opacity: 0.6; }
+          50% { transform: scale(1.5); opacity: 0; }
+          100% { transform: scale(1.5); opacity: 0; }
         }
         .fab-glow {
-          animation: pulseGlow 2s infinite;
+          position: relative;
+        }
+        .fab-glow::after {
+          content: "";
+          position: absolute;
+          inset: 0;
+          border-radius: 50%;
+          background: rgba(76, 175, 80, 0.8);
+          z-index: -1;
+          animation: pulseGlow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
         }
         .hide-scrollbar::-webkit-scrollbar { display: none; }
         .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
@@ -445,9 +454,7 @@ const styles = {
   pageOverlay: {
     position: 'absolute',
     top: 0, left: 0, right: 0, bottom: 0,
-    background: 'radial-gradient(circle at 20% 50%, rgba(76, 175, 80, 0.08) 0%, transparent 50%), radial-gradient(circle at 80% 80%, rgba(59, 130, 246, 0.08) 0%, transparent 50%)',
-    backdropFilter: 'blur(40px)',
-    WebkitBackdropFilter: 'blur(40px)',
+    background: 'radial-gradient(circle at 20% 50%, rgba(76, 175, 80, 0.15) 0%, transparent 60%), radial-gradient(circle at 80% 80%, rgba(59, 130, 246, 0.15) 0%, transparent 60%)',
     zIndex: 0,
     pointerEvents: 'none'
   },
@@ -495,6 +502,8 @@ const styles = {
     borderLeft: '1px solid rgba(255, 255, 255, 0.2)',
     boxShadow: 'inset 0 1px 1px rgba(255, 255, 255, 0.3), 0 8px 32px rgba(0, 0, 0, 0.15)',
     cursor:'pointer',
+    transform: 'translateZ(0)',
+    willChange: 'transform',
     transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)'
   },
   cardProfit: { 
@@ -509,6 +518,8 @@ const styles = {
     borderLeft: '1px solid rgba(76, 175, 80, 0.3)',
     boxShadow: 'inset 0 1px 1px rgba(76, 175, 80, 0.2), 0 8px 32px rgba(76, 175, 80, 0.1)',
     cursor:'pointer',
+    transform: 'translateZ(0)',
+    willChange: 'transform',
     transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)'
   },
   cardLoss: { 
@@ -523,6 +534,8 @@ const styles = {
     borderLeft: '1px solid rgba(255, 107, 107, 0.3)',
     boxShadow: 'inset 0 1px 1px rgba(255, 107, 107, 0.2), 0 8px 32px rgba(255, 107, 107, 0.1)',
     cursor:'pointer',
+    transform: 'translateZ(0)',
+    willChange: 'transform',
     transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)'
   },
   cardContentRow: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' },

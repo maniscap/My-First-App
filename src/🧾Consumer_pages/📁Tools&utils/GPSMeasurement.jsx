@@ -51,6 +51,7 @@ const LocationController = ({ isLocating, onLocationFound, isPreviewing, onError
     const map = useMap();
     const [pos, setPos] = useState(null);
     const hasCenteredRef = useRef(false);
+    const lastUpdateRef = useRef(0);
 
     useEffect(() => {
         if (!navigator.geolocation) return;
@@ -59,6 +60,10 @@ const LocationController = ({ isLocating, onLocationFound, isPreviewing, onError
         const registerWatch = (highAccuracy) => {
             watchId = navigator.geolocation.watchPosition(
                 (position) => {
+                    const now = Date.now();
+                    if (now - lastUpdateRef.current < 1000) return; // Throttle to 1 update per second
+                    lastUpdateRef.current = now;
+
                     const { latitude, longitude, accuracy } = position.coords;
                     const newPos = { lat: latitude, lng: longitude, accuracy };
                     setPos(newPos);

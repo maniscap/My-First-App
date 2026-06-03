@@ -9,10 +9,7 @@ import { evaluate } from 'mathjs';
 const FloatingCalculator = () => {
   const location = useLocation();
   
-  // --- GATEKEEPER ---
-  if (!location.pathname.toLowerCase().includes('expenditure')) {
-    return null;
-  }
+  // Gatekeeper moved to bottom to fix Hooks order
 
   // --- STATE ---
   // Start fully visible on screen
@@ -35,8 +32,8 @@ const FloatingCalculator = () => {
   const isResizing = useRef(false);
   const resizeStart = useRef({ x: 0, y: 0, initialScale: 1 });
 
-  // --- 1. SMOOTH DRAG LOGIC (Strict Boundaries) ---
-  
+  const containerRef = useRef(null);
+
   const handleDragStart = (e) => {
     if (e.target.closest('.resize-handle') || e.target.tagName === 'INPUT') {
         return;
@@ -47,9 +44,12 @@ const FloatingCalculator = () => {
     const clientX = e.touches ? e.touches[0].clientX : e.clientX;
     const clientY = e.touches ? e.touches[0].clientY : e.clientY;
 
+    const currentLeft = containerRef.current ? parseFloat(containerRef.current.style.left) || position.x : position.x;
+    const currentTop = containerRef.current ? parseFloat(containerRef.current.style.top) || position.y : position.y;
+
     dragOffset.current = { 
-        x: clientX - position.x, 
-        y: clientY - position.y 
+        x: clientX - currentLeft, 
+        y: clientY - currentTop 
     };
 
     if (e.touches) {
@@ -83,7 +83,10 @@ const FloatingCalculator = () => {
     if (newY < padding) newY = padding; 
     if (newY > maxY) newY = maxY;
 
-    setPosition({ x: newX, y: newY });
+    if (containerRef.current) {
+        containerRef.current.style.left = `${newX}px`;
+        containerRef.current.style.top = `${newY}px`;
+    }
   };
 
   const handleDragEnd = () => {
@@ -92,6 +95,13 @@ const FloatingCalculator = () => {
     window.removeEventListener('pointerup', handleDragEnd);
     window.removeEventListener('touchmove', handleDragMove);
     window.removeEventListener('touchend', handleDragEnd);
+    
+    if (containerRef.current) {
+        setPosition({ 
+            x: parseFloat(containerRef.current.style.left) || position.x, 
+            y: parseFloat(containerRef.current.style.top) || position.y 
+        });
+    }
   };
 
   // --- 2. CUSTOM RESIZE LOGIC ---
@@ -151,6 +161,7 @@ const FloatingCalculator = () => {
   // --- RENDER ---
   return (
     <div
+      ref={containerRef}
       style={{
           position: 'fixed', left: position.x, top: position.y, zIndex: 9999,
           touchAction: 'none', 

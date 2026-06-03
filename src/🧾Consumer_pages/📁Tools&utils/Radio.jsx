@@ -1213,10 +1213,11 @@ styleSheet.innerText = `
       pointer-events: none;
       z-index: 0;
       box-shadow: 0 0 15px rgba(255,255,255,0.2), inset 0 0 15px rgba(255,255,255,0.2);
+      will-change: transform, opacity;
   }
   @keyframes soundRipple {
-      0% { transform: translate(-50%, -50%) scale(0.95); opacity: 1; border-width: 3px; }
-      100% { transform: translate(-50%, -50%) scale(1.6); opacity: 0; border-width: 0px; }
+      0% { transform: translate(-50%, -50%) scale(0.95); opacity: 1; }
+      100% { transform: translate(-50%, -50%) scale(1.6); opacity: 0; }
   }
   .timer-urgent-anim {
       animation: timerUrgentVibrate 1s infinite;

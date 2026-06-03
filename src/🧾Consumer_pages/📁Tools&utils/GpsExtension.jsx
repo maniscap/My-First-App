@@ -17,8 +17,9 @@ const glassStyles = `
   .ghost-marker-icon { background: transparent; border: none; opacity: 0.8; }
   .ghost-marker-inner { width: 12px; height: 12px; background: rgba(255, 255, 255, 0.7); border: 2px dashed #00e5ff; border-radius: 50%; cursor: pointer; }
   .ghost-marker-icon:hover .ghost-marker-inner { background: #fff; transform: scale(1.2); border-style: solid; }
-  .google-loc-pin { width: 16px; height: 16px; background-color: #4285F4; border: 2px solid white; border-radius: 50%; box-shadow: 0 0 0 15px rgba(66, 133, 244, 0.3); animation: pulse-halo 2s infinite; }
-  @keyframes pulse-halo { 0% { box-shadow: 0 0 0 0 rgba(66, 133, 244, 0.6); } 70% { box-shadow: 0 0 0 15px rgba(66, 133, 244, 0); } 100% { box-shadow: 0 0 0 0 rgba(66, 133, 244, 0); } }
+  .google-loc-pin { position: relative; width: 16px; height: 16px; background-color: #4285F4; border: 2px solid white; border-radius: 50%; }
+  .google-loc-pin::after { content: ''; position: absolute; inset: -2px; border-radius: 50%; background-color: rgba(66, 133, 244, 0.6); z-index: -1; animation: pulse-halo 2s infinite cubic-bezier(0.4, 0, 0.2, 1); }
+  @keyframes pulse-halo { 0% { transform: scale(1); opacity: 1; } 100% { transform: scale(3); opacity: 0; } }
   .slide-in-left { animation: slideIn 0.3s forwards; }
   @keyframes slideIn { from { transform: translateX(-100%); } to { transform: translateX(0); } }
 `;

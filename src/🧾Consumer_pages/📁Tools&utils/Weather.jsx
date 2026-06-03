@@ -1229,12 +1229,12 @@ const styles = {
   refreshIndicator: { position: 'absolute', top: '20px', left: '50%', transform: 'translateX(-50%)', zIndex: 99, background: 'rgba(0,0,0,0.7)', borderRadius: '50%', padding: '10px' },
   toast: { position: 'absolute', bottom: '80px', left: '50%', background: '#333', color: '#fff', padding: '10px 20px', borderRadius: '25px', boxShadow: '0 4px 12px rgba(0,0,0,0.3)', transition: 'all 0.3s ease', zIndex: 1000, whiteSpace: 'nowrap', fontSize: '14px', fontWeight: '500' },
   
-  topBar: { display:'flex', justifyContent:'space-between', alignItems:'center', background: 'transparent', backdropFilter: 'blur(12px) saturate(120%) brightness(110%)', WebkitBackdropFilter: 'blur(12px) saturate(120%) brightness(110%)', border: '1px solid rgba(255, 255, 255, 0.1)', borderTop: '1px solid rgba(255, 255, 255, 0.3)', borderLeft: '1px solid rgba(255, 255, 255, 0.2)', borderRadius: '40px', padding: '8px 15px', margin: '15px 12px', boxShadow: 'inset 0 1px 1px rgba(255, 255, 255, 0.3), 0 8px 32px rgba(0,0,0,0.15)', zIndex: 10 },
+  topBar: { display:'flex', justifyContent:'space-between', alignItems:'center', background: 'transparent', transform: 'translateZ(0)', willChange: 'transform, backdrop-filter', backdropFilter: 'blur(12px) saturate(120%) brightness(110%)', WebkitBackdropFilter: 'blur(12px) saturate(120%) brightness(110%)', border: '1px solid rgba(255, 255, 255, 0.1)', borderTop: '1px solid rgba(255, 255, 255, 0.3)', borderLeft: '1px solid rgba(255, 255, 255, 0.2)', borderRadius: '40px', padding: '8px 15px', margin: '15px 12px', boxShadow: 'inset 0 1px 1px rgba(255, 255, 255, 0.3), 0 8px 32px rgba(0,0,0,0.15)', zIndex: 10 },
   locationText: { display:'flex', flexDirection:'column', alignItems:'center', flex: 1, overflow: 'hidden', padding: '0 10px', textAlign: 'center' },
   cityTitle: { fontSize:'18px', fontWeight:'700', textShadow:'0 2px 5px rgba(0,0,0,0.5)', letterSpacing:'0.5px', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis', width:'100%' },
   regionTitle: { fontSize:'11px', opacity:0.9, marginTop:'2px', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis', width:'100%' },
   iconBtn: { background:'transparent', border:'none', color:'white', cursor:'pointer', padding:'5px', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))' },
-  unitBtn: { background:'rgba(255,255,255,0.2)', border:'1px solid rgba(255,255,255,0.3)', borderRadius:'50%', width:'30px', height:'30px', color:'white', cursor:'pointer', fontSize:'14px', fontWeight:'bold', backdropFilter:'blur(5px)' },
+  unitBtn: { background:'rgba(255,255,255,0.2)', border:'1px solid rgba(255,255,255,0.3)', borderRadius:'50%', width:'30px', height:'30px', color:'white', cursor:'pointer', fontSize:'14px', fontWeight:'bold', transform: 'translateZ(0)', willChange: 'transform, backdrop-filter', backdropFilter: 'blur(5px)' },
   topRight: { display:'flex', gap:'10px', alignItems: 'center' },
   dotsContainer: { display: 'flex', justifyContent: 'center', gap: '6px', width: '100%', zIndex: 5, marginTop: '-5px', marginBottom: '10px' },
   dot: { height: '6px', borderRadius: '3px', transition: 'all 0.3s ease' },
@@ -1244,14 +1244,14 @@ const styles = {
   bigTemp: { fontSize:'96px', fontWeight:'200', lineHeight:'1', margin:0, letterSpacing: '-2px', textShadow:'0 10px 30px rgba(0,0,0,0.35)' },
   celcius: { fontSize:'30px', fontWeight:'400', marginTop:'15px' },
   condition: { fontSize:'24px', textTransform:'capitalize', margin:'5px 0 15px', fontWeight:'500' },
-  aqiPill: { display:'inline-flex', alignItems:'center', gap:'8px', padding:'6px 16px', borderRadius:'30px', fontSize:'14px', backdropFilter:'blur(12px) saturate(120%) brightness(110%)', WebkitBackdropFilter:'blur(12px) saturate(120%) brightness(110%)', border: '1px solid rgba(255, 255, 255, 0.1)', borderTop: '1px solid rgba(255, 255, 255, 0.3)', borderLeft: '1px solid rgba(255, 255, 255, 0.2)', boxShadow: 'inset 0 1px 1px rgba(255, 255, 255, 0.3), 0 4px 15px rgba(0,0,0,0.1)', transition: 'background 0.5s' },
+  aqiPill: { display:'inline-flex', alignItems:'center', gap:'8px', padding:'6px 16px', borderRadius:'30px', fontSize:'14px', transform: 'translateZ(0)', willChange: 'transform, backdrop-filter', backdropFilter: 'blur(12px) saturate(120%) brightness(110%)', WebkitBackdropFilter:'blur(12px) saturate(120%) brightness(110%)', border: '1px solid rgba(255, 255, 255, 0.1)', borderTop: '1px solid rgba(255, 255, 255, 0.3)', borderLeft: '1px solid rgba(255, 255, 255, 0.2)', boxShadow: 'inset 0 1px 1px rgba(255, 255, 255, 0.3), 0 4px 15px rgba(0,0,0,0.1)', transition: 'background 0.5s' },
 
   scrollContent: { flex: 1, overflowY:'auto', padding:'0 12px', scrollbarWidth:'none' },
   
   glassSection: { 
       background: 'transparent', 
       borderRadius:'36px', padding:'20px', marginBottom:'15px', 
-      backdropFilter:'blur(12px) saturate(120%) brightness(110%)', WebkitBackdropFilter:'blur(12px) saturate(120%) brightness(110%)', 
+      transform: 'translateZ(0)', willChange: 'transform, backdrop-filter', backdropFilter: 'blur(12px) saturate(120%) brightness(110%)', WebkitBackdropFilter:'blur(12px) saturate(120%) brightness(110%)', 
       border: '1px solid rgba(255, 255, 255, 0.1)', borderTop: '1px solid rgba(255, 255, 255, 0.3)', borderLeft: '1px solid rgba(255, 255, 255, 0.2)',
       boxShadow: 'inset 0 1px 1px rgba(255, 255, 255, 0.3), 0 8px 32px rgba(0, 0, 0, 0.15)'
   },
@@ -1273,7 +1273,7 @@ const styles = {
   
   modernCard: { 
       background: 'transparent', 
-      backdropFilter:'blur(12px) saturate(120%) brightness(110%)', WebkitBackdropFilter:'blur(12px) saturate(120%) brightness(110%)', borderRadius:'36px', 
+      transform: 'translateZ(0)', willChange: 'transform, backdrop-filter', backdropFilter: 'blur(12px) saturate(120%) brightness(110%)', WebkitBackdropFilter:'blur(12px) saturate(120%) brightness(110%)', borderRadius:'36px', 
       padding:'18px', aspectRatio:'1/1', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'space-between',
       border: '1px solid rgba(255, 255, 255, 0.1)', borderTop: '1px solid rgba(255, 255, 255, 0.3)', borderLeft: '1px solid rgba(255, 255, 255, 0.2)',
       boxShadow: 'inset 0 1px 1px rgba(255, 255, 255, 0.3), 0 8px 32px rgba(0, 0, 0, 0.15)', position: 'relative'
@@ -1281,7 +1281,7 @@ const styles = {
   
   modernBigCard: {
       background: 'transparent',
-      backdropFilter:'blur(12px) saturate(120%) brightness(110%)', WebkitBackdropFilter:'blur(12px) saturate(120%) brightness(110%)', borderRadius:'36px', 
+      transform: 'translateZ(0)', willChange: 'transform, backdrop-filter', backdropFilter: 'blur(12px) saturate(120%) brightness(110%)', WebkitBackdropFilter:'blur(12px) saturate(120%) brightness(110%)', borderRadius:'36px', 
       padding:'20px', width:'100%', display:'grid', gridTemplateColumns:'1fr 1fr', gridTemplateRows:'1fr 1fr', gap:'20px',
       border: '1px solid rgba(255, 255, 255, 0.1)', borderTop: '1px solid rgba(255, 255, 255, 0.3)', borderLeft: '1px solid rgba(255, 255, 255, 0.2)',
       boxShadow: 'inset 0 1px 1px rgba(255, 255, 255, 0.3), 0 8px 32px rgba(0, 0, 0, 0.15)'
@@ -1291,7 +1291,7 @@ const styles = {
   
   fullWidthCard: {
       gridColumn: '1 / -1', background: 'transparent',
-      backdropFilter:'blur(12px) saturate(120%) brightness(110%)', WebkitBackdropFilter:'blur(12px) saturate(120%) brightness(110%)', borderRadius:'36px', padding:'20px', 
+      transform: 'translateZ(0)', willChange: 'transform, backdrop-filter', backdropFilter: 'blur(12px) saturate(120%) brightness(110%)', WebkitBackdropFilter:'blur(12px) saturate(120%) brightness(110%)', borderRadius:'36px', padding:'20px', 
       border: '1px solid rgba(255, 255, 255, 0.1)', borderTop: '1px solid rgba(255, 255, 255, 0.3)', borderLeft: '1px solid rgba(255, 255, 255, 0.2)',
       marginBottom:'10px', boxShadow: 'inset 0 1px 1px rgba(255, 255, 255, 0.3), 0 8px 32px rgba(0, 0, 0, 0.15)'
   },
@@ -1307,19 +1307,19 @@ const styles = {
   sunTimes: { textAlign:'center', paddingTop:'15px', fontSize:'12px' },
 
   // --- FIXED: ADDED boxSizing & DECREASED BACKGROUND OPACITY ---
-  modalOverlay: { position:'fixed', top:0, left:0, width:'100%', height:'100%', background:'rgba(0,0,0,0.2)', backdropFilter:'blur(10px)', WebkitBackdropFilter:'blur(10px)', zIndex:100, display:'flex', flexDirection:'column', boxSizing: 'border-box' },
-  modalContent: { flex:1, padding:'20px', background:'rgba(0, 0, 0, 0.2)', backdropFilter:'blur(30px) saturate(150%) brightness(115%)', WebkitBackdropFilter:'blur(30px) saturate(150%) brightness(115%)', overflowY:'auto', boxSizing: 'border-box', overflowX: 'hidden' },
+  modalOverlay: { position:'fixed', top:0, left:0, width:'100%', height:'100%', background:'rgba(0,0,0,0.2)', transform: 'translateZ(0)', willChange: 'transform, backdrop-filter', backdropFilter: 'blur(10px)', WebkitBackdropFilter:'blur(10px)', zIndex:100, display:'flex', flexDirection:'column', boxSizing: 'border-box' },
+  modalContent: { flex:1, padding:'20px', background:'rgba(0, 0, 0, 0.2)', transform: 'translateZ(0)', willChange: 'transform, backdrop-filter', backdropFilter: 'blur(30px) saturate(150%) brightness(115%)', WebkitBackdropFilter:'blur(30px) saturate(150%) brightness(115%)', overflowY:'auto', boxSizing: 'border-box', overflowX: 'hidden' },
   modalHeader: { display:'flex', justifyContent:'center', alignItems:'center', marginBottom:'20px', position:'relative' },
   closeModal: { background:'none', border:'none', color:'#fff', cursor:'pointer', position:'absolute', right:0 },
   
   searchBarTrigger: { 
       background: 'transparent', padding:'14px 20px', borderRadius:'30px', display:'flex', alignItems:'center', marginBottom:'25px', cursor:'pointer',
       border: '1px solid rgba(255, 255, 255, 0.1)', borderTop: '1px solid rgba(255, 255, 255, 0.3)', borderLeft: '1px solid rgba(255, 255, 255, 0.2)',
-      boxShadow: 'inset 0 1px 1px rgba(255, 255, 255, 0.3), 0 4px 15px rgba(0, 0, 0, 0.1)', backdropFilter:'blur(12px) saturate(120%) brightness(110%)', WebkitBackdropFilter:'blur(12px) saturate(120%) brightness(110%)', boxSizing: 'border-box'
+      boxShadow: 'inset 0 1px 1px rgba(255, 255, 255, 0.3), 0 4px 15px rgba(0, 0, 0, 0.1)', transform: 'translateZ(0)', willChange: 'transform, backdrop-filter', backdropFilter: 'blur(12px) saturate(120%) brightness(110%)', WebkitBackdropFilter:'blur(12px) saturate(120%) brightness(110%)', boxSizing: 'border-box'
   },
   savedList: { display:'flex', flexDirection:'column', gap:'15px' },
   cityCard: { 
-      background: 'transparent', backdropFilter:'blur(12px) saturate(120%) brightness(110%)', WebkitBackdropFilter:'blur(12px) saturate(120%) brightness(110%)', borderRadius:'36px', padding:'25px', 
+      background: 'transparent', transform: 'translateZ(0)', willChange: 'transform, backdrop-filter', backdropFilter: 'blur(12px) saturate(120%) brightness(110%)', WebkitBackdropFilter:'blur(12px) saturate(120%) brightness(110%)', borderRadius:'36px', padding:'25px', 
       display:'flex', justifyContent:'space-between', alignItems:'center', cursor:'pointer', 
       border: '1px solid rgba(255, 255, 255, 0.1)', borderTop: '1px solid rgba(255, 255, 255, 0.3)', borderLeft: '1px solid rgba(255, 255, 255, 0.2)',
       boxShadow: 'inset 0 1px 1px rgba(255, 255, 255, 0.3), 0 8px 32px rgba(0, 0, 0, 0.15)', boxSizing: 'border-box'
@@ -1332,7 +1332,7 @@ const styles = {
   cardHighLow: { fontSize:'13px', opacity:0.6 },
 
   // --- FIXED: ADDED boxSizing & DECREASED BACKGROUND OPACITY ---
-  searchOverlay: { position:'absolute', top:0, left:0, width:'100%', height:'100%', background:'rgba(0, 0, 0, 0.2)', backdropFilter:'blur(30px) saturate(150%) brightness(115%)', WebkitBackdropFilter:'blur(30px) saturate(150%) brightness(115%)', zIndex:200, padding:'20px', boxSizing: 'border-box', overflowX: 'hidden' },
+  searchOverlay: { position:'absolute', top:0, left:0, width:'100%', height:'100%', background:'rgba(0, 0, 0, 0.2)', transform: 'translateZ(0)', willChange: 'transform, backdrop-filter', backdropFilter: 'blur(30px) saturate(150%) brightness(115%)', WebkitBackdropFilter:'blur(30px) saturate(150%) brightness(115%)', zIndex:200, padding:'20px', boxSizing: 'border-box', overflowX: 'hidden' },
   searchHeader: { display:'flex', alignItems:'center', gap:'15px', marginBottom:'25px', background: 'rgba(255,255,255,0.08)', padding: '12px 20px', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.1)', boxSizing: 'border-box' },
   searchInputBig: { flex:1, background:'transparent', border:'none', color:'#fff', fontSize:'18px', outline:'none' },
   suggestionsList: { marginTop:'10px' },
@@ -1347,10 +1347,10 @@ const styles = {
   
   popularLabel: { fontSize:'12px', color: '#ddd', marginTop:'30px', marginBottom:'15px', letterSpacing:'1px', fontWeight: 'bold' },
   popularGrid: { display:'flex', flexWrap:'wrap', gap:'10px' },
-  popularChip: { background:'rgba(255,255,255,0.1)', padding:'10px 18px', borderRadius:'25px', fontSize:'14px', cursor:'pointer', border:'1px solid rgba(255,255,255,0.2)', color: '#fff', backdropFilter: 'blur(10px)', boxSizing: 'border-box' },
+  popularChip: { background:'rgba(255,255,255,0.1)', padding:'10px 18px', borderRadius:'25px', fontSize:'14px', cursor:'pointer', border:'1px solid rgba(255,255,255,0.2)', color: '#fff', transform: 'translateZ(0)', willChange: 'transform, backdrop-filter', backdropFilter: 'blur(10px)', boxSizing: 'border-box' },
 
   emptyStateWrapper: { flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px', zIndex: 5 },
-  emptyStateCard: { background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', borderRadius: '32px', padding: '40px 25px', textAlign: 'center', border: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 10px 40px rgba(0,0,0,0.3)', display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', boxSizing: 'border-box' },
+  emptyStateCard: { background: 'rgba(0,0,0,0.4)', transform: 'translateZ(0)', willChange: 'transform, backdrop-filter', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', borderRadius: '32px', padding: '40px 25px', textAlign: 'center', border: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 10px 40px rgba(0,0,0,0.3)', display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', boxSizing: 'border-box' },
   emptyStateIconBg: { background: 'rgba(255, 107, 107, 0.15)', padding: '20px', borderRadius: '50%', marginBottom: '20px', border: '1px solid rgba(255, 107, 107, 0.3)' },
   emptyStateTitle: { margin: '0 0 10px 0', fontSize: '24px', fontWeight: 'bold' },
   emptyStateDesc: { margin: '0 0 30px 0', fontSize: '14px', color: 'rgba(255,255,255,0.7)', lineHeight: '1.5' },

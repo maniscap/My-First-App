@@ -636,18 +636,21 @@ function ChatBot() {
   // SECTION 6: BOUNDARY-PROTECTED DRAGGABLE UI & TERMS LOGIC
   // ===============================================================================================
   const [position, setPosition] = useState({ x: 20, y: window.innerHeight - 120 });
-  const [isDragging, setIsDragging] = useState(false);
+  const isDragging = useRef(false);
   const dragOffset = useRef({ x: 0, y: 0 });
+  const chatbotContainerRef = useRef(null);
 
   const handleMouseDown = (e) => {
-    setIsDragging(false);
-    dragOffset.current = { x: (window.innerWidth - e.clientX) - position.x, y: e.clientY - position.y };
+    isDragging.current = false;
+    const currentX = chatbotContainerRef.current ? parseFloat(chatbotContainerRef.current.style.right) || position.x : position.x;
+    const currentY = chatbotContainerRef.current ? parseFloat(chatbotContainerRef.current.style.top) || position.y : position.y;
+    dragOffset.current = { x: (window.innerWidth - e.clientX) - currentX, y: e.clientY - currentY };
     document.addEventListener('mousemove', handleMouseMove);
     document.addEventListener('mouseup', handleMouseUp);
   };
 
   const handleMouseMove = (e) => {
-    setIsDragging(true); 
+    isDragging.current = true; 
     e.preventDefault();
     
     let newX = (window.innerWidth - e.clientX) - dragOffset.current.x;
@@ -665,22 +668,33 @@ function ChatBot() {
     if (newY < padding) newY = padding;
     if (newY > screenHeight - capsuleHeight - bottomPadding) newY = screenHeight - capsuleHeight - bottomPadding;
     
-    setPosition({ x: newX, y: newY });
+    if (chatbotContainerRef.current) {
+        chatbotContainerRef.current.style.right = `${newX}px`;
+        chatbotContainerRef.current.style.top = `${newY}px`;
+    }
   };
 
   const handleMouseUp = () => {
     document.removeEventListener('mousemove', handleMouseMove);
     document.removeEventListener('mouseup', handleMouseUp);
+    if (chatbotContainerRef.current) {
+        setPosition({ 
+            x: parseFloat(chatbotContainerRef.current.style.right) || position.x, 
+            y: parseFloat(chatbotContainerRef.current.style.top) || position.y 
+        });
+    }
   };
 
   const handleTouchStart = (e) => {
-    setIsDragging(false);
+    isDragging.current = false;
     const touch = e.touches[0];
-    dragOffset.current = { x: (window.innerWidth - touch.clientX) - position.x, y: touch.clientY - position.y };
+    const currentX = chatbotContainerRef.current ? parseFloat(chatbotContainerRef.current.style.right) || position.x : position.x;
+    const currentY = chatbotContainerRef.current ? parseFloat(chatbotContainerRef.current.style.top) || position.y : position.y;
+    dragOffset.current = { x: (window.innerWidth - touch.clientX) - currentX, y: touch.clientY - currentY };
   };
 
   const handleTouchMove = (e) => {
-    setIsDragging(true);
+    isDragging.current = true;
     const touch = e.touches[0];
     let newX = (window.innerWidth - touch.clientX) - dragOffset.current.x;
     let newY = touch.clientY - dragOffset.current.y;
@@ -697,11 +711,23 @@ function ChatBot() {
     if (newY < padding) newY = padding;
     if (newY > screenHeight - capsuleHeight - bottomPadding) newY = screenHeight - capsuleHeight - bottomPadding;
     
-    setPosition({ x: newX, y: newY });
+    if (chatbotContainerRef.current) {
+        chatbotContainerRef.current.style.right = `${newX}px`;
+        chatbotContainerRef.current.style.top = `${newY}px`;
+    }
+  };
+
+  const handleTouchEnd = () => {
+      if (chatbotContainerRef.current) {
+        setPosition({ 
+            x: parseFloat(chatbotContainerRef.current.style.right) || position.x, 
+            y: parseFloat(chatbotContainerRef.current.style.top) || position.y 
+        });
+      }
   };
 
   const handleClickButton = () => { 
-      if (!isDragging) {
+      if (!isDragging.current) {
           handleOpenChat();
       }
   };
@@ -1394,7 +1420,7 @@ function ChatBot() {
 
       {/* FLOATING CAPSULE */}
       {!isOpen && (
-        <div onMouseDown={handleMouseDown} onClick={handleClickButton} onTouchStart={handleTouchStart} onTouchMove={handleTouchMove} className={`gemini-bot-button ${isExpanded ? 'expanded' : 'collapsed'}`} style={{ ...styles.floatCapsule, right: `${position.x}px`, top: `${position.y}px`, width: isExpanded ? '145px' : '50px', height: '50px' }}>
+        <div ref={chatbotContainerRef} onMouseDown={handleMouseDown} onClick={handleClickButton} onTouchStart={handleTouchStart} onTouchMove={handleTouchMove} onTouchEnd={handleTouchEnd} className={`gemini-bot-button ${isExpanded ? 'expanded' : 'collapsed'}`} style={{ ...styles.floatCapsule, right: `${position.x}px`, top: `${position.y}px`, width: isExpanded ? '145px' : '50px', height: '50px' }}>
             <div style={{ ...styles.geminiBotInner, width: '100%', height: '100%', borderRadius: isExpanded ? '25px' : '16px' }}>
                 <Sparkles size={20} color="#fff" style={{ flexShrink: 0 }} />
                 <span style={{ color: '#fff', fontSize: '13px', fontWeight: '500', letterSpacing: '0.2px', whiteSpace: 'nowrap', overflow: 'hidden', opacity: isExpanded ? 1 : 0, width: isExpanded ? '100px' : '0px', marginLeft: isExpanded ? '6px' : '0px', transition: 'all 0.5s cubic-bezier(0.2, 0.8, 0.2, 1)' }}>
