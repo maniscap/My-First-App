@@ -9,22 +9,22 @@ import { BannerWidget } from './BannerPromo';
 
 // --- WEATHER IMAGE ASSETS (URLs) ---
 const weatherImages = {
-  clearDay: 'https://images.pexels.com/photos/296234/pexels-photo-296234.jpeg?auto=compress&cs=tinysrgb&w=600',
-  clearNight: 'https://images.pexels.com/photos/11752993/pexels-photo-11752993.jpeg?auto=compress&cs=tinysrgb&w=600',
-  cloudyDay: 'https://images.pexels.com/photos/158163/clouds-cloudporn-weather-lookup-158163.jpeg?auto=compress&cs=tinysrgb&w=600',
-  cloudyNight: 'https://images.pexels.com/photos/29473893/pexels-photo-29473893.jpeg?auto=compress&cs=tinysrgb&w=600', 
-  partlyCloudyDay: 'https://images.pexels.com/photos/13958707/pexels-photo-13958707.jpeg?auto=compress&cs=tinysrgb&w=600',
-  partlyCloudyNight: 'https://images.pexels.com/photos/5489557/pexels-photo-5489557.jpeg?auto=compress&cs=tinysrgb&w=600',
-  mistDay: 'https://images.pexels.com/photos/6745483/pexels-photo-6745483.jpeg?auto=compress&cs=tinysrgb&w=600',
-  mistNight: 'https://images.pexels.com/photos/1529881/pexels-photo-1529881.jpeg?auto=compress&cs=tinysrgb&w=600',
-  rainDay: 'https://images.pexels.com/photos/30345921/pexels-photo-30345921.jpeg?auto=compress&cs=tinysrgb&w=600',
-  rainEvening: 'https://images.pexels.com/photos/8590614/pexels-photo-8590614.jpeg?auto=compress&cs=tinysrgb&w=600',
-  rainNight: 'https://images.pexels.com/photos/850488/pexels-photo-850488.png?auto=compress&cs=tinysrgb&w=600',
-  storm: 'https://images.pexels.com/photos/16218619/pexels-photo-16218619.jpeg?auto=compress&cs=tinysrgb&w=600',
-  sunrise: 'https://images.pexels.com/photos/10248028/pexels-photo-10248028.jpeg?auto=compress&cs=tinysrgb&w=600',
-  sunset: 'https://images.pexels.com/photos/539282/pexels-photo-539282.jpeg?auto=compress&cs=tinysrgb&w=600',
-  drizzle: 'https://images.pexels.com/photos/804474/pexels-photo-804474.jpeg?auto=compress&cs=tinysrgb&w=600',
-  defaultFallback: 'https://images.pexels.com/photos/1107717/pexels-photo-1107717.jpeg?auto=compress&cs=tinysrgb&w=600' 
+  clearDay: '/assets/images/weather_clearDay.webp',
+  clearNight: '/assets/images/weather_clearNight.webp',
+  cloudyDay: '/assets/images/weather_cloudyDay.webp',
+  cloudyNight: '/assets/images/weather_cloudyNight.webp', 
+  partlyCloudyDay: '/assets/images/weather_partlyCloudyDay.webp',
+  partlyCloudyNight: '/assets/images/weather_partlyCloudyNight.webp',
+  mistDay: '/assets/images/weather_mistDay.webp',
+  mistNight: '/assets/images/weather_mistNight.webp',
+  rainDay: '/assets/images/weather_rainDay.webp',
+  rainEvening: '/assets/images/weather_rainEvening.webp',
+  rainNight: '/assets/images/weather_rainNight.webp',
+  storm: '/assets/images/weather_storm.webp',
+  sunrise: '/assets/images/weather_sunrise.webp',
+  sunset: '/assets/images/weather_sunset.webp',
+  drizzle: '/assets/images/weather_drizzle.webp',
+  defaultFallback: '/assets/images/weather_defaultFallback.webp' 
 };
 
 // --- ADDED: SMART TEXT MATCHER AS SECONDARY FALLBACK ---
