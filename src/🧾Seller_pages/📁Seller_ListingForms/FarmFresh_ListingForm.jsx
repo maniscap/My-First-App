@@ -34,6 +34,7 @@ export default function FarmFresh_ListingForm() {
     const [isOrganic, setIsOrganic] = useState(false);
     const [organicCertName, setOrganicCertName] = useState('');
     const [organicCertNumber, setOrganicCertNumber] = useState('');
+    const [shelfLife, setShelfLife] = useState('');
     const [qualityGuarantee, setQualityGuarantee] = useState(false);
     const [selectedImageUrl, setSelectedImageUrl] = useState(null);
     const [showSuccess, setShowSuccess] = useState(false);
@@ -201,31 +202,7 @@ export default function FarmFresh_ListingForm() {
         ];
     };
 
-    const getShelfLifeData = (category) => {
-        if (!category) return { text: "Not specified", days: 0 };
-        const cat = category.toLowerCase();
-        if (cat.includes('greens')) return { text: '2 to 3 Days', days: 3 };
-        if (cat.includes('flowers')) return { text: '1 to 2 Days', days: 2 };
-        if (cat.includes('fruits')) return { text: '5 to 7 Days', days: 7 };
-        if (cat.includes('vegetable')) return { text: '4 to 6 Days', days: 6 };
-        if (cat.includes('dairy') || cat.includes('poultry')) return { text: '1 to 2 Days', days: 2 };
-        if (cat.includes('spice') || cat.includes('jaggery') || cat.includes('dry')) return { text: '6 to 12 Months', days: 365 };
-        if (cat.includes('cash crop') || cat.includes('cereal') || cat.includes('pulse')) return { text: '12+ Months', days: 365 };
-        return { text: '3 to 5 Days', days: 5 };
-    };
-
     const dynamicUnits = getDynamicUnits();
-    const shelfLifeData = getShelfLifeData(selectedCategory);
-
-    // Calculate Expiry Date
-    const getExpiryDate = (daysToAdd) => {
-        if (daysToAdd === 0) return "N/A";
-        const date = new Date();
-        date.setDate(date.getDate() + daysToAdd);
-        return date.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
-    };
-    
-    const expiryDate = getExpiryDate(shelfLifeData.days);
 
     const handleSave = async (e) => {
         e.preventDefault();
@@ -256,8 +233,7 @@ export default function FarmFresh_ListingForm() {
                 organicCertName: isOrganic ? organicCertName : null,
                 organicCertNumber: isOrganic ? organicCertNumber : null,
                 listingDate: new Date().toLocaleDateString('en-IN'),
-                shelfLife: shelfLifeData.text,
-                expiryDate: expiryDate,
+                shelfLife: shelfLife,
                 qualityGuarantee: qualityGuarantee,
                 imageUrl: selectedImageUrl,
                 createdAt: serverTimestamp(),
@@ -547,25 +523,28 @@ export default function FarmFresh_ListingForm() {
                         />
                     </div>
 
-                    {/* 7. Algorithmic Quality Assurance & Freshness */}
+                    {/* 7. Quality Assurance & Freshness */}
                     <div style={{ marginBottom: '32px', backgroundColor: '#f0fdf4', padding: '16px 20px', borderRadius: '16px', border: '2px solid #16a34a' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
                             <svg width="20" height="20" fill="none" stroke="#15803d" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                            <h4 style={{ margin: 0, fontSize: '16px', color: '#15803d', fontWeight: '800' }}>Freshness Algorithm</h4>
+                            <h4 style={{ margin: 0, fontSize: '16px', color: '#15803d', fontWeight: '800' }}>Quality & Freshness</h4>
                         </div>
                         
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px', marginBottom: '16px' }}>
-                            <div style={{ backgroundColor: '#fff', padding: '12px', borderRadius: '12px', border: '1px solid #bbf7d0', textAlign: 'center' }}>
-                                <span style={{ display: 'block', fontSize: '11px', color: '#64748b', fontWeight: '700', marginBottom: '4px', textTransform: 'uppercase' }}>Listed On</span>
-                                <span style={{ display: 'block', fontSize: '14px', color: '#0f172a', fontWeight: '800' }}>{new Date().toLocaleDateString('en-IN', {day:'numeric', month:'short'})}</span>
+                        <div style={{ display: 'flex', gap: '16px', marginBottom: '16px' }}>
+                            <div style={{ flex: 1, backgroundColor: '#fff', padding: '12px', borderRadius: '12px', border: '1px solid #bbf7d0', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                                <span style={{ display: 'block', fontSize: '12px', color: '#64748b', fontWeight: '600', marginBottom: '4px' }}>Listing Date</span>
+                                <span style={{ display: 'block', fontSize: '15px', color: '#0f172a', fontWeight: '700' }}>{new Date().toLocaleDateString('en-IN')}</span>
                             </div>
-                            <div style={{ backgroundColor: '#fff', padding: '12px', borderRadius: '12px', border: '1px solid #bbf7d0', textAlign: 'center' }}>
-                                <span style={{ display: 'block', fontSize: '11px', color: '#64748b', fontWeight: '700', marginBottom: '4px', textTransform: 'uppercase' }}>Shelf Life</span>
-                                <span style={{ display: 'block', fontSize: '14px', color: '#16a34a', fontWeight: '800' }}>{shelfLifeData.text}</span>
-                            </div>
-                            <div style={{ backgroundColor: '#fee2e2', padding: '12px', borderRadius: '12px', border: '1px solid #fecaca', textAlign: 'center' }}>
-                                <span style={{ display: 'block', fontSize: '11px', color: '#ef4444', fontWeight: '700', marginBottom: '4px', textTransform: 'uppercase' }}>Expiring By</span>
-                                <span style={{ display: 'block', fontSize: '14px', color: '#991b1b', fontWeight: '800' }}>{expiryDate}</span>
+                            <div style={{ flex: 1 }}>
+                                <label style={{ display: 'block', fontSize: '12px', color: '#475569', fontWeight: '600', marginBottom: '4px' }}>Expected Shelf Life <span style={{color: '#ef4444'}}>*</span></label>
+                                <input 
+                                    type="text" 
+                                    placeholder="e.g. 5 Days, 2 Months" 
+                                    value={shelfLife}
+                                    onChange={(e) => setShelfLife(e.target.value)}
+                                    style={{ width: '100%', padding: '10px 12px', borderRadius: '12px', border: '1px solid #bbf7d0', fontSize: '14px', backgroundColor: '#fff', color: '#0f172a', outline: 'none', boxSizing: 'border-box' }}
+                                    required
+                                />
                             </div>
                         </div>
 
