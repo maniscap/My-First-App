@@ -34,6 +34,8 @@ export default function FarmFresh_ListingForm() {
     const [isOrganic, setIsOrganic] = useState(false);
     const [organicCertName, setOrganicCertName] = useState('');
     const [organicCertNumber, setOrganicCertNumber] = useState('');
+    const [harvestDate, setHarvestDate] = useState('');
+    const [qualityGuarantee, setQualityGuarantee] = useState(false);
     const [selectedImageUrl, setSelectedImageUrl] = useState(null);
     const [showSuccess, setShowSuccess] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -230,6 +232,8 @@ export default function FarmFresh_ListingForm() {
                 isOrganic: isOrganic,
                 organicCertName: isOrganic ? organicCertName : null,
                 organicCertNumber: isOrganic ? organicCertNumber : null,
+                harvestDate: harvestDate,
+                qualityGuarantee: qualityGuarantee,
                 imageUrl: selectedImageUrl,
                 createdAt: serverTimestamp(),
                 updatedAt: serverTimestamp()
@@ -471,6 +475,39 @@ export default function FarmFresh_ListingForm() {
                                 </div>
                             </div>
                         )}
+                    </div>
+
+                    {/* Quality Assurance & Harvest Details */}
+                    <div style={{ marginBottom: '24px', backgroundColor: '#f8fafc', padding: '16px', borderRadius: '16px', border: '1px solid #e2e8f0' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
+                            <svg width="20" height="20" fill="none" stroke="#3b82f6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                            <h4 style={{ margin: 0, fontSize: '15px', color: '#1e293b', fontWeight: '700' }}>Quality & Freshness</h4>
+                        </div>
+                        
+                        <div style={{ marginBottom: '16px' }}>
+                            <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: '#475569', marginBottom: '8px' }}>Harvest / Procurement Date <span style={{color: '#ef4444'}}>*</span></label>
+                            <input 
+                                type="date" 
+                                value={harvestDate}
+                                onChange={(e) => setHarvestDate(e.target.value)}
+                                style={{ width: '100%', padding: '14px', borderRadius: '12px', border: '1px solid #cbd5e1', fontSize: '14px', backgroundColor: '#fff', color: '#0f172a', outline: 'none', boxSizing: 'border-box' }}
+                                required
+                            />
+                        </div>
+
+                        <label style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', cursor: 'pointer' }}>
+                            <input 
+                                type="checkbox" 
+                                checked={qualityGuarantee}
+                                onChange={(e) => setQualityGuarantee(e.target.checked)}
+                                style={{ marginTop: '4px', width: '18px', height: '18px', accentColor: '#16a34a' }}
+                                required
+                            />
+                            <div>
+                                <span style={{ display: 'block', fontSize: '14px', fontWeight: '600', color: '#1e293b', marginBottom: '2px' }}>I Guarantee Freshness & Quality</span>
+                                <span style={{ display: 'block', fontSize: '12px', color: '#64748b' }}>By checking this, I verify that the product is fresh, graded accurately, and meets Farm Fresh quality standards.</span>
+                            </div>
+                        </label>
                     </div>
 
                     {/* 5. Pricing & Unit Container */}

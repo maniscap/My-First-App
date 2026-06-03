@@ -1410,6 +1410,45 @@ export const farmFreshCategories = [
       }
     ]
   }
+,
+
+  {
+    category: "Cultural & Puja Items",
+    items: [
+      { id: "cultural_banana_leaf", name: "Banana Leaves (Vazhai Ilai)" },
+      { id: "cultural_moduga_leaf", name: "Moduga / Sal Leaves (For Vistaraku Plates)" },
+      { id: "cultural_bael_leaf", name: "Bael Leaves (Bilva Patra)" },
+      { id: "cultural_ashoka_leaf", name: "Ashoka Leaves" },
+      { id: "cultural_betel_leaf", name: "Betel Leaves (Paan / Vettila)" },
+      { id: "cultural_areca_nut", name: "Areca Nut (Supari / Vakka)" },
+      { id: "cultural_darbha", name: "Darbha / Kusha Grass" },
+      { id: "cultural_apamarga", name: "Apamarga / Uttareni Twigs" },
+      { id: "cultural_shami", name: "Shami / Banni Leaves" },
+      { id: "cultural_banana_stem", name: "Banana Pseudostem (Arati Bodha)" },
+      { id: "cultural_tulsi_manjari", name: "Tulsi Manjari" },
+      { id: "cultural_durva", name: "Durva Grass (Garika)" },
+      { id: "custom_other_cult", name: "➕ Add Other Cultural Item..." }
+    ]
+  },
+  {
+    category: "Raw Cash Crops & Plantations",
+    items: [
+      { id: "cash_cotton", name: "Raw Cotton (Kapas)" },
+      { id: "cash_jute", name: "Raw Jute (Golden Fibre)" },
+      { id: "cash_tobacco", name: "Tobacco Leaves" },
+      { id: "cash_guar", name: "Guar (Cluster Beans for Gum)" },
+      { id: "cash_mentha", name: "Mentha / Mint Leaves (For Oil)" },
+      { id: "cash_isabgol", name: "Isabgol (Psyllium Seeds)" },
+      { id: "cash_coffee_cherry", name: "Coffee Cherries / Parchment" },
+      { id: "cash_tea_leaf", name: "Tea Green Leaves" },
+      { id: "cash_rubber", name: "Natural Rubber (Latex / RSS)" },
+      { id: "cash_makhana", name: "Raw Makhana (Gorgon Nuts)" },
+      { id: "cash_silk", name: "Raw Silk Cocoons" },
+      { id: "cash_tendu", name: "Tendu Leaves (Bidi Leaves)" },
+      { id: "cash_sticklac", name: "Sticklac (Raw Resin)" },
+      { id: "custom_other_cash", name: "➕ Add Other Cash Crop..." }
+    ]
+  },
 ];
 
 export const getFarmFreshImage = (itemId) => {
