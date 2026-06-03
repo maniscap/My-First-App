@@ -54,6 +54,7 @@ export default function FarmFresh_ListingForm() {
 
         // Eggs
         if (item.includes('egg') || itemName.includes('egg')) return [ 
+            { val: 'half_dozen', label: 'Half Dozen (6)' },
             { val: 'dozen', label: 'Per Dozen (12)' }, 
             { val: 'tray', label: 'Per Tray (30)' }, 
             { val: 'box', label: 'Per Box/Peti' }, 
