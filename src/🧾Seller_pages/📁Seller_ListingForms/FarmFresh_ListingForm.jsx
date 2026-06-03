@@ -36,7 +36,8 @@ export default function FarmFresh_ListingForm() {
     const [organicCertNumber, setOrganicCertNumber] = useState('');
     const [selectedImageUrl, setSelectedImageUrl] = useState(null);
     const [showSuccess, setShowSuccess] = useState(false);
-
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [submittedData, setSubmittedData] = useState(null);
     // Derived logic for dropdowns
     const activeCategoryObj = farmFreshCategories.find(c => c.category === selectedCategory);
     const activeItems = activeCategoryObj ? activeCategoryObj.items : [];
@@ -66,10 +67,14 @@ export default function FarmFresh_ListingForm() {
     const handleSave = async (e) => {
         e.preventDefault();
         
+        if (isSubmitting) return; // Prevent double clicks
+        setIsSubmitting(true);
+        
         try {
             const user = auth.currentUser;
             if (!user) {
                 alert("You must be logged in to create a listing.");
+                setIsSubmitting(false);
                 return;
             }
 
@@ -94,26 +99,69 @@ export default function FarmFresh_ListingForm() {
 
             await addDoc(collection(db, 'seller_listings'), listingData);
             
+            setSubmittedData(listingData);
             setShowSuccess(true);
             setTimeout(() => {
                 navigate('/Seller_HomePage');
-            }, 2000);
+            }, 10000);
         } catch (error) {
             console.error("Error adding document: ", error);
             alert("Failed to save listing. Please try again.");
+            setIsSubmitting(false);
         }
     };
 
+    if (showSuccess && submittedData) {
+        return (
+            <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: '#16a34a', color: 'white', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', zIndex: 99999, padding: '20px', animation: 'fadeIn 0.5s ease-out' }}>
+                <CheckCircle2 size={64} color="white" style={{ marginBottom: '20px', animation: 'scaleUp 0.5s ease-out' }} />
+                <h1 style={{ fontSize: '28px', fontWeight: '800', marginBottom: '10px', textAlign: 'center' }}>Success!</h1>
+                <p style={{ fontSize: '16px', fontWeight: '500', marginBottom: '40px', opacity: 0.9, textAlign: 'center' }}>Your listing is now live to all consumers.</p>
+                
+                <div style={{ backgroundColor: 'white', color: '#0f172a', borderRadius: '24px', padding: '20px', width: '100%', maxWidth: '350px', boxShadow: '0 20px 40px rgba(0,0,0,0.2)', animation: 'slideUp 0.6s ease-out' }}>
+                    <div style={{ width: '100%', height: '180px', borderRadius: '16px', backgroundColor: '#f1f5f9', overflow: 'hidden', marginBottom: '16px' }}>
+                        {submittedData.imageUrl ? (
+                            <img src={submittedData.imageUrl} alt={submittedData.itemName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        ) : (
+                            <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94a3b8' }}>No Image</div>
+                        )}
+                    </div>
+                    <h2 style={{ margin: '0 0 8px 0', fontSize: '20px', fontWeight: '800' }}>{submittedData.itemName}</h2>
+                    <p style={{ margin: '0 0 16px 0', fontSize: '14px', color: '#64748b', lineHeight: '1.5' }}>{submittedData.description}</p>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #f1f5f9', paddingTop: '16px' }}>
+                        <span style={{ fontSize: '13px', color: '#64748b', fontWeight: '600' }}>Price</span>
+                        <span style={{ fontSize: '18px', fontWeight: '800', color: '#16a34a' }}>₹{submittedData.price} <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '500' }}>/ {submittedData.unit}</span></span>
+                    </div>
+                </div>
+                
+                <button 
+                    onClick={() => navigate('/Seller_HomePage')} 
+                    style={{ marginTop: '40px', background: 'rgba(255,255,255,0.2)', color: 'white', border: '1px solid rgba(255,255,255,0.5)', padding: '12px 24px', borderRadius: '30px', fontWeight: '600', cursor: 'pointer' }}
+                >
+                    Return Home Now
+                </button>
+                
+                <style>{`
+                    @keyframes scaleUp {
+                        0% { transform: scale(0); opacity: 0; }
+                        50% { transform: scale(1.2); }
+                        100% { transform: scale(1); opacity: 1; }
+                    }
+                    @keyframes slideUp {
+                        from { transform: translateY(50px); opacity: 0; }
+                        to { transform: translateY(0); opacity: 1; }
+                    }
+                    @keyframes fadeIn {
+                        from { opacity: 0; }
+                        to { opacity: 1; }
+                    }
+                `}</style>
+            </div>
+        );
+    }
+
     return (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: '#f8fafc', overflowY: 'auto', WebkitOverflowScrolling: 'touch', touchAction: 'pan-y' }}>
-            
-            {/* Success Popup */}
-            {showSuccess && (
-                <div style={{ position: 'fixed', top: '20px', left: '50%', transform: 'translateX(-50%)', backgroundColor: '#10b981', color: 'white', padding: '16px 24px', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '12px', boxShadow: '0 4px 20px rgba(16, 185, 129, 0.4)', zIndex: 99999, animation: 'slideDown 0.3s ease-out' }}>
-                    <CheckCircle2 size={24} color="white" />
-                    <span style={{ fontWeight: '600', fontSize: '15px' }}>Your listing was successfully added!</span>
-                </div>
-            )}
 
             {/* Header */}
             <div style={{ position: 'sticky', top: 0, backgroundColor: '#ffffff', zIndex: 10, padding: '16px 20px', display: 'flex', alignItems: 'center', borderBottom: '1px solid #f1f5f9', boxShadow: '0 2px 10px rgba(0,0,0,0.02)' }}>
@@ -279,10 +327,20 @@ export default function FarmFresh_ListingForm() {
                     {/* Submit Button */}
                     <button 
                         type="submit" 
-                        style={{ width: '100%', padding: '18px', borderRadius: '16px', backgroundColor: '#0f172a', color: '#fff', border: 'none', fontSize: '16px', fontWeight: '700', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', boxShadow: '0 10px 25px rgba(15,23,42,0.2)' }}
+                        disabled={isSubmitting}
+                        style={{ width: '100%', padding: '18px', borderRadius: '16px', backgroundColor: isSubmitting ? '#94a3b8' : '#0f172a', color: '#fff', border: 'none', fontSize: '16px', fontWeight: '700', cursor: isSubmitting ? 'not-allowed' : 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', boxShadow: '0 10px 25px rgba(15,23,42,0.2)' }}
                     >
-                        <CheckCircle2 size={20} />
-                        Publish Listing
+                        {isSubmitting ? (
+                            <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <div style={{ width: '20px', height: '20px', border: '3px solid rgba(255,255,255,0.3)', borderTop: '3px solid white', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
+                                Adding Listing...
+                            </span>
+                        ) : (
+                            <>
+                                <CheckCircle2 size={20} />
+                                Publish Listing
+                            </>
+                        )}
                     </button>
 
                 </form>
@@ -296,6 +354,10 @@ export default function FarmFresh_ListingForm() {
                 @keyframes slideDown {
                     from { opacity: 0; transform: translate(-50%, -20px); }
                     to { opacity: 1; transform: translate(-50%, 0); }
+                }
+                @keyframes spin {
+                    0% { transform: rotate(0deg); }
+                    100% { transform: rotate(360deg); }
                 }
             `}</style>
         </div>
