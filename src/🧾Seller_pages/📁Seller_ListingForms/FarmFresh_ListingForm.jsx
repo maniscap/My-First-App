@@ -34,7 +34,6 @@ export default function FarmFresh_ListingForm() {
     const [isOrganic, setIsOrganic] = useState(false);
     const [organicCertName, setOrganicCertName] = useState('');
     const [organicCertNumber, setOrganicCertNumber] = useState('');
-    const [harvestDate, setHarvestDate] = useState('');
     const [qualityGuarantee, setQualityGuarantee] = useState(false);
     const [selectedImageUrl, setSelectedImageUrl] = useState(null);
     const [showSuccess, setShowSuccess] = useState(false);
@@ -51,20 +50,8 @@ export default function FarmFresh_ListingForm() {
     // Smart Dynamic Units based on the exact item chosen
     const getDynamicUnits = () => {
         if (!selectedCategory) return [{ val: '1kg', label: 'Per 1 Kg' }];
-        
-        const cat = selectedCategory.toLowerCase();
-        const item = selectedItemId.toLowerCase();
-        const itemName = (selectedItemName || '').toLowerCase(); // Also check custom typed names
 
-        // Eggs
-        if (item.includes('egg') || itemName.includes('egg')) return [ 
-            { val: 'half_dozen', label: 'Half Dozen (6)' },
-            { val: 'dozen', label: 'Per Dozen (12)' }, 
-            { val: 'tray', label: 'Per Tray (30)' }, 
-            { val: 'box', label: 'Per Box/Peti' }, 
-            { val: 'piece', label: 'Per 1 Piece' }
-        ];
-        
+        const cat = selectedCategory.toLowerCase();
         // Liquids (Milk, Oil, Buttermilk, Juice, Honey, Ghee)
         if (item.includes('milk') || item.includes('lassi') || item.includes('buttermilk') || item.includes('water') || item.includes('juice') || item.includes('oil') || itemName.includes('milk') || itemName.includes('oil') || itemName.includes('juice') || itemName.includes('ghee') || itemName.includes('honey')) return [ 
             { val: '500ml', label: 'Half Liter (500ml)' }, 
@@ -232,7 +219,8 @@ export default function FarmFresh_ListingForm() {
                 isOrganic: isOrganic,
                 organicCertName: isOrganic ? organicCertName : null,
                 organicCertNumber: isOrganic ? organicCertNumber : null,
-                harvestDate: harvestDate,
+                listingDate: new Date().toLocaleDateString('en-IN'),
+                shelfLife: shelfLife,
                 qualityGuarantee: qualityGuarantee,
                 imageUrl: selectedImageUrl,
                 createdAt: serverTimestamp(),
@@ -477,38 +465,7 @@ export default function FarmFresh_ListingForm() {
                         )}
                     </div>
 
-                    {/* Quality Assurance & Harvest Details */}
-                    <div style={{ marginBottom: '24px', backgroundColor: '#f8fafc', padding: '16px', borderRadius: '16px', border: '1px solid #e2e8f0' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
-                            <svg width="20" height="20" fill="none" stroke="#3b82f6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                            <h4 style={{ margin: 0, fontSize: '15px', color: '#1e293b', fontWeight: '700' }}>Quality & Freshness</h4>
-                        </div>
-                        
-                        <div style={{ marginBottom: '16px' }}>
-                            <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: '#475569', marginBottom: '8px' }}>Harvest / Procurement Date <span style={{color: '#ef4444'}}>*</span></label>
-                            <input 
-                                type="date" 
-                                value={harvestDate}
-                                onChange={(e) => setHarvestDate(e.target.value)}
-                                style={{ width: '100%', padding: '14px', borderRadius: '12px', border: '1px solid #cbd5e1', fontSize: '14px', backgroundColor: '#fff', color: '#0f172a', outline: 'none', boxSizing: 'border-box' }}
-                                required
-                            />
-                        </div>
 
-                        <label style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', cursor: 'pointer' }}>
-                            <input 
-                                type="checkbox" 
-                                checked={qualityGuarantee}
-                                onChange={(e) => setQualityGuarantee(e.target.checked)}
-                                style={{ marginTop: '4px', width: '18px', height: '18px', accentColor: '#16a34a' }}
-                                required
-                            />
-                            <div>
-                                <span style={{ display: 'block', fontSize: '14px', fontWeight: '600', color: '#1e293b', marginBottom: '2px' }}>I Guarantee Freshness & Quality</span>
-                                <span style={{ display: 'block', fontSize: '12px', color: '#64748b' }}>By checking this, I verify that the product is fresh, graded accurately, and meets Farm Fresh quality standards.</span>
-                            </div>
-                        </label>
-                    </div>
 
                     {/* 5. Pricing & Unit Container */}
                     <div style={{ display: 'flex', gap: '16px', marginBottom: '24px' }}>
@@ -551,6 +508,39 @@ export default function FarmFresh_ListingForm() {
                             style={{ width: '100%', padding: '16px', borderRadius: '16px', border: '1px solid #cbd5e1', fontSize: '15px', backgroundColor: '#fff', color: '#0f172a', fontWeight: '500', outline: 'none', minHeight: '120px', resize: 'vertical', fontFamily: 'inherit', boxSizing: 'border-box' }}
                             required
                         />
+                    </div>
+
+                    {/* 7. Algorithmic Quality Assurance & Freshness */}
+                    <div style={{ marginBottom: '32px', backgroundColor: '#f0fdf4', padding: '16px 20px', borderRadius: '16px', border: '2px solid #16a34a' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
+                            <svg width="20" height="20" fill="none" stroke="#15803d" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                            <h4 style={{ margin: 0, fontSize: '16px', color: '#15803d', fontWeight: '800' }}>Freshness Algorithm</h4>
+                        </div>
+                        
+                        <div style={{ display: 'flex', gap: '16px', marginBottom: '16px' }}>
+                            <div style={{ flex: 1, backgroundColor: '#fff', padding: '12px', borderRadius: '12px', border: '1px solid #bbf7d0' }}>
+                                <span style={{ display: 'block', fontSize: '12px', color: '#64748b', fontWeight: '600', marginBottom: '4px' }}>Listing Date</span>
+                                <span style={{ display: 'block', fontSize: '15px', color: '#0f172a', fontWeight: '700' }}>{new Date().toLocaleDateString('en-IN')}</span>
+                            </div>
+                            <div style={{ flex: 1, backgroundColor: '#fff', padding: '12px', borderRadius: '12px', border: '1px solid #bbf7d0' }}>
+                                <span style={{ display: 'block', fontSize: '12px', color: '#64748b', fontWeight: '600', marginBottom: '4px' }}>Estimated Shelf Life</span>
+                                <span style={{ display: 'block', fontSize: '15px', color: '#16a34a', fontWeight: '700' }}>{shelfLife}</span>
+                            </div>
+                        </div>
+
+                        <label style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', cursor: 'pointer', backgroundColor: '#fff', padding: '12px', borderRadius: '12px', border: '1px solid #bbf7d0' }}>
+                            <input 
+                                type="checkbox" 
+                                checked={qualityGuarantee}
+                                onChange={(e) => setQualityGuarantee(e.target.checked)}
+                                style={{ marginTop: '4px', width: '20px', height: '20px', accentColor: '#16a34a' }}
+                                required
+                            />
+                            <div>
+                                <span style={{ display: 'block', fontSize: '15px', fontWeight: '700', color: '#1e293b', marginBottom: '4px' }}>I Guarantee Quality</span>
+                                <span style={{ display: 'block', fontSize: '13px', color: '#475569', lineHeight: '1.4' }}>By listing, I verify this produce is fresh, accurately described, and honors the Farm Fresh platform standards.</span>
+                            </div>
+                        </label>
                     </div>
 
                     {/* Submit Button */}
