@@ -70,13 +70,37 @@ const UniversalImagePicker = ({ searchTerm, categoryContext, onSelectImage, curr
             let urls = [];
             
             if (source === 'pixabay' || source === 'pexels') {
+                let parsedData = null;
+                
+                // Attempt to fetch from our secure Vercel backend first
                 const res = await fetch(`/api/fetchImages?source=${source}&query=${encodeURIComponent(query)}&page=${pageNum}`);
-                if (res.ok) {
-                    const data = await res.json();
-                    if (data.urls) urls = data.urls;
+                const text = await res.text();
+                
+                // If the response is HTML, it means we are running locally on Vite (npm run dev)
+                // Vite doesn't run the backend, so it returns index.html for unknown routes.
+                if (text.startsWith('<')) {
+                    // LOCAL HOST FALLBACK: Fetch directly using VITE_ keys if they exist in .env
+                    if (source === 'pixabay') {
+                        const localKey = import.meta.env.VITE_PIXABAY_API_KEY;
+                        if (localKey) {
+                            const localRes = await fetch(`https://pixabay.com/api/?key=${localKey}&q=${encodeURIComponent(query)}&image_type=photo&per_page=3&page=${pageNum}`);
+                            const localData = await localRes.json();
+                            if (localData.hits) parsedData = { urls: localData.hits.map(h => h.webformatURL) };
+                        }
+                    } else if (source === 'pexels') {
+                        const localKey = import.meta.env.VITE_PEXELS_API_KEY;
+                        if (localKey) {
+                            const localRes = await fetch(`https://api.pexels.com/v1/search?query=${encodeURIComponent(query)}&per_page=3&page=${pageNum}`, { headers: { Authorization: localKey } });
+                            const localData = await localRes.json();
+                            if (localData.photos) parsedData = { urls: localData.photos.map(p => p.src.medium) };
+                        }
+                    }
                 } else {
-                    console.error(`${source} Backend Error:`, res.statusText);
+                    // We are in production! The backend returned actual JSON.
+                    parsedData = JSON.parse(text);
                 }
+
+                if (parsedData && parsedData.urls) urls = parsedData.urls;
             }
             else if (source === 'openverse') {
                 const res = await fetch(`https://api.openverse.org/v1/images/?q=${encodeURIComponent(query)}&page=${pageNum}&page_size=3`);
