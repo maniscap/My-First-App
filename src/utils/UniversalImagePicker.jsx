@@ -90,7 +90,7 @@ const UniversalImagePicker = ({ searchTerm, categoryContext, onSelectImage, curr
                     if (data.query && data.query.pages) {
                         const pagesArr = Object.values(data.query.pages).filter(p => {
                             if (!p.imageinfo || !p.imageinfo[0] || !p.imageinfo[0].url) return false;
-                            return p.imageinfo[0].url.match(/\.(jpeg|jpg|png|gif)$/i);
+                            return p.imageinfo[0].url.match(/\.(jpeg|jpg|png|gif)/i);
                         });
                         urls = pagesArr.slice(offset, offset + 3).map(p => p.imageinfo[0].url);
                     }
