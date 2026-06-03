@@ -198,6 +198,9 @@ export default function FarmFresh_ListingForm() {
             { val: '1L', label: '1 Liter' }, 
             { val: '5L', label: '5 Liters' }, 
             { val: '10L', label: '10 Liters' }
+        ];
+    };
+
     const getShelfLifeData = (category) => {
         if (!category) return { text: "Not specified", days: 0 };
         const cat = category.toLowerCase();
