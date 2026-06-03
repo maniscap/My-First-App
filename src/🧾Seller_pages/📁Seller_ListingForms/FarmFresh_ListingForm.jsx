@@ -201,7 +201,21 @@ export default function FarmFresh_ListingForm() {
         ];
     };
 
+    const getShelfLife = (category) => {
+        if (!category) return "Not specified";
+        const cat = category.toLowerCase();
+        if (cat.includes('greens')) return '2 to 3 Days';
+        if (cat.includes('flowers')) return '1 to 2 Days';
+        if (cat.includes('fruits')) return '5 to 7 Days';
+        if (cat.includes('vegetable')) return '4 to 6 Days';
+        if (cat.includes('dairy') || cat.includes('poultry')) return '1 to 2 Days (Refrigerated)';
+        if (cat.includes('spice') || cat.includes('jaggery') || cat.includes('dry')) return '6 to 12 Months';
+        if (cat.includes('cash crop') || cat.includes('cereal') || cat.includes('pulse')) return '12+ Months';
+        return '3 to 5 Days';
+    };
+
     const dynamicUnits = getDynamicUnits();
+    const shelfLife = getShelfLife(selectedCategory);
 
     const handleSave = async (e) => {
         e.preventDefault();
