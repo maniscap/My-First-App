@@ -44,6 +44,7 @@ export default function FarmFresh_ListingForm() {
     const [submittedData, setSubmittedData] = useState(null);
     const [isCategoryOpen, setIsCategoryOpen] = useState(false);
     const [isItemOpen, setIsItemOpen] = useState(false);
+    const [errorToast, setErrorToast] = useState('');
     // Derived logic for dropdowns
     const activeCategoryObj = farmFreshCategories.find(c => c.category === selectedCategory);
     const activeItems = activeCategoryObj ? activeCategoryObj.items : [];
@@ -93,46 +94,51 @@ export default function FarmFresh_ListingForm() {
 
     const displayUnits = getFilteredUnits();
 
+    const showError = (msg) => {
+        setErrorToast(msg);
+        setTimeout(() => setErrorToast(''), 4000);
+    };
+
     const handleSave = async (e) => {
         e.preventDefault();
         
         // --- Strict Validations ---
         if (!selectedCategory) {
-            alert("Please select a Category before submitting.");
+            showError("Please select a Category before submitting.");
             return;
         }
         if (!selectedItemId) {
-            alert("Please select an Item to list.");
+            showError("Please select an Item to list.");
             return;
         }
         if (isOtherSelected && !customName.trim()) {
-            alert("Please type the name of your custom item.");
+            showError("Please type the name of your custom item.");
             return;
         }
         if (unit === 'custom_other_unit' && !customUnitName.trim()) {
-            alert("Please type the name of your custom unit.");
+            showError("Please type the name of your custom unit.");
             return;
         }
         if (!selectedImageUrl) {
-            alert("Please upload or provide an Image for your product.");
+            showError("Please upload or provide an Image for your product.");
             return;
         }
         if (!price || isNaN(price) || parseFloat(price) <= 0) {
-            alert("Please enter a valid Price (numbers only, greater than 0).");
+            showError("Please enter a valid Price (numbers only, greater than 0).");
             return;
         }
         if (!description || description.trim().length < 10) {
-            alert("Please provide a good, descriptive text about your produce (at least 10 characters).");
+            showError("Please provide a good, descriptive text about your produce (at least 10 characters).");
             return;
         }
         
         const shelfLifeRegex = /^\d+\s+(day|days|week|weeks|month|months|year|years)$/i;
         if (!shelfLife || !shelfLifeRegex.test(shelfLife.trim())) {
-            alert("Please specify the Estimated Shelf Life in the correct format (e.g., '5 Days', '2 Weeks', '1 Month').");
+            showError("Please specify the Estimated Shelf Life in the correct format (e.g., '5 Days', '2 Weeks', '1 Month').");
             return;
         }
         if (!qualityGuarantee) {
-            alert("You must check the Quality Guarantee box to list on Farm Fresh.");
+            showError("You must check the Quality Guarantee box to list on Farm Fresh.");
             return;
         }
 
@@ -142,7 +148,7 @@ export default function FarmFresh_ListingForm() {
         try {
             const user = auth.currentUser;
             if (!user) {
-                alert("You must be logged in to create a listing.");
+                showError("You must be logged in to create a listing.");
                 setIsSubmitting(false);
                 return;
             }
@@ -603,11 +609,22 @@ export default function FarmFresh_ListingForm() {
                             </>
                         )}
                     </button>
-
                 </form>
             </div>
+
+            {/* Error Toast Notification */}
+            {errorToast && (
+                <div style={{ position: 'fixed', bottom: '24px', left: '50%', transform: 'translateX(-50%)', backgroundColor: '#ef4444', color: 'white', padding: '16px 24px', borderRadius: '12px', boxShadow: '0 10px 25px rgba(239, 68, 68, 0.4)', zIndex: 100000, display: 'flex', alignItems: 'center', gap: '12px', fontWeight: '600', fontSize: '15px', animation: 'slideUp 0.3s ease-out', maxWidth: '90%', width: 'max-content' }}>
+                    <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4m0 4h.01"/></svg>
+                    <span>{errorToast}</span>
+                </div>
+            )}
             
             <style>{`
+                @keyframes slideUp {
+                    from { opacity: 0; transform: translateY(10px); }
+                    to { opacity: 1; transform: translateY(0); }
+                }
                 @keyframes fadeIn {
                     from { opacity: 0; transform: translateY(-10px); }
                     to { opacity: 1; transform: translateY(0); }

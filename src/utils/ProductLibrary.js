@@ -512,11 +512,9 @@ export const farmFreshCategories = [
         "id": "fruit_watermelon",
         "name": "Watermelon (Tarbooz)"
       },
-      { "id": "fruit_phalsa", "name": "Phalsa (Sherbet Berry)" },
       { "id": "fruit_kokum", "name": "Kokum (Garcinia indica)" },
       { "id": "fruit_elephant_apple", "name": "Elephant Apple (Chalta / Ou Khatta)" },
       { "id": "fruit_bilimbi", "name": "Bilimbi (Tree Sorrel)" },
-      { "id": "fruit_karonda", "name": "Karonda (Natal Plum)" },
       { "id": "fruit_jungli_jalebi", "name": "Jungli Jalebi (Camachile)" },
       { "id": "fruit_buddhas_hand", "name": "Buddha's Hand (Fingered Citron)" },
       { "id": "fruit_sohiong", "name": "Sohiong (Meghalaya Blackberry)" },
