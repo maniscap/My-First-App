@@ -310,107 +310,64 @@ export default function FarmFresh_ListingForm() {
             <div style={{ padding: '24px 20px', paddingBottom: '100px' }}>
                 <form onSubmit={handleSave}>
                     
-                    {/* 1. Category Selection - Horizontal Premium Pills */}
+                    {/* 1. Category Selection */}
                     <div style={{ marginBottom: '28px' }}>
-                        <label style={{ display: 'block', fontSize: '15px', fontWeight: '700', color: '#1e293b', marginBottom: '12px' }}>Select Category <span style={{color: '#ef4444'}}>*</span></label>
-                        <div style={{ 
-                            display: 'flex', 
-                            overflowX: 'auto', 
-                            gap: '12px', 
-                            paddingBottom: '8px',
-                            WebkitOverflowScrolling: 'touch',
-                            msOverflowStyle: 'none',
-                            scrollbarWidth: 'none' 
-                        }}>
-                            {farmFreshCategories.map(cat => (
-                                <button
-                                    key={cat.category}
-                                    type="button"
-                                    onClick={() => { setSelectedCategory(cat.category); setSelectedItemId(''); setCustomName(''); setUnit(''); }}
-                                    style={{
-                                        flexShrink: 0,
-                                        padding: '12px 20px',
-                                        borderRadius: '100px',
-                                        border: selectedCategory === cat.category ? '2px solid #16a34a' : '1px solid #cbd5e1',
-                                        backgroundColor: selectedCategory === cat.category ? '#f0fdf4' : '#ffffff',
-                                        color: selectedCategory === cat.category ? '#15803d' : '#475569',
-                                        fontWeight: selectedCategory === cat.category ? '700' : '500',
-                                        fontSize: '14px',
-                                        cursor: 'pointer',
-                                        transition: 'all 0.2s',
-                                        boxShadow: selectedCategory === cat.category ? '0 4px 6px -1px rgba(22, 163, 74, 0.1)' : 'none'
-                                    }}
-                                >
-                                    {cat.category}
-                                </button>
-                            ))}
-                            {/* Global Other Category Button */}
-                            <button
-                                type="button"
-                                onClick={() => { setSelectedCategory('Other'); setSelectedItemId('custom_other_global'); setCustomName(''); setUnit(''); }}
-                                style={{
-                                    flexShrink: 0,
-                                    padding: '12px 20px',
-                                    borderRadius: '100px',
-                                    border: selectedCategory === 'Other' ? '2px solid #16a34a' : '1px dashed #94a3b8',
-                                    backgroundColor: selectedCategory === 'Other' ? '#f0fdf4' : '#f8fafc',
-                                    color: selectedCategory === 'Other' ? '#15803d' : '#64748b',
-                                    fontWeight: selectedCategory === 'Other' ? '700' : '600',
-                                    fontSize: '14px',
-                                    cursor: 'pointer',
-                                    transition: 'all 0.2s'
+                        <label style={{ display: 'block', fontSize: '15px', fontWeight: '700', color: '#1e293b', marginBottom: '10px' }}>Select Category <span style={{color: '#ef4444'}}>*</span></label>
+                        <div style={{ position: 'relative' }}>
+                            <select 
+                                value={selectedCategory} 
+                                onChange={(e) => { 
+                                    const val = e.target.value;
+                                    setSelectedCategory(val); 
+                                    if (val === 'Other') {
+                                        setSelectedItemId('custom_other_global');
+                                    } else {
+                                        setSelectedItemId(''); 
+                                    }
+                                    setCustomName(''); 
+                                    setUnit('');
                                 }}
+                                style={{ width: '100%', padding: '16px 20px', borderRadius: '14px', border: '1px solid #cbd5e1', fontSize: '16px', fontWeight: '500', backgroundColor: '#f8fafc', color: '#0f172a', appearance: 'none', outline: 'none', boxShadow: '0 2px 4px rgba(0,0,0,0.02)', cursor: 'pointer' }}
+                                required
                             >
-                                ➕ Add Other Category
-                            </button>
+                                <option value="" disabled>-- Choose Category --</option>
+                                {farmFreshCategories.map(cat => (
+                                    <option key={cat.category} value={cat.category}>{cat.category}</option>
+                                ))}
+                                <option value="Other" style={{ color: '#16a34a', fontWeight: 'bold', backgroundColor: '#f0fdf4' }}>➕ Add Other Category...</option>
+                            </select>
+                            {/* Custom SVG Caret */}
+                            <div style={{ position: 'absolute', right: '18px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: '#64748b' }}>
+                                <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+                            </div>
                         </div>
                     </div>
 
-                    {/* 2. Item Selection Grid (Appears only after category is chosen and is not Global Other) */}
+                    {/* 2. Item Selection (Appears only after category is chosen, skips if 'Other' category) */}
                     {selectedCategory && selectedCategory !== 'Other' && (
                         <div style={{ marginBottom: '28px', animation: 'fadeIn 0.3s ease-in-out' }}>
-                            <label style={{ display: 'block', fontSize: '15px', fontWeight: '700', color: '#1e293b', marginBottom: '12px' }}>Select Item <span style={{color: '#ef4444'}}>*</span></label>
-                            <div style={{
-                                display: 'grid',
-                                gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))',
-                                gap: '10px',
-                                maxHeight: '300px',
-                                overflowY: 'auto',
-                                padding: '4px',
-                                borderRadius: '12px',
-                                backgroundColor: '#f8fafc',
-                                border: '1px solid #e2e8f0'
-                            }}>
-                                {activeItems.map((item) => {
-                                    const isOther = item.id.includes('other');
-                                    const isSelected = selectedItemId === item.id;
-                                    return (
-                                        <button
-                                            key={item.id}
-                                            type="button"
-                                            onClick={() => { setSelectedItemId(item.id); setCustomName(''); setUnit(''); }}
-                                            style={{
-                                                padding: '12px 8px',
-                                                borderRadius: '8px',
-                                                border: isSelected ? '2px solid #16a34a' : (isOther ? '1px dashed #16a34a' : '1px solid #e2e8f0'),
-                                                backgroundColor: isSelected ? '#f0fdf4' : (isOther ? '#f0fdf4' : '#ffffff'),
-                                                color: isSelected ? '#15803d' : (isOther ? '#16a34a' : '#334155'),
-                                                fontWeight: isSelected || isOther ? '700' : '500',
-                                                fontSize: '13px',
-                                                cursor: 'pointer',
-                                                textAlign: 'center',
-                                                transition: 'all 0.2s',
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                justifyContent: 'center',
-                                                minHeight: '48px',
-                                                boxShadow: isSelected ? '0 2px 4px rgba(22, 163, 74, 0.1)' : 'none'
-                                            }}
+                            <label style={{ display: 'block', fontSize: '15px', fontWeight: '700', color: '#1e293b', marginBottom: '10px' }}>Select Item <span style={{color: '#ef4444'}}>*</span></label>
+                            <div style={{ position: 'relative' }}>
+                                <select 
+                                    value={selectedItemId} 
+                                    onChange={(e) => { setSelectedItemId(e.target.value); setCustomName(''); setUnit(''); }}
+                                    style={{ width: '100%', padding: '16px 20px', borderRadius: '14px', border: '1px solid #cbd5e1', fontSize: '16px', fontWeight: '500', backgroundColor: '#f8fafc', color: '#0f172a', appearance: 'none', outline: 'none', boxShadow: '0 2px 4px rgba(0,0,0,0.02)', cursor: 'pointer' }}
+                                    required
+                                >
+                                    <option value="" disabled>-- Choose Item --</option>
+                                    {activeItems.map((item) => (
+                                        <option 
+                                            key={item.id} 
+                                            value={item.id}
+                                            style={item.id.includes('other') ? { color: '#16a34a', fontWeight: 'bold', backgroundColor: '#f0fdf4' } : {}}
                                         >
                                             {item.name}
-                                        </button>
-                                    );
-                                })}
+                                        </option>
+                                    ))}
+                                </select>
+                                <div style={{ position: 'absolute', right: '18px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: '#64748b' }}>
+                                    <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+                                </div>
                             </div>
                         </div>
                     )}
