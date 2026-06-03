@@ -32,7 +32,6 @@ export default function FarmFresh_ListingForm() {
     const [price, setPrice] = useState('');
     const [unit, setUnit] = useState('1kg');
     const [isUnitOpen, setIsUnitOpen] = useState(false);
-    const [unitSearch, setUnitSearch] = useState('');
     const [isOrganic, setIsOrganic] = useState(false);
     const [organicCertName, setOrganicCertName] = useState('');
     const [organicCertNumber, setOrganicCertNumber] = useState('');
@@ -52,35 +51,43 @@ export default function FarmFresh_ListingForm() {
 
     // Smart filtering for the unit dropdown
     const getFilteredUnits = () => {
-        // If user is searching, search the entire massive library
-        if (unitSearch.trim() !== '') {
-            return farmFreshUnits.filter(u => u.label.toLowerCase().includes(unitSearch.toLowerCase()) || u.val.toLowerCase().includes(unitSearch.toLowerCase()));
-        }
-        
-        // If no category selected yet, show all
+        // Always show the Custom option
+        const alwaysInclude = ['custom_other_unit'];
         if (!selectedCategory) return farmFreshUnits;
 
         const cat = selectedCategory.toLowerCase();
-        let allowedVals = [];
+        const item = selectedItemId.toLowerCase();
+        const itemName = (selectedItemName || '').toLowerCase();
         
-        // Define contextual unit groupings
+        let allowedVals = [];
         const commonWeights = ['250g', '500g', '1kg', '2kg', '5kg', '10kg', '20kg', '25kg', '50kg', '100kg', 'ton'];
         const bulkTransport = ['gunny_bag', 'bag', 'trolley', 'auto_load', 'mini_truck', 'truck'];
 
-        if (cat.includes('dairy') || cat.includes('honey')) {
+        // Item-level specific checks
+        if (item.includes('egg') || itemName.includes('egg')) {
+            allowedVals = ['piece', 'dozen', 'box'];
+        } else if (item.includes('milk') || item.includes('water') || item.includes('oil') || item.includes('lassi') || itemName.includes('ghee')) {
+            allowedVals = ['1L', '5L', '10L', '20L', 'packet', 'box', '500g', '1kg'];
+        } else if (item.includes('banana') || item.includes('coconut') || item.includes('lemon') || item.includes('bamboo')) {
+            allowedVals = ['piece', 'dozen', 'bunch', 'bag', 'box', '1kg', '100pcs'];
+        } else if (item.includes('flower') || itemName.includes('flower')) {
+            allowedVals = ['1kg', '250g', '500g', '5kg', 'bunch', 'piece', 'basket'];
+        } else if (item.includes('leaf') || item.includes('leaves') || item.includes('spinach') || item.includes('coriander')) {
+            allowedVals = ['bunch', '100leaves', '250g', '500g', '1kg'];
+        } else if (cat.includes('dairy') || cat.includes('honey')) {
             allowedVals = ['1L', '5L', '10L', '20L', '500g', '1kg', '2kg', '5kg', '10kg', 'dozen', 'piece', 'packet', 'box'];
-        } else if (cat.includes('cultural') || cat.includes('flower')) {
+        } else if (cat.includes('cultural')) {
             allowedVals = ['piece', 'dozen', 'bunch', '100leaves', '100pcs', 'basket', 'box', 'packet', '250g', '500g', '1kg'];
         } else if (cat.includes('cash crop') || cat.includes('field') || cat.includes('cereal') || cat.includes('pulse')) {
-            allowedVals = ['1kg', '5kg', '10kg', '25kg', '50kg', '100kg', 'ton', ...bulkTransport];
+            allowedVals = ['1kg', '5kg', '10kg', '20kg', '25kg', '50kg', '100kg', 'ton', ...bulkTransport];
         } else if (cat.includes('spice') || cat.includes('dry') || cat.includes('jaggery')) {
             allowedVals = ['250g', '500g', '1kg', '2kg', '5kg', '10kg', '25kg', 'packet', 'box'];
         } else {
-            // Default (Vegetables, Fruits, general)
+            // Default (Vegetables, Fruits)
             allowedVals = [...commonWeights, 'piece', 'dozen', 'bunch', 'box', 'crate', 'basket', 'packet', ...bulkTransport];
         }
 
-        return farmFreshUnits.filter(u => allowedVals.includes(u.val) || u.val === 'custom_other_unit');
+        return farmFreshUnits.filter(u => allowedVals.includes(u.val) || alwaysInclude.includes(u.val));
     };
 
     const displayUnits = getFilteredUnits();
@@ -437,19 +444,7 @@ export default function FarmFresh_ListingForm() {
 
                             {isUnitOpen && (
                                 <div style={{ position: 'absolute', top: 'calc(100% + 8px)', left: 0, width: '100%', maxHeight: '400px', display: 'flex', flexDirection: 'column', backgroundColor: '#ffffff', borderRadius: '14px', border: '3px solid #1e293b', zIndex: 60, boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)' }}>
-                                    
-                                    <div style={{ padding: '12px', borderBottom: '2px solid #e2e8f0', backgroundColor: '#f8fafc', borderTopLeftRadius: '11px', borderTopRightRadius: '11px', position: 'sticky', top: 0, zIndex: 2 }}>
-                                        <input
-                                            type="text"
-                                            placeholder="🔍 Search units (e.g. Kg, Box, Ton)..."
-                                            value={unitSearch}
-                                            onChange={(e) => setUnitSearch(e.target.value)}
-                                            onClick={(e) => e.stopPropagation()}
-                                            style={{ width: '100%', padding: '12px 16px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '14px', boxSizing: 'border-box', outline: 'none' }}
-                                        />
-                                    </div>
-                                    
-                                    <div style={{ overflowY: 'auto', flex: 1 }}>
+                                    <div style={{ overflowY: 'auto', flex: 1, padding: '8px 0' }}>
                                         {displayUnits.map((u) => {
                                             const isOther = u.val === 'custom_other_unit';
                                             return (
@@ -458,16 +453,15 @@ export default function FarmFresh_ListingForm() {
                                                     onClick={() => { 
                                                         setUnit(u.val); 
                                                         setIsUnitOpen(false);
-                                                        setUnitSearch('');
                                                     }}
                                                     style={{ 
                                                         padding: '14px 20px', 
-                                                        borderBottom: '1px solid #e2e8f0', 
                                                         cursor: 'pointer', 
                                                         fontSize: '15px', 
                                                         fontWeight: unit === u.val || isOther ? '700' : '500', 
                                                         backgroundColor: unit === u.val ? '#f0fdf4' : (isOther ? '#f0fdf4' : '#ffffff'), 
-                                                        color: unit === u.val ? '#16a34a' : (isOther ? '#16a34a' : '#1e293b') 
+                                                        color: unit === u.val ? '#16a34a' : (isOther ? '#16a34a' : '#1e293b'),
+                                                        borderBottom: isOther ? 'none' : '1px solid #e2e8f0'
                                                     }}
                                                 >
                                                     {u.label}
@@ -475,7 +469,7 @@ export default function FarmFresh_ListingForm() {
                                             );
                                         })}
                                         {displayUnits.length === 0 && (
-                                            <div style={{ padding: '20px', textAlign: 'center', color: '#64748b', fontSize: '14px' }}>No units found. Try searching something else or use Custom Unit.</div>
+                                            <div style={{ padding: '20px', textAlign: 'center', color: '#64748b', fontSize: '14px' }}>No units found. Use Custom Unit.</div>
                                         )}
                                     </div>
                                 </div>
