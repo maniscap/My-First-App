@@ -156,10 +156,14 @@ function Seller_HomePage() {
                             <img src={images.business} alt="Business Zone" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                             <div style={{ position: 'absolute', top: '12px', right: '12px', fontSize: '18px', backgroundColor: '#fff', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '10px', zIndex: 2, boxShadow: '0 4px 10px rgba(0,0,0,0.1)' }}>🌾</div>
                         </div>
-                        <div style={{ padding: '16px', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                            <h3 style={{ margin: '0 0 4px 0', fontSize: '16px', color: '#0f172a', fontWeight: '800' }}>Business Zone</h3>
-                            <p style={{ margin: 0, fontSize: '12px', color: '#64748b', fontWeight: '500' }}>Sell bulk harvest.</p>
-                            <p style={{ margin: '4px 0 0 0', fontSize: '11px', color: '#16a34a', fontWeight: '700' }}>Click to add your listings</p>
+                        <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
+                            <div style={{ padding: '12px 12px 8px 12px' }}>
+                                <h3 style={{ margin: '0 0 2px 0', fontSize: '15px', color: '#0f172a', fontWeight: '800' }}>Business Zone</h3>
+                                <p style={{ margin: 0, fontSize: '11px', color: '#64748b', fontWeight: '500' }}>Sell bulk harvest.</p>
+                            </div>
+                            <div style={{ padding: '8px 12px', borderTop: '1px solid #f1f5f9', backgroundColor: '#fcfdfd', marginTop: 'auto' }}>
+                                <p style={{ margin: 0, fontSize: '10.5px', color: '#16a34a', fontWeight: '700', lineHeight: '1.3' }}>Click here to add your listings to live to the users</p>
+                            </div>
                         </div>
                     </div>
                 </Link>
@@ -171,10 +175,14 @@ function Seller_HomePage() {
                             <img src={images.farmFresh} alt="Farm Fresh" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                             <div style={{ position: 'absolute', top: '12px', right: '12px', fontSize: '18px', backgroundColor: '#fff', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '10px', zIndex: 2, boxShadow: '0 4px 10px rgba(0,0,0,0.1)' }}>🥬</div>
                         </div>
-                        <div style={{ padding: '16px', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                            <h3 style={{ margin: '0 0 4px 0', fontSize: '16px', color: '#0f172a', fontWeight: '800' }}>Farm Fresh</h3>
-                            <p style={{ margin: 0, fontSize: '12px', color: '#64748b', fontWeight: '500' }}>Sell fresh produce.</p>
-                            <p style={{ margin: '4px 0 0 0', fontSize: '11px', color: '#16a34a', fontWeight: '700' }}>Click to add your listings</p>
+                        <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
+                            <div style={{ padding: '12px 12px 8px 12px' }}>
+                                <h3 style={{ margin: '0 0 2px 0', fontSize: '15px', color: '#0f172a', fontWeight: '800' }}>Farm Fresh</h3>
+                                <p style={{ margin: 0, fontSize: '11px', color: '#64748b', fontWeight: '500' }}>Sell fresh produce.</p>
+                            </div>
+                            <div style={{ padding: '8px 12px', borderTop: '1px solid #f1f5f9', backgroundColor: '#fcfdfd', marginTop: 'auto' }}>
+                                <p style={{ margin: 0, fontSize: '10.5px', color: '#16a34a', fontWeight: '700', lineHeight: '1.3' }}>Click here to add your listings to live to the users</p>
+                            </div>
                         </div>
                     </div>
                 </Link>
@@ -186,10 +194,14 @@ function Seller_HomePage() {
                             <img src={images.machinery} alt="Hire Machinery" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                             <div style={{ position: 'absolute', top: '12px', right: '12px', fontSize: '18px', backgroundColor: '#fff', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '10px', zIndex: 2, boxShadow: '0 4px 10px rgba(0,0,0,0.1)' }}>🚜</div>
                         </div>
-                        <div style={{ padding: '16px', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                            <h3 style={{ margin: '0 0 4px 0', fontSize: '16px', color: '#0f172a', fontWeight: '800' }}>Machinery</h3>
-                            <p style={{ margin: 0, fontSize: '12px', color: '#64748b', fontWeight: '500' }}>Rent out equipment.</p>
-                            <p style={{ margin: '4px 0 0 0', fontSize: '11px', color: '#16a34a', fontWeight: '700' }}>Click to add your listings</p>
+                        <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
+                            <div style={{ padding: '12px 12px 8px 12px' }}>
+                                <h3 style={{ margin: '0 0 2px 0', fontSize: '15px', color: '#0f172a', fontWeight: '800' }}>Machinery</h3>
+                                <p style={{ margin: 0, fontSize: '11px', color: '#64748b', fontWeight: '500' }}>Rent out equipment.</p>
+                            </div>
+                            <div style={{ padding: '8px 12px', borderTop: '1px solid #f1f5f9', backgroundColor: '#fcfdfd', marginTop: 'auto' }}>
+                                <p style={{ margin: 0, fontSize: '10.5px', color: '#16a34a', fontWeight: '700', lineHeight: '1.3' }}>Click here to add your listings to live to the users</p>
+                            </div>
                         </div>
                     </div>
                 </Link>
@@ -201,10 +213,14 @@ function Seller_HomePage() {
                             <img src={images.workers} alt="Hire Workers" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                             <div style={{ position: 'absolute', top: '12px', right: '12px', fontSize: '18px', backgroundColor: '#fff', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '10px', zIndex: 2, boxShadow: '0 4px 10px rgba(0,0,0,0.1)' }}>🧑‍🔧</div>
                         </div>
-                        <div style={{ padding: '16px', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                            <h3 style={{ margin: '0 0 4px 0', fontSize: '16px', color: '#0f172a', fontWeight: '800' }}>Workers</h3>
-                            <p style={{ margin: 0, fontSize: '12px', color: '#64748b', fontWeight: '500' }}>Provide labor services.</p>
-                            <p style={{ margin: '4px 0 0 0', fontSize: '11px', color: '#16a34a', fontWeight: '700' }}>Click to add your listings</p>
+                        <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
+                            <div style={{ padding: '12px 12px 8px 12px' }}>
+                                <h3 style={{ margin: '0 0 2px 0', fontSize: '15px', color: '#0f172a', fontWeight: '800' }}>Workers</h3>
+                                <p style={{ margin: 0, fontSize: '11px', color: '#64748b', fontWeight: '500' }}>Provide labor services.</p>
+                            </div>
+                            <div style={{ padding: '8px 12px', borderTop: '1px solid #f1f5f9', backgroundColor: '#fcfdfd', marginTop: 'auto' }}>
+                                <p style={{ margin: 0, fontSize: '10.5px', color: '#16a34a', fontWeight: '700', lineHeight: '1.3' }}>Click here to add your listings to live to the users</p>
+                            </div>
                         </div>
                     </div>
                 </Link>
@@ -216,10 +232,14 @@ function Seller_HomePage() {
                             <img src={images.freelance} alt="Freelancing" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                             <div style={{ position: 'absolute', top: '12px', right: '12px', fontSize: '18px', backgroundColor: '#fff', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '10px', zIndex: 2, boxShadow: '0 4px 10px rgba(0,0,0,0.1)' }}>👨‍💻</div>
                         </div>
-                        <div style={{ padding: '16px', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                            <h3 style={{ margin: '0 0 4px 0', fontSize: '16px', color: '#0f172a', fontWeight: '800' }}>Freelancing</h3>
-                            <p style={{ margin: 0, fontSize: '12px', color: '#64748b', fontWeight: '500' }}>Offer specialized skills.</p>
-                            <p style={{ margin: '4px 0 0 0', fontSize: '11px', color: '#16a34a', fontWeight: '700' }}>Click to add your listings</p>
+                        <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
+                            <div style={{ padding: '12px 12px 8px 12px' }}>
+                                <h3 style={{ margin: '0 0 2px 0', fontSize: '15px', color: '#0f172a', fontWeight: '800' }}>Freelancing</h3>
+                                <p style={{ margin: 0, fontSize: '11px', color: '#64748b', fontWeight: '500' }}>Offer specialized skills.</p>
+                            </div>
+                            <div style={{ padding: '8px 12px', borderTop: '1px solid #f1f5f9', backgroundColor: '#fcfdfd', marginTop: 'auto' }}>
+                                <p style={{ margin: 0, fontSize: '10.5px', color: '#16a34a', fontWeight: '700', lineHeight: '1.3' }}>Click here to add your listings to live to the users</p>
+                            </div>
                         </div>
                     </div>
                 </Link>
@@ -231,10 +251,14 @@ function Seller_HomePage() {
                             <img src={images.localGoods} alt="Local Agri Goods" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                             <div style={{ position: 'absolute', top: '12px', right: '12px', fontSize: '18px', backgroundColor: '#fff', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '10px', zIndex: 2, boxShadow: '0 4px 10px rgba(0,0,0,0.1)' }}>🧺</div>
                         </div>
-                        <div style={{ padding: '16px', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                            <h3 style={{ margin: '0 0 4px 0', fontSize: '16px', color: '#0f172a', fontWeight: '800' }}>Local Goods</h3>
-                            <p style={{ margin: 0, fontSize: '12px', color: '#64748b', fontWeight: '500' }}>Handmade & tools.</p>
-                            <p style={{ margin: '4px 0 0 0', fontSize: '11px', color: '#16a34a', fontWeight: '700' }}>Click to add your listings</p>
+                        <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
+                            <div style={{ padding: '12px 12px 8px 12px' }}>
+                                <h3 style={{ margin: '0 0 2px 0', fontSize: '15px', color: '#0f172a', fontWeight: '800' }}>Local Goods</h3>
+                                <p style={{ margin: 0, fontSize: '11px', color: '#64748b', fontWeight: '500' }}>Sell handmade & tools.</p>
+                            </div>
+                            <div style={{ padding: '8px 12px', borderTop: '1px solid #f1f5f9', backgroundColor: '#fcfdfd', marginTop: 'auto' }}>
+                                <p style={{ margin: 0, fontSize: '10.5px', color: '#16a34a', fontWeight: '700', lineHeight: '1.3' }}>Click here to add your listings to live to the users</p>
+                            </div>
                         </div>
                     </div>
                 </Link>
