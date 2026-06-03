@@ -339,6 +339,7 @@ export default function FarmFresh_ListingForm() {
                         to { opacity: 1; }
                     }
                 `}</style>
+                </div>
             </div>
         );
     }
