@@ -324,7 +324,7 @@ export default function FarmFresh_ListingForm() {
                         </div>
                         
                         {isCategoryOpen && (
-                            <div style={{ position: 'absolute', top: 'calc(100% + 8px)', left: 0, width: '100%', maxHeight: '250px', overflowY: 'auto', backgroundColor: '#ffffff', borderRadius: '14px', border: '3px solid #1e293b', zIndex: 50, boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)' }}>
+                            <div style={{ position: 'absolute', top: 'calc(100% + 8px)', left: 0, width: '100%', maxHeight: '400px', overflowY: 'auto', backgroundColor: '#ffffff', borderRadius: '14px', border: '3px solid #1e293b', zIndex: 50, boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)' }}>
                                 {farmFreshCategories.map(cat => (
                                     <div 
                                         key={cat.category} 
@@ -369,7 +369,7 @@ export default function FarmFresh_ListingForm() {
                             </div>
                             
                             {isItemOpen && (
-                                <div style={{ position: 'absolute', top: 'calc(100% + 8px)', left: 0, width: '100%', maxHeight: '250px', overflowY: 'auto', backgroundColor: '#ffffff', borderRadius: '14px', border: '3px solid #1e293b', zIndex: 40, boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)' }}>
+                                <div style={{ position: 'absolute', top: 'calc(100% + 8px)', left: 0, width: '100%', maxHeight: '400px', overflowY: 'auto', backgroundColor: '#ffffff', borderRadius: '14px', border: '3px solid #1e293b', zIndex: 40, boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)' }}>
                                     {activeItems.map((item) => {
                                         const isOther = item.id.includes('other');
                                         return (
