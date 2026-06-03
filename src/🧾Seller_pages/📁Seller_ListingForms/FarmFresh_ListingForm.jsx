@@ -50,6 +50,41 @@ export default function FarmFresh_ListingForm() {
     const isOtherSelected = selectedItemId.includes('other');
     const selectedItemName = isOtherSelected ? customName : activeItems.find(i => i.id === selectedItemId)?.name;
 
+    // Smart filtering for the unit dropdown
+    const getFilteredUnits = () => {
+        // If user is searching, search the entire massive library
+        if (unitSearch.trim() !== '') {
+            return farmFreshUnits.filter(u => u.label.toLowerCase().includes(unitSearch.toLowerCase()) || u.val.toLowerCase().includes(unitSearch.toLowerCase()));
+        }
+        
+        // If no category selected yet, show all
+        if (!selectedCategory) return farmFreshUnits;
+
+        const cat = selectedCategory.toLowerCase();
+        let allowedVals = [];
+        
+        // Define contextual unit groupings
+        const commonWeights = ['250g', '500g', '1kg', '2kg', '5kg', '10kg', '20kg', '25kg', '50kg', '100kg', 'ton'];
+        const bulkTransport = ['gunny_bag', 'bag', 'trolley', 'auto_load', 'mini_truck', 'truck'];
+
+        if (cat.includes('dairy') || cat.includes('honey')) {
+            allowedVals = ['1L', '5L', '10L', '20L', '500g', '1kg', '2kg', '5kg', '10kg', 'dozen', 'piece', 'packet', 'box'];
+        } else if (cat.includes('cultural') || cat.includes('flower')) {
+            allowedVals = ['piece', 'dozen', 'bunch', '100leaves', '100pcs', 'basket', 'box', 'packet', '250g', '500g', '1kg'];
+        } else if (cat.includes('cash crop') || cat.includes('field') || cat.includes('cereal') || cat.includes('pulse')) {
+            allowedVals = ['1kg', '5kg', '10kg', '25kg', '50kg', '100kg', 'ton', ...bulkTransport];
+        } else if (cat.includes('spice') || cat.includes('dry') || cat.includes('jaggery')) {
+            allowedVals = ['250g', '500g', '1kg', '2kg', '5kg', '10kg', '25kg', 'packet', 'box'];
+        } else {
+            // Default (Vegetables, Fruits, general)
+            allowedVals = [...commonWeights, 'piece', 'dozen', 'bunch', 'box', 'crate', 'basket', 'packet', ...bulkTransport];
+        }
+
+        return farmFreshUnits.filter(u => allowedVals.includes(u.val) || u.val === 'custom_other_unit');
+    };
+
+    const displayUnits = getFilteredUnits();
+
     const handleSave = async (e) => {
         e.preventDefault();
         
@@ -415,7 +450,7 @@ export default function FarmFresh_ListingForm() {
                                     </div>
                                     
                                     <div style={{ overflowY: 'auto', flex: 1 }}>
-                                        {farmFreshUnits.filter(u => u.label.toLowerCase().includes(unitSearch.toLowerCase()) || u.val.toLowerCase().includes(unitSearch.toLowerCase())).map((u) => {
+                                        {displayUnits.map((u) => {
                                             const isOther = u.val === 'custom_other_unit';
                                             return (
                                                 <div 
@@ -439,7 +474,7 @@ export default function FarmFresh_ListingForm() {
                                                 </div>
                                             );
                                         })}
-                                        {farmFreshUnits.filter(u => u.label.toLowerCase().includes(unitSearch.toLowerCase()) || u.val.toLowerCase().includes(unitSearch.toLowerCase())).length === 0 && (
+                                        {displayUnits.length === 0 && (
                                             <div style={{ padding: '20px', textAlign: 'center', color: '#64748b', fontSize: '14px' }}>No units found. Try searching something else or use Custom Unit.</div>
                                         )}
                                     </div>
