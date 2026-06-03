@@ -50,17 +50,18 @@ export default function FarmFresh_ListingForm() {
         
         const cat = selectedCategory.toLowerCase();
         const item = selectedItemId.toLowerCase();
+        const itemName = (selectedItemName || '').toLowerCase(); // Also check custom typed names
 
         // Eggs
-        if (item.includes('egg')) return [ 
+        if (item.includes('egg') || itemName.includes('egg')) return [ 
             { val: 'dozen', label: 'Per Dozen (12)' }, 
             { val: 'tray', label: 'Per Tray (30)' }, 
             { val: 'box', label: 'Per Box/Peti' }, 
             { val: 'piece', label: 'Per 1 Piece' }
         ];
         
-        // Liquids (Milk, Oil, Buttermilk, Juice)
-        if (item.includes('milk') || item.includes('lassi') || item.includes('buttermilk') || item.includes('water') || item.includes('juice') || item.includes('oil')) return [ 
+        // Liquids (Milk, Oil, Buttermilk, Juice, Honey, Ghee)
+        if (item.includes('milk') || item.includes('lassi') || item.includes('buttermilk') || item.includes('water') || item.includes('juice') || item.includes('oil') || itemName.includes('milk') || itemName.includes('oil') || itemName.includes('juice') || itemName.includes('ghee') || itemName.includes('honey')) return [ 
             { val: '500ml', label: 'Half Liter (500ml)' }, 
             { val: '1L', label: '1 Liter' }, 
             { val: '2L', label: '2 Liters' },
@@ -69,11 +70,13 @@ export default function FarmFresh_ListingForm() {
             { val: '15L', label: '15 Liters (Tin/Can)' }, 
             { val: '20L', label: '20 Liters' }, 
             { val: 'packet', label: 'Per Packet' },
-            { val: 'bottle', label: 'Per Bottle' }
+            { val: 'bottle', label: 'Per Bottle' },
+            { val: '1kg', label: '1 Kg' },
+            { val: '500g', label: 'Half Kg (500g)' }
         ];
         
-        // Dairy & Preserves (Ghee, Butter, Honey, Pickles)
-        if (cat.includes('dairy') || item.includes('pickle') || item.includes('jam') || item.includes('butter') || item.includes('ghee') || item.includes('honey')) return [ 
+        // Dairy & Preserves (Butter, Pickles, Jam)
+        if (cat.includes('dairy') || item.includes('pickle') || item.includes('jam') || item.includes('butter') || itemName.includes('pickle')) return [ 
             { val: '250g', label: '250 gm' },
             { val: '500g', label: 'Half Kg (500g)' },
             { val: '1kg', label: '1 Kg' }, 
@@ -85,7 +88,7 @@ export default function FarmFresh_ListingForm() {
         ];
 
         // Leafy Greens & Herbs
-        if (item.includes('leaves') || item.includes('spinach') || item.includes('mint') || item.includes('coriander')) return [ 
+        if (item.includes('leaves') || item.includes('spinach') || item.includes('mint') || item.includes('coriander') || itemName.includes('leaves') || itemName.includes('herb')) return [ 
             { val: 'bunch', label: 'Per Bunch (Gaddi)' }, 
             { val: '250g', label: '250 gm' }, 
             { val: '500g', label: 'Half Kg (500g)' }, 
@@ -94,7 +97,7 @@ export default function FarmFresh_ListingForm() {
         ];
 
         // Bakery & Dry Snacks
-        if (item.includes('bread') || item.includes('bun') || item.includes('biscuit') || item.includes('cookie') || item.includes('chikki') || item.includes('papad') || item.includes('chips') || item.includes('mathri')) return [ 
+        if (item.includes('bread') || item.includes('bun') || item.includes('biscuit') || item.includes('cookie') || item.includes('chikki') || item.includes('papad') || item.includes('chips') || item.includes('mathri') || itemName.includes('snack')) return [ 
             { val: 'packet', label: 'Per Packet' }, 
             { val: '250g', label: '250 gm' },
             { val: '500g', label: 'Half Kg (500g)' },
@@ -104,7 +107,7 @@ export default function FarmFresh_ListingForm() {
         ];
 
         // Items typically sold by count (Bananas, Coconuts, Lemons, Bamboo)
-        if (item.includes('banana') || item.includes('coconut') || item.includes('lemon') || item.includes('bamboo')) return [ 
+        if (item.includes('banana') || item.includes('coconut') || item.includes('lemon') || item.includes('bamboo') || itemName.includes('banana') || itemName.includes('coconut')) return [ 
             { val: 'dozen', label: 'Per Dozen (12)' }, 
             { val: 'piece', label: 'Per 1 Piece' }, 
             { val: 'bag', label: 'Per Bag/Katta' },
@@ -131,7 +134,7 @@ export default function FarmFresh_ListingForm() {
             { val: 'ton', label: 'Per Ton (1000kg)' } 
         ];
 
-        // Fruits and Vegetables (General Default - Cleaned up)
+        // Fruits and Vegetables (General Default - Cleaned up + Liters added)
         return [ 
             { val: '500g', label: 'Half Kg (500g)' },
             { val: '1kg', label: '1 Kg' }, 
@@ -145,7 +148,11 @@ export default function FarmFresh_ListingForm() {
             { val: 'ton', label: 'Per Ton (1000kg)' }, 
             { val: 'box', label: 'Per Box/Peti/Crate' }, 
             { val: 'packet', label: 'Per Packet/Net' },
-            { val: 'trolley', label: 'Per Tractor Trolley' }
+            { val: 'trolley', label: 'Per Tractor Trolley' },
+            { val: '500ml', label: 'Half Liter (500ml)' }, 
+            { val: '1L', label: '1 Liter' }, 
+            { val: '5L', label: '5 Liters' }, 
+            { val: '10L', label: '10 Liters' }
         ];
     };
 
