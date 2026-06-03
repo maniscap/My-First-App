@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Leaf, CheckCircle2 } from 'lucide-react';
-import { farmFreshCategories } from '../../utils/ProductLibrary';
+import { farmFreshCategories, farmFreshUnits } from '../../utils/ProductLibrary';
 import UniversalImagePicker from '../../utils/UniversalImagePicker';
 import { db, auth } from '../../firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
@@ -30,7 +30,9 @@ export default function FarmFresh_ListingForm() {
     const [customName, setCustomName] = useState('');
     const [description, setDescription] = useState('');
     const [price, setPrice] = useState('');
-    const [unit, setUnit] = useState('kg');
+    const [unit, setUnit] = useState('1kg');
+    const [isUnitOpen, setIsUnitOpen] = useState(false);
+    const [unitSearch, setUnitSearch] = useState('');
     const [isOrganic, setIsOrganic] = useState(false);
     const [organicCertName, setOrganicCertName] = useState('');
     const [organicCertNumber, setOrganicCertNumber] = useState('');
@@ -47,162 +49,6 @@ export default function FarmFresh_ListingForm() {
     const activeItems = activeCategoryObj ? activeCategoryObj.items : [];
     const isOtherSelected = selectedItemId.includes('other');
     const selectedItemName = isOtherSelected ? customName : activeItems.find(i => i.id === selectedItemId)?.name;
-
-    // Smart Dynamic Units based on the exact item chosen
-    const getDynamicUnits = () => {
-        if (!selectedCategory) return [{ val: '1kg', label: 'Per 1 Kg' }];
-
-        const cat = selectedCategory.toLowerCase();
-        const item = selectedItemId.toLowerCase();
-        const itemName = (selectedItemName || '').toLowerCase();
-
-        // Eggs
-        if (item.includes('egg') || itemName.includes('egg')) return [ 
-            { val: 'half_dozen', label: 'Half Dozen (6)' },
-            { val: 'dozen', label: 'Per Dozen (12)' }, 
-            { val: 'tray', label: 'Per Tray (30)' }, 
-            { val: 'box', label: 'Per Box/Peti' }, 
-            { val: 'piece', label: 'Per 1 Piece' }
-        ];
-
-        // Liquids (Milk, Oil, Buttermilk, Juice, Honey, Ghee)
-        if (item.includes('milk') || item.includes('lassi') || item.includes('buttermilk') || item.includes('water') || item.includes('juice') || item.includes('oil') || itemName.includes('milk') || itemName.includes('oil') || itemName.includes('juice') || itemName.includes('ghee') || itemName.includes('honey')) return [ 
-            { val: '500ml', label: 'Half Liter (500ml)' }, 
-            { val: '1L', label: '1 Liter' }, 
-            { val: '2L', label: '2 Liters' },
-            { val: '5L', label: '5 Liters' }, 
-            { val: '10L', label: '10 Liters' }, 
-            { val: '15L', label: '15 Liters (Tin/Can)' }, 
-            { val: '20L', label: '20 Liters' }, 
-            { val: 'packet', label: 'Per Packet' },
-            { val: 'bottle', label: 'Per Bottle' },
-            { val: '1kg', label: '1 Kg' },
-            { val: '500g', label: 'Half Kg (500g)' }
-        ];
-        
-        // Dairy & Preserves (Butter, Pickles, Jam)
-        if (cat.includes('dairy') || item.includes('pickle') || item.includes('jam') || item.includes('butter') || itemName.includes('pickle')) return [ 
-            { val: '250g', label: '250 gm' },
-            { val: '500g', label: 'Half Kg (500g)' },
-            { val: '1kg', label: '1 Kg' }, 
-            { val: '2kg', label: '2 Kg' },
-            { val: '5kg', label: '5 Kg' },
-            { val: '15kg', label: '15 Kg (Tin/Dabba)' }, 
-            { val: 'jar', label: 'Per Jar/Bottle' }, 
-            { val: 'packet', label: 'Per Packet' }
-        ];
-
-        // Spices & Powders
-        if (cat.includes('spice') || itemName.includes('powder') || itemName.includes('masala')) return [
-            { val: '50g', label: '50 gm' },
-            { val: '100g', label: '100 gm' },
-            { val: '250g', label: '250 gm' },
-            { val: '500g', label: 'Half Kg (500g)' },
-            { val: '1kg', label: '1 Kg' }, 
-            { val: '5kg', label: '5 Kg' },
-            { val: 'packet', label: 'Per Packet' }
-        ];
-
-        // Dry Fruits & Seeds
-        if (cat.includes('dry fruit') || item.includes('seed') || itemName.includes('seed') || itemName.includes('cashew') || itemName.includes('almond') || itemName.includes('nut')) return [
-            { val: '100g', label: '100 gm' },
-            { val: '250g', label: '250 gm' },
-            { val: '500g', label: 'Half Kg (500g)' },
-            { val: '1kg', label: '1 Kg' }, 
-            { val: '5kg', label: '5 Kg' },
-            { val: 'box', label: 'Per Box' },
-            { val: 'packet', label: 'Per Packet' }
-        ];
-
-        // Jaggery & Sweeteners
-        if (cat.includes('jaggery') || item.includes('jaggery') || itemName.includes('jaggery') || itemName.includes('sugar') || itemName.includes('khand')) return [
-            { val: '250g', label: '250 gm' },
-            { val: '500g', label: 'Half Kg (500g)' },
-            { val: '1kg', label: '1 Kg' }, 
-            { val: '5kg', label: '5 Kg' },
-            { val: '10kg', label: '10 Kg' },
-            { val: '15kg', label: '15 Kg (Tin/Dabba)' }
-        ];
-
-        // Fresh Flowers
-        if (cat.includes('flower') || item.includes('flower') || itemName.includes('flower') || itemName.includes('rose') || itemName.includes('marigold')) return [
-            { val: 'kg', label: 'Per Kg' },
-            { val: 'bunch', label: 'Per Bunch/Gaddi' },
-            { val: 'garland', label: 'Per Garland/Mala' },
-            { val: 'piece', label: 'Per Piece' },
-            { val: 'bag', label: 'Per Bag/Katta' }
-        ];
-
-        // Leafy Greens & Herbs
-        if (item.includes('leaves') || item.includes('spinach') || item.includes('mint') || item.includes('coriander') || itemName.includes('leaves') || itemName.includes('herb')) return [ 
-            { val: 'bunch', label: 'Per Bunch (Gaddi)' }, 
-            { val: '250g', label: '250 gm' }, 
-            { val: '500g', label: 'Half Kg (500g)' }, 
-            { val: '1kg', label: '1 Kg' }, 
-            { val: 'bag', label: 'Per Bag/Katta' }
-        ];
-
-        // Bakery & Dry Snacks
-        if (item.includes('bread') || item.includes('bun') || item.includes('biscuit') || item.includes('cookie') || item.includes('chikki') || item.includes('papad') || item.includes('chips') || item.includes('mathri') || itemName.includes('snack')) return [ 
-            { val: 'packet', label: 'Per Packet' }, 
-            { val: '250g', label: '250 gm' },
-            { val: '500g', label: 'Half Kg (500g)' },
-            { val: '1kg', label: '1 Kg' }, 
-            { val: 'box', label: 'Per Box' }, 
-            { val: 'piece', label: 'Per Piece' } 
-        ];
-
-        // Items typically sold by count (Bananas, Coconuts, Lemons, Bamboo)
-        if (item.includes('banana') || item.includes('coconut') || item.includes('lemon') || item.includes('bamboo') || itemName.includes('banana') || itemName.includes('coconut')) return [ 
-            { val: 'dozen', label: 'Per Dozen (12)' }, 
-            { val: 'piece', label: 'Per 1 Piece' }, 
-            { val: 'bag', label: 'Per Bag/Katta' },
-            { val: 'box', label: 'Per Box/Carton' },
-            { val: 'ton', label: 'Per Ton' } 
-        ];
-
-        // Bulk / Raw Materials (Sugarcane, Manure, Wood)
-        if (item.includes('sugarcane') || item.includes('wood') || item.includes('manure') || item.includes('husk')) return [
-            { val: 'quintal', label: 'Per Quintal (100kg)' }, 
-            { val: 'ton', label: 'Per Ton (1000kg)' }, 
-            { val: 'trolley', label: 'Per Tractor Trolley Load' },
-            { val: 'truck', label: 'Per Truck Load' }
-        ];
-
-        // Field Crops, Grains, Pulses (Bulk)
-        if (cat.includes('field') || cat.includes('pulse') || cat.includes('cereal') || item.includes('wheat') || item.includes('rice') || item.includes('dal') || itemName.includes('dal') || itemName.includes('rice')) return [ 
-            { val: '1kg', label: '1 Kg' }, 
-            { val: '5kg', label: '5 Kg' }, 
-            { val: '10kg', label: '10 Kg' }, 
-            { val: '25kg', label: '25 Kg Bag' }, 
-            { val: '50kg', label: '50 Kg (Bori/Katta)' }, 
-            { val: 'quintal', label: 'Per Quintal (100kg)' }, 
-            { val: 'ton', label: 'Per Ton (1000kg)' } 
-        ];
-
-        // Fruits and Vegetables (General Default - Cleaned up + Liters added)
-        return [ 
-            { val: '500g', label: 'Half Kg (500g)' },
-            { val: '1kg', label: '1 Kg' }, 
-            { val: '2kg', label: '2 Kg' },
-            { val: '5kg', label: '5 Kg' },
-            { val: '10kg', label: '10 Kg' },
-            { val: '20kg', label: '20 Kg' },
-            { val: '25kg', label: '25 Kg (Katta)' },
-            { val: '50kg', label: '50 Kg (Bori)' },
-            { val: 'quintal', label: 'Per Quintal (100kg)' }, 
-            { val: 'ton', label: 'Per Ton (1000kg)' }, 
-            { val: 'box', label: 'Per Box/Peti/Crate' }, 
-            { val: 'packet', label: 'Per Packet/Net' },
-            { val: 'trolley', label: 'Per Tractor Trolley' },
-            { val: '500ml', label: 'Half Liter (500ml)' }, 
-            { val: '1L', label: '1 Liter' }, 
-            { val: '5L', label: '5 Liters' }, 
-            { val: '10L', label: '10 Liters' }
-        ];
-    };
-
-    const dynamicUnits = getDynamicUnits();
 
     const handleSave = async (e) => {
         e.preventDefault();

@@ -1458,3 +1458,62 @@ export const getFarmFreshImage = (itemId) => {
   }
   return "https://images.unsplash.com/photo-1595853035070-59a39fe84ee3?auto=format&fit=crop&w=400&q=80"; // Default fallback
 };
+
+export const farmFreshUnits = [
+  // WEIGHT (Metric)
+  { val: '100g', label: '100 Grams (100g)' },
+  { val: '250g', label: '250 Grams (Pav/250g)' },
+  { val: '500g', label: '500 Grams (Half Kg/500g)' },
+  { val: '1kg', label: '1 Kilogram (1 Kg)' },
+  { val: '2kg', label: '2 Kilograms (2 Kg)' },
+  { val: '5kg', label: '5 Kilograms (5 Kg)' },
+  { val: '10kg', label: '10 Kilograms (10 Kg)' },
+  { val: '20kg', label: '20 Kilograms (20 Kg)' },
+  { val: '25kg', label: '25 Kilograms (25 Kg / Katta)' },
+  { val: '50kg', label: '50 Kilograms (50 Kg / Bori / Sack)' },
+  { val: '100kg', label: '1 Quintal (100 Kg)' },
+  { val: 'ton', label: '1 Metric Ton (1000 Kg)' },
+  
+  // VOLUME (Liquids)
+  { val: '250ml', label: '250 Milliliters (250 ml)' },
+  { val: '500ml', label: '500 Milliliters (Half Liter/500ml)' },
+  { val: '1L', label: '1 Liter (1 L)' },
+  { val: '2L', label: '2 Liters (2 L)' },
+  { val: '5L', label: '5 Liters (5 L Can)' },
+  { val: '10L', label: '10 Liters (10 L Can)' },
+  { val: '15L', label: '15 Liters (15 L Tin/Can)' },
+  { val: '20L', label: '20 Liters (20 L Can/Barrel)' },
+  { val: '50L', label: '50 Liters (50 L Drum)' },
+  { val: '100L', label: '100 Liters (100 L Drum)' },
+  
+  // COUNT / QUANTITY
+  { val: 'piece', label: 'Per Piece / Single Item' },
+  { val: 'pair', label: 'Per Pair (Joda)' },
+  { val: 'dozen', label: 'Per Dozen (12 Pieces)' },
+  { val: '100pcs', label: 'Per 100 Pieces (Sekda)' },
+  { val: '1000pcs', label: 'Per 1000 Pieces' },
+  { val: 'bunch', label: 'Per Bunch / Bundle (Guccha/Katta)' },
+  { val: 'leaf', label: 'Per Leaf (Patta)' },
+  { val: '100leaves', label: 'Per 100 Leaves' },
+  
+  // PACKAGING
+  { val: 'packet', label: 'Per Packet (Pudi)' },
+  { val: 'pouch', label: 'Per Pouch' },
+  { val: 'box', label: 'Per Box / Peti' },
+  { val: 'crate', label: 'Per Crate (Caret)' },
+  { val: 'carton', label: 'Per Carton' },
+  { val: 'basket', label: 'Per Basket (Tokri)' },
+  { val: 'bag', label: 'Per Bag / Thaila' },
+  { val: 'gunny_bag', label: 'Per Gunny Bag (Bora)' },
+  { val: 'tray', label: 'Per Tray' },
+  { val: 'bale', label: 'Per Bale (Ganth / Cotton)' },
+  
+  // BULK / VEHICLE LOADS
+  { val: 'auto_load', label: 'Per Auto / Piaggio Load' },
+  { val: 'trolley', label: 'Per Tractor Trolley' },
+  { val: 'mini_truck', label: 'Per Mini Truck (Tata Ace/Chota Hathi)' },
+  { val: 'truck', label: 'Per Truck Load' },
+  
+  // OTHER
+  { val: 'custom_other_unit', label: '➕ Add Custom Unit...' }
+];
