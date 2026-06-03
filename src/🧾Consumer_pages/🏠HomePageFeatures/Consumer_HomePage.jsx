@@ -857,7 +857,7 @@ function Consumer_HomePage() {
         />
 
         {/* SWIPEABLE BENTO GRID AREA (CAROUSEL ARCHITECTURE) */}
-        <div {...swipeHandlers} style={{ overflowX: 'hidden', width: '100%', minHeight: '350px' }}>
+        <div {...swipeHandlers} style={{ overflowX: 'hidden', width: '100%', minHeight: '350px', touchAction: 'pan-y', overscrollBehaviorX: 'none' }}>
           <motion.div 
             style={{ 
               display: 'flex', 
