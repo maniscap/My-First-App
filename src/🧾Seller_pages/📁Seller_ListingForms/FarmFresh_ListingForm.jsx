@@ -52,6 +52,18 @@ export default function FarmFresh_ListingForm() {
         if (!selectedCategory) return [{ val: '1kg', label: 'Per 1 Kg' }];
 
         const cat = selectedCategory.toLowerCase();
+        const item = selectedItemId.toLowerCase();
+        const itemName = (selectedItemName || '').toLowerCase();
+
+        // Eggs
+        if (item.includes('egg') || itemName.includes('egg')) return [ 
+            { val: 'half_dozen', label: 'Half Dozen (6)' },
+            { val: 'dozen', label: 'Per Dozen (12)' }, 
+            { val: 'tray', label: 'Per Tray (30)' }, 
+            { val: 'box', label: 'Per Box/Peti' }, 
+            { val: 'piece', label: 'Per 1 Piece' }
+        ];
+
         // Liquids (Milk, Oil, Buttermilk, Juice, Honey, Ghee)
         if (item.includes('milk') || item.includes('lassi') || item.includes('buttermilk') || item.includes('water') || item.includes('juice') || item.includes('oil') || itemName.includes('milk') || itemName.includes('oil') || itemName.includes('juice') || itemName.includes('ghee') || itemName.includes('honey')) return [ 
             { val: '500ml', label: 'Half Liter (500ml)' }, 
