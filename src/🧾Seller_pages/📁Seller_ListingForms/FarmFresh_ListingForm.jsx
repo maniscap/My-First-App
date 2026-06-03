@@ -88,6 +88,47 @@ export default function FarmFresh_ListingForm() {
             { val: 'packet', label: 'Per Packet' }
         ];
 
+        // Spices & Powders
+        if (cat.includes('spice') || itemName.includes('powder') || itemName.includes('masala')) return [
+            { val: '50g', label: '50 gm' },
+            { val: '100g', label: '100 gm' },
+            { val: '250g', label: '250 gm' },
+            { val: '500g', label: 'Half Kg (500g)' },
+            { val: '1kg', label: '1 Kg' }, 
+            { val: '5kg', label: '5 Kg' },
+            { val: 'packet', label: 'Per Packet' }
+        ];
+
+        // Dry Fruits & Seeds
+        if (cat.includes('dry fruit') || item.includes('seed') || itemName.includes('seed') || itemName.includes('cashew') || itemName.includes('almond') || itemName.includes('nut')) return [
+            { val: '100g', label: '100 gm' },
+            { val: '250g', label: '250 gm' },
+            { val: '500g', label: 'Half Kg (500g)' },
+            { val: '1kg', label: '1 Kg' }, 
+            { val: '5kg', label: '5 Kg' },
+            { val: 'box', label: 'Per Box' },
+            { val: 'packet', label: 'Per Packet' }
+        ];
+
+        // Jaggery & Sweeteners
+        if (cat.includes('jaggery') || item.includes('jaggery') || itemName.includes('jaggery') || itemName.includes('sugar') || itemName.includes('khand')) return [
+            { val: '250g', label: '250 gm' },
+            { val: '500g', label: 'Half Kg (500g)' },
+            { val: '1kg', label: '1 Kg' }, 
+            { val: '5kg', label: '5 Kg' },
+            { val: '10kg', label: '10 Kg' },
+            { val: '15kg', label: '15 Kg (Tin/Dabba)' }
+        ];
+
+        // Fresh Flowers
+        if (cat.includes('flower') || item.includes('flower') || itemName.includes('flower') || itemName.includes('rose') || itemName.includes('marigold')) return [
+            { val: 'kg', label: 'Per Kg' },
+            { val: 'bunch', label: 'Per Bunch/Gaddi' },
+            { val: 'garland', label: 'Per Garland/Mala' },
+            { val: 'piece', label: 'Per Piece' },
+            { val: 'bag', label: 'Per Bag/Katta' }
+        ];
+
         // Leafy Greens & Herbs
         if (item.includes('leaves') || item.includes('spinach') || item.includes('mint') || item.includes('coriander') || itemName.includes('leaves') || itemName.includes('herb')) return [ 
             { val: 'bunch', label: 'Per Bunch (Gaddi)' }, 
@@ -125,7 +166,7 @@ export default function FarmFresh_ListingForm() {
         ];
 
         // Field Crops, Grains, Pulses (Bulk)
-        if (cat.includes('field') || item.includes('wheat') || item.includes('rice') || item.includes('dal') || item.includes('seed')) return [ 
+        if (cat.includes('field') || cat.includes('pulse') || cat.includes('cereal') || item.includes('wheat') || item.includes('rice') || item.includes('dal') || itemName.includes('dal') || itemName.includes('rice')) return [ 
             { val: '1kg', label: '1 Kg' }, 
             { val: '5kg', label: '5 Kg' }, 
             { val: '10kg', label: '10 Kg' }, 
