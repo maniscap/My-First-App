@@ -42,38 +42,302 @@ const getBackgroundImage = (conditionText) => {
   return weatherImages.defaultFallback;
 };
 
-// --- CONSTANT: CINEMATIC BOX-SHADOW SNOW ---
-const generateSnowBoxShadows = (count) => {
-  let shadows = '';
-  const dropHeight = 120; // 120vh
-  const breezeDrift = 15; // 15vw
-  const screenWidth = 120; // 120vw
-  for(let i = 0; i < count; i++) {
-    const x = Math.floor(Math.random() * screenWidth) - breezeDrift;
-    const y = Math.floor(Math.random() * dropHeight);
-    const alpha = (Math.random() * 0.6 + 0.4).toFixed(2);
-    shadows += `${x}vw ${y}vh rgba(255, 255, 255, ${alpha}),`;
-    shadows += `${x - breezeDrift}vw ${y - dropHeight}vh rgba(255, 255, 255, ${alpha})${i < count - 1 ? ',' : ''}`;
-  }
-  return shadows;
-};
-const snowShadows1 = generateSnowBoxShadows(150);
-const snowShadows2 = generateSnowBoxShadows(100);
-const snowShadows3 = generateSnowBoxShadows(30);
+// --- STATIC CSS BLOCK TO PREVENT RE-RENDERS ---
+const ConsumerGlobalStyles = (
+  <style>{`
+    @import url('https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@700;800;900&display=swap');
+    
+    /* --- NEW SUNNY DAY PREMIUM DESIGN --- */
+    .sky-header {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(150deg, #1ea2ff 0%, #7ed3ff 45%, #d0f0ff 100%);
+      overflow: hidden;
+      isolation: isolate;
+    }
 
-// --- CONSTANT: STYLIZED VECTOR SMOKE ---
-const VECTOR_SMOKE = Array.from({ length: 60 }).map((_, i) => ({
-  size: Math.random() * 8 + 8, // Scaled up to 8px-16px for a thicker base
-  br1: Math.floor(Math.random() * 10 + 45),
-  br2: Math.floor(Math.random() * 10 + 45),
-  br3: Math.floor(Math.random() * 10 + 45),
-  br4: Math.floor(Math.random() * 10 + 45),
-  duration: Math.random() * 2.5 + 4.5, // 4.5s to 7s (more consistent rising speed)
-  delay: -(i * 0.12), // Denser overlap for a continuous column
-  drift: Math.random() * 14 - 7, // Tighter horizontal spread
-  scale: Math.random() * 1.5 + 2.0, // Grows larger as it drifts up
-  startX: Math.random() * 4 - 2, // Kept tighter to the center
-}));
+    /* --- WINTER THEME (Tools & Utils) --- */
+    .winter-svg-bg {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      z-index: 2;
+      opacity: 0.95;
+    }
+
+    @keyframes bokeh-drift {
+      0% { transform: translate(0, 0) scale(1); opacity: 0.6; }
+      100% { transform: translate(-10px, 10px) scale(1.05); opacity: 0.9; }
+    }
+    .sun-core {
+      position: absolute;
+      top: 20px;
+      right: 120px;
+      width: 35px;
+      height: 35px;
+      background: #ffffff;
+      border-radius: 50%;
+      filter: none;
+      box-shadow: 0 0 20px 8px rgba(255, 255, 255, 1), 0 0 40px 15px rgba(255, 255, 255, 0.5);
+      mix-blend-mode: screen;
+      animation: sun-breathe 4s ease-in-out infinite;
+      z-index: 10;
+    }
+    .sun-halo {
+      position: absolute;
+      top: 15px;
+      right: 115px;
+      width: 45px;
+      height: 45px;
+      background: rgba(255, 255, 255, 0.7);
+      border-radius: 50%;
+      filter: blur(8px);
+      mix-blend-mode: screen;
+      animation: sun-breathe 5s ease-in-out infinite;
+    }
+    .sun-ambient {
+      position: absolute;
+      top: 5px;
+      right: 105px;
+      width: 65px;
+      height: 65px;
+      background: rgba(255, 255, 255, 0.3);
+      border-radius: 50%;
+      filter: blur(15px);
+      mix-blend-mode: overlay;
+    }
+    .bokeh {
+      position: absolute;
+      border-radius: 50%;
+      pointer-events: none;
+      mix-blend-mode: screen;
+      animation: bokeh-drift 8s ease-in-out infinite alternate;
+    }
+    .bokeh-1 {
+      top: 30px; right: 140px;
+      width: 45px; height: 45px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1.5px solid rgba(255, 255, 255, 0.25);
+      filter: blur(0.5px);
+    }
+    .bokeh-2 {
+      top: 50px; right: 160px;
+      width: 30px; height: 30px;
+      background: rgba(255, 255, 255, 0.15);
+      border: 1.5px solid rgba(255, 255, 255, 0.25);
+      filter: blur(0.5px);
+      animation-delay: -2s;
+    }
+    .bokeh-3 {
+      top: 70px; right: 180px;
+      width: 20px; height: 20px;
+      background: rgba(255, 255, 255, 0.25);
+      border: 1.5px solid rgba(255, 255, 255, 0.35);
+      animation-delay: -4s;
+    }
+    .bokeh-4 {
+      top: 90px; right: 200px;
+      width: 15px; height: 15px;
+      background: rgba(255, 255, 255, 0.4);
+      box-shadow: 0 0 6px rgba(255, 255, 255, 0.7);
+      animation-delay: -6s;
+    }
+    .bokeh-5 {
+      top: 5px; right: 105px;
+      width: 80px; height: 80px;
+      border: 2.5px solid rgba(255, 255, 255, 0.08);
+      background: transparent;
+      animation-delay: -1s;
+    }
+    .real-bird {
+      background-image: url('https://s3-us-west-2.amazonaws.com/s.cdpn.io/174479/bird-cells-new.svg');
+      background-size: auto 100%;
+      width: 88px;
+      height: 125px;
+      will-change: background-position;
+      animation-name: fly-cycle;
+      animation-timing-function: steps(10);
+      animation-iteration-count: infinite;
+    }
+    @keyframes fly-cycle {
+      100% {
+        background-position: -900px 0;
+      }
+    }
+    .content {
+      position: relative;
+      z-index: 10;
+    }
+    /* ------------------------------------ */
+
+    .css-star {
+      position: absolute;
+      width: 3px; height: 3px;
+      background: #ffffff;
+      border-radius: 50%;
+      box-shadow: 0 0 8px 2px rgba(255,255,255,0.8);
+      animation: twinkle 2s infinite ease-in-out alternate;
+    }
+    @keyframes twinkle {
+      0% { opacity: 0.2; transform: scale(0.5); box-shadow: 0 0 2px rgba(255,255,255,0.2); }
+      100% { opacity: 1; transform: scale(1.2); box-shadow: 0 0 12px 3px rgba(255,255,255,1); }
+    }
+    .css-sun {
+      position: absolute;
+      width: 50px; height: 50px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #FFFBEB 0%, #FDE047 100%);
+      box-shadow: 0 0 40px 10px rgba(253, 224, 71, 0.6), 0 0 80px 30px rgba(253, 224, 71, 0.3);
+      animation: sun-pulse 4s infinite alternate ease-in-out;
+    }
+    @keyframes sun-pulse {
+      0% { box-shadow: 0 0 40px 10px rgba(253, 224, 71, 0.6), 0 0 80px 30px rgba(253, 224, 71, 0.3); }
+      100% { box-shadow: 0 0 50px 15px rgba(253, 224, 71, 0.8), 0 0 100px 40px rgba(253, 224, 71, 0.4); }
+    }
+    .css-hill {
+      position: absolute;
+      border-radius: 50%;
+    }
+
+    /* --- WORLD-CLASS CINEMATIC NIGHT SKY ARCHITECTURE --- */
+    
+    /* 1. NEBULAS / ATMOSPHERIC GLOW */
+    .cine-nebula {
+      position: absolute; border-radius: 50%; filter: blur(60px); 
+      opacity: 0.3; mix-blend-mode: screen; pointer-events: none;
+      animation: cine-breathe 12s ease-in-out infinite alternate;
+    }
+    .purple-nebula { top: -20%; left: 0%; width: 70vw; height: 50vh; background: rgba(45, 16, 91, 0.2); }
+    .blue-nebula { bottom: 10%; right: -10%; width: 80vw; height: 60vh; background: rgba(7, 82, 116, 0.15); animation-delay: -6s; }
+    @keyframes cine-breathe { 0% { opacity: 0.3; transform: scale(0.9); } 100% { opacity: 0.7; transform: scale(1.1); } }
+
+    /* 2. STAR SHAPES */
+    .night-star-shape {
+      position: absolute;
+      color: white;
+      text-shadow: 0 0 8px rgba(255, 255, 255, 0.8);
+    }
+    .twinkling {
+      animation: twinkle-star-shape 3s infinite ease-in-out alternate;
+    }
+    .glowing {
+      opacity: 0.8;
+    }
+    @keyframes twinkle-star-shape {
+      0% { opacity: 0.1; transform: scale(0.6); }
+      100% { opacity: 1; transform: scale(1.2); text-shadow: 0 0 12px rgba(255, 255, 255, 1); }
+    }
+
+    /* 3. RADIANT POETIC MOON */
+    .cine-moon-wrapper {
+      position: absolute; top: 15%; right: 22%; width: 45px; height: 45px;
+    }
+    .cine-moon {
+      width: 100%; height: 100%; border-radius: 50%;
+      background: radial-gradient(circle at 35% 35%, #FFF9E6 0%, #FFF5CD 60%, #d4c89a 100%);
+      box-shadow: 0 0 6px 1px rgba(255, 249, 230, 0.1), inset -3px -3px 8px rgba(0, 0, 0, 0.4), inset 2px 2px 6px rgba(255, 249, 230, 0.8);
+      position: relative; z-index: 2;
+    }
+    .cine-moon-halo {
+      position: absolute; top: -15%; left: -15%; width: 130%; height: 130%;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(255, 249, 230, 0.05) 0%, transparent 60%);
+      filter: blur(4px); z-index: 1;
+      animation: cine-halo-pulse 6s ease-in-out infinite alternate;
+    }
+    @keyframes cine-halo-pulse { 0% { transform: scale(0.95); opacity: 0.8; } 100% { transform: scale(1.05); opacity: 1; } }
+    
+    /* 4. HIGH-VELOCITY SHOOTING STARS */
+    .cine-shooting-star {
+      position: absolute; width: 120px; height: 1.5px;
+      transform: rotate(-45deg); opacity: 0;
+    }
+    .streak-1 { 
+      top: 15%; right: 25%; animation: cine-shoot 7s linear infinite; animation-delay: 1s; 
+      background: linear-gradient(90deg, rgba(255,255,255,1) 0%, rgba(56, 189, 248, 0.8) 30%, transparent 100%);
+      filter: drop-shadow(0 0 6px rgba(56, 189, 248, 0.8));
+    }
+    .streak-2 { 
+      top: 40%; right: 5%; animation: cine-shoot 10s linear infinite; animation-delay: 4.5s; 
+      background: linear-gradient(90deg, rgba(255,255,255,1) 0%, rgba(253, 224, 71, 0.8) 30%, transparent 100%);
+      filter: drop-shadow(0 0 8px rgba(253, 224, 71, 0.6));
+    }
+    .streak-3 { 
+      top: 5%; right: 50%; animation: cine-shoot 15s linear infinite; animation-delay: 9s; transform: rotate(-45deg) scale(0.7); 
+      background: linear-gradient(90deg, rgba(255,255,255,1) 0%, rgba(255, 255, 255, 0.5) 30%, transparent 100%);
+      filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.6));
+    }
+    @keyframes cine-shoot {
+       0% { transform: translate(0, 0) rotate(-45deg) scale(0); opacity: 0; }
+       2% { opacity: 1; transform: translate(-30px, 30px) rotate(-45deg) scale(1); }
+       10% { opacity: 0; transform: translate(-250px, 250px) rotate(-45deg) scale(0.2); }
+       100% { opacity: 0; }
+    }
+
+    /* 5. LIGHT DARK CLOUDS */
+    .cine-dark-cloud {
+      position: absolute;
+      background: radial-gradient(ellipse at center, #375A6C 0%, #1C3B4D 60%, transparent 100%);
+      border-radius: 50px;
+      filter: blur(12px);
+      opacity: 0.85;
+      z-index: 1;
+      pointer-events: none;
+    }
+
+    /* 6. ETHEREAL HORIZON MIST */
+    .cine-mist { 
+      position: absolute; bottom: 0; left: -25%; width: 150%; height: 120px; 
+      filter: blur(40px); pointer-events: none;
+      animation: cine-mist-drift 25s ease-in-out infinite alternate; 
+    }
+    .back-mist { bottom: -20px; background: rgba(56, 189, 248, 0.05); z-index: 1; }
+    .front-mist { bottom: -40px; background: rgba(226, 232, 240, 0.02); z-index: 3; animation-duration: 35s; animation-direction: alternate-reverse; }
+    @keyframes cine-mist-drift {
+       0% { transform: translateX(-5%); }
+       100% { transform: translateX(5%); }
+    }
+
+    .active-tab-bg {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: var(--active-tab-gradient);
+      border-radius: 16px 16px 0 0;
+      z-index: 0;
+      transition: background 0.6s cubic-bezier(0.25, 1, 0.5, 1), background-color 0.6s cubic-bezier(0.25, 1, 0.5, 1);
+    }
+    .active-tab-bg::before {
+      content: "";
+      position: absolute;
+      left: -16px;
+      bottom: 0;
+      width: 16px;
+      height: 16px;
+      border-bottom-right-radius: 16px;
+      box-shadow: 10px 10px 0 10px var(--active-tab-solid-color);
+      pointer-events: none;
+      transition: box-shadow 0.5s ease;
+    }
+    .active-tab-bg::after {
+      content: "";
+      position: absolute;
+      right: -16px;
+      bottom: 0;
+      width: 16px;
+      height: 16px;
+      border-bottom-left-radius: 16px;
+      box-shadow: -10px 10px 0 10px var(--active-tab-solid-color);
+      pointer-events: none;
+      transition: box-shadow 0.5s ease;
+    }
+  `}</style>
+);
 
 // --- DYNAMIC THEME DEFINITIONS ---
 const getThemeColors = (tab) => {
@@ -232,7 +496,10 @@ function Consumer_HomePage() {
       const idx = TABS.indexOf(activeTab);
       if (idx > 0) changeTab(TABS[idx - 1]);
     },
-    trackMouse: true
+    trackMouse: true,
+    delta: 10,
+    preventScrollOnSwipe: true,
+    touchEventOptions: { passive: false }
   });
 
   const fetchLiveWeather = async (query) => {
@@ -511,299 +778,7 @@ function Consumer_HomePage() {
 
         {/* BROWSER-LIKE TABS */}
         <div style={{ paddingTop: '8px', paddingBottom: '0', position: 'relative', zIndex: 10 }}>
-          <style>{`
-            @import url('https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@700;800;900&display=swap');
-            
-            /* --- NEW SUNNY DAY PREMIUM DESIGN --- */
-            .sky-header {
-              position: absolute;
-              top: 0; left: 0;
-              width: 100%;
-              height: 100%;
-              background: linear-gradient(150deg, #1ea2ff 0%, #7ed3ff 45%, #d0f0ff 100%);
-              overflow: hidden;
-              isolation: isolate;
-            }
-
-            /* --- WINTER THEME (Tools & Utils) --- */
-            .winter-svg-bg {
-              position: absolute;
-              bottom: 0;
-              left: 0;
-              width: 100%;
-              z-index: 2;
-              opacity: 0.95;
-            }
-
-            @keyframes bokeh-drift {
-              0% { transform: translate(0, 0) scale(1); opacity: 0.6; }
-              100% { transform: translate(-10px, 10px) scale(1.05); opacity: 0.9; }
-            }
-            .sun-core {
-              position: absolute;
-              top: 20px;
-              right: 120px;
-              width: 35px;
-              height: 35px;
-              background: #ffffff;
-              border-radius: 50%;
-              filter: none;
-              box-shadow: 0 0 20px 8px rgba(255, 255, 255, 1), 0 0 40px 15px rgba(255, 255, 255, 0.5);
-              mix-blend-mode: screen;
-              animation: sun-breathe 4s ease-in-out infinite;
-              z-index: 10;
-            }
-            .sun-halo {
-              position: absolute;
-              top: 15px;
-              right: 115px;
-              width: 45px;
-              height: 45px;
-              background: rgba(255, 255, 255, 0.7);
-              border-radius: 50%;
-              filter: blur(8px);
-              mix-blend-mode: screen;
-              animation: sun-breathe 5s ease-in-out infinite;
-            }
-            .sun-ambient {
-              position: absolute;
-              top: 5px;
-              right: 105px;
-              width: 65px;
-              height: 65px;
-              background: rgba(255, 255, 255, 0.3);
-              border-radius: 50%;
-              filter: blur(15px);
-              mix-blend-mode: overlay;
-            }
-            .bokeh {
-              position: absolute;
-              border-radius: 50%;
-              pointer-events: none;
-              mix-blend-mode: screen;
-              animation: bokeh-drift 8s ease-in-out infinite alternate;
-            }
-            .bokeh-1 {
-              top: 30px; right: 140px;
-              width: 45px; height: 45px;
-              background: rgba(255, 255, 255, 0.08);
-              border: 1.5px solid rgba(255, 255, 255, 0.25);
-              filter: blur(0.5px);
-            }
-            .bokeh-2 {
-              top: 50px; right: 160px;
-              width: 30px; height: 30px;
-              background: rgba(255, 255, 255, 0.15);
-              border: 1.5px solid rgba(255, 255, 255, 0.25);
-              filter: blur(0.5px);
-              animation-delay: -2s;
-            }
-            .bokeh-3 {
-              top: 70px; right: 180px;
-              width: 20px; height: 20px;
-              background: rgba(255, 255, 255, 0.25);
-              border: 1.5px solid rgba(255, 255, 255, 0.35);
-              animation-delay: -4s;
-            }
-            .bokeh-4 {
-              top: 90px; right: 200px;
-              width: 15px; height: 15px;
-              background: rgba(255, 255, 255, 0.4);
-              box-shadow: 0 0 6px rgba(255, 255, 255, 0.7);
-              animation-delay: -6s;
-            }
-            .bokeh-5 {
-              top: 5px; right: 105px;
-              width: 80px; height: 80px;
-              border: 2.5px solid rgba(255, 255, 255, 0.08);
-              background: transparent;
-              animation-delay: -1s;
-            }
-            .real-bird {
-              background-image: url('https://s3-us-west-2.amazonaws.com/s.cdpn.io/174479/bird-cells-new.svg');
-              background-size: auto 100%;
-              width: 88px;
-              height: 125px;
-              will-change: background-position;
-              animation-name: fly-cycle;
-              animation-timing-function: steps(10);
-              animation-iteration-count: infinite;
-            }
-            @keyframes fly-cycle {
-              100% {
-                background-position: -900px 0;
-              }
-            }
-            .content {
-              position: relative;
-              z-index: 10;
-            }
-            /* ------------------------------------ */
-
-            .css-star {
-              position: absolute;
-              width: 3px; height: 3px;
-              background: #ffffff;
-              border-radius: 50%;
-              box-shadow: 0 0 8px 2px rgba(255,255,255,0.8);
-              animation: twinkle 2s infinite ease-in-out alternate;
-            }
-            @keyframes twinkle {
-              0% { opacity: 0.2; transform: scale(0.5); box-shadow: 0 0 2px rgba(255,255,255,0.2); }
-              100% { opacity: 1; transform: scale(1.2); box-shadow: 0 0 12px 3px rgba(255,255,255,1); }
-            }
-            .css-sun {
-              position: absolute;
-              width: 50px; height: 50px;
-              border-radius: 50%;
-              background: linear-gradient(135deg, #FFFBEB 0%, #FDE047 100%);
-              box-shadow: 0 0 40px 10px rgba(253, 224, 71, 0.6), 0 0 80px 30px rgba(253, 224, 71, 0.3);
-              animation: sun-pulse 4s infinite alternate ease-in-out;
-            }
-            @keyframes sun-pulse {
-              0% { box-shadow: 0 0 40px 10px rgba(253, 224, 71, 0.6), 0 0 80px 30px rgba(253, 224, 71, 0.3); }
-              100% { box-shadow: 0 0 50px 15px rgba(253, 224, 71, 0.8), 0 0 100px 40px rgba(253, 224, 71, 0.4); }
-            }
-            .css-hill {
-              position: absolute;
-              border-radius: 50%;
-            }
-
-            /* --- WORLD-CLASS CINEMATIC NIGHT SKY ARCHITECTURE --- */
-            
-            /* 1. NEBULAS / ATMOSPHERIC GLOW */
-            .cine-nebula {
-              position: absolute; border-radius: 50%; filter: blur(60px); 
-              opacity: 0.3; mix-blend-mode: screen; pointer-events: none;
-              animation: cine-breathe 12s ease-in-out infinite alternate;
-            }
-            .purple-nebula { top: -20%; left: 0%; width: 70vw; height: 50vh; background: rgba(45, 16, 91, 0.2); }
-            .blue-nebula { bottom: 10%; right: -10%; width: 80vw; height: 60vh; background: rgba(7, 82, 116, 0.15); animation-delay: -6s; }
-            @keyframes cine-breathe { 0% { opacity: 0.3; transform: scale(0.9); } 100% { opacity: 0.7; transform: scale(1.1); } }
-
-            /* 2. STAR SHAPES */
-            .night-star-shape {
-              position: absolute;
-              color: white;
-              text-shadow: 0 0 8px rgba(255, 255, 255, 0.8);
-            }
-            .twinkling {
-              animation: twinkle-star-shape 3s infinite ease-in-out alternate;
-            }
-            .glowing {
-              opacity: 0.8;
-            }
-            @keyframes twinkle-star-shape {
-              0% { opacity: 0.1; transform: scale(0.6); }
-              100% { opacity: 1; transform: scale(1.2); text-shadow: 0 0 12px rgba(255, 255, 255, 1); }
-            }
-
-            /* 3. RADIANT POETIC MOON */
-            .cine-moon-wrapper {
-              position: absolute; top: 15%; right: 22%; width: 45px; height: 45px;
-            }
-            .cine-moon {
-              width: 100%; height: 100%; border-radius: 50%;
-              background: radial-gradient(circle at 35% 35%, #FFF9E6 0%, #FFF5CD 60%, #d4c89a 100%);
-              box-shadow: 0 0 6px 1px rgba(255, 249, 230, 0.1), inset -3px -3px 8px rgba(0, 0, 0, 0.4), inset 2px 2px 6px rgba(255, 249, 230, 0.8);
-              position: relative; z-index: 2;
-            }
-            .cine-moon-halo {
-              position: absolute; top: -15%; left: -15%; width: 130%; height: 130%;
-              border-radius: 50%;
-              background: radial-gradient(circle, rgba(255, 249, 230, 0.05) 0%, transparent 60%);
-              filter: blur(4px); z-index: 1;
-              animation: cine-halo-pulse 6s ease-in-out infinite alternate;
-            }
-            @keyframes cine-halo-pulse { 0% { transform: scale(0.95); opacity: 0.8; } 100% { transform: scale(1.05); opacity: 1; } }
-            
-            /* 4. HIGH-VELOCITY SHOOTING STARS */
-            .cine-shooting-star {
-              position: absolute; width: 120px; height: 1.5px;
-              transform: rotate(-45deg); opacity: 0;
-            }
-            .streak-1 { 
-              top: 15%; right: 25%; animation: cine-shoot 7s linear infinite; animation-delay: 1s; 
-              background: linear-gradient(90deg, rgba(255,255,255,1) 0%, rgba(56, 189, 248, 0.8) 30%, transparent 100%);
-              filter: drop-shadow(0 0 6px rgba(56, 189, 248, 0.8));
-            }
-            .streak-2 { 
-              top: 40%; right: 5%; animation: cine-shoot 10s linear infinite; animation-delay: 4.5s; 
-              background: linear-gradient(90deg, rgba(255,255,255,1) 0%, rgba(253, 224, 71, 0.8) 30%, transparent 100%);
-              filter: drop-shadow(0 0 8px rgba(253, 224, 71, 0.6));
-            }
-            .streak-3 { 
-              top: 5%; right: 50%; animation: cine-shoot 15s linear infinite; animation-delay: 9s; transform: rotate(-45deg) scale(0.7); 
-              background: linear-gradient(90deg, rgba(255,255,255,1) 0%, rgba(255, 255, 255, 0.5) 30%, transparent 100%);
-              filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.6));
-            }
-            @keyframes cine-shoot {
-               0% { transform: translate(0, 0) rotate(-45deg) scale(0); opacity: 0; }
-               2% { opacity: 1; transform: translate(-30px, 30px) rotate(-45deg) scale(1); }
-               10% { opacity: 0; transform: translate(-250px, 250px) rotate(-45deg) scale(0.2); }
-               100% { opacity: 0; }
-            }
-
-            /* 5. LIGHT DARK CLOUDS */
-            .cine-dark-cloud {
-              position: absolute;
-              background: radial-gradient(ellipse at center, #375A6C 0%, #1C3B4D 60%, transparent 100%);
-              border-radius: 50px;
-              filter: blur(12px);
-              opacity: 0.85;
-              z-index: 1;
-              pointer-events: none;
-            }
-
-            /* 6. ETHEREAL HORIZON MIST */
-            .cine-mist { 
-              position: absolute; bottom: 0; left: -25%; width: 150%; height: 120px; 
-              filter: blur(40px); pointer-events: none;
-              animation: cine-mist-drift 25s ease-in-out infinite alternate; 
-            }
-            .back-mist { bottom: -20px; background: rgba(56, 189, 248, 0.05); z-index: 1; }
-            .front-mist { bottom: -40px; background: rgba(226, 232, 240, 0.02); z-index: 3; animation-duration: 35s; animation-direction: alternate-reverse; }
-            @keyframes cine-mist-drift {
-               0% { transform: translateX(-5%); }
-               100% { transform: translateX(5%); }
-            }
-
-            .active-tab-bg {
-              position: absolute;
-              top: 0;
-              left: 0;
-              right: 0;
-              bottom: 0;
-              background: var(--active-tab-gradient);
-              border-radius: 16px 16px 0 0;
-              z-index: 0;
-              transition: background 0.6s cubic-bezier(0.25, 1, 0.5, 1), background-color 0.6s cubic-bezier(0.25, 1, 0.5, 1);
-            }
-            .active-tab-bg::before {
-              content: "";
-              position: absolute;
-              left: -16px;
-              bottom: 0;
-              width: 16px;
-              height: 16px;
-              border-bottom-right-radius: 16px;
-              box-shadow: 10px 10px 0 10px var(--active-tab-solid-color);
-              pointer-events: none;
-              transition: box-shadow 0.5s ease;
-            }
-            .active-tab-bg::after {
-              content: "";
-              position: absolute;
-              right: -16px;
-              bottom: 0;
-              width: 16px;
-              height: 16px;
-              border-bottom-left-radius: 16px;
-              box-shadow: -10px 10px 0 10px var(--active-tab-solid-color);
-              pointer-events: none;
-              transition: box-shadow 0.5s ease;
-            }
-          `}</style>
+          {ConsumerGlobalStyles}
           <div 
             style={tabCardsContainer}
             onClick={(e) => {
@@ -885,14 +860,15 @@ function Consumer_HomePage() {
 
         {/* SWIPEABLE BENTO GRID AREA */}
         <div {...swipeHandlers} style={{ overflowX: 'hidden', width: '100%', minHeight: '350px' }}>
-          <AnimatePresence mode="wait">
+          <AnimatePresence mode="popLayout" custom={direction}>
             <motion.div 
               key={activeTab}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.2 }}
-              style={bentoGrid}
+              custom={direction}
+              initial={{ opacity: 0, x: direction * 40, scale: 0.98 }}
+              animate={{ opacity: 1, x: 0, scale: 1 }}
+              exit={{ opacity: 0, x: direction * -40, scale: 0.98 }}
+              transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+              style={{...bentoGrid, willChange: 'transform, opacity'}}
             >
 
         {activeTab === 'AgriInsights' && (
