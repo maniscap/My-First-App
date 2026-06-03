@@ -161,9 +161,8 @@ function Seller_HomePage() {
                                 <h3 style={{ margin: '0 0 2px 0', fontSize: '15px', color: '#0f172a', fontWeight: '800' }}>Business Zone</h3>
                                 <p style={{ margin: 0, fontSize: '11px', color: '#64748b', fontWeight: '500' }}>Sell bulk harvest.</p>
                             </div>
-                            <div style={{ padding: '8px 12px', borderTop: '1px solid #f1f5f9', backgroundColor: '#fcfdfd', marginTop: 'auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <p style={{ margin: 0, fontSize: '11px', color: '#16a34a', fontWeight: '700' }}>Post live listings</p>
-                                <span style={{ color: '#16a34a', fontSize: '14px', fontWeight: 'bold' }}>+</span>
+                            <div style={{ padding: '8px 12px', borderTop: '1px solid #f1f5f9', backgroundColor: '#fcfdfd', marginTop: 'auto' }}>
+                                <p style={{ margin: 0, fontSize: '11px', color: '#16a34a', fontWeight: '700' }}>Click to add your listings</p>
                             </div>
                         </div>
                     </div>
@@ -181,9 +180,8 @@ function Seller_HomePage() {
                                 <h3 style={{ margin: '0 0 2px 0', fontSize: '15px', color: '#0f172a', fontWeight: '800' }}>Farm Fresh</h3>
                                 <p style={{ margin: 0, fontSize: '11px', color: '#64748b', fontWeight: '500' }}>Sell fresh produce.</p>
                             </div>
-                            <div style={{ padding: '8px 12px', borderTop: '1px solid #f1f5f9', backgroundColor: '#fcfdfd', marginTop: 'auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <p style={{ margin: 0, fontSize: '11px', color: '#16a34a', fontWeight: '700' }}>Post live listings</p>
-                                <span style={{ color: '#16a34a', fontSize: '14px', fontWeight: 'bold' }}>+</span>
+                            <div style={{ padding: '8px 12px', borderTop: '1px solid #f1f5f9', backgroundColor: '#fcfdfd', marginTop: 'auto' }}>
+                                <p style={{ margin: 0, fontSize: '11px', color: '#16a34a', fontWeight: '700' }}>Click to add your listings</p>
                             </div>
                         </div>
                     </div>
@@ -201,9 +199,8 @@ function Seller_HomePage() {
                                 <h3 style={{ margin: '0 0 2px 0', fontSize: '15px', color: '#0f172a', fontWeight: '800' }}>Machinery</h3>
                                 <p style={{ margin: 0, fontSize: '11px', color: '#64748b', fontWeight: '500' }}>Rent out equipment.</p>
                             </div>
-                            <div style={{ padding: '8px 12px', borderTop: '1px solid #f1f5f9', backgroundColor: '#fcfdfd', marginTop: 'auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <p style={{ margin: 0, fontSize: '11px', color: '#16a34a', fontWeight: '700' }}>Post live listings</p>
-                                <span style={{ color: '#16a34a', fontSize: '14px', fontWeight: 'bold' }}>+</span>
+                            <div style={{ padding: '8px 12px', borderTop: '1px solid #f1f5f9', backgroundColor: '#fcfdfd', marginTop: 'auto' }}>
+                                <p style={{ margin: 0, fontSize: '11px', color: '#16a34a', fontWeight: '700' }}>Click to add your listings</p>
                             </div>
                         </div>
                     </div>
@@ -221,9 +218,8 @@ function Seller_HomePage() {
                                 <h3 style={{ margin: '0 0 2px 0', fontSize: '15px', color: '#0f172a', fontWeight: '800' }}>Workers</h3>
                                 <p style={{ margin: 0, fontSize: '11px', color: '#64748b', fontWeight: '500' }}>Provide labor services.</p>
                             </div>
-                            <div style={{ padding: '8px 12px', borderTop: '1px solid #f1f5f9', backgroundColor: '#fcfdfd', marginTop: 'auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <p style={{ margin: 0, fontSize: '11px', color: '#16a34a', fontWeight: '700' }}>Post live listings</p>
-                                <span style={{ color: '#16a34a', fontSize: '14px', fontWeight: 'bold' }}>+</span>
+                            <div style={{ padding: '8px 12px', borderTop: '1px solid #f1f5f9', backgroundColor: '#fcfdfd', marginTop: 'auto' }}>
+                                <p style={{ margin: 0, fontSize: '11px', color: '#16a34a', fontWeight: '700' }}>Click to add your listings</p>
                             </div>
                         </div>
                     </div>
@@ -241,9 +237,8 @@ function Seller_HomePage() {
                                 <h3 style={{ margin: '0 0 2px 0', fontSize: '15px', color: '#0f172a', fontWeight: '800' }}>Freelancing</h3>
                                 <p style={{ margin: 0, fontSize: '11px', color: '#64748b', fontWeight: '500' }}>Offer specialized skills.</p>
                             </div>
-                            <div style={{ padding: '8px 12px', borderTop: '1px solid #f1f5f9', backgroundColor: '#fcfdfd', marginTop: 'auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <p style={{ margin: 0, fontSize: '11px', color: '#16a34a', fontWeight: '700' }}>Post live listings</p>
-                                <span style={{ color: '#16a34a', fontSize: '14px', fontWeight: 'bold' }}>+</span>
+                            <div style={{ padding: '8px 12px', borderTop: '1px solid #f1f5f9', backgroundColor: '#fcfdfd', marginTop: 'auto' }}>
+                                <p style={{ margin: 0, fontSize: '11px', color: '#16a34a', fontWeight: '700' }}>Click to add your listings</p>
                             </div>
                         </div>
                     </div>
