@@ -54,12 +54,12 @@ export default function FarmFresh_ListingForm() {
         if (item.includes('egg')) return [ { val: 'dozen', label: 'Per Dozen' }, { val: 'tray', label: 'Per Tray (30)' }, { val: 'piece', label: 'Per Piece' } ];
         if (item.includes('milk') || item.includes('lassi') || item.includes('buttermilk') || item.includes('water') || item.includes('juice') || item.includes('oil')) return [ { val: 'liter', label: 'Per Liter' }, { val: '500ml', label: 'Per 500ml' }, { val: 'packet', label: 'Per Packet' } ];
         if (cat.includes('dairy') || item.includes('pickle') || item.includes('jam') || item.includes('butter') || item.includes('ghee') || item.includes('honey')) return [ { val: 'kg', label: 'Per Kg' }, { val: '500g', label: 'Per 500g' }, { val: '250g', label: 'Per 250g' }, { val: 'jar', label: 'Per Jar' }, { val: 'packet', label: 'Per Packet' } ];
-        if (item.includes('leaves') || item.includes('spinach') || item.includes('mint') || item.includes('coriander')) return [ { val: 'bunch', label: 'Per Bunch' }, { val: 'kg', label: 'Per Kg' }, { val: 'gram', label: 'Per 100g' } ];
+        if (item.includes('leaves') || item.includes('spinach') || item.includes('mint') || item.includes('coriander')) return [ { val: 'bunch', label: 'Per Bunch' }, { val: 'kg', label: 'Per 1 Kg' }, { val: '500g', label: 'Per 500g' }, { val: '250g', label: 'Per 250g' }, { val: 'gram', label: 'Per 100g' } ];
         if (item.includes('bread') || item.includes('bun') || item.includes('biscuit') || item.includes('cookie') || item.includes('chikki') || item.includes('papad') || item.includes('chips') || item.includes('mathri')) return [ { val: 'packet', label: 'Per Packet' }, { val: 'piece', label: 'Per Piece' }, { val: 'box', label: 'Per Box' }, { val: 'kg', label: 'Per Kg' } ];
         if (item.includes('banana') || item.includes('coconut')) return [ { val: 'dozen', label: 'Per Dozen' }, { val: 'piece', label: 'Per Piece' }, { val: 'kg', label: 'Per Kg' }, { val: 'quintal', label: 'Per Quintal' } ];
         if (cat.includes('field')) return [ { val: 'quintal', label: 'Per Quintal (100kg)' }, { val: 'ton', label: 'Per Ton (1000kg)' }, { val: 'bag', label: 'Per Bag (50kg)' }, { val: 'kg', label: 'Per Kg' } ];
 
-        return [ { val: 'kg', label: 'Per Kg' }, { val: 'quintal', label: 'Per Quintal' }, { val: 'ton', label: 'Per Ton' }, { val: 'gram', label: 'Per 100g' }, { val: 'box', label: 'Per Box/Crate' } ];
+        return [ { val: 'kg', label: 'Per 1 Kg' }, { val: '500g', label: 'Per 500g' }, { val: '250g', label: 'Per 250g' }, { val: '2kg', label: 'Per 2 Kg' }, { val: '5kg', label: 'Per 5 Kg' }, { val: '10kg', label: 'Per 10 Kg' }, { val: 'quintal', label: 'Per Quintal' }, { val: 'ton', label: 'Per Ton' }, { val: 'box', label: 'Per Box/Crate' } ];
     };
 
     const dynamicUnits = getDynamicUnits();
@@ -114,29 +114,29 @@ export default function FarmFresh_ListingForm() {
     if (showSuccess && submittedData) {
         return (
             <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: '#16a34a', color: 'white', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', zIndex: 99999, padding: '20px', animation: 'fadeIn 0.5s ease-out' }}>
-                <CheckCircle2 size={64} color="white" style={{ marginBottom: '20px', animation: 'scaleUp 0.5s ease-out' }} />
-                <h1 style={{ fontSize: '28px', fontWeight: '800', marginBottom: '10px', textAlign: 'center' }}>Success!</h1>
-                <p style={{ fontSize: '16px', fontWeight: '500', marginBottom: '40px', opacity: 0.9, textAlign: 'center' }}>Your listing is now live to all consumers.</p>
+                <CheckCircle2 size={48} color="white" style={{ marginBottom: '12px', animation: 'scaleUp 0.5s ease-out' }} />
+                <h1 style={{ fontSize: '24px', fontWeight: '800', marginBottom: '8px', textAlign: 'center' }}>Success!</h1>
+                <p style={{ fontSize: '14px', fontWeight: '500', marginBottom: '24px', opacity: 0.9, textAlign: 'center' }}>Your listing is now live.</p>
                 
-                <div style={{ backgroundColor: 'white', color: '#0f172a', borderRadius: '24px', padding: '20px', width: '100%', maxWidth: '350px', boxShadow: '0 20px 40px rgba(0,0,0,0.2)', animation: 'slideUp 0.6s ease-out' }}>
-                    <div style={{ width: '100%', height: '180px', borderRadius: '16px', backgroundColor: '#f1f5f9', overflow: 'hidden', marginBottom: '16px' }}>
+                <div style={{ backgroundColor: 'white', color: '#0f172a', borderRadius: '20px', padding: '16px', width: '90%', maxWidth: '280px', boxShadow: '0 20px 40px rgba(0,0,0,0.2)', animation: 'slideUp 0.6s ease-out' }}>
+                    <div style={{ width: '100%', height: '140px', borderRadius: '12px', backgroundColor: '#f1f5f9', overflow: 'hidden', marginBottom: '12px' }}>
                         {submittedData.imageUrl ? (
                             <img src={submittedData.imageUrl} alt={submittedData.itemName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                         ) : (
-                            <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94a3b8' }}>No Image</div>
+                            <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94a3b8', fontSize: '12px' }}>No Image</div>
                         )}
                     </div>
-                    <h2 style={{ margin: '0 0 8px 0', fontSize: '20px', fontWeight: '800' }}>{submittedData.itemName}</h2>
-                    <p style={{ margin: '0 0 16px 0', fontSize: '14px', color: '#64748b', lineHeight: '1.5' }}>{submittedData.description}</p>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #f1f5f9', paddingTop: '16px' }}>
-                        <span style={{ fontSize: '13px', color: '#64748b', fontWeight: '600' }}>Price</span>
-                        <span style={{ fontSize: '18px', fontWeight: '800', color: '#16a34a' }}>₹{submittedData.price} <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '500' }}>/ {submittedData.unit}</span></span>
+                    <h2 style={{ margin: '0 0 6px 0', fontSize: '16px', fontWeight: '800', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{submittedData.itemName}</h2>
+                    <p style={{ margin: '0 0 12px 0', fontSize: '12px', color: '#64748b', lineHeight: '1.4', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{submittedData.description}</p>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #f1f5f9', paddingTop: '12px' }}>
+                        <span style={{ fontSize: '11px', color: '#64748b', fontWeight: '600' }}>Price</span>
+                        <span style={{ fontSize: '16px', fontWeight: '800', color: '#16a34a' }}>₹{submittedData.price} <span style={{ fontSize: '11px', color: '#64748b', fontWeight: '500' }}>/ {submittedData.unit}</span></span>
                     </div>
                 </div>
                 
                 <button 
                     onClick={() => navigate('/Seller_HomePage')} 
-                    style={{ marginTop: '40px', background: 'rgba(255,255,255,0.2)', color: 'white', border: '1px solid rgba(255,255,255,0.5)', padding: '12px 24px', borderRadius: '30px', fontWeight: '600', cursor: 'pointer' }}
+                    style={{ marginTop: '30px', background: 'rgba(255,255,255,0.2)', color: 'white', border: '1px solid rgba(255,255,255,0.5)', padding: '10px 20px', borderRadius: '30px', fontSize: '14px', fontWeight: '600', cursor: 'pointer' }}
                 >
                     Return Home Now
                 </button>
@@ -148,7 +148,7 @@ export default function FarmFresh_ListingForm() {
                         100% { transform: scale(1); opacity: 1; }
                     }
                     @keyframes slideUp {
-                        from { transform: translateY(50px); opacity: 0; }
+                        from { transform: translateY(30px); opacity: 0; }
                         to { transform: translateY(0); opacity: 1; }
                     }
                     @keyframes fadeIn {
