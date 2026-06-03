@@ -327,7 +327,7 @@ export default function FarmFresh_ListingForm() {
                                     setCustomName(''); 
                                     setUnit('');
                                 }}
-                                style={{ width: '100%', padding: '16px 20px', borderRadius: '14px', border: '1px solid #cbd5e1', fontSize: '16px', fontWeight: '500', backgroundColor: '#f8fafc', color: '#0f172a', appearance: 'none', outline: 'none', boxShadow: '0 2px 4px rgba(0,0,0,0.02)', cursor: 'pointer' }}
+                                style={{ width: '100%', boxSizing: 'border-box', padding: '16px 20px', borderRadius: '14px', border: '2px solid #94a3b8', fontSize: '16px', fontWeight: '600', backgroundColor: '#f8fafc', color: '#0f172a', appearance: 'none', outline: 'none', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)', cursor: 'pointer' }}
                                 required
                             >
                                 <option value="" disabled>-- Choose Category --</option>
@@ -351,7 +351,7 @@ export default function FarmFresh_ListingForm() {
                                 <select 
                                     value={selectedItemId} 
                                     onChange={(e) => { setSelectedItemId(e.target.value); setCustomName(''); setUnit(''); }}
-                                    style={{ width: '100%', padding: '16px 20px', borderRadius: '14px', border: '1px solid #cbd5e1', fontSize: '16px', fontWeight: '500', backgroundColor: '#f8fafc', color: '#0f172a', appearance: 'none', outline: 'none', boxShadow: '0 2px 4px rgba(0,0,0,0.02)', cursor: 'pointer' }}
+                                    style={{ width: '100%', boxSizing: 'border-box', padding: '16px 20px', borderRadius: '14px', border: '2px solid #94a3b8', fontSize: '16px', fontWeight: '600', backgroundColor: '#f8fafc', color: '#0f172a', appearance: 'none', outline: 'none', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)', cursor: 'pointer' }}
                                     required
                                 >
                                     <option value="" disabled>-- Choose Item --</option>
