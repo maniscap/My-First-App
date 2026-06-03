@@ -394,10 +394,10 @@ export default function FarmFresh_ListingForm() {
                             
                             <div 
                                 onClick={() => setIsUnitOpen(!isUnitOpen)}
-                                style={{ width: '100%', boxSizing: 'border-box', padding: '16px 20px', borderRadius: '14px', border: '2px solid #94a3b8', fontSize: '16px', fontWeight: '600', backgroundColor: '#f8fafc', color: unit ? '#0f172a' : '#64748b', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)' }}
+                                style={{ width: '100%', boxSizing: 'border-box', padding: '16px 16px', borderRadius: '16px', border: '1px solid #cbd5e1', fontSize: '15px', fontWeight: '600', backgroundColor: '#fff', color: unit ? '#0f172a' : '#64748b', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
                             >
-                                <span>{farmFreshUnits.find(u => u.val === unit)?.label || unit || "-- Select Unit --"}</span>
-                                <svg width="20" height="20" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ transform: isUnitOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}><path d="M6 9l6 6 6-6"/></svg>
+                                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{farmFreshUnits.find(u => u.val === unit)?.label || unit || "-- Select Unit --"}</span>
+                                <svg width="20" height="20" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ transform: isUnitOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s', flexShrink: 0, marginLeft: '8px' }}><path d="M6 9l6 6 6-6"/></svg>
                             </div>
 
                             {isUnitOpen && (
