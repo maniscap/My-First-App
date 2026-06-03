@@ -48,7 +48,6 @@
     "recharts": "^3.7.0",
     "remark-gfm": "^4.0.1",
     "requests": "^0.3.0",
-    "sharp": "^0.34.5",
     "tailwind-merge": "^3.4.0",
     "tailwindcss": "^4.1.18",
     "tailwindcss-animate": "^1.0.7",

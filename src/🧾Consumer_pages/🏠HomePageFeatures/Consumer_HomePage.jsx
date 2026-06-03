@@ -880,7 +880,7 @@ function Consumer_HomePage() {
                 </Link>
 
                 <Link to="/NewsUpdates" style={cardLink}>
-                   <div className="glass-card" style={{...cardStyle, backgroundImage: "url('https://static.vecteezy.com/system/resources/previews/011/643/706/non_2x/business-newspaper-isolated-on-white-background-daily-newspaper-mock-up-concept-photo.jpg')"}}>
+                   <div className="glass-card" style={{...cardStyle, backgroundImage: "url('/assets/images/agri-news.webp')"}}>
                       <div style={cardTopOverlay}>
                          <div><h3 style={cardTitle}>Agri News</h3><p style={cardSubtitle}>Daily Updates</p></div>
                          <div style={{ opacity: 0.9 }}><Newspaper size={28} color="white"/></div>
@@ -889,7 +889,7 @@ function Consumer_HomePage() {
                 </Link>
 
                 <Link to="/library" style={cardLink}>
-                   <div className="glass-card" style={{...cardStyle, backgroundImage: "url('https://static.vecteezy.com/system/resources/thumbnails/023/256/819/small_2x/happy-farmer-is-standing-in-his-pepper-plantation-photo.jpg')"}}>
+                   <div className="glass-card" style={{...cardStyle, backgroundImage: "url('/assets/images/library.webp')"}}>
                       <div style={cardTopOverlay}>
                          <div><h3 style={cardTitle}>Library</h3><p style={cardSubtitle}>Expert Guides</p></div>
                          <div style={{ opacity: 0.9 }}><BookOpen size={28} color="white"/></div>
@@ -898,7 +898,7 @@ function Consumer_HomePage() {
                 </Link>
 
                 <Link to="/modern-tech" style={cardLink}>
-                   <div className="glass-card" style={{...cardStyle, backgroundImage: "url('https://img.freepik.com/premium-photo/smart-agriculture-specialist-monitoring-drone-data_1280275-166272.jpg')"}}>
+                   <div className="glass-card" style={{...cardStyle, backgroundImage: "url('/assets/images/modern-tech.webp')"}}>
                       <div style={cardTopOverlay}>
                          <div><h3 style={cardTitle}>Modern Tech</h3><p style={cardSubtitle}>Drones & AI</p></div>
                          <div style={{ opacity: 0.9 }}><Rocket size={28} color="white"/></div>
@@ -981,7 +981,7 @@ function Consumer_HomePage() {
             <div style={{ width: '33.33333%', flexShrink: 0, padding: '0 0 100px 0' }}>
               <div style={{...bentoGrid, willChange: 'transform'}}>
                 <Link to="/freelancing" style={cardLink}>
-                   <div className="glass-card" style={{...cardStyle, backgroundImage: "url('https://img.freepik.com/premium-photo/farmers-shake-hands-cornfield-partnership-agreement_875825-141614.jpg')"}}>
+                   <div className="glass-card" style={{...cardStyle, backgroundImage: "url('/assets/images/freelancing.webp')"}}>
                       <div style={cardTopOverlay}>
                          <div><h3 style={cardTitle}>Freelancing</h3><p style={cardSubtitle}>Hire Professionals</p></div>
                          <div style={{ opacity: 0.9 }}><Briefcase size={28} color="white"/></div>
@@ -990,7 +990,7 @@ function Consumer_HomePage() {
                 </Link>
 
                 <Link to="/rent-machinery" style={cardLink}>
-                   <div className="glass-card" style={{...cardStyle, backgroundImage: "url('https://img.freepik.com/premium-photo/tractor-watering-tractor-spraying-field-farm-landscape-agricultural-beautiful-countryside_114016-69.jpg')"}}>
+                   <div className="glass-card" style={{...cardStyle, backgroundImage: "url('/assets/images/agri-inputs.webp')"}}>
                       <div style={cardTopOverlay}>
                          <div><h3 style={cardTitle}>Hire Machinery</h3><p style={cardSubtitle}>Tractors & Tools</p></div>
                          <div style={{ opacity: 0.9 }}><Tractor size={28} color="white"/></div>
@@ -999,7 +999,7 @@ function Consumer_HomePage() {
                 </Link>
 
                 <Link to="/business" style={cardLink}>
-                   <div className="glass-card" style={{...cardStyle, backgroundImage: "url('https://www.deere.ca/assets/images/region-4/products/harvesting/cornhead-R4A057928_RRD_1-1920x1080.jpg')"}}>
+                   <div className="glass-card" style={{...cardStyle, backgroundImage: "url('/assets/images/machinery.webp')"}}>
                       <div style={cardTopOverlay}>
                          <div><h3 style={cardTitle}>Business Zone</h3><p style={cardSubtitle}>Buy Harvest</p></div>
                          <div style={{ opacity: 0.9 }}><IndianRupee size={28} color="white"/></div>
@@ -1008,7 +1008,7 @@ function Consumer_HomePage() {
                 </Link>
 
                 <Link to="/farm-fresh" style={cardLink}>
-                   <div className="glass-card" style={{...cardStyle, backgroundImage: "url('https://images.unsplash.com/photo-1542838132-92c53300491e?q=80&w=500')"}}>
+                   <div className="glass-card" style={{...cardStyle, backgroundImage: "url('/assets/images/local-goods.webp')"}}>
                       <div style={cardTopOverlay}>
                          <div><h3 style={cardTitle}>Farm Fresh</h3><p style={cardSubtitle}>Daily Essentials</p></div>
                          <div style={{ opacity: 0.9 }}><ShoppingBasket size={28} color="white"/></div>
@@ -1017,7 +1017,7 @@ function Consumer_HomePage() {
                 </Link>
 
                 <Link to="/hire-workers" style={cardLink}>
-                   <div className="glass-card" style={{...cardStyle, backgroundImage: "url('https://th.bing.com/th/id/R.e2c73dbf8a8f512a95ee3a2ec35f5d72?rik=DuUew48QLbwHzw&riu=http%3a%2f%2fvnmanpower.com%2fupload_images%2fimages%2fall%2ffarm-workers-from-vmst.jpg&ehk=s1NXBhEe0wVXkZGBnlrnXcEoGY1R4UtFvQ9kW7HVQ0Y%3d&risl=&pid=ImgRaw&r=0')"}}>
+                   <div className="glass-card" style={{...cardStyle, backgroundImage: "url('/assets/images/farm-workers.webp')"}}>
                       <div style={cardTopOverlay}>
                          <div><h3 style={cardTitle}>Hire Workers</h3><p style={cardSubtitle}>Farm Labor</p></div>
                          <div style={{ opacity: 0.9 }}><Briefcase size={28} color="white"/></div>
@@ -1026,7 +1026,7 @@ function Consumer_HomePage() {
                 </Link>
 
                 <Link to="/agri-goods" style={cardLink}>
-                   <div className="glass-card" style={{...cardStyle, backgroundImage: "url('https://images.unsplash.com/photo-1590004953392-5aba2e72269a?w=500&q=80')"}}>
+                   <div className="glass-card" style={{...cardStyle, backgroundImage: "url('/assets/images/business-zone.webp')"}}>
                       <div style={cardTopOverlay}>
                          <div><h3 style={cardTitle}>Local Goods</h3><p style={cardSubtitle}>Handmade & Tools</p></div>
                          <div style={{ opacity: 0.9 }}><Briefcase size={28} color="white"/></div>
@@ -1040,7 +1040,7 @@ function Consumer_HomePage() {
             <div style={{ width: '33.33333%', flexShrink: 0, padding: '0 0 100px 0' }}>
               <div style={{...bentoGrid, willChange: 'transform'}}>
                 <Link to="/expenditure" style={cardLink}>
-                   <div className="glass-card" style={{...cardStyle, backgroundImage: "url('https://img.freepik.com/premium-photo/agronomist-with-tablet-taking-sample-his-crops-ar-23-v-61-job-id-619beb4c01e54b488b59fcdc87c74efc_1204450-66335.jpg')"}}>
+                   <div className="glass-card" style={{...cardStyle, backgroundImage: "url('/assets/images/expenditure.webp')"}}>
                       <div style={cardTopOverlay}>
                          <div><h3 style={{...cardTitle}}>Crop Exp.</h3><p style={cardSubtitle}>Track Expenses</p></div>
                          <div style={{ opacity: 0.9 }}><FileText size={28} color="white"/></div>
@@ -1049,7 +1049,7 @@ function Consumer_HomePage() {
                 </Link>
 
                 <Link to="/gps-measurement" style={cardLink}>
-                   <div className="glass-card" style={{...cardStyle, backgroundImage: "url('https://static.eos.com/wp-content/uploads/2021/06/interface-tablet.jpg')"}}>
+                   <div className="glass-card" style={{...cardStyle, backgroundImage: "url('/assets/images/digital-diary.webp')"}}>
                       <div style={cardTopOverlay}>
                          <div><h3 style={cardTitle}>GPS Area</h3><p style={cardSubtitle}>Measure Land</p></div>
                          <div style={{ opacity: 0.9 }}><Map size={28} color="white"/></div>
@@ -1058,7 +1058,7 @@ function Consumer_HomePage() {
                 </Link>
 
                 <Link to="/radio" style={cardLink}>
-                   <div className="glass-card" style={{...cardStyle, backgroundImage: "url('https://images.unsplash.com/photo-1478737270239-2f02b77fc618?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D')"}}>
+                   <div className="glass-card" style={{...cardStyle, backgroundImage: "url('/assets/images/bidding-zone.webp')"}}>
                       <div style={cardTopOverlay}>
                          <div><h3 style={cardTitle}>Farm Radio</h3><p style={cardSubtitle}>News & Songs</p></div>
                          <div style={{ opacity: 0.9 }}><Radio size={28} color="white"/></div>
