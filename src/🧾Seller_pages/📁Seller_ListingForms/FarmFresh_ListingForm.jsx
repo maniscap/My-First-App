@@ -31,6 +31,8 @@ export default function FarmFresh_ListingForm() {
     const [price, setPrice] = useState('');
     const [unit, setUnit] = useState('kg');
     const [isOrganic, setIsOrganic] = useState(false);
+    const [organicCertName, setOrganicCertName] = useState('');
+    const [organicCertNumber, setOrganicCertNumber] = useState('');
     const [selectedImageUrl, setSelectedImageUrl] = useState(null);
 
     // Derived logic for dropdowns
@@ -62,7 +64,7 @@ export default function FarmFresh_ListingForm() {
     const handleSave = (e) => {
         e.preventDefault();
         // Placeholder for Firebase save logic in the future
-        console.log("Saving...", { selectedCategory, selectedItemId, customName, description, price, unit, isOrganic });
+        console.log("Saving...", { selectedCategory, selectedItemId, customName, description, price, unit, isOrganic, organicCertName, organicCertNumber, selectedImageUrl });
         navigate('/Seller_HomePage');
     };
 
@@ -140,17 +142,51 @@ export default function FarmFresh_ListingForm() {
                     )}
 
                     {/* 4. Organic Toggle */}
-                    <div style={{ marginBottom: '24px', backgroundColor: '#fff', borderRadius: '16px', padding: '16px', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                            <div style={{ width: '40px', height: '40px', borderRadius: '12px', backgroundColor: '#dcfce7', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                <Leaf size={20} color="#16a34a" />
+                    <div style={{ marginBottom: '24px' }}>
+                        <div style={{ backgroundColor: '#fff', borderRadius: '16px', padding: '16px', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                <div style={{ width: '40px', height: '40px', borderRadius: '12px', backgroundColor: '#dcfce7', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                    <Leaf size={20} color="#16a34a" />
+                                </div>
+                                <div>
+                                    <h4 style={{ margin: '0 0 2px 0', fontSize: '15px', color: '#0f172a', fontWeight: '700' }}>100% Organic</h4>
+                                    <p style={{ margin: 0, fontSize: '12px', color: '#64748b' }}>Chemical-free produce</p>
+                                </div>
                             </div>
-                            <div>
-                                <h4 style={{ margin: '0 0 2px 0', fontSize: '15px', color: '#0f172a', fontWeight: '700' }}>100% Organic</h4>
-                                <p style={{ margin: 0, fontSize: '12px', color: '#64748b' }}>Chemical-free produce</p>
-                            </div>
+                            <OrganicToggle checked={isOrganic} onChange={setIsOrganic} />
                         </div>
-                        <OrganicToggle checked={isOrganic} onChange={setIsOrganic} />
+                        
+                        {/* Organic Certification Details - Shown only when toggled ON */}
+                        {isOrganic && (
+                            <div style={{ marginTop: '16px', padding: '16px', backgroundColor: '#f8fafc', borderRadius: '16px', border: '1px solid #e2e8f0', animation: 'fadeIn 0.3s ease-in-out' }}>
+                                <h5 style={{ margin: '0 0 16px 0', fontSize: '14px', color: '#1e293b', fontWeight: '600' }}>Organic Certification Details</h5>
+                                <p style={{ margin: '0 0 16px 0', fontSize: '12px', color: '#64748b' }}>Provide certificate text details so buyers can verify your organic status.</p>
+                                
+                                <div style={{ marginBottom: '16px' }}>
+                                    <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: '#475569', marginBottom: '8px' }}>Certification Body / Certified Name</label>
+                                    <input 
+                                        type="text" 
+                                        placeholder="e.g. India Organic, USDA..." 
+                                        value={organicCertName}
+                                        onChange={(e) => setOrganicCertName(e.target.value)}
+                                        style={{ width: '100%', padding: '14px', borderRadius: '12px', border: '1px solid #cbd5e1', fontSize: '14px', backgroundColor: '#fff', color: '#0f172a', outline: 'none', boxSizing: 'border-box' }}
+                                        required={isOrganic}
+                                    />
+                                </div>
+
+                                <div>
+                                    <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: '#475569', marginBottom: '8px' }}>Certificate Number</label>
+                                    <input 
+                                        type="text" 
+                                        placeholder="e.g. ORG-12345678" 
+                                        value={organicCertNumber}
+                                        onChange={(e) => setOrganicCertNumber(e.target.value)}
+                                        style={{ width: '100%', padding: '14px', borderRadius: '12px', border: '1px solid #cbd5e1', fontSize: '14px', backgroundColor: '#fff', color: '#0f172a', outline: 'none', boxSizing: 'border-box' }}
+                                        required={isOrganic}
+                                    />
+                                </div>
+                            </div>
+                        )}
                     </div>
 
                     {/* 5. Pricing & Unit Container */}

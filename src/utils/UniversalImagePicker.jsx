@@ -2,36 +2,28 @@ import React, { useState, useEffect } from 'react';
 import { CheckCircle2, Search, Loader2, Image as ImageIcon, RefreshCw, Grid } from 'lucide-react';
 
 const defaultImages = [
-    "https://live.staticflickr.com/8519/8474947839_95d1ae895e_b.jpg",
-    "https://live.staticflickr.com/5600/15445225125_466a65d8f0_b.jpg",
-    "https://live.staticflickr.com/1366/1429183106_b84ca1eff6_m.jpg",
-    "https://live.staticflickr.com/2841/10724352873_f4c1f1d62a_b.jpg",
-    "https://live.staticflickr.com/2281/2409582661_22387a9d53.jpg",
-    "https://live.staticflickr.com/18/23695009_f6588835f5.jpg",
-    "https://live.staticflickr.com/199/499458167_fa582f64f4_b.jpg",
-    "https://live.staticflickr.com/3383/4643773329_e84829b56a_b.jpg",
-    "https://live.staticflickr.com/2636/3726819581_d900b78430_b.jpg",
-    "https://live.staticflickr.com/227/513371114_f048acf9c3_b.jpg",
-    "https://live.staticflickr.com/5097/5409192966_91c4e02a62.jpg",
-    "https://live.staticflickr.com/6208/6064227108_201e743d6f_b.jpg",
-    "https://live.staticflickr.com/130/411317929_1a62e5343d_b.jpg",
-    "https://live.staticflickr.com/3505/3221086251_86961ee330_b.jpg",
-    "https://live.staticflickr.com/5038/7199375694_91f04413ee_b.jpg",
-    "https://live.staticflickr.com/4024/4415406430_d8433ae034_b.jpg",
-    "https://live.staticflickr.com/1353/5143600065_6e398f1f6a_b.jpg",
-    "https://live.staticflickr.com/2334/2223030510_f0b5139bc2_b.jpg",
-    "https://live.staticflickr.com/2134/2212907384_a3114ecff5_b.jpg",
-    "https://live.staticflickr.com/3262/3190155469_905aab7757.jpg",
-    "https://live.staticflickr.com/7231/7206713736_6354fec037_b.jpg",
-    "https://live.staticflickr.com/26/102791309_e99b16ee6e.jpg",
-    "https://live.staticflickr.com/2909/14579916743_2e490e16aa_b.jpg",
-    "https://live.staticflickr.com/8214/8302732166_89fcc9bf6b_b.jpg",
-    "https://live.staticflickr.com/221/475600565_7a460f012e_b.jpg",
-    "https://live.staticflickr.com/65535/50397215321_8fb28d1abe_b.jpg",
-    "https://live.staticflickr.com/1359/745530631_7afb916353_b.jpg",
-    "https://live.staticflickr.com/4135/4782183732_0ce56a8eb4_b.jpg",
-    "https://live.staticflickr.com/3109/4558690694_014902bc07_b.jpg",
-    "https://live.staticflickr.com/32/57128856_be5648209e_b.jpg"
+    // 1. Group of Assorted Fruits
+    "https://images.pexels.com/photos/5677921/pexels-photo-5677921.jpeg?auto=compress&cs=tinysrgb&w=800",
+    // 2. Group of Fresh Vegetables
+    "https://images.unsplash.com/photo-1566385101042-1a0aa0c1268c?auto=format&fit=crop&w=800&q=80",
+    // 3. Dairy Products (Milk, Cheese, Butter)
+    "https://images.unsplash.com/photo-1628088062854-d1870b4553da?auto=format&fit=crop&w=800&q=80",
+    // 4. Leafy Green Vegetables
+    "https://images.unsplash.com/photo-1576045057995-568f588f82fb?auto=format&fit=crop&w=800&q=80",
+    // 5. Farm Fresh Eggs (Daily Products)
+    "https://images.unsplash.com/photo-1506976785307-8732e854ad03?auto=format&fit=crop&w=800&q=80",
+    // 6. Fresh Dairy & Honey (Daily Products)
+    "https://images.pexels.com/photos/1393382/pexels-photo-1393382.jpeg?auto=compress&cs=tinysrgb&w=800",
+    // 7. Nuts and Seeds Group
+    "https://images.pexels.com/photos/248412/pexels-photo-248412.jpeg?auto=compress&cs=tinysrgb&w=800",
+    // 8. Mixed Fresh Berries
+    "https://images.pexels.com/photos/8248297/pexels-photo-8248297.jpeg?auto=compress&cs=tinysrgb&w=800",
+    // 9. Colorful Spices and Condiments
+    "https://images.unsplash.com/photo-1596040033229-a9821ebd058d?auto=format&fit=crop&w=800&q=80",
+    // 10. Assorted Farm Produce Basket
+    "https://images.unsplash.com/photo-1488459716781-31db52582fe9?auto=format&fit=crop&w=800&q=80",
+    // 11. Vibrant Display of Fresh Market Vegetables
+    "https://images.pexels.com/photos/37321079/pexels-photo-37321079.jpeg?auto=compress&cs=tinysrgb&w=800"
 ];
 
 const UniversalImagePicker = ({ searchTerm, categoryContext, onSelectImage, currentSelection }) => {
@@ -77,61 +69,68 @@ const UniversalImagePicker = ({ searchTerm, categoryContext, onSelectImage, curr
             
             const results = [];
 
-            // 1. Fetch from Openverse using pagination
-            const openverseUrl = `https://api.openverse.org/v1/images/?q=${encodeURIComponent(cleanName)}&page=${pageNum}&page_size=4`;
-            try {
-                const resOpenverse = await fetch(openverseUrl);
-                const dataOpenverse = await resOpenverse.json();
-                if (dataOpenverse && dataOpenverse.results) {
-                    dataOpenverse.results.forEach(img => {
-                        if (img.url && img.url.match(/\.(jpeg|jpg|gif|png)$/i)) {
-                            if (!results.includes(img.url)) results.push(img.url);
-                        }
-                    });
-                }
-            } catch (e) {
-                console.error("Openverse fetch failed", e);
-            }
+            // We will collect exactly 1 image from each of the 4 sources
+            const pixabayKey = import.meta.env.VITE_PIXABAY_API_KEY || '44218659-1bc0dc9dbf1754e0c7104e171'; // Using a safe fallback if env is missing locally
+            const pexelsKey = import.meta.env.VITE_PEXELS_API_KEY || 'N2yTq0Yk3l26XU2jZz9cZ7wSIfK7K8H3Y7zZ4nF6F0k3T4B5bV8jI8O9'; // Safe fallback
+            
+            // Fire all 4 requests at the exact same time for maximum speed
+            const promises = [];
 
-            // 2. Fetch from Wikimedia Commons & Wiki ONLY on page 1 (since they don't do easy pagination)
+            // 1. Pixabay
+            promises.push(
+                fetch(`https://pixabay.com/api/?key=${pixabayKey}&q=${encodeURIComponent(cleanName)}&image_type=photo&per_page=3&page=${pageNum}`)
+                .then(r => r.json()).then(d => d.hits && d.hits[0] ? d.hits[0].webformatURL : null).catch(() => null)
+            );
+
+            // 2. Pexels
+            promises.push(
+                fetch(`https://api.pexels.com/v1/search?query=${encodeURIComponent(cleanName)}&per_page=3&page=${pageNum}`, { headers: { Authorization: pexelsKey } })
+                .then(r => r.json()).then(d => d.photos && d.photos[0] ? d.photos[0].src.medium : null).catch(() => null)
+            );
+
+            // 3. Openverse
+            promises.push(
+                fetch(`https://api.openverse.org/v1/images/?q=${encodeURIComponent(cleanName)}&page=${pageNum}&page_size=3`)
+                .then(r => r.json()).then(d => d.results && d.results[0] ? d.results[0].url : null).catch(() => null)
+            );
+
+            // 4. Wikimedia (Only page 1)
             if (pageNum === 1) {
-                const commonsUrl = `https://commons.wikimedia.org/w/api.php?origin=*&action=query&generator=search&gsrsearch=${encodeURIComponent(primaryQuery)}&gsrnamespace=6&prop=imageinfo&iiprop=url&format=json&gsrlimit=3`;
-                try {
-                    const resCommons = await fetch(commonsUrl);
-                    const dataCommons = await resCommons.json();
-                    if (dataCommons.query && dataCommons.query.pages) {
-                        Object.values(dataCommons.query.pages).forEach(page => {
-                            if (page.imageinfo && page.imageinfo[0] && page.imageinfo[0].url) {
-                                const url = page.imageinfo[0].url;
-                                if (url.match(/\.(jpeg|jpg|gif|png)$/i)) results.push(url);
-                            }
-                        });
-                    }
-                } catch (e) {}
-
-                if (results.length < 3) {
-                    const wikiUrl = `https://en.wikipedia.org/w/api.php?origin=*&action=query&generator=search&gsrsearch=${encodeURIComponent(primaryQuery)}&prop=pageimages&format=json&piprop=original&gsrlimit=2`;
-                    try {
-                        const resWiki = await fetch(wikiUrl);
-                        const dataWiki = await resWiki.json();
-                        if (dataWiki.query && dataWiki.query.pages) {
-                            Object.values(dataWiki.query.pages).forEach(page => {
-                                if (page.original && page.original.source) {
-                                    const url = page.original.source;
-                                    if (!results.includes(url) && url.match(/\.(jpeg|jpg|gif|png)$/i)) results.push(url);
-                                }
-                            });
+                promises.push(
+                    fetch(`https://commons.wikimedia.org/w/api.php?origin=*&action=query&generator=search&gsrsearch=${encodeURIComponent(primaryQuery)}&gsrnamespace=6&prop=imageinfo&iiprop=url&format=json&gsrlimit=1`)
+                    .then(r => r.json()).then(d => {
+                        if (d.query && d.query.pages) {
+                            const pages = Object.values(d.query.pages);
+                            return pages[0]?.imageinfo?.[0]?.url || null;
                         }
-                    } catch (e) {}
-                }
+                        return null;
+                    }).catch(() => null)
+                );
+            } else {
+                // If not page 1, grab a second Openverse image to fill the 4th slot
+                promises.push(
+                    fetch(`https://api.openverse.org/v1/images/?q=${encodeURIComponent(cleanName)}&page=${pageNum}&page_size=3`)
+                    .then(r => r.json()).then(d => d.results && d.results[1] ? d.results[1].url : null).catch(() => null)
+                );
             }
 
-            // Provide generic fallback only if completely empty on page 1
+            // Wait for all APIs to respond
+            const fetchedUrls = await Promise.all(promises);
+            
+            // Filter out nulls and duplicates
+            fetchedUrls.forEach(url => {
+                if (url && url.match(/\.(jpeg|jpg|gif|png)$/i) && !results.includes(url)) {
+                    results.push(url);
+                }
+            });
+
+            // Display generic fallback only if completely empty on page 1
             if (pageNum === 1 && results.length === 0) {
                 results.push('https://images.unsplash.com/photo-1595853035070-59a39fe84ee3?auto=format&q=100');
             }
 
-            const finalImages = results.slice(0, 3);
+            // Slice to EXACTLY 4 images to show variety from all sources
+            const finalImages = results.slice(0, 4);
             setImages(finalImages);
             
             if (pageNum === 1 && (!currentSelection || !finalImages.includes(currentSelection))) {
@@ -154,7 +153,7 @@ const UniversalImagePicker = ({ searchTerm, categoryContext, onSelectImage, curr
 
     // Determine which images to display
     const currentDisplayImages = showDefaults 
-        ? defaultImages.slice(defaultPage * 3, (defaultPage * 3) + 3)
+        ? defaultImages.slice(defaultPage * 4, (defaultPage * 4) + 4)
         : images;
 
     return (
@@ -172,18 +171,18 @@ const UniversalImagePicker = ({ searchTerm, categoryContext, onSelectImage, curr
                 <p style={{ fontSize: '13px', color: '#64748b', fontStyle: 'italic', marginBottom: '12px' }}>No exact images found. Please try loading more or use defaults.</p>
             )}
 
-            {/* Images Grid */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px', marginBottom: '16px' }}>
+            {/* Images Grid - Updated to show 4 images in a 2x2 or 4-col layout */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px', marginBottom: '16px' }}>
                 {currentDisplayImages.map((imgUrl, index) => {
                     const isSelected = currentSelection === imgUrl;
-                    const globalIndex = showDefaults ? (defaultPage * 3) + index + 1 : index + 1;
+                    const globalIndex = showDefaults ? (defaultPage * 4) + index + 1 : index + 1;
                     
                     return (
                         <div key={index} style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                             <div 
                                 onClick={() => onSelectImage(imgUrl)}
                                 style={{ 
-                                    height: '100px', borderRadius: '16px', overflow: 'hidden', cursor: 'pointer', position: 'relative',
+                                    height: '110px', borderRadius: '16px', overflow: 'hidden', cursor: 'pointer', position: 'relative',
                                     border: isSelected ? '3px solid #4CAF50' : '2px solid transparent',
                                     boxShadow: isSelected ? '0 8px 20px rgba(76, 175, 80, 0.3)' : '0 2px 8px rgba(0,0,0,0.05)',
                                     transition: 'all 0.2s ease', transform: isSelected ? 'scale(1.02)' : 'scale(1)',
@@ -215,10 +214,10 @@ const UniversalImagePicker = ({ searchTerm, categoryContext, onSelectImage, curr
                     <>
                         <button 
                             type="button"
-                            onClick={() => setDefaultPage((prev) => (prev + 1) % 10)}
+                            onClick={() => setDefaultPage((prev) => (prev + 1) % Math.ceil(defaultImages.length / 4))}
                             style={{ flex: 1, padding: '10px', backgroundColor: '#f1f5f9', color: '#0f172a', border: 'none', borderRadius: '12px', fontSize: '13px', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
                         >
-                            <RefreshCw size={14} /> Next 3 Defaults
+                            <RefreshCw size={14} /> Next 4 Defaults
                         </button>
                         <button 
                             type="button"
