@@ -181,7 +181,7 @@ export default function FarmFresh_ListingForm() {
                 updatedAt: serverTimestamp()
             };
 
-            await addDoc(collection(db, 'seller_listings'), listingData);
+            await addDoc(collection(db, 'listings_farm_fresh'), listingData);
             
             setSubmittedData(listingData);
             setShowSuccess(true);

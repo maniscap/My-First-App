@@ -25,12 +25,27 @@ export default function ManageListings() {
 
     const fetchListings = async (sellerAppId) => {
         try {
-            const q = query(collection(db, 'seller_listings'), where('sellerId', '==', sellerAppId));
-            const querySnapshot = await getDocs(q);
-            const data = querySnapshot.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data()
-            }));
+            const collectionsToFetch = [
+                'listings_farm_fresh',
+                'listings_machinery',
+                'listings_workers',
+                'listings_business',
+                'listings_freelancing',
+                'listings_local_goods'
+            ];
+
+            const promises = collectionsToFetch.map(async (colName) => {
+                const q = query(collection(db, colName), where('sellerId', '==', sellerAppId));
+                const snapshot = await getDocs(q);
+                return snapshot.docs.map(doc => ({
+                    id: doc.id,
+                    collectionName: colName,
+                    ...doc.data()
+                }));
+            });
+            
+            const results = await Promise.all(promises);
+            const data = results.flat();
             
             // Sort client-side by date if createdAt exists
             data.sort((a, b) => {
@@ -49,12 +64,12 @@ export default function ManageListings() {
         }
     };
 
-    const handleDelete = async (id) => {
+    const handleDelete = async (id, collectionName) => {
         const confirmDelete = window.confirm("Are you sure you want to delete this listing?");
         if (!confirmDelete) return;
 
         try {
-            await deleteDoc(doc(db, 'seller_listings', id));
+            await deleteDoc(doc(db, collectionName, id));
             setListings(listings.filter(item => item.id !== id));
         } catch (error) {
             console.error("Error deleting document:", error);
@@ -123,7 +138,7 @@ export default function ManageListings() {
                                         <Edit2 size={16} />
                                     </button>
                                     <button 
-                                        onClick={() => handleDelete(item.id)}
+                                        onClick={() => handleDelete(item.id, item.collectionName)}
                                         style={{ width: '36px', height: '36px', borderRadius: '18px', border: '1px solid #fee2e2', backgroundColor: '#fef2f2', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#ef4444' }}
                                     >
                                         <Trash2 size={16} />
