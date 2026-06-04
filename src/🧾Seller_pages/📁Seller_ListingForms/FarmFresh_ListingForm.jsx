@@ -161,8 +161,10 @@ export default function FarmFresh_ListingForm() {
 
             const listingData = {
                 sellerId: localStorage.getItem('seller_app_id'),
+                userId: user.uid,
                 sellerName: user.displayName || 'Unknown Seller', // Could fetch from profile
                 shopName: localStorage.getItem('locationTitle') || 'My Shop',
+                status: 'active',
                 listingType: 'farm_fresh',
                 category: selectedCategory,
                 itemId: selectedItemId,

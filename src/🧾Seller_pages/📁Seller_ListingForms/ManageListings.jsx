@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { db, auth } from '../../firebase';
-import { collection, query, where, getDocs, deleteDoc, doc } from 'firebase/firestore';
-import { ArrowLeft, Trash2, Edit2, PackageOpen } from 'lucide-react';
+import { collection, query, where, getDocs, deleteDoc, doc, updateDoc } from 'firebase/firestore';
+import { ArrowLeft, Trash2, Edit2, PackageOpen, X, Power } from 'lucide-react';
 import { onAuthStateChanged } from 'firebase/auth';
 
 export default function ManageListings() {
@@ -10,6 +10,13 @@ export default function ManageListings() {
     const [listings, setListings] = useState([]);
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState('all');
+
+    // Quick Edit States
+    const [editingItem, setEditingItem] = useState(null);
+    const [editPrice, setEditPrice] = useState('');
+    const [editUnit, setEditUnit] = useState('');
+    const [editStatus, setEditStatus] = useState('active');
+    const [isSaving, setIsSaving] = useState(false);
 
     const tabs = [
         { id: 'all', label: 'All Listings' },
@@ -92,6 +99,39 @@ export default function ManageListings() {
         }
     };
 
+    const handleOpenEdit = (item) => {
+        setEditingItem(item);
+        setEditPrice(item.price || '');
+        setEditUnit(item.unit || '');
+        setEditStatus(item.status || 'active');
+    };
+
+    const handleSaveEdit = async () => {
+        if (!editingItem) return;
+        setIsSaving(true);
+        try {
+            const itemRef = doc(db, editingItem.collectionName, editingItem.id);
+            await updateDoc(itemRef, {
+                price: parseFloat(editPrice),
+                unit: editUnit,
+                status: editStatus
+            });
+            
+            // Update local state
+            setListings(listings.map(l => 
+                l.id === editingItem.id 
+                    ? { ...l, price: parseFloat(editPrice), unit: editUnit, status: editStatus } 
+                    : l
+            ));
+            setEditingItem(null);
+        } catch (error) {
+            console.error("Error updating listing:", error);
+            alert("Failed to update listing.");
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
     return (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: '#f8fafc', overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}>
             
@@ -166,6 +206,11 @@ export default function ManageListings() {
                                         <span style={{ fontSize: '10px', fontWeight: 'bold', textTransform: 'uppercase', color: '#0369a1', backgroundColor: '#e0f2fe', padding: '2px 6px', borderRadius: '4px' }}>
                                             {item.listingType.replace('_', ' ')}
                                         </span>
+                                        {item.status === 'paused' && (
+                                            <span style={{ fontSize: '10px', fontWeight: 'bold', textTransform: 'uppercase', color: '#b91c1c', backgroundColor: '#fee2e2', padding: '2px 6px', borderRadius: '4px', display: 'flex', alignItems: 'center', gap: '2px' }}>
+                                                <Power size={10} /> Paused
+                                            </span>
+                                        )}
                                     </div>
                                     <h3 style={{ margin: '0 0 4px 0', fontSize: '16px', fontWeight: '700', color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                                         {item.itemName}
@@ -175,7 +220,7 @@ export default function ManageListings() {
                                 
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                                     <button 
-                                        onClick={() => alert('Edit feature coming soon! (Will pre-fill the form)')}
+                                        onClick={() => handleOpenEdit(item)}
                                         style={{ width: '36px', height: '36px', borderRadius: '18px', border: '1px solid #e2e8f0', backgroundColor: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#3b82f6' }}
                                     >
                                         <Edit2 size={16} />
@@ -193,6 +238,60 @@ export default function ManageListings() {
                     </div>
                 )}
             </div>
+
+            {/* Quick Edit Modal */}
+            {editingItem && (
+                <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+                    <div style={{ backgroundColor: '#fff', borderRadius: '16px', padding: '24px', width: '100%', maxWidth: '400px', boxShadow: '0 10px 25px rgba(0,0,0,0.1)' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                            <h3 style={{ margin: 0, fontSize: '18px', color: '#0f172a', fontWeight: '700' }}>Quick Edit</h3>
+                            <button onClick={() => setEditingItem(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex' }}>
+                                <X size={20} color="#64748b" />
+                            </button>
+                        </div>
+                        
+                        <div style={{ marginBottom: '16px' }}>
+                            <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', color: '#475569', marginBottom: '8px' }}>Status</label>
+                            <select 
+                                value={editStatus} 
+                                onChange={(e) => setEditStatus(e.target.value)}
+                                style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '16px', color: '#0f172a', backgroundColor: '#fff', outline: 'none' }}
+                            >
+                                <option value="active">Active (Visible)</option>
+                                <option value="paused">Paused (Out of Stock)</option>
+                            </select>
+                        </div>
+
+                        <div style={{ marginBottom: '16px' }}>
+                            <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', color: '#475569', marginBottom: '8px' }}>Price (₹)</label>
+                            <input 
+                                type="number" 
+                                value={editPrice} 
+                                onChange={(e) => setEditPrice(e.target.value)}
+                                style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '16px', color: '#0f172a', outline: 'none' }}
+                            />
+                        </div>
+                        
+                        <div style={{ marginBottom: '24px' }}>
+                            <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', color: '#475569', marginBottom: '8px' }}>Unit</label>
+                            <input 
+                                type="text" 
+                                value={editUnit} 
+                                onChange={(e) => setEditUnit(e.target.value)}
+                                style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '16px', color: '#0f172a', outline: 'none' }}
+                            />
+                        </div>
+                        
+                        <button 
+                            onClick={handleSaveEdit}
+                            disabled={isSaving}
+                            style={{ width: '100%', padding: '14px', backgroundColor: '#3b82f6', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '16px', fontWeight: 'bold', cursor: isSaving ? 'not-allowed' : 'pointer', transition: 'background-color 0.2s' }}
+                        >
+                            {isSaving ? 'Saving...' : 'Save Changes'}
+                        </button>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
