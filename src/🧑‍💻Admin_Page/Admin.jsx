@@ -12,6 +12,7 @@ function Admin() {
   
   const [activeTab, setActiveTab] = useState('dashboard'); // dashboard, verifications, approved, listings
   const [verificationTab, setVerificationTab] = useState('individual'); // individual or organisation
+  const [approvedTab, setApprovedTab] = useState('individual'); // individual or organisation
   const [sellerApplications, setSellerApplications] = useState([]);
   const [listingCounts, setListingCounts] = useState({ farmFresh: 0, machinery: 0, workers: 0, business: 0, freelance: 0, rejected: 0 });
   const [loading, setLoading] = useState(false);
@@ -284,11 +285,25 @@ function Admin() {
                   
                   <div className="approved-directory">
                       <div className="text-list">
-                          {approvedAppsCount === 0 && <p style={{color:'#64748b'}}>No approved sellers yet.</p>}
                           
-                          {approvedInd.length > 0 && (
+                          <div style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
+                              <button 
+                                  onClick={() => setApprovedTab('individual')}
+                                  style={{ flex: 1, padding: '12px', borderRadius: '12px', border: 'none', fontWeight: 'bold', cursor: 'pointer', background: approvedTab === 'individual' ? '#8b5cf6' : '#e2e8f0', color: approvedTab === 'individual' ? 'white' : '#64748b', transition: 'all 0.2s' }}
+                              >
+                                  👤 Individual Shops ({approvedInd.length})
+                              </button>
+                              <button 
+                                  onClick={() => setApprovedTab('organisation')}
+                                  style={{ flex: 1, padding: '12px', borderRadius: '12px', border: 'none', fontWeight: 'bold', cursor: 'pointer', background: approvedTab === 'organisation' ? '#3b82f6' : '#e2e8f0', color: approvedTab === 'organisation' ? 'white' : '#64748b', transition: 'all 0.2s' }}
+                              >
+                                  🏢 Organisations ({approvedOrg.length})
+                              </button>
+                          </div>
+
+                          {approvedTab === 'individual' && (
+                              approvedInd.length === 0 ? <p style={{color:'#64748b'}}>No approved individual sellers yet.</p> :
                               <div style={{marginBottom: '40px'}}>
-                                  <h3 className="section-subtitle" style={{marginBottom: '15px', color: '#8b5cf6'}}>👤 Verified Individual Shops</h3>
                                   {approvedInd.map(app => (
                                       <div key={app.id} className="text-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'white', padding: '15px', borderRadius: '8px', border: '1px solid #e2e8f0', marginBottom: '10px' }}>
                                           <div>
@@ -305,9 +320,9 @@ function Admin() {
                               </div>
                           )}
 
-                          {approvedOrg.length > 0 && (
+                          {approvedTab === 'organisation' && (
+                              approvedOrg.length === 0 ? <p style={{color:'#64748b'}}>No approved organisation sellers yet.</p> :
                               <div style={{marginBottom: '40px'}}>
-                                  <h3 className="section-subtitle" style={{marginBottom: '15px', color: '#3b82f6'}}>🏢 Verified Organisations</h3>
                                   {approvedOrg.map(app => (
                                       <div key={app.id} className="text-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'white', padding: '15px', borderRadius: '8px', border: '1px solid #e2e8f0', marginBottom: '10px' }}>
                                           <div>
