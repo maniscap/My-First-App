@@ -319,7 +319,7 @@ function SellerProfile_Setup() {
             `}</style>
             
             {/* Header */}
-            <div style={{ backgroundColor: '#0f172a', color: '#fff', padding: '16px 20px', borderBottomLeftRadius: '20px', borderBottomRightRadius: '20px', boxShadow: '0 4px 15px rgba(0,0,0,0.1)' }}>
+            <div style={{ backgroundColor: '#0f172a', color: '#fff', padding: '16px 20px', borderBottomLeftRadius: accountType ? '0' : '20px', borderBottomRightRadius: accountType ? '0' : '20px', boxShadow: accountType ? 'none' : '0 4px 15px rgba(0,0,0,0.1)', transition: 'all 0.3s ease' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '12px' }}>
                     <div onClick={() => navigate(-1)} style={{ cursor: 'pointer', padding: '5px' }}>
                         <ChevronLeft size={24} />
@@ -335,7 +335,7 @@ function SellerProfile_Setup() {
                 </div>
             </div>
 
-            <div style={{ padding: '16px 2%', maxWidth: '100%', margin: '0 auto', display: showTermsModal ? 'none' : 'block' }}>
+            <div style={{ padding: accountType ? '0' : '16px 2%', maxWidth: '100%', margin: '0 auto', display: showTermsModal ? 'none' : 'block', transition: 'all 0.3s ease' }}>
                 
                 {/* Step 1: Choose Account Type */}
                 {!accountType ? (
@@ -435,7 +435,7 @@ function SellerProfile_Setup() {
                 ) : (
                     
                     /* Step 2: Fill Details with Dynamic Theme */
-                    <div style={{ backgroundColor: '#fff', borderRadius: '24px', boxShadow: '0 10px 40px rgba(0,0,0,0.06)', overflow: 'hidden' }}>
+                    <div style={{ backgroundColor: '#fff', borderBottomLeftRadius: '24px', borderBottomRightRadius: '24px', boxShadow: '0 10px 40px rgba(0,0,0,0.06)', overflow: 'hidden' }}>
                         
                         {/* Dynamic Hero Header */}
                         <div style={{ background: currentTheme.gradient, padding: '20px 24px', color: '#fff', position: 'relative', display: 'flex', alignItems: 'center', gap: '16px' }}>
