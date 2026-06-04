@@ -327,7 +327,7 @@ function SellerProfile_Setup() {
                 </div>
             </div>
 
-            <div style={{ padding: '20px', maxWidth: '500px', margin: '-20px auto 0', display: showTermsModal ? 'none' : 'block' }}>
+            <div style={{ padding: '20px', maxWidth: '800px', margin: '-20px auto 0', display: showTermsModal ? 'none' : 'block' }}>
                 
                 {/* Step 1: Choose Account Type */}
                 {!accountType ? (
@@ -441,7 +441,7 @@ function SellerProfile_Setup() {
                             <p style={{ margin: 0, fontSize: '14px', opacity: 0.9, lineHeight: '1.4' }}>{currentTheme.subtitle}</p>
                         </div>
 
-                        <div style={{ padding: '16px 20px' }}>
+                        <div style={{ padding: '30px 40px' }}>
                             
                             {/* Personal/Business Info Section */}
                             <SectionTitle title="Identity Details" icon={<User size={20} color={currentTheme.primary} />} theme={currentTheme} />
@@ -800,12 +800,12 @@ const InputGroup = ({ label, themeColor = '#0f172a', prefix, ...props }) => {
         <div style={{ position: 'relative', marginBottom: '14px', backgroundColor: '#f8fafc', borderRadius: '10px', border: `1.5px solid ${isFocused ? themeColor : 'transparent'}`, transition: 'all 0.2s ease', display: 'flex', alignItems: 'center', overflow: 'hidden', boxShadow: isFocused ? `0 0 0 3px ${themeColor}15` : 'inset 0 2px 4px rgba(0,0,0,0.02)' }}>
             {prefix && <span style={{ paddingLeft: '14px', color: '#64748b', fontWeight: '700', fontSize: '14px' }}>{prefix}</span>}
             <div style={{ flex: 1, padding: '8px 14px 6px' }}>
-                <label style={{ display: 'block', fontSize: '10px', fontWeight: '800', color: isFocused ? themeColor : '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px', transition: 'color 0.2s' }}>{label}</label>
+                <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', color: isFocused ? themeColor : '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px', transition: 'color 0.2s', marginBottom: '2px' }}>{label}</label>
                 <input 
                     required
                     onFocus={() => setIsFocused(true)}
                     onBlur={() => setIsFocused(false)}
-                    style={{ width: '100%', padding: '2px 0', backgroundColor: 'transparent', border: 'none', fontSize: '14px', color: '#0f172a', fontWeight: '600', outline: 'none', ...(props.readOnly ? { color: '#94a3b8' } : {}), ...props.style }} 
+                    style={{ width: '100%', padding: '4px 0', backgroundColor: 'transparent', border: 'none', fontSize: '16px', color: '#0f172a', fontWeight: '600', outline: 'none', ...(props.readOnly ? { color: '#94a3b8' } : {}), ...props.style }} 
                     {...props} 
                 />
             </div>
@@ -817,11 +817,11 @@ const SelectGroup = ({ label, themeColor = '#0f172a', options, ...props }) => {
     const [isFocused, setIsFocused] = useState(false);
     return (
         <div style={{ position: 'relative', marginBottom: '14px', backgroundColor: '#f8fafc', borderRadius: '10px', border: `1.5px solid ${isFocused ? themeColor : 'transparent'}`, transition: 'all 0.2s ease', padding: '8px 14px 6px', boxShadow: isFocused ? `0 0 0 3px ${themeColor}15` : 'inset 0 2px 4px rgba(0,0,0,0.02)' }}>
-            <label style={{ display: 'block', fontSize: '10px', fontWeight: '800', color: isFocused ? themeColor : '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{label}</label>
+            <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', color: isFocused ? themeColor : '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '2px' }}>{label}</label>
             <select 
                 onFocus={() => setIsFocused(true)}
                 onBlur={() => setIsFocused(false)}
-                style={{ width: '100%', padding: '2px 0', backgroundColor: 'transparent', border: 'none', fontSize: '14px', color: '#0f172a', fontWeight: '600', outline: 'none', cursor: 'pointer' }} 
+                style={{ width: '100%', padding: '4px 0', backgroundColor: 'transparent', border: 'none', fontSize: '16px', color: '#0f172a', fontWeight: '600', outline: 'none', cursor: 'pointer' }} 
                 {...props}
             >
                 {options.map((opt, i) => <option key={i} value={opt.value}>{opt.label}</option>)}
@@ -834,11 +834,11 @@ const TextAreaGroup = ({ label, themeColor = '#0f172a', ...props }) => {
     const [isFocused, setIsFocused] = useState(false);
     return (
         <div style={{ position: 'relative', marginBottom: '14px', backgroundColor: '#f8fafc', borderRadius: '10px', border: `1.5px solid ${isFocused ? themeColor : 'transparent'}`, transition: 'all 0.2s ease', padding: '8px 14px 6px', boxShadow: isFocused ? `0 0 0 3px ${themeColor}15` : 'inset 0 2px 4px rgba(0,0,0,0.02)' }}>
-            <label style={{ display: 'block', fontSize: '10px', fontWeight: '800', color: isFocused ? themeColor : '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '4px' }}>{label}</label>
+            <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', color: isFocused ? themeColor : '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '6px' }}>{label}</label>
             <textarea 
                 onFocus={() => setIsFocused(true)}
                 onBlur={() => setIsFocused(false)}
-                style={{ width: '100%', padding: '0', backgroundColor: 'transparent', border: 'none', fontSize: '14px', color: '#0f172a', fontWeight: '600', outline: 'none', minHeight: '60px', fontFamily: 'inherit', resize: 'vertical' }} 
+                style={{ width: '100%', padding: '4px 0', backgroundColor: 'transparent', border: 'none', fontSize: '16px', color: '#0f172a', fontWeight: '600', outline: 'none', minHeight: '80px', fontFamily: 'inherit', resize: 'vertical' }} 
                 {...props} 
             />
         </div>
