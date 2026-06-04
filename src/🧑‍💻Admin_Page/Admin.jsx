@@ -386,53 +386,63 @@ const ApplicationCard = ({ app, onApprove, onReject }) => {
                 <div className="detail-section" style={{ marginTop: '10px' }}>
                     <h4>Agriculture & Business Specifics</h4>
                     <div className="detail-grid">
-                        {(app.isOrganic || app.freshProduceTypes) && (
-                            <div className="info-block">
-                                <span className="lbl">Farm & Produce</span>
-                                <span className="val">
-                                    {app.isOrganic === 'yes' ? <span style={{color: '#10b981', fontWeight: 'bold'}}>100% Organic 🌱</span> : 'Conventional'} 
-                                    {app.freshProduceTypes && <><br/>Crops: {app.freshProduceTypes}</>}
-                                    {app.orgProduceCapacity && <><br/>Capacity: {app.orgProduceCapacity}</>}
-                                </span>
-                            </div>
-                        )}
-                        {(app.machineryDetails || app.orgMachineryDetails) && (
-                            <div className="info-block">
-                                <span className="lbl">Machinery / Vehicles</span>
-                                <span className="val">
-                                    {app.machineryDetails || app.orgMachineryDetails}
-                                    {(app.orgMachineryCapacity) && ` (Capacity: ${app.orgMachineryCapacity})`}
-                                </span>
-                            </div>
-                        )}
-                        {(app.harvestCrops || app.orgHarvestCrops) && (
-                            <div className="info-block">
-                                <span className="lbl">Harvest Output</span>
-                                <span className="val">
-                                    {app.harvestCrops || app.orgHarvestCrops} 
-                                    {(app.harvestQuantity || app.orgHarvestCapacity) && ` - ${app.harvestQuantity || app.orgHarvestCapacity}`}
-                                </span>
-                            </div>
-                        )}
-                        {(app.workerSkills || app.orgWorkerSkills || app.orgWorkerCount) && (
-                            <div className="info-block">
-                                <span className="lbl">Labor / Workers</span>
-                                <span className="val">
-                                    {app.workerSkills || app.orgWorkerSkills}
-                                    {app.orgWorkerCount && ` (Count: ${app.orgWorkerCount})`}
-                                </span>
-                            </div>
-                        )}
-                        {(app.freelanceWorks || app.freelanceSkillSet || app.orgFreelancerSkills) && (
-                            <div className="info-block">
-                                <span className="lbl">Freelance / Skills</span>
-                                <span className="val">
-                                    {app.freelanceWorks || app.freelanceSkillSet || app.orgFreelancerSkills}
-                                    {app.freelanceExperience && ` (${app.freelanceExperience} Yrs Exp)`}
-                                    {app.orgFreelancerCount && ` (Count: ${app.orgFreelancerCount})`}
-                                </span>
-                            </div>
-                        )}
+                        <div className="info-block">
+                            <span className="lbl">Farm & Produce</span>
+                            <span className="val">
+                                {app.isOrganic || app.freshProduceTypes || app.orgProduceCapacity ? (
+                                    <>
+                                        {app.isOrganic === 'yes' ? <span style={{color: '#10b981', fontWeight: 'bold'}}>100% Organic 🌱</span> : (app.isOrganic === 'no' ? 'Conventional' : '')} 
+                                        {app.freshProduceTypes && <><br/>Crops: {app.freshProduceTypes}</>}
+                                        {app.orgProduceCapacity && <><br/>Capacity: {app.orgProduceCapacity}</>}
+                                    </>
+                                ) : 'N/A'}
+                            </span>
+                        </div>
+                        <div className="info-block">
+                            <span className="lbl">Machinery / Vehicles</span>
+                            <span className="val">
+                                {app.machineryDetails || app.orgMachineryDetails || app.orgMachineryCapacity ? (
+                                    <>
+                                        {app.machineryDetails || app.orgMachineryDetails}
+                                        {(app.orgMachineryCapacity) && ` (Capacity: ${app.orgMachineryCapacity})`}
+                                    </>
+                                ) : 'N/A'}
+                            </span>
+                        </div>
+                        <div className="info-block">
+                            <span className="lbl">Harvest Output</span>
+                            <span className="val">
+                                {app.harvestCrops || app.orgHarvestCrops || app.harvestQuantity || app.orgHarvestCapacity ? (
+                                    <>
+                                        {app.harvestCrops || app.orgHarvestCrops} 
+                                        {(app.harvestQuantity || app.orgHarvestCapacity) && ` - ${app.harvestQuantity || app.orgHarvestCapacity}`}
+                                    </>
+                                ) : 'N/A'}
+                            </span>
+                        </div>
+                        <div className="info-block">
+                            <span className="lbl">Labor / Workers</span>
+                            <span className="val">
+                                {app.workerSkills || app.orgWorkerSkills || app.orgWorkerCount ? (
+                                    <>
+                                        {app.workerSkills || app.orgWorkerSkills}
+                                        {app.orgWorkerCount && ` (Count: ${app.orgWorkerCount})`}
+                                    </>
+                                ) : 'N/A'}
+                            </span>
+                        </div>
+                        <div className="info-block">
+                            <span className="lbl">Freelance / Skills</span>
+                            <span className="val">
+                                {app.freelanceWorks || app.freelanceSkillSet || app.orgFreelancerSkills || app.freelanceExperience || app.orgFreelancerCount ? (
+                                    <>
+                                        {app.freelanceWorks || app.freelanceSkillSet || app.orgFreelancerSkills}
+                                        {app.freelanceExperience && ` (${app.freelanceExperience} Yrs Exp)`}
+                                        {app.orgFreelancerCount && ` (Count: ${app.orgFreelancerCount})`}
+                                    </>
+                                ) : 'N/A'}
+                            </span>
+                        </div>
                     </div>
                 </div>
 

@@ -797,7 +797,7 @@ function SellerProfile_Setup() {
 const SectionTitle = ({ title, icon, theme }) => (
     <div style={{ margin: '24px 0 16px', display: 'flex', alignItems: 'center', gap: '10px' }}>
         <div style={{ color: theme.primary, display: 'flex' }}>{icon}</div>
-        <h4 style={{ margin: 0, fontSize: '14px', color: '#1e293b', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{title}</h4>
+        <h4 style={{ margin: 0, fontSize: '18px', color: '#0f172a', fontWeight: '800', letterSpacing: '-0.5px' }}>{title}</h4>
         <div style={{ flex: 1, height: '1px', background: `linear-gradient(90deg, ${theme.primary}30, transparent)`, marginLeft: '10px' }}></div>
     </div>
 );
