@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { db } from '../firebase';
-import { collection, getDocs, doc, updateDoc, deleteField, deleteDoc } from 'firebase/firestore';
+import { collection, getDocs, doc, updateDoc, deleteField, deleteDoc, getCountFromServer } from 'firebase/firestore';
 import { IoMdArrowBack } from 'react-icons/io';
 import { CheckCircle, XCircle, User, Building, LayoutDashboard, ClipboardList, Users, List, LogOut, Lock } from 'lucide-react';
 
@@ -36,11 +36,12 @@ function Admin() {
         const apps = await getDocs(collection(db, "seller_applications"));
         setSellerApplications(apps.docs.map(d => ({id:d.id, ...d.data()})));
 
-        // Fetch Listing Counts
+        // Fetch Listing Counts (Using getCountFromServer to avoid massive read costs)
         const fetchCount = async (colName) => {
             try {
-                const snap = await getDocs(collection(db, colName));
-                return snap.size;
+                const coll = collection(db, colName);
+                const snapshot = await getCountFromServer(coll);
+                return snapshot.data().count;
             } catch(e) { return 0; }
         };
         
