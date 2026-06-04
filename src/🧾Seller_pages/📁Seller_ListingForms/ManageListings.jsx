@@ -115,7 +115,7 @@ export default function ManageListings() {
             </div>
 
             {/* Scrollable Tabs */}
-            <div style={{ display: 'flex', overflowX: 'auto', padding: '0 20px', gap: '8px', borderBottom: '1px solid #f1f5f9', backgroundColor: '#fff', scrollbarWidth: 'none', msOverflowStyle: 'none', WebkitOverflowScrolling: 'touch' }}>
+            <div style={{ display: 'flex', overflowX: 'auto', padding: '16px 20px', gap: '12px', backgroundColor: '#f8fafc', scrollbarWidth: 'none', msOverflowStyle: 'none', WebkitOverflowScrolling: 'touch' }}>
                 <style>{`
                     div::-webkit-scrollbar { display: none; }
                 `}</style>
@@ -124,16 +124,17 @@ export default function ManageListings() {
                         key={tab.id}
                         onClick={() => setActiveTab(tab.id)}
                         style={{
-                            padding: '12px 16px',
-                            border: 'none',
-                            background: 'none',
+                            padding: '12px 20px',
+                            border: activeTab === tab.id ? '1px solid #1e293b' : '1px solid #e2e8f0',
+                            borderRadius: '16px',
+                            background: activeTab === tab.id ? '#1e293b' : '#ffffff',
                             fontSize: '14px',
-                            fontWeight: activeTab === tab.id ? '800' : '600',
-                            color: activeTab === tab.id ? '#16a34a' : '#64748b',
-                            borderBottom: activeTab === tab.id ? '3px solid #16a34a' : '3px solid transparent',
+                            fontWeight: activeTab === tab.id ? '700' : '600',
+                            color: activeTab === tab.id ? '#ffffff' : '#64748b',
+                            boxShadow: activeTab === tab.id ? '0 10px 20px -5px rgba(30,41,59,0.3)' : '0 2px 4px rgba(0,0,0,0.02)',
                             whiteSpace: 'nowrap',
                             cursor: 'pointer',
-                            transition: 'all 0.2s ease',
+                            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                             outline: 'none'
                         }}
                     >
@@ -157,47 +158,51 @@ export default function ManageListings() {
                         </button>
                     </div>
                 ) : (
-                    <div style={{ display: 'grid', gap: '16px' }}>
+                    <div style={{ display: 'grid', gap: '20px' }}>
                         {displayListings.map(item => (
-                            <div key={item.id} style={{ backgroundColor: '#fff', borderRadius: '16px', padding: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.04)', display: 'flex', gap: '16px', alignItems: 'center' }}>
+                            <div key={item.id} style={{ 
+                                backgroundColor: '#ffffff', borderRadius: '24px', padding: '16px', 
+                                boxShadow: '0 4px 15px rgba(0,0,0,0.03), 0 1px 3px rgba(0,0,0,0.05)', 
+                                border: '1px solid #f1f5f9', display: 'flex', gap: '16px', alignItems: 'center'
+                            }}>
                                 
-                                <div style={{ width: '80px', height: '80px', borderRadius: '12px', backgroundColor: '#f1f5f9', overflow: 'hidden', flexShrink: 0 }}>
+                                <div style={{ width: '90px', height: '90px', borderRadius: '16px', backgroundColor: '#f8fafc', overflow: 'hidden', flexShrink: 0, boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.05)' }}>
                                     {item.imageUrl ? (
                                         <img src={item.imageUrl} alt={item.itemName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                                     ) : (
-                                        <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94a3b8', fontSize: '12px' }}>No Image</div>
+                                        <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94a3b8', fontSize: '24px' }}>🌱</div>
                                     )}
                                 </div>
                                 
-                                <div style={{ flex: 1, minWidth: 0 }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-                                        <span style={{ fontSize: '10px', fontWeight: 'bold', textTransform: 'uppercase', color: '#0369a1', backgroundColor: '#e0f2fe', padding: '2px 6px', borderRadius: '4px' }}>
+                                <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                                        <span style={{ fontSize: '10px', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.5px', color: '#0369a1', backgroundColor: '#e0f2fe', padding: '4px 8px', borderRadius: '8px' }}>
                                             {item.listingType.replace('_', ' ')}
                                         </span>
                                         {item.status === 'paused' && (
-                                            <span style={{ fontSize: '10px', fontWeight: 'bold', textTransform: 'uppercase', color: '#b91c1c', backgroundColor: '#fee2e2', padding: '2px 6px', borderRadius: '4px', display: 'flex', alignItems: 'center', gap: '2px' }}>
+                                            <span style={{ fontSize: '10px', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.5px', color: '#b91c1c', backgroundColor: '#fee2e2', padding: '4px 8px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '4px' }}>
                                                 <Power size={10} /> Paused
                                             </span>
                                         )}
                                     </div>
-                                    <h3 style={{ margin: '0 0 4px 0', fontSize: '16px', fontWeight: '700', color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                    <h3 style={{ margin: '0 0 4px 0', fontSize: '18px', fontWeight: '800', color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', letterSpacing: '-0.3px' }}>
                                         {item.itemName}
                                     </h3>
-                                    <p style={{ margin: 0, fontSize: '14px', color: '#16a34a', fontWeight: '600' }}>₹{item.price} <span style={{ color: '#64748b', fontSize: '12px', fontWeight: '400' }}>/ {item.unit}</span></p>
+                                    <p style={{ margin: 0, fontSize: '16px', color: '#16a34a', fontWeight: '700' }}>₹{item.price} <span style={{ color: '#64748b', fontSize: '13px', fontWeight: '500' }}>/ {item.unit}</span></p>
                                 </div>
                                 
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                                     <button 
                                         onClick={() => handleOpenEdit(item)}
-                                        style={{ width: '36px', height: '36px', borderRadius: '18px', border: '1px solid #e2e8f0', backgroundColor: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#3b82f6' }}
+                                        style={{ width: '40px', height: '40px', borderRadius: '12px', border: 'none', backgroundColor: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#3b82f6', transition: 'background-color 0.2s' }}
                                     >
-                                        <Edit2 size={16} />
+                                        <Edit2 size={18} />
                                     </button>
                                     <button 
                                         onClick={() => handleDelete(item.id, item.collectionName)}
-                                        style={{ width: '36px', height: '36px', borderRadius: '18px', border: '1px solid #fee2e2', backgroundColor: '#fef2f2', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#ef4444' }}
+                                        style={{ width: '40px', height: '40px', borderRadius: '12px', border: 'none', backgroundColor: '#fef2f2', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#ef4444', transition: 'background-color 0.2s' }}
                                     >
-                                        <Trash2 size={16} />
+                                        <Trash2 size={18} />
                                     </button>
                                 </div>
                                 
