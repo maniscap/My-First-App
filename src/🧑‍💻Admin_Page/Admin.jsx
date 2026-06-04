@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { db } from '../firebase';
-import { collection, getDocs, doc, updateDoc, deleteField, deleteDoc, getCountFromServer } from 'firebase/firestore';
+import { collection, getDocs, doc, updateDoc, deleteField, deleteDoc, getCountFromServer, query, limit } from 'firebase/firestore';
 import { IoMdArrowBack } from 'react-icons/io';
 import { CheckCircle, XCircle, User, Building, LayoutDashboard, ClipboardList, Users, List, LogOut, Lock } from 'lucide-react';
 
@@ -32,8 +32,9 @@ function Admin() {
   const fetchData = async () => {
     setLoading(true);
     try {
-        // Fetch Seller Applications
-        const apps = await getDocs(collection(db, "seller_applications"));
+        // Fetch Seller Applications (Using a strict limit to prevent downloading the whole DB and crashing/billing)
+        const appsQuery = query(collection(db, "seller_applications"), limit(100));
+        const apps = await getDocs(appsQuery);
         setSellerApplications(apps.docs.map(d => ({id:d.id, ...d.data()})));
 
         // Fetch Listing Counts (Using getCountFromServer to avoid massive read costs)
