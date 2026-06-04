@@ -1,11 +1,11 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { ArrowLeft, Leaf, CheckCircle2 } from 'lucide-react';
 import { farmFreshCategories, farmFreshUnits } from '../../utils/ProductLibrary';
 import TermsAgreementCheckbox from '../../🛠️Shared_Components/TermsAgreementCheckbox';
 import UniversalImagePicker from '../../utils/UniversalImagePicker';
 import { db, auth } from '../../firebase';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, doc, updateDoc } from 'firebase/firestore';
 // Custom iOS-style toggle switch
 const OrganicToggle = ({ checked, onChange }) => (
     <div 
@@ -26,21 +26,28 @@ const OrganicToggle = ({ checked, onChange }) => (
 
 export default function FarmFresh_ListingForm() {
     const navigate = useNavigate();
-    const [selectedCategory, setSelectedCategory] = useState('');
-    const [selectedItemId, setSelectedItemId] = useState('');
-    const [customName, setCustomName] = useState('');
-    const [description, setDescription] = useState('');
-    const [price, setPrice] = useState('');
-    const [unit, setUnit] = useState('1kg');
-    const [customUnitName, setCustomUnitName] = useState('');
+    const location = useLocation();
+    const editData = location.state?.editData;
+
+    const [selectedCategory, setSelectedCategory] = useState(editData?.category || '');
+    const [selectedItemId, setSelectedItemId] = useState(editData?.itemId || '');
+    const [customName, setCustomName] = useState(editData?.itemId?.includes('other') ? editData.itemName : '');
+    const [description, setDescription] = useState(editData?.description || '');
+    const [price, setPrice] = useState(editData?.price || '');
+    
+    const initialUnit = editData?.unit || '1kg';
+    const isStandardUnit = farmFreshUnits.some(u => u.val === initialUnit);
+    
+    const [unit, setUnit] = useState(editData ? (isStandardUnit ? initialUnit : 'custom_other_unit') : '1kg');
+    const [customUnitName, setCustomUnitName] = useState(editData ? (isStandardUnit ? '' : initialUnit) : '');
     const [isUnitOpen, setIsUnitOpen] = useState(false);
-    const [isOrganic, setIsOrganic] = useState(false);
-    const [organicCertName, setOrganicCertName] = useState('');
-    const [organicCertNumber, setOrganicCertNumber] = useState('');
-    const [shelfLife, setShelfLife] = useState('');
-    const [qualityGuarantee, setQualityGuarantee] = useState(false);
-    const [termsAccepted, setTermsAccepted] = useState(false);
-    const [selectedImageUrl, setSelectedImageUrl] = useState(null);
+    const [isOrganic, setIsOrganic] = useState(editData?.isOrganic || false);
+    const [organicCertName, setOrganicCertName] = useState(editData?.organicCertName || '');
+    const [organicCertNumber, setOrganicCertNumber] = useState(editData?.organicCertNumber || '');
+    const [shelfLife, setShelfLife] = useState(editData?.shelfLife || '');
+    const [qualityGuarantee, setQualityGuarantee] = useState(editData ? editData.qualityGuarantee : false);
+    const [termsAccepted, setTermsAccepted] = useState(editData ? true : false);
+    const [selectedImageUrl, setSelectedImageUrl] = useState(editData?.imageUrl || null);
     const [showSuccess, setShowSuccess] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [submittedData, setSubmittedData] = useState(null);
@@ -160,11 +167,11 @@ export default function FarmFresh_ListingForm() {
             }
 
             const listingData = {
-                sellerId: localStorage.getItem('seller_app_id'),
+                sellerId: editData?.sellerId || localStorage.getItem('seller_app_id'),
                 userId: user.uid,
-                sellerName: user.displayName || 'Unknown Seller', // Could fetch from profile
-                shopName: localStorage.getItem('locationTitle') || 'My Shop',
-                status: 'active',
+                sellerName: editData?.sellerName || user.displayName || 'Unknown Seller',
+                shopName: editData?.shopName || localStorage.getItem('locationTitle') || 'My Shop',
+                status: editData?.status || 'active',
                 listingType: 'farm_fresh',
                 category: selectedCategory,
                 itemId: selectedItemId,
@@ -175,15 +182,19 @@ export default function FarmFresh_ListingForm() {
                 isOrganic: isOrganic,
                 organicCertName: isOrganic ? organicCertName : null,
                 organicCertNumber: isOrganic ? organicCertNumber : null,
-                listingDate: new Date().toLocaleDateString('en-IN'),
+                listingDate: editData?.listingDate || new Date().toLocaleDateString('en-IN'),
                 shelfLife: shelfLife,
                 qualityGuarantee: qualityGuarantee,
                 imageUrl: selectedImageUrl,
-                createdAt: serverTimestamp(),
                 updatedAt: serverTimestamp()
             };
 
-            await addDoc(collection(db, 'listings_farm_fresh'), listingData);
+            if (editData) {
+                await updateDoc(doc(db, 'listings_farm_fresh', editData.id), listingData);
+            } else {
+                listingData.createdAt = serverTimestamp();
+                await addDoc(collection(db, 'listings_farm_fresh'), listingData);
+            }
             
             setSubmittedData(listingData);
             setShowSuccess(true);
@@ -216,9 +227,11 @@ export default function FarmFresh_ListingForm() {
                                 <CheckCircle2 size={32} color="white" />
                             </div>
                             <h2 style={{ margin: '0 0 4px 0', fontSize: '22px', fontWeight: '800', color: '#0f172a', textAlign: 'center' }}>{submittedData.itemName}</h2>
-                            <p style={{ margin: '0 0 12px 0', fontSize: '14px', color: '#64748b', textAlign: 'center', fontWeight: '500' }}>Your listing was added successfully!</p>
-                            <span style={{ fontSize: '12px', color: '#16a34a', fontWeight: '700', backgroundColor: '#dcfce7', padding: '4px 12px', borderRadius: '20px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{submittedData.category}</span>
-                        </div>
+                        <div style={{ padding: '20px', backgroundColor: '#16a34a', color: '#fff', textAlign: 'center', borderRadius: '0 0 24px 24px' }}>
+                <CheckCircle2 size={48} color="#fff" style={{ margin: '0 auto 12px' }} />
+                <h2 style={{ margin: '0 0 8px', fontSize: '24px', fontWeight: '800' }}>{editData ? 'Listing Updated!' : 'Listing Created!'}</h2>
+                <p style={{ margin: 0, opacity: 0.9 }}>Your product is now live in the Farm Fresh market.</p>
+            </div>
 
                         {/* Image & Price Section */}
                         <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
@@ -300,11 +313,14 @@ export default function FarmFresh_ListingForm() {
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: '#f8fafc', overflowY: 'auto', WebkitOverflowScrolling: 'touch', touchAction: 'pan-y' }}>
 
             {/* Header */}
-            <div style={{ position: 'sticky', top: 0, backgroundColor: '#ffffff', zIndex: 10, padding: '16px 20px', display: 'flex', alignItems: 'center', borderBottom: '1px solid #f1f5f9', boxShadow: '0 2px 10px rgba(0,0,0,0.02)' }}>
-                <button onClick={() => navigate(-1)} style={{ background: 'none', border: 'none', padding: '8px', marginRight: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '12px', backgroundColor: '#f8fafc', cursor: 'pointer' }}>
+            <div style={{ position: 'sticky', top: 0, backgroundColor: '#ffffff', zIndex: 10, padding: '16px 20px', display: 'flex', alignItems: 'center', borderBottom: '1px solid #f1f5f9' }}>
+                <button onClick={() => navigate(-1)} style={{ background: '#f8fafc', border: 'none', padding: '8px', marginRight: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '12px', cursor: 'pointer' }}>
                     <ArrowLeft size={20} color="#0f172a" />
                 </button>
-                <h1 style={{ margin: 0, fontSize: '18px', fontWeight: '700', color: '#0f172a' }}>Add Farm Fresh</h1>
+                <div style={{ flex: 1 }}>
+                    <h1 style={{ margin: 0, fontSize: '18px', fontWeight: '700', color: '#0f172a' }}>{editData ? 'Edit Listing' : 'New Listing'}</h1>
+                    <p style={{ margin: '2px 0 0', fontSize: '12px', color: '#64748b', fontWeight: '500' }}>Farm Fresh Products</p>
+                </div>
             </div>
 
             <div style={{ padding: '24px 20px', paddingBottom: '100px' }}>
@@ -610,12 +626,12 @@ export default function FarmFresh_ListingForm() {
                         {isSubmitting ? (
                             <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                 <div style={{ width: '20px', height: '20px', border: '3px solid rgba(255,255,255,0.3)', borderTop: '3px solid white', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
-                                Adding Listing...
+                                Processing...
                             </span>
                         ) : (
                             <>
                                 <CheckCircle2 size={20} />
-                                Publish Listing
+                                {editData ? 'Update Listing' : 'Publish Listing'}
                             </>
                         )}
                     </button>
