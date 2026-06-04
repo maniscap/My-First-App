@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Building2, User, ShieldCheck, Clock, ChevronLeft, UploadCloud, MapPin, Briefcase, CheckCircle2 } from 'lucide-react';
 import { db } from '../../firebase';
 import { getAuth } from 'firebase/auth';
-import { collection, addDoc, getDoc, doc, deleteDoc, query, where, getDocs } from 'firebase/firestore';
+import { collection, addDoc, getDoc, doc, setDoc, deleteDoc, query, where, getDocs } from 'firebase/firestore';
 import SellerApplication_Terms from './SellerApplication_Terms';
 
 function SellerProfile_Setup() {
