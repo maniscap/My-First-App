@@ -248,6 +248,7 @@ function SellerProfile_Setup() {
                 accountType: accountType, 
                 submittedAt: new Date().toISOString() 
             };
+            
             delete submissionData.profilePic;
             delete submissionData.organicCertificate;
             delete submissionData.machineryImages;
@@ -256,22 +257,21 @@ function SellerProfile_Setup() {
             delete submissionData.orgMachineryImages;
             delete submissionData.orgHarvestImages;
 
-            // Submit to Firebase
-            const docRef = await addDoc(collection(db, 'seller_applications'), submissionData);
+            // STRICT FIX: Force the Document ID to perfectly match the generated sellerId
+            // And use setDoc to specify that explicit ID in the database
+            await setDoc(doc(db, 'seller_applications', sellerId), submissionData);
+            
+            // Set local storage using the exact sellerId (both specific and global tracker)
+            if (accountType === 'individual') {
+                localStorage.setItem('seller_individual_app_id', sellerId);
+            } else {
+                localStorage.setItem('seller_organisation_app_id', sellerId);
+            }
+            localStorage.setItem('seller_app_id', sellerId);
             
             alert(`Application Submitted Successfully!\n\nYour Seller ID is: ${sellerId}\n\nOur Admin team will review your application shortly.`);
             
-            // Primary tracker for homepage
-            localStorage.setItem('seller_app_id', docRef.id);
-            
-            // Specific trackers for preventing duplicates
-            if (accountType === 'individual') {
-                localStorage.setItem('seller_individual_app_id', docRef.id);
-            } else {
-                localStorage.setItem('seller_organisation_app_id', docRef.id);
-            }
-            
-            navigate('/Seller_HomePage');
+            setApplicationStatus('pending');navigate('/Seller_HomePage');
         } catch (error) {
             console.error("Submission failed:", error);
             alert("Failed to submit application. Please check your connection.");

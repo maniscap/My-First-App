@@ -13,7 +13,9 @@ export default function ManageListings() {
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, (user) => {
             if (user) {
-                fetchListings(user.uid);
+                const sellerAppId = localStorage.getItem('seller_app_id');
+                if (sellerAppId) fetchListings(sellerAppId);
+                else setLoading(false);
             } else {
                 setLoading(false);
             }
@@ -21,9 +23,9 @@ export default function ManageListings() {
         return () => unsubscribe();
     }, []);
 
-    const fetchListings = async (userId) => {
+    const fetchListings = async (sellerAppId) => {
         try {
-            const q = query(collection(db, 'seller_listings'), where('sellerId', '==', userId));
+            const q = query(collection(db, 'seller_listings'), where('sellerId', '==', sellerAppId));
             const querySnapshot = await getDocs(q);
             const data = querySnapshot.docs.map(doc => ({
                 id: doc.id,
