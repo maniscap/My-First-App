@@ -318,14 +318,14 @@ function SellerProfile_Setup() {
             `}</style>
             
             {/* Header */}
-            <div style={{ backgroundColor: '#0f172a', color: '#fff', padding: '20px', paddingBottom: '40px', borderBottomLeftRadius: '30px', borderBottomRightRadius: '30px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '20px' }}>
+            <div style={{ backgroundColor: '#0f172a', color: '#fff', padding: '16px 20px', borderBottomLeftRadius: '20px', borderBottomRightRadius: '20px', boxShadow: '0 4px 15px rgba(0,0,0,0.1)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '12px' }}>
                     <div onClick={() => navigate(-1)} style={{ cursor: 'pointer', padding: '5px' }}>
-                        <ChevronLeft size={28} />
+                        <ChevronLeft size={24} />
                     </div>
-                    <h1 style={{ margin: 0, fontSize: '20px', fontWeight: '800' }}>Seller Registration</h1>
+                    <h1 style={{ margin: 0, fontSize: '18px', fontWeight: '800' }}>Seller Registration</h1>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '15px', padding: '0 10px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '0 10px' }}>
                     <ShieldCheck size={40} color="#4CAF50" style={{ flexShrink: 0 }} />
                     <div>
                         <h2 style={{ margin: 0, fontSize: '16px', fontWeight: '700' }}>Secure Verification</h2>
@@ -334,7 +334,7 @@ function SellerProfile_Setup() {
                 </div>
             </div>
 
-            <div style={{ padding: '10px 2%', maxWidth: '100%', margin: '0 auto', display: showTermsModal ? 'none' : 'block' }}>
+            <div style={{ padding: '16px 2%', maxWidth: '100%', margin: '0 auto', display: showTermsModal ? 'none' : 'block' }}>
                 
                 {/* Step 1: Choose Account Type */}
                 {!accountType ? (
@@ -437,15 +437,17 @@ function SellerProfile_Setup() {
                     <div style={{ backgroundColor: '#fff', borderRadius: '24px', boxShadow: '0 10px 40px rgba(0,0,0,0.06)', overflow: 'hidden' }}>
                         
                         {/* Dynamic Hero Header */}
-                        <div style={{ background: currentTheme.gradient, padding: '35px 25px 30px', color: '#fff', position: 'relative' }}>
-                            <button type="button" onClick={() => setAccountType(null)} style={{ position: 'absolute', top: '20px', right: '20px', background: 'rgba(255,255,255,0.2)', border: 'none', color: '#fff', padding: '8px 14px', borderRadius: '20px', fontSize: '13px', fontWeight: '700', cursor: 'pointer', backdropFilter: 'blur(5px)' }}>
+                        <div style={{ background: currentTheme.gradient, padding: '20px 24px', color: '#fff', position: 'relative', display: 'flex', alignItems: 'center', gap: '16px' }}>
+                            <div style={{ width: '48px', height: '48px', backgroundColor: '#fff', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 10px rgba(0,0,0,0.2)', flexShrink: 0 }}>
+                                {React.cloneElement(currentTheme.icon, { size: 24 })}
+                            </div>
+                            <div style={{ flex: 1 }}>
+                                <h3 style={{ margin: '0 0 4px', fontSize: '20px', fontWeight: '800' }}>{currentTheme.title}</h3>
+                                <p style={{ margin: 0, fontSize: '13px', opacity: 0.9, lineHeight: '1.2' }}>{currentTheme.subtitle}</p>
+                            </div>
+                            <button type="button" onClick={() => setAccountType(null)} style={{ background: 'rgba(255,255,255,0.2)', border: 'none', color: '#fff', padding: '8px 14px', borderRadius: '20px', fontSize: '12px', fontWeight: '700', cursor: 'pointer', backdropFilter: 'blur(5px)', alignSelf: 'flex-start' }}>
                                 Change Type
                             </button>
-                            <div style={{ width: '60px', height: '60px', backgroundColor: '#fff', borderRadius: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '15px', boxShadow: '0 4px 15px rgba(0,0,0,0.2)' }}>
-                                {currentTheme.icon}
-                            </div>
-                            <h3 style={{ margin: '0 0 8px', fontSize: '24px', fontWeight: '800' }}>{currentTheme.title}</h3>
-                            <p style={{ margin: 0, fontSize: '14px', opacity: 0.9, lineHeight: '1.4' }}>{currentTheme.subtitle}</p>
                         </div>
 
                         <div style={{ padding: '24px 24px' }}>
