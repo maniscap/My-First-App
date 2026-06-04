@@ -327,7 +327,7 @@ function SellerProfile_Setup() {
                 </div>
             </div>
 
-            <div style={{ padding: '20px', maxWidth: '600px', margin: '-20px auto 0', display: showTermsModal ? 'none' : 'block' }}>
+            <div style={{ padding: '20px', maxWidth: '1000px', margin: '-20px auto 0', display: showTermsModal ? 'none' : 'block' }}>
                 
                 {/* Step 1: Choose Account Type */}
                 {!accountType ? (
@@ -454,23 +454,21 @@ function SellerProfile_Setup() {
                                 onFileSelect={(file) => setFormData({...formData, profilePic: file})}
                             />
                             
-                            {accountType === 'individual' ? (
-                                <>
-                                    <InputGroup label="Shop / Display Name" name="shopName" value={formData.shopName} onChange={handleChange} placeholder="e.g. Ramesh's Fresh Farms" themeColor={currentTheme.primary} />
-                                    <InputGroup label="Full Legal Name" name="fullName" value={formData.fullName} onChange={handleChange} placeholder="As per Govt ID" themeColor={currentTheme.primary} />
-                                    <InputGroup label="Aadhar / Govt ID Number" name="aadharNumber" value={formData.aadharNumber} onChange={handleChange} placeholder="XXXX XXXX XXXX" themeColor={currentTheme.primary} />
-                                </>
-                            ) : (
-                                <>
-                                    <InputGroup label="Organisation Name" name="companyName" value={formData.companyName} onChange={handleChange} placeholder="e.g. Green Valley Co-op" themeColor={currentTheme.primary} />
-                                    <InputGroup label="Contact Person Name" name="representativeName" value={formData.representativeName} onChange={handleChange} placeholder="Full Name" themeColor={currentTheme.primary} />
-                                    <InputGroup label="GST / Registration Number" name="gstNumber" value={formData.gstNumber} onChange={handleChange} placeholder="GSTIN / CIN" themeColor={currentTheme.primary} />
-                                </>
-                            )}
-                            
-                            <InputGroup label="Business Email Address" name="email" type="email" value={formData.email} onChange={handleChange} placeholder="store@example.com" themeColor={currentTheme.primary} />
-
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '15px' }}>
+                                {accountType === 'individual' ? (
+                                    <>
+                                        <InputGroup label="Shop / Display Name" name="shopName" value={formData.shopName} onChange={handleChange} placeholder="e.g. Ramesh's Fresh Farms" themeColor={currentTheme.primary} />
+                                        <InputGroup label="Full Legal Name" name="fullName" value={formData.fullName} onChange={handleChange} placeholder="As per Govt ID" themeColor={currentTheme.primary} />
+                                        <InputGroup label="Aadhar / Govt ID Number" name="aadharNumber" value={formData.aadharNumber} onChange={handleChange} placeholder="XXXX XXXX XXXX" themeColor={currentTheme.primary} />
+                                    </>
+                                ) : (
+                                    <>
+                                        <InputGroup label="Organisation Name" name="companyName" value={formData.companyName} onChange={handleChange} placeholder="e.g. Green Valley Co-op" themeColor={currentTheme.primary} />
+                                        <InputGroup label="Contact Person Name" name="representativeName" value={formData.representativeName} onChange={handleChange} placeholder="Full Name" themeColor={currentTheme.primary} />
+                                        <InputGroup label="GST / Registration Number" name="gstNumber" value={formData.gstNumber} onChange={handleChange} placeholder="GSTIN / CIN" themeColor={currentTheme.primary} />
+                                    </>
+                                )}
+                                <InputGroup label="Business Email Address" name="email" type="email" value={formData.email} onChange={handleChange} placeholder="store@example.com" themeColor={currentTheme.primary} />
                                 <InputGroup label="Primary Phone" name="phone" type="tel" value={formData.phone} onChange={handleChange} placeholder="9876543210" maxLength="10" prefix="+91" themeColor={currentTheme.primary} />
                                 <InputGroup label="Emergency Phone" name="emergencyPhone" type="tel" value={formData.emergencyPhone} onChange={handleChange} placeholder="9876543210" maxLength="10" prefix="+91" themeColor={currentTheme.primary} />
                             </div>
@@ -493,7 +491,7 @@ function SellerProfile_Setup() {
                                 </div>
                             )}
 
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '16px' }}>
                                 <InputGroup label="House / Plot No." name="houseNumber" value={formData.houseNumber} onChange={handleChange} placeholder="e.g. 1-42" themeColor={currentTheme.primary} />
                                 <InputGroup label="Landmark" name="landmark" value={formData.landmark} onChange={handleChange} placeholder="Near Big Well" themeColor={currentTheme.primary} />
                                 <InputGroup label="Village" name="village" value={formData.village} onChange={handleChange} placeholder="Village Name" themeColor={currentTheme.primary} />
