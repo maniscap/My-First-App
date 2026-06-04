@@ -327,7 +327,7 @@ function SellerProfile_Setup() {
                 </div>
             </div>
 
-            <div style={{ padding: '20px', maxWidth: '800px', margin: '-20px auto 0', display: showTermsModal ? 'none' : 'block' }}>
+            <div style={{ padding: '20px', maxWidth: '600px', margin: '-20px auto 0', display: showTermsModal ? 'none' : 'block' }}>
                 
                 {/* Step 1: Choose Account Type */}
                 {!accountType ? (
@@ -441,7 +441,7 @@ function SellerProfile_Setup() {
                             <p style={{ margin: 0, fontSize: '14px', opacity: 0.9, lineHeight: '1.4' }}>{currentTheme.subtitle}</p>
                         </div>
 
-                        <div style={{ padding: '30px 40px' }}>
+                        <div style={{ padding: '24px 24px' }}>
                             
                             {/* Personal/Business Info Section */}
                             <SectionTitle title="Identity Details" icon={<User size={20} color={currentTheme.primary} />} theme={currentTheme} />
@@ -493,7 +493,7 @@ function SellerProfile_Setup() {
                                 </div>
                             )}
 
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '12px', marginBottom: '12px' }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
                                 <InputGroup label="House / Plot No." name="houseNumber" value={formData.houseNumber} onChange={handleChange} placeholder="e.g. 1-42" themeColor={currentTheme.primary} />
                                 <InputGroup label="Landmark" name="landmark" value={formData.landmark} onChange={handleChange} placeholder="Near Big Well" themeColor={currentTheme.primary} />
                                 <InputGroup label="Village" name="village" value={formData.village} onChange={handleChange} placeholder="Village Name" themeColor={currentTheme.primary} />
