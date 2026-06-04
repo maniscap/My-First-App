@@ -391,6 +391,9 @@ function SellerProfile_Setup() {
                                         </div>
                                         <p style={{ margin: 0, fontSize: '12px', color: '#64748b', lineHeight: '1.4' }}>Designed for independent farmers, sole machinery owners, or individual gig workers.</p>
                                         {cachedIndReject && <button style={{ margin: '8px 0 0', padding: '6px 12px', background: '#dc2626', color: '#fff', border: 'none', borderRadius: '6px', fontSize: '11px', fontWeight: 'bold' }}>Re-apply</button>}
+                                        {isOrgActive && (
+                                            <p style={{ margin: '8px 0 0', fontSize: '11px', color: '#ef4444', fontWeight: 'bold' }}>🔒 Locked: You have an active Organisation account.</p>
+                                        )}
                                     </div>
                                 </div>
                             )}
@@ -435,6 +438,9 @@ function SellerProfile_Setup() {
                                         </div>
                                         <p style={{ margin: 0, fontSize: '12px', color: '#64748b', lineHeight: '1.4' }}>Ideal for registered farming co-ops, equipment rental agencies, and large suppliers.</p>
                                         {cachedOrgReject && <button style={{ margin: '8px 0 0', padding: '6px 12px', background: '#dc2626', color: '#fff', border: 'none', borderRadius: '6px', fontSize: '11px', fontWeight: 'bold' }}>Re-apply</button>}
+                                        {isIndActive && (
+                                            <p style={{ margin: '8px 0 0', fontSize: '11px', color: '#ef4444', fontWeight: 'bold' }}>🔒 Locked: You have an active Individual account.</p>
+                                        )}
                                     </div>
                                 </div>
                             )}
