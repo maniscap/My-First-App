@@ -229,10 +229,11 @@ function SellerProfile_Setup() {
 
         setIsSubmitting(true);
         try {
-            // Generate an absolutely unique alphanumeric Seller ID (e.g. SLR-LWMX1Y2Z-9A2B)
+            // Generate an absolutely unique alphanumeric Seller ID based on account type
             const timestampPart = Date.now().toString(36).toUpperCase();
             const randomPart = Math.random().toString(36).substring(2, 6).toUpperCase();
-            const sellerId = `SLR-${timestampPart}-${randomPart}`;
+            const prefix = accountType === 'individual' ? 'SIN' : 'ORG';
+            const sellerId = `${prefix}-${timestampPart}-${randomPart}`;
             
             const auth = getAuth();
             const user = auth.currentUser;

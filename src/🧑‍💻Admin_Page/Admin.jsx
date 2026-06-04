@@ -138,9 +138,14 @@ function Admin() {
       );
   }
 
-  const pendingApps = sellerApplications.filter(a => a.status === 'pending_approval');
-  const approvedApps = sellerApplications.filter(a => a.status === 'approved');
-  const rejectedApps = sellerApplications.filter(a => a.status === 'rejected');
+  const pendingAppsCount = sellerApplications.filter(a => a.status === 'pending_approval').length;
+  const approvedAppsCount = sellerApplications.filter(a => a.status === 'approved').length;
+
+  const pendingInd = sellerApplications.filter(a => a.status === 'pending_approval' && a.accountType === 'individual');
+  const pendingOrg = sellerApplications.filter(a => a.status === 'pending_approval' && a.accountType === 'organisation');
+
+  const approvedInd = sellerApplications.filter(a => a.status === 'approved' && a.accountType === 'individual');
+  const approvedOrg = sellerApplications.filter(a => a.status === 'approved' && a.accountType === 'organisation');
 
   return (
     <div className="admin-dashboard">
@@ -158,7 +163,7 @@ function Admin() {
                   <LayoutDashboard size={20} /> Dashboard Overview
               </button>
               <button className={`nav-item ${activeTab === 'verifications' ? 'active' : ''}`} onClick={() => setActiveTab('verifications')}>
-                  <ClipboardList size={20} /> Verifications <span className="badge">{pendingApps.length}</span>
+                  <ClipboardList size={20} /> Verifications <span className="badge">{pendingAppsCount}</span>
               </button>
               <button className={`nav-item ${activeTab === 'approved' ? 'active' : ''}`} onClick={() => setActiveTab('approved')}>
                   <Users size={20} /> Approved Sellers
@@ -188,13 +193,19 @@ function Admin() {
                   <h3 className="section-subtitle">Application Status</h3>
                   <div className="stats-cards">
                       <div className="stat-card pending">
-                          <h3>{pendingApps.length}</h3>
+                          <h3>{pendingAppsCount}</h3>
                           <p>Pending Review</p>
                       </div>
                       <div className="stat-card approved">
-                          <h3>{approvedApps.length}</h3>
-                          <p>Verified Sellers</p>
+                          <h3>{approvedAppsCount}</h3>
+                          <p>Total Verified Sellers</p>
                       </div>
+                  </div>
+
+                  <h3 className="section-subtitle" style={{marginTop: '40px'}}>Seller Demographics</h3>
+                  <div className="stats-cards">
+                      <div className="stat-card neutral"><div className="icon">👤</div><h3>{approvedInd.length}</h3><p>Verified Individuals</p></div>
+                      <div className="stat-card neutral"><div className="icon">🏢</div><h3>{approvedOrg.length}</h3><p>Verified Organisations</p></div>
                   </div>
 
                   <h3 className="section-subtitle" style={{marginTop: '40px'}}>Live Listing Counts</h3>
@@ -218,22 +229,35 @@ function Admin() {
                   
                   {loading ? (
                       <div className="loading-state">Loading applications...</div>
-                  ) : pendingApps.length === 0 ? (
+                  ) : pendingAppsCount === 0 ? (
                       <div className="empty-state">
                           <CheckCircle size={48} color="#10b981" />
                           <p>You're all caught up! No pending applications.</p>
                       </div>
                   ) : (
-                      <div className="cards-list">
-                          {pendingApps.map(app => (
-                              <ApplicationCard 
-                                  key={app.id} 
-                                  app={app} 
-                                  onApprove={() => handleApproveSeller(app)} 
-                                  onReject={() => handleReject(app)} 
-                              />
-                          ))}
-                      </div>
+                      <>
+                          {pendingInd.length > 0 && (
+                              <>
+                                  <h3 className="section-subtitle" style={{marginTop: '20px', marginBottom: '15px', color: '#8b5cf6'}}>👤 Single Shops / Individuals</h3>
+                                  <div className="cards-list">
+                                      {pendingInd.map(app => (
+                                          <ApplicationCard key={app.id} app={app} onApprove={() => handleApproveSeller(app)} onReject={() => handleReject(app)} />
+                                      ))}
+                                  </div>
+                              </>
+                          )}
+                          
+                          {pendingOrg.length > 0 && (
+                              <>
+                                  <h3 className="section-subtitle" style={{marginTop: '40px', marginBottom: '15px', color: '#3b82f6'}}>🏢 Organisations / Big Shops</h3>
+                                  <div className="cards-list">
+                                      {pendingOrg.map(app => (
+                                          <ApplicationCard key={app.id} app={app} onApprove={() => handleApproveSeller(app)} onReject={() => handleReject(app)} />
+                                      ))}
+                                  </div>
+                              </>
+                          )}
+                      </>
                   )}
               </div>
           )}
@@ -248,20 +272,45 @@ function Admin() {
                   
                   <div className="approved-directory">
                       <div className="text-list">
-                          {approvedApps.length === 0 && <p style={{color:'#64748b'}}>No approved sellers yet.</p>}
-                          {approvedApps.map(app => (
-                              <div key={app.id} className="text-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'white', padding: '15px', borderRadius: '8px', border: '1px solid #e2e8f0', marginBottom: '10px' }}>
-                                  <div>
-                                      <strong>{app.sellerId}</strong> &mdash; 
-                                      {app.accountType === 'organisation' ? app.companyName : app.fullName} 
-                                      ({app.categories?.join(', ') || 'No categories'}) &mdash; 
-                                      {app.phone} &mdash; {app.village}, {app.district}
-                                      <br/>
-                                      <span style={{ fontSize: '13px', color: '#64748b', fontWeight: '600' }}>Approved At: {app.approvedAt ? new Date(app.approvedAt).toLocaleString() : 'N/A'}</span>
-                                  </div>
-                                  <button onClick={() => handleDeleteApproved(app.id)} style={{ padding: '10px 16px', background: '#ef4444', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>Delete Seller</button>
+                          {approvedAppsCount === 0 && <p style={{color:'#64748b'}}>No approved sellers yet.</p>}
+                          
+                          {approvedInd.length > 0 && (
+                              <div style={{marginBottom: '40px'}}>
+                                  <h3 className="section-subtitle" style={{marginBottom: '15px', color: '#8b5cf6'}}>👤 Verified Individual Shops</h3>
+                                  {approvedInd.map(app => (
+                                      <div key={app.id} className="text-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'white', padding: '15px', borderRadius: '8px', border: '1px solid #e2e8f0', marginBottom: '10px' }}>
+                                          <div>
+                                              <strong>{app.sellerId}</strong> &mdash; 
+                                              {app.fullName} 
+                                              ({app.categories?.join(', ') || 'No categories'}) &mdash; 
+                                              {app.phone} &mdash; {app.village}, {app.district}
+                                              <br/>
+                                              <span style={{ fontSize: '13px', color: '#64748b', fontWeight: '600' }}>Approved At: {app.approvedAt ? new Date(app.approvedAt).toLocaleString() : 'N/A'}</span>
+                                          </div>
+                                          <button onClick={() => handleDeleteApproved(app.id)} style={{ padding: '10px 16px', background: '#ef4444', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>Delete Seller</button>
+                                      </div>
+                                  ))}
                               </div>
-                          ))}
+                          )}
+
+                          {approvedOrg.length > 0 && (
+                              <div style={{marginBottom: '40px'}}>
+                                  <h3 className="section-subtitle" style={{marginBottom: '15px', color: '#3b82f6'}}>🏢 Verified Organisations</h3>
+                                  {approvedOrg.map(app => (
+                                      <div key={app.id} className="text-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'white', padding: '15px', borderRadius: '8px', border: '1px solid #e2e8f0', marginBottom: '10px' }}>
+                                          <div>
+                                              <strong>{app.sellerId}</strong> &mdash; 
+                                              {app.companyName} 
+                                              ({app.categories?.join(', ') || 'No categories'}) &mdash; 
+                                              {app.phone} &mdash; {app.village}, {app.district}
+                                              <br/>
+                                              <span style={{ fontSize: '13px', color: '#64748b', fontWeight: '600' }}>Approved At: {app.approvedAt ? new Date(app.approvedAt).toLocaleString() : 'N/A'}</span>
+                                          </div>
+                                          <button onClick={() => handleDeleteApproved(app.id)} style={{ padding: '10px 16px', background: '#ef4444', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>Delete Seller</button>
+                                      </div>
+                                  ))}
+                              </div>
+                          )}
                       </div>
                   </div>
               </div>
