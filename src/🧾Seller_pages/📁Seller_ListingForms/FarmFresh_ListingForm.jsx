@@ -34,6 +34,7 @@ export default function FarmFresh_ListingForm() {
     const [customName, setCustomName] = useState(editData?.itemId?.includes('other') ? editData.itemName : '');
     const [description, setDescription] = useState(editData?.description || '');
     const [price, setPrice] = useState(editData?.price || '');
+    const [status, setStatus] = useState(editData?.status || 'active');
     
     const initialUnit = editData?.unit || '1kg';
     const isStandardUnit = farmFreshUnits.some(u => u.val === initialUnit);
@@ -171,7 +172,7 @@ export default function FarmFresh_ListingForm() {
                 userId: user.uid,
                 sellerName: editData?.sellerName || user.displayName || 'Unknown Seller',
                 shopName: editData?.shopName || localStorage.getItem('locationTitle') || 'My Shop',
-                status: editData?.status || 'active',
+                status: status,
                 listingType: 'farm_fresh',
                 category: selectedCategory,
                 itemId: selectedItemId,
@@ -560,6 +561,34 @@ export default function FarmFresh_ListingForm() {
                             )}
                         </div>
                     </div>
+
+                    {/* Status Toggle (Only show if editing) */}
+                    {editData && (
+                        <div style={{ marginBottom: '32px', backgroundColor: '#f8fafc', padding: '20px', borderRadius: '16px', border: '1px solid #e2e8f0' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <div>
+                                    <label style={{ display: 'block', fontSize: '15px', fontWeight: '700', color: '#0f172a', marginBottom: '4px' }}>Listing Status</label>
+                                    <span style={{ fontSize: '13px', color: '#64748b', display: 'block' }}>
+                                        {status === 'active' ? 'Customers can see and buy this item.' : 'Item is hidden (Out of Stock).'}
+                                    </span>
+                                </div>
+                                <select 
+                                    value={status} 
+                                    onChange={(e) => setStatus(e.target.value)}
+                                    style={{ 
+                                        padding: '12px 16px', borderRadius: '12px', 
+                                        border: status === 'active' ? '2px solid #16a34a' : '2px solid #ef4444', 
+                                        fontSize: '15px', fontWeight: '700', 
+                                        backgroundColor: status === 'active' ? '#f0fdf4' : '#fef2f2', 
+                                        color: status === 'active' ? '#16a34a' : '#ef4444', outline: 'none' 
+                                    }}
+                                >
+                                    <option value="active">Active (Visible)</option>
+                                    <option value="paused">Paused (Out of Stock)</option>
+                                </select>
+                            </div>
+                        </div>
+                    )}
 
                     {/* 6. Description */}
                     <div style={{ marginBottom: '32px' }}>
