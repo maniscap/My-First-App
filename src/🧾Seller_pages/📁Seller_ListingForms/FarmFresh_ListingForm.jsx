@@ -226,12 +226,10 @@ export default function FarmFresh_ListingForm() {
                             <div style={{ width: '64px', height: '64px', borderRadius: '50%', backgroundColor: '#16a34a', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '16px', boxShadow: '0 8px 20px rgba(22,163,74,0.3)', animation: 'scaleUpBounce 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards' }}>
                                 <CheckCircle2 size={32} color="white" />
                             </div>
-                            <h2 style={{ margin: '0 0 4px 0', fontSize: '22px', fontWeight: '800', color: '#0f172a', textAlign: 'center' }}>{submittedData.itemName}</h2>
-                        <div style={{ padding: '20px', backgroundColor: '#16a34a', color: '#fff', textAlign: 'center', borderRadius: '0 0 24px 24px' }}>
-                <CheckCircle2 size={48} color="#fff" style={{ margin: '0 auto 12px' }} />
-                <h2 style={{ margin: '0 0 8px', fontSize: '24px', fontWeight: '800' }}>{editData ? 'Listing Updated!' : 'Listing Created!'}</h2>
-                <p style={{ margin: 0, opacity: 0.9 }}>Your product is now live in the Farm Fresh market.</p>
-            </div>
+                            <h2 style={{ margin: '0 0 4px 0', fontSize: '22px', fontWeight: '800', color: '#0f172a', textAlign: 'center' }}>{editData ? 'Listing Updated!' : 'Listing Created!'}</h2>
+                            <p style={{ margin: '0 0 12px 0', fontSize: '14px', color: '#64748b', textAlign: 'center', fontWeight: '500' }}>{submittedData.itemName} is now live in the market.</p>
+                            <span style={{ fontSize: '12px', color: '#16a34a', fontWeight: '700', backgroundColor: '#dcfce7', padding: '4px 12px', borderRadius: '20px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{submittedData.category}</span>
+                        </div>
 
                         {/* Image & Price Section */}
                         <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>

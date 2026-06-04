@@ -206,11 +206,6 @@ export default function ManageListings() {
                     </div>
                 )}
             </div>
-
-                        ))}
-                    </div>
-                )}
-            </div>
         </div>
     );
 }
