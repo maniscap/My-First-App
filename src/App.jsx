@@ -120,11 +120,16 @@ function App() {
           <FloatingCalculator /> 
 
           {/* --- MAIN PAGE CONTENT --- */}
-          {isSellerMode ? (
+          {!user ? (
+            <Routes>
+              <Route path="/login" element={<Login />} />
+              <Route path="*" element={<Navigate to="/login" replace />} />
+            </Routes>
+          ) : isSellerMode ? (
             <Routes>
               {/* SMART ROUTING: Redirects for Seller Mode */}
-              <Route path="/" element={user ? <Navigate to="/Seller_HomePage" replace /> : <Navigate to="/login" replace />} />
-              <Route path="/login" element={user ? <Navigate to="/Seller_HomePage" replace /> : <Login />} />
+              <Route path="/" element={<Navigate to="/Seller_HomePage" replace />} />
+              <Route path="/login" element={<Navigate to="/Seller_HomePage" replace />} />
               <Route path="/Consumer_HomePage" element={<Navigate to="/Seller_HomePage" replace />} />
               
               {/* --- SELLER MAIN PAGES --- */}
@@ -156,8 +161,8 @@ function App() {
           ) : (
             <Routes>
               {/* SMART ROUTING: Redirects instantly based on login status */}
-              <Route path="/" element={user ? <Navigate to="/Consumer_HomePage" replace /> : <Navigate to="/login" replace />} />
-              <Route path="/login" element={user ? <Navigate to="/Consumer_HomePage" replace /> : <Login />} />
+              <Route path="/" element={<Navigate to="/Consumer_HomePage" replace />} />
+              <Route path="/login" element={<Navigate to="/Consumer_HomePage" replace />} />
               <Route path="/Seller_HomePage" element={<Navigate to="/Consumer_HomePage" replace />} />
               
               {/* Main Consumer_HomePage */}
@@ -226,7 +231,7 @@ function App() {
           )}
 
           {/* --- BOTTOM NAVIGATION DOCK --- */}
-          {isSellerMode ? <SellerBottomNavigation /> : <Consumer_BottomNavigation />}
+          {user && (isSellerMode ? <SellerBottomNavigation /> : <Consumer_BottomNavigation />)}
           
         </div>
       )}
