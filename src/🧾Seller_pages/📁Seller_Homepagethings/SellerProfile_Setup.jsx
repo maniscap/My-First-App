@@ -358,8 +358,11 @@ function SellerProfile_Setup() {
                                         <ShieldCheck size={24} color="#fff" />
                                     </div>
                                     <div style={{ flex: 1 }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '4px' }}>
-                                            <h4 style={{ margin: 0, fontSize: '16px', fontWeight: '800', color: '#065f46' }}>{indApp.fullName || "Single Person"}</h4>
+                                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', marginBottom: '4px', justifyContent: 'space-between' }}>
+                                            <div>
+                                                <h4 style={{ margin: 0, fontSize: '16px', fontWeight: '800', color: '#065f46' }}>{indApp.fullName || "Single Person"}</h4>
+                                                <span style={{ fontSize: '11px', color: '#059669', fontWeight: 'bold', display: 'block', marginTop: '2px' }}>Single Person Account</span>
+                                            </div>
                                             <span style={{ fontSize: '10px', background: '#34d399', color: '#fff', padding: '2px 6px', borderRadius: '4px', fontWeight: 'bold' }}>Approved</span>
                                         </div>
                                         <p style={{ margin: 0, fontSize: '13px', color: '#047857', fontWeight: '700' }}>ID: {indApp.sellerId}</p>
@@ -406,8 +409,11 @@ function SellerProfile_Setup() {
                                         <ShieldCheck size={24} color="#fff" />
                                     </div>
                                     <div style={{ flex: 1 }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '4px' }}>
-                                            <h4 style={{ margin: 0, fontSize: '16px', fontWeight: '800', color: '#065f46' }}>{orgApp.companyName || "Organisation"}</h4>
+                                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', marginBottom: '4px', justifyContent: 'space-between' }}>
+                                            <div>
+                                                <h4 style={{ margin: 0, fontSize: '16px', fontWeight: '800', color: '#065f46' }}>{orgApp.companyName || "Organisation"}</h4>
+                                                <span style={{ fontSize: '11px', color: '#059669', fontWeight: 'bold', display: 'block', marginTop: '2px' }}>Organisation Account</span>
+                                            </div>
                                             <span style={{ fontSize: '10px', background: '#34d399', color: '#fff', padding: '2px 6px', borderRadius: '4px', fontWeight: 'bold' }}>Approved</span>
                                         </div>
                                         <p style={{ margin: 0, fontSize: '13px', color: '#047857', fontWeight: '700' }}>ID: {orgApp.sellerId}</p>
