@@ -309,6 +309,13 @@ function SellerProfile_Setup() {
     // --- RENDER: REGISTRATION FORM ---
     return (
         <div style={{ backgroundColor: '#f8fafc', position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, width: '100vw', height: '100dvh', overflowY: 'auto', overflowX: 'hidden', touchAction: 'pan-y', WebkitOverflowScrolling: 'touch', paddingBottom: '60px' }}>
+            <style>{`
+                .custom-input::placeholder {
+                    font-size: 13px !important;
+                    font-weight: 500 !important;
+                    color: #94a3b8 !important;
+                }
+            `}</style>
             
             {/* Header */}
             <div style={{ backgroundColor: '#0f172a', color: '#fff', padding: '20px', paddingBottom: '40px', borderBottomLeftRadius: '30px', borderBottomRightRadius: '30px' }}>
@@ -327,7 +334,7 @@ function SellerProfile_Setup() {
                 </div>
             </div>
 
-            <div style={{ padding: '20px', maxWidth: '1200px', margin: '-20px auto 0', display: showTermsModal ? 'none' : 'block' }}>
+            <div style={{ padding: '10px 16px', maxWidth: '100%', margin: '-20px auto 0', display: showTermsModal ? 'none' : 'block' }}>
                 
                 {/* Step 1: Choose Account Type */}
                 {!accountType ? (
@@ -800,10 +807,11 @@ const InputGroup = ({ label, themeColor = '#0f172a', prefix, ...props }) => {
             <div style={{ flex: 1, padding: '8px 14px 6px' }}>
                 <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', color: isFocused ? themeColor : '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px', transition: 'color 0.2s', marginBottom: '2px' }}>{label}</label>
                 <input 
+                    className="custom-input"
                     required
                     onFocus={() => setIsFocused(true)}
                     onBlur={() => setIsFocused(false)}
-                    style={{ width: '100%', padding: '4px 0', backgroundColor: 'transparent', border: 'none', fontSize: '14px', color: '#0f172a', fontWeight: '500', outline: 'none', ...(props.readOnly ? { color: '#94a3b8' } : {}), ...props.style }} 
+                    style={{ width: '100%', padding: '4px 0', backgroundColor: 'transparent', border: 'none', fontSize: '15px', color: '#000', fontWeight: '800', outline: 'none', ...(props.readOnly ? { color: '#94a3b8' } : {}), ...props.style }} 
                     {...props} 
                 />
             </div>
@@ -817,9 +825,10 @@ const SelectGroup = ({ label, themeColor = '#0f172a', options, ...props }) => {
         <div style={{ position: 'relative', marginBottom: '14px', backgroundColor: '#f8fafc', borderRadius: '10px', border: `2px solid ${isFocused ? themeColor : '#e2e8f0'}`, transition: 'all 0.2s ease', padding: '8px 14px 6px', boxShadow: isFocused ? `0 0 0 3px ${themeColor}15` : 'none' }}>
             <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', color: isFocused ? themeColor : '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '2px' }}>{label}</label>
             <select 
+                className="custom-input"
                 onFocus={() => setIsFocused(true)}
                 onBlur={() => setIsFocused(false)}
-                style={{ width: '100%', padding: '4px 0', backgroundColor: 'transparent', border: 'none', fontSize: '14px', color: '#0f172a', fontWeight: '500', outline: 'none', cursor: 'pointer' }} 
+                style={{ width: '100%', padding: '4px 0', backgroundColor: 'transparent', border: 'none', fontSize: '15px', color: '#000', fontWeight: '800', outline: 'none', cursor: 'pointer' }} 
                 {...props}
             >
                 {options.map((opt, i) => <option key={i} value={opt.value}>{opt.label}</option>)}
@@ -834,9 +843,10 @@ const TextAreaGroup = ({ label, themeColor = '#0f172a', ...props }) => {
         <div style={{ position: 'relative', marginBottom: '14px', backgroundColor: '#f8fafc', borderRadius: '10px', border: `2px solid ${isFocused ? themeColor : '#e2e8f0'}`, transition: 'all 0.2s ease', padding: '8px 14px 6px', boxShadow: isFocused ? `0 0 0 3px ${themeColor}15` : 'none' }}>
             <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', color: isFocused ? themeColor : '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '6px' }}>{label}</label>
             <textarea 
+                className="custom-input"
                 onFocus={() => setIsFocused(true)}
                 onBlur={() => setIsFocused(false)}
-                style={{ width: '100%', padding: '4px 0', backgroundColor: 'transparent', border: 'none', fontSize: '14px', color: '#0f172a', fontWeight: '500', outline: 'none', minHeight: '80px', fontFamily: 'inherit', resize: 'vertical' }} 
+                style={{ width: '100%', padding: '4px 0', backgroundColor: 'transparent', border: 'none', fontSize: '15px', color: '#000', fontWeight: '800', outline: 'none', minHeight: '80px', fontFamily: 'inherit', resize: 'vertical' }} 
                 {...props} 
             />
         </div>
