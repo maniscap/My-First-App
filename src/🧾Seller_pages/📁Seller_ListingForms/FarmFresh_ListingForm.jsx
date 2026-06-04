@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Leaf, CheckCircle2 } from 'lucide-react';
 import { farmFreshCategories, farmFreshUnits } from '../../utils/ProductLibrary';
+import TermsAgreementCheckbox from '../../🛠️Shared_Components/TermsAgreementCheckbox';
 import UniversalImagePicker from '../../utils/UniversalImagePicker';
 import { db, auth } from '../../firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
@@ -38,6 +39,7 @@ export default function FarmFresh_ListingForm() {
     const [organicCertNumber, setOrganicCertNumber] = useState('');
     const [shelfLife, setShelfLife] = useState('');
     const [qualityGuarantee, setQualityGuarantee] = useState(false);
+    const [termsAccepted, setTermsAccepted] = useState(false);
     const [selectedImageUrl, setSelectedImageUrl] = useState(null);
     const [showSuccess, setShowSuccess] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -139,6 +141,10 @@ export default function FarmFresh_ListingForm() {
         }
         if (!qualityGuarantee) {
             showError("You must check the Quality Guarantee box to list on Farm Fresh.");
+            return;
+        }
+        if (!termsAccepted) {
+            showError("You must agree to the Terms & Conditions to list on FarmCap.");
             return;
         }
 
@@ -590,6 +596,8 @@ export default function FarmFresh_ListingForm() {
                             </div>
                         </label>
                     </div>
+
+                    <TermsAgreementCheckbox checked={termsAccepted} onChange={setTermsAccepted} />
 
                     {/* Submit Button */}
                     <button 

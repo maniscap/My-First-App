@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { CircleUserRound, ShieldAlert, ShieldCheck, ShieldX, Clock, MapPin } from 'lucide-react';
 import Seller_BannerPromo from './Seller_BannerPromo';
-import { db } from '../../firebase';
-import { doc, getDoc } from 'firebase/firestore';
+import { db, auth } from '../../firebase';
+import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
+import { onAuthStateChanged } from 'firebase/auth';
 
 function Seller_HomePage() {
     const navigate = useNavigate();
@@ -37,29 +38,55 @@ function Seller_HomePage() {
 
     // Fetch the live status from Firebase
     useEffect(() => {
-        const fetchStatus = async () => {
-            const appId = localStorage.getItem('seller_app_id');
-            if (!appId) {
+        const unsubscribe = onAuthStateChanged(auth, async (user) => {
+            if (!user) {
                 setAppStatus('none');
                 return;
             }
 
             try {
-                const docRef = doc(db, 'seller_applications', appId);
-                const docSnap = await getDoc(docRef);
-                if (docSnap.exists()) {
-                    const data = docSnap.data();
-                    setAppStatus(data.status);
-                    setSellerName(data.accountType === 'organisation' ? data.companyName : data.fullName);
+                let appId = localStorage.getItem('seller_app_id');
+                let appData = null;
+
+                // 1. Try local storage first
+                if (appId) {
+                    const docRef = doc(db, 'seller_applications', appId);
+                    const docSnap = await getDoc(docRef);
+                    if (docSnap.exists()) {
+                        appData = docSnap.data();
+                    }
+                }
+
+                // 2. If not found via local storage, query Firestore by userId
+                if (!appData) {
+                    const q = query(collection(db, 'seller_applications'), where("userId", "==", user.uid));
+                    const querySnapshot = await getDocs(q);
+                    
+                    if (!querySnapshot.empty) {
+                        // Found their application in the database!
+                        const appDoc = querySnapshot.docs[0];
+                        appData = appDoc.data();
+                        
+                        // Restore it to local storage so we don't have to query next time
+                        localStorage.setItem('seller_app_id', appDoc.id);
+                    }
+                }
+
+                // 3. Set the state based on what we found
+                if (appData) {
+                    setAppStatus(appData.status);
+                    setSellerName(appData.accountType === 'organisation' ? appData.companyName : appData.fullName);
                 } else {
                     setAppStatus('none');
                 }
+
             } catch (error) {
                 console.error("Error fetching application status:", error);
                 setAppStatus('error');
             }
-        };
-        fetchStatus();
+        });
+
+        return () => unsubscribe();
     }, []);
 
     // RENDER: Application Rejected

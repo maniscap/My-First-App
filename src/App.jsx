@@ -41,6 +41,7 @@ import GPSMeasurement from './🧾Consumer_pages/📁Tools&utils/GPSMeasurement'
 import Seller_HomePage from './🧾Seller_pages/📁Seller_Homepagethings/Seller_HomePage';
 import Seller_Profile from './🧾Seller_pages/📁Seller_Homepagethings/Seller_Profile';
 import SellerProfile_Setup from './🧾Seller_pages/📁Seller_Homepagethings/SellerProfile_Setup';
+import SellerApplication_Terms from './🧾Seller_pages/📁Seller_Homepagethings/SellerApplication_Terms';
 import Seller_NotificationsPage from './🧾Seller_pages/📁seller_BottomNavigation/Seller_NotificationsPage';
 import Seller_Messages from './🧾Seller_pages/📁seller_BottomNavigation/Seller_Messages';
 import Seller_Settings from './🧾Seller_pages/📁seller_BottomNavigation/Seller_Settings';
@@ -130,6 +131,7 @@ function App() {
               <Route path="/Seller_HomePage" element={<Seller_HomePage />} />
               <Route path="/profile" element={<Seller_Profile />} />
               <Route path="/seller-setup" element={<SellerProfile_Setup />} />
+              <Route path="/seller-application-terms" element={<SellerApplication_Terms />} />
               <Route path="/seller-notifications" element={<Seller_NotificationsPage />} />
               <Route path="/seller-messages" element={<Seller_Messages />} />
               <Route path="/seller-settings" element={<Seller_Settings />} />

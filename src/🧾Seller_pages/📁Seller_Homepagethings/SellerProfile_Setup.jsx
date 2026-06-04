@@ -2,7 +2,9 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Building2, User, ShieldCheck, Clock, ChevronLeft, UploadCloud, MapPin, Briefcase, CheckCircle2 } from 'lucide-react';
 import { db } from '../../firebase';
-import { collection, addDoc, getDoc, doc, deleteDoc } from 'firebase/firestore';
+import { getAuth } from 'firebase/auth';
+import { collection, addDoc, getDoc, doc, deleteDoc, query, where, getDocs } from 'firebase/firestore';
+import SellerApplication_Terms from './SellerApplication_Terms';
 
 function SellerProfile_Setup() {
     const navigate = useNavigate();
@@ -26,17 +28,46 @@ function SellerProfile_Setup() {
 
     useEffect(() => {
         const fetchStatus = async () => {
-            if (indId) {
-                const docSnap = await getDoc(doc(db, 'seller_applications', indId));
+            const auth = getAuth();
+            const user = auth.currentUser;
+            
+            let currentIndId = localStorage.getItem('seller_individual_app_id');
+            let currentOrgId = localStorage.getItem('seller_organisation_app_id');
+
+            // --- 1. CLOUD SYNC: Restore state if local storage is missing (e.g., new device) ---
+            if (user && (!currentIndId && !currentOrgId)) {
+                try {
+                    const q = query(collection(db, 'seller_applications'), where('userId', '==', user.uid));
+                    const querySnapshot = await getDocs(q);
+                    
+                    querySnapshot.forEach((docSnap) => {
+                        const data = docSnap.data();
+                        if (data.accountType === 'individual') {
+                            currentIndId = docSnap.id;
+                            localStorage.setItem('seller_individual_app_id', currentIndId);
+                            localStorage.setItem('seller_app_id', currentIndId);
+                        } else if (data.accountType === 'organisation') {
+                            currentOrgId = docSnap.id;
+                            localStorage.setItem('seller_organisation_app_id', currentOrgId);
+                            localStorage.setItem('seller_app_id', currentOrgId);
+                        }
+                    });
+                } catch (error) {
+                    console.error("Error syncing applications:", error);
+                }
+            }
+
+            // --- 2. FETCH LATEST DATA ---
+            if (currentIndId) {
+                const docSnap = await getDoc(doc(db, 'seller_applications', currentIndId));
                 if (docSnap.exists()) {
                     const data = docSnap.data();
                     if (data.status === 'rejected') {
                         localStorage.setItem('cached_reject_ind', data.rejectionReason || "Does not meet requirements");
                         setCachedIndReject(data.rejectionReason || "Does not meet requirements");
-                        await deleteDoc(doc(db, 'seller_applications', indId));
+                        await deleteDoc(doc(db, 'seller_applications', currentIndId));
                         localStorage.removeItem('seller_individual_app_id');
-                        // Also clear global app id if it matches
-                        if(localStorage.getItem('seller_app_id') === indId) localStorage.removeItem('seller_app_id');
+                        if(localStorage.getItem('seller_app_id') === currentIndId) localStorage.removeItem('seller_app_id');
                     } else {
                         setIndApp(data);
                     }
@@ -44,16 +75,16 @@ function SellerProfile_Setup() {
                     localStorage.removeItem('seller_individual_app_id');
                 }
             }
-            if (orgId) {
-                const docSnap = await getDoc(doc(db, 'seller_applications', orgId));
+            if (currentOrgId) {
+                const docSnap = await getDoc(doc(db, 'seller_applications', currentOrgId));
                 if (docSnap.exists()) {
                     const data = docSnap.data();
                     if (data.status === 'rejected') {
                         localStorage.setItem('cached_reject_org', data.rejectionReason || "Does not meet requirements");
                         setCachedOrgReject(data.rejectionReason || "Does not meet requirements");
-                        await deleteDoc(doc(db, 'seller_applications', orgId));
+                        await deleteDoc(doc(db, 'seller_applications', currentOrgId));
                         localStorage.removeItem('seller_organisation_app_id');
-                        if(localStorage.getItem('seller_app_id') === orgId) localStorage.removeItem('seller_app_id');
+                        if(localStorage.getItem('seller_app_id') === currentOrgId) localStorage.removeItem('seller_app_id');
                     } else {
                         setOrgApp(data);
                     }
@@ -64,7 +95,7 @@ function SellerProfile_Setup() {
             setLoadingData(false);
         };
         fetchStatus();
-    }, [indId, orgId]);
+    }, []);
     
     // Form Data State
     const [formData, setFormData] = useState({
@@ -102,6 +133,7 @@ function SellerProfile_Setup() {
 
     const [isDetecting, setIsDetecting] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [showTermsModal, setShowTermsModal] = useState(false);
 
 
     const handleChange = (e) => {
@@ -202,12 +234,16 @@ function SellerProfile_Setup() {
             const randomPart = Math.random().toString(36).substring(2, 6).toUpperCase();
             const sellerId = `SLR-${timestampPart}-${randomPart}`;
             
+            const auth = getAuth();
+            const user = auth.currentUser;
+
             // Clean up formData by removing File objects (they cause Firestore errors without Storage upload)
             const submissionData = { 
                 ...formData, 
                 phone: `+91 ${formData.phone}`,
                 emergencyPhone: formData.emergencyPhone ? `+91 ${formData.emergencyPhone}` : '',
                 sellerId: sellerId, 
+                userId: user ? user.uid : null,
                 status: 'pending_approval', 
                 accountType: accountType, 
                 submittedAt: new Date().toISOString() 
@@ -290,33 +326,28 @@ function SellerProfile_Setup() {
                 </div>
             </div>
 
-            <div style={{ padding: '20px', maxWidth: '500px', margin: '-20px auto 0' }}>
+            <div style={{ padding: '20px', maxWidth: '500px', margin: '-20px auto 0', display: showTermsModal ? 'none' : 'block' }}>
                 
                 {/* Step 1: Choose Account Type */}
                 {!accountType ? (
                     loadingData ? (
                         <div style={{ textAlign: 'center', padding: '40px', color: '#64748b' }}>Loading profile status...</div>
                     ) : (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                             <h3 style={{ margin: '10px 0', fontSize: '18px', color: '#1e293b', fontWeight: '800' }}>Select Account Type</h3>
                             
                             {/* INDIVIDUAL CARD */}
                             {indApp?.status === 'approved' ? (
-                                <div style={{ backgroundColor: '#ecfdf5', padding: '25px', borderRadius: '24px', boxShadow: '0 8px 30px rgba(16, 185, 129, 0.1)', border: '2px solid #a7f3d0' }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '15px' }}>
-                                        <div style={{ width: '50px', height: '50px', backgroundColor: '#10b981', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                            <ShieldCheck size={28} color="#fff" />
-                                        </div>
-                                        <div>
-                                            <h4 style={{ margin: '0 0 4px', fontSize: '18px', fontWeight: '800', color: '#065f46' }}>Single Person Profile</h4>
-                                            <span style={{ fontSize: '12px', background: '#34d399', color: '#fff', padding: '2px 8px', borderRadius: '12px', fontWeight: 'bold' }}>Approved</span>
-                                        </div>
+                                <div style={{ backgroundColor: '#ecfdf5', padding: '20px', borderRadius: '16px', border: '1px solid #10b981', display: 'flex', gap: '16px', alignItems: 'center' }}>
+                                    <div style={{ width: '48px', height: '48px', backgroundColor: '#10b981', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                        <ShieldCheck size={24} color="#fff" />
                                     </div>
-                                    <div style={{ background: '#fff', padding: '15px', borderRadius: '12px' }}>
-                                        <p style={{ margin: '0 0 5px', fontSize: '14px', color: '#047857' }}><strong>Name:</strong> {indApp.fullName}</p>
-                                        <p style={{ margin: '0 0 5px', fontSize: '14px', color: '#047857' }}><strong>ID:</strong> {indApp.sellerId}</p>
-                                        <p style={{ margin: '0 0 5px', fontSize: '14px', color: '#047857' }}><strong>Address:</strong> {indApp.village}, {indApp.district}</p>
-                                        <p style={{ margin: '0', fontSize: '14px', color: '#047857' }}><strong>Interests:</strong> {indApp.categories?.join(', ')}</p>
+                                    <div style={{ flex: 1 }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '4px' }}>
+                                            <h4 style={{ margin: 0, fontSize: '16px', fontWeight: '800', color: '#065f46' }}>Single Person</h4>
+                                            <span style={{ fontSize: '10px', background: '#34d399', color: '#fff', padding: '2px 6px', borderRadius: '4px', fontWeight: 'bold' }}>Approved</span>
+                                        </div>
+                                        <p style={{ margin: 0, fontSize: '13px', color: '#047857' }}>ID: {indApp.sellerId}</p>
                                     </div>
                                 </div>
                             ) : (
@@ -325,56 +356,41 @@ function SellerProfile_Setup() {
                                         if (indApp?.status === 'pending_approval') alert("Your Individual Profile application is under review.");
                                         else setAccountType('individual');
                                     }}
-                                    style={{ background: 'linear-gradient(145deg, #ffffff, #f8fafc)', padding: '32px 24px', borderRadius: '28px', boxShadow: '0 12px 36px rgba(15, 23, 42, 0.05)', cursor: indApp?.status === 'pending_approval' ? 'not-allowed' : 'pointer', opacity: indApp?.status === 'pending_approval' ? 0.6 : 1, border: '1px solid #e2e8f0', position: 'relative', overflow: 'hidden', display: 'flex', flexDirection: 'column', alignItems: 'flex-start', transition: 'all 0.3s ease' }}
+                                    style={{ background: '#fff', padding: '20px', borderRadius: '16px', boxShadow: '0 4px 15px rgba(0,0,0,0.03)', cursor: indApp?.status === 'pending_approval' ? 'not-allowed' : 'pointer', opacity: indApp?.status === 'pending_approval' ? 0.7 : 1, border: '1.5px solid #f1f5f9', position: 'relative', overflow: 'hidden', display: 'flex', gap: '16px', alignItems: 'center', transition: 'all 0.2s ease' }}
                                 >
-                                    <div style={{ position: 'absolute', top: '-30px', right: '-30px', width: '160px', height: '160px', background: 'radial-gradient(circle, rgba(2,132,199,0.06) 0%, rgba(2,132,199,0) 70%)', borderRadius: '50%', pointerEvents: 'none' }}></div>
-                                    
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '16px', width: '100%', position: 'relative', zIndex: 1 }}>
-                                        <div style={{ width: '64px', height: '64px', background: 'linear-gradient(135deg, #e0f2fe, #bae6fd)', borderRadius: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: 'inset 0 2px 4px rgba(255,255,255,0.5), 0 4px 10px rgba(2,132,199,0.1)' }}>
-                                            <User size={32} color="#0284c7" strokeWidth={2.5} />
-                                        </div>
-                                        <div>
-                                            <h4 style={{ margin: '0 0 4px', fontSize: '22px', fontWeight: '800', color: '#0f172a', letterSpacing: '-0.5px' }}>Single Person</h4>
-                                            <span style={{ fontSize: '11px', fontWeight: '700', color: '#0284c7', textTransform: 'uppercase', letterSpacing: '1px', background: '#e0f2fe', padding: '4px 10px', borderRadius: '12px' }}>Individual Profile</span>
-                                        </div>
+                                    <div style={{ position: 'absolute', top: 0, left: 0, width: '4px', height: '100%', background: '#0284c7' }}></div>
+                                    <div style={{ width: '48px', height: '48px', background: '#f0f9ff', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                        <User size={24} color="#0284c7" strokeWidth={2.5} />
                                     </div>
-                                    
-                                    {indApp?.status === 'pending_approval' ? (
-                                        <div style={{ width: '100%', padding: '12px', background: '#fffbeb', border: '1px solid #fde68a', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                            <Clock size={18} color="#d97706" />
-                                            <p style={{ margin: 0, fontSize: '14px', color: '#d97706', fontWeight: '700' }}>Application in Process</p>
+                                    <div style={{ flex: 1 }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px' }}>
+                                            <h4 style={{ margin: 0, fontSize: '16px', fontWeight: '800', color: '#0f172a' }}>Single Person</h4>
+                                            {indApp?.status === 'pending_approval' ? (
+                                                <span style={{ fontSize: '10px', fontWeight: '800', color: '#d97706', textTransform: 'uppercase', background: '#fffbeb', padding: '2px 6px', borderRadius: '4px' }}>Pending</span>
+                                            ) : cachedIndReject ? (
+                                                <span style={{ fontSize: '10px', fontWeight: '800', color: '#dc2626', textTransform: 'uppercase', background: '#fef2f2', padding: '2px 6px', borderRadius: '4px' }}>Rejected</span>
+                                            ) : (
+                                                <span style={{ fontSize: '10px', fontWeight: '800', color: '#0284c7', textTransform: 'uppercase', background: '#e0f2fe', padding: '2px 6px', borderRadius: '4px' }}>Individual</span>
+                                            )}
                                         </div>
-                                    ) : cachedIndReject ? (
-                                        <div style={{ width: '100%', padding: '15px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '16px', marginTop: '5px' }}>
-                                            <p style={{ margin: '0 0 8px', fontSize: '14px', color: '#dc2626', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '6px' }}><ShieldCheck size={18} /> Application Rejected</p>
-                                            <p style={{ margin: 0, fontSize: '13px', color: '#7f1d1d', lineHeight: '1.4' }}>Your previous application was rejected. Please correct your details and re-apply.</p>
-                                            <button style={{ margin: '12px 0 0', padding: '8px 16px', background: '#dc2626', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: 'bold', cursor: 'pointer' }}>Re-apply Now</button>
-                                        </div>
-                                    ) : (
-                                        <p style={{ margin: 0, fontSize: '15px', color: '#475569', lineHeight: '1.6', fontWeight: '500', position: 'relative', zIndex: 1 }}>
-                                            Designed for independent farmers, sole machinery owners, or individual gig workers.
-                                        </p>
-                                    )}
+                                        <p style={{ margin: 0, fontSize: '12px', color: '#64748b', lineHeight: '1.4' }}>Designed for independent farmers, sole machinery owners, or individual gig workers.</p>
+                                        {cachedIndReject && <button style={{ margin: '8px 0 0', padding: '6px 12px', background: '#dc2626', color: '#fff', border: 'none', borderRadius: '6px', fontSize: '11px', fontWeight: 'bold' }}>Re-apply</button>}
+                                    </div>
                                 </div>
                             )}
 
                             {/* ORGANISATION CARD */}
                             {orgApp?.status === 'approved' ? (
-                                <div style={{ backgroundColor: '#ecfdf5', padding: '25px', borderRadius: '24px', boxShadow: '0 8px 30px rgba(16, 185, 129, 0.1)', border: '2px solid #a7f3d0' }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '15px' }}>
-                                        <div style={{ width: '50px', height: '50px', backgroundColor: '#10b981', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                            <ShieldCheck size={28} color="#fff" />
-                                        </div>
-                                        <div>
-                                            <h4 style={{ margin: '0 0 4px', fontSize: '18px', fontWeight: '800', color: '#065f46' }}>Organisation Profile</h4>
-                                            <span style={{ fontSize: '12px', background: '#34d399', color: '#fff', padding: '2px 8px', borderRadius: '12px', fontWeight: 'bold' }}>Approved</span>
-                                        </div>
+                                <div style={{ backgroundColor: '#ecfdf5', padding: '20px', borderRadius: '16px', border: '1px solid #10b981', display: 'flex', gap: '16px', alignItems: 'center' }}>
+                                    <div style={{ width: '48px', height: '48px', backgroundColor: '#10b981', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                        <ShieldCheck size={24} color="#fff" />
                                     </div>
-                                    <div style={{ background: '#fff', padding: '15px', borderRadius: '12px' }}>
-                                        <p style={{ margin: '0 0 5px', fontSize: '14px', color: '#047857' }}><strong>Company:</strong> {orgApp.companyName}</p>
-                                        <p style={{ margin: '0 0 5px', fontSize: '14px', color: '#047857' }}><strong>ID:</strong> {orgApp.sellerId}</p>
-                                        <p style={{ margin: '0 0 5px', fontSize: '14px', color: '#047857' }}><strong>Address:</strong> {orgApp.village}, {orgApp.district}</p>
-                                        <p style={{ margin: '0', fontSize: '14px', color: '#047857' }}><strong>Interests:</strong> {orgApp.categories?.join(', ')}</p>
+                                    <div style={{ flex: 1 }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '4px' }}>
+                                            <h4 style={{ margin: 0, fontSize: '16px', fontWeight: '800', color: '#065f46' }}>Organisation</h4>
+                                            <span style={{ fontSize: '10px', background: '#34d399', color: '#fff', padding: '2px 6px', borderRadius: '4px', fontWeight: 'bold' }}>Approved</span>
+                                        </div>
+                                        <p style={{ margin: 0, fontSize: '13px', color: '#047857' }}>ID: {orgApp.sellerId}</p>
                                     </div>
                                 </div>
                             ) : (
@@ -383,36 +399,26 @@ function SellerProfile_Setup() {
                                         if (orgApp?.status === 'pending_approval') alert("Your Organisation Profile application is under review.");
                                         else setAccountType('organisation');
                                     }}
-                                    style={{ background: 'linear-gradient(145deg, #ffffff, #f8fafc)', padding: '32px 24px', borderRadius: '28px', boxShadow: '0 12px 36px rgba(15, 23, 42, 0.05)', cursor: orgApp?.status === 'pending_approval' ? 'not-allowed' : 'pointer', opacity: orgApp?.status === 'pending_approval' ? 0.6 : 1, border: '1px solid #e2e8f0', position: 'relative', overflow: 'hidden', display: 'flex', flexDirection: 'column', alignItems: 'flex-start', transition: 'all 0.3s ease' }}
+                                    style={{ background: '#fff', padding: '20px', borderRadius: '16px', boxShadow: '0 4px 15px rgba(0,0,0,0.03)', cursor: orgApp?.status === 'pending_approval' ? 'not-allowed' : 'pointer', opacity: orgApp?.status === 'pending_approval' ? 0.7 : 1, border: '1.5px solid #f1f5f9', position: 'relative', overflow: 'hidden', display: 'flex', gap: '16px', alignItems: 'center', transition: 'all 0.2s ease' }}
                                 >
-                                    <div style={{ position: 'absolute', top: '-30px', right: '-30px', width: '160px', height: '160px', background: 'radial-gradient(circle, rgba(67,56,202,0.06) 0%, rgba(67,56,202,0) 70%)', borderRadius: '50%', pointerEvents: 'none' }}></div>
-                                    
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '16px', width: '100%', position: 'relative', zIndex: 1 }}>
-                                        <div style={{ width: '64px', height: '64px', background: 'linear-gradient(135deg, #e0e7ff, #c7d2fe)', borderRadius: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: 'inset 0 2px 4px rgba(255,255,255,0.5), 0 4px 10px rgba(67,56,202,0.1)' }}>
-                                            <Building2 size={32} color="#4338ca" strokeWidth={2.5} />
-                                        </div>
-                                        <div>
-                                            <h4 style={{ margin: '0 0 4px', fontSize: '22px', fontWeight: '800', color: '#0f172a', letterSpacing: '-0.5px' }}>Organisation</h4>
-                                            <span style={{ fontSize: '11px', fontWeight: '700', color: '#4338ca', textTransform: 'uppercase', letterSpacing: '1px', background: '#e0e7ff', padding: '4px 10px', borderRadius: '12px' }}>Company Profile</span>
-                                        </div>
+                                    <div style={{ position: 'absolute', top: 0, left: 0, width: '4px', height: '100%', background: '#4338ca' }}></div>
+                                    <div style={{ width: '48px', height: '48px', background: '#e0e7ff', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                        <Building2 size={24} color="#4338ca" strokeWidth={2.5} />
                                     </div>
-                                    
-                                    {orgApp?.status === 'pending_approval' ? (
-                                        <div style={{ width: '100%', padding: '12px', background: '#fffbeb', border: '1px solid #fde68a', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                            <Clock size={18} color="#d97706" />
-                                            <p style={{ margin: 0, fontSize: '14px', color: '#d97706', fontWeight: '700' }}>Application in Process</p>
+                                    <div style={{ flex: 1 }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px' }}>
+                                            <h4 style={{ margin: 0, fontSize: '16px', fontWeight: '800', color: '#0f172a' }}>Organisation</h4>
+                                            {orgApp?.status === 'pending_approval' ? (
+                                                <span style={{ fontSize: '10px', fontWeight: '800', color: '#d97706', textTransform: 'uppercase', background: '#fffbeb', padding: '2px 6px', borderRadius: '4px' }}>Pending</span>
+                                            ) : cachedOrgReject ? (
+                                                <span style={{ fontSize: '10px', fontWeight: '800', color: '#dc2626', textTransform: 'uppercase', background: '#fef2f2', padding: '2px 6px', borderRadius: '4px' }}>Rejected</span>
+                                            ) : (
+                                                <span style={{ fontSize: '10px', fontWeight: '800', color: '#4338ca', textTransform: 'uppercase', background: '#e0e7ff', padding: '2px 6px', borderRadius: '4px' }}>Company</span>
+                                            )}
                                         </div>
-                                    ) : cachedOrgReject ? (
-                                        <div style={{ width: '100%', padding: '15px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '16px', marginTop: '5px' }}>
-                                            <p style={{ margin: '0 0 8px', fontSize: '14px', color: '#dc2626', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '6px' }}><ShieldCheck size={18} /> Application Rejected</p>
-                                            <p style={{ margin: 0, fontSize: '13px', color: '#7f1d1d', lineHeight: '1.4' }}>Your previous application was rejected. Please correct your details and re-apply.</p>
-                                            <button style={{ margin: '12px 0 0', padding: '8px 16px', background: '#dc2626', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: 'bold', cursor: 'pointer' }}>Re-apply Now</button>
-                                        </div>
-                                    ) : (
-                                        <p style={{ margin: 0, fontSize: '15px', color: '#475569', lineHeight: '1.6', fontWeight: '500', position: 'relative', zIndex: 1 }}>
-                                            Ideal for registered farming co-ops, equipment rental agencies, and large suppliers.
-                                        </p>
-                                    )}
+                                        <p style={{ margin: 0, fontSize: '12px', color: '#64748b', lineHeight: '1.4' }}>Ideal for registered farming co-ops, equipment rental agencies, and large suppliers.</p>
+                                        {cachedOrgReject && <button style={{ margin: '8px 0 0', padding: '6px 12px', background: '#dc2626', color: '#fff', border: 'none', borderRadius: '6px', fontSize: '11px', fontWeight: 'bold' }}>Re-apply</button>}
+                                    </div>
                                 </div>
                             )}
                         </div>
@@ -434,7 +440,7 @@ function SellerProfile_Setup() {
                             <p style={{ margin: 0, fontSize: '14px', opacity: 0.9, lineHeight: '1.4' }}>{currentTheme.subtitle}</p>
                         </div>
 
-                        <div style={{ padding: '30px 25px' }}>
+                        <div style={{ padding: '16px 20px' }}>
                             
                             {/* Personal/Business Info Section */}
                             <SectionTitle title="Identity Details" icon={<User size={20} color={currentTheme.primary} />} theme={currentTheme} />
@@ -468,20 +474,15 @@ function SellerProfile_Setup() {
                                 <InputGroup label="Emergency Phone" name="emergencyPhone" type="tel" value={formData.emergencyPhone} onChange={handleChange} placeholder="9876543210" maxLength="10" prefix="+91" themeColor={currentTheme.primary} />
                             </div>
 
-                            {/* Location Section */}
-                            <SectionTitle title="Location & Address" icon={<MapPin size={20} color={currentTheme.primary} />} theme={currentTheme} />
-                            
-                            <button 
-                                type="button"
-                                onClick={handleAutoDetectLocation}
-                                disabled={isDetecting}
-                                style={{ width: '100%', padding: '16px', background: currentTheme.gradient, color: '#fff', border: 'none', borderRadius: '12px', fontWeight: '800', fontSize: '15px', cursor: 'pointer', marginBottom: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', transition: 'transform 0.2s', boxShadow: `0 6px 20px ${currentTheme.shadow}`, letterSpacing: '0.5px' }}
-                            >
-                                {isDetecting ? 'Detecting Location...' : '📍 Auto-Detect GPS Location'}
-                            </button>
-                            <p style={{ margin: '0 0 25px', fontSize: '12.5px', color: '#64748b', textAlign: 'center', lineHeight: '1.5' }}>
-                                <b style={{ color: currentTheme.primary }}>Note:</b> Please use this feature only when you are physically present at your home, shop, or machinery warehouse.
-                            </p>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', margin: '24px 0 16px', borderBottom: '1px solid #f1f5f9', paddingBottom: '12px' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                    <div style={{ color: currentTheme.primary, display: 'flex' }}><MapPin size={20} /></div>
+                                    <h4 style={{ margin: 0, fontSize: '14px', color: '#0f172a', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Location</h4>
+                                </div>
+                                <button type="button" onClick={handleAutoDetectLocation} disabled={isDetecting} style={{ padding: '6px 12px', background: `${currentTheme.primary}15`, color: currentTheme.primary, border: 'none', borderRadius: '8px', fontWeight: '800', fontSize: '11px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', boxShadow: `0 2px 5px ${currentTheme.shadow}` }}>
+                                    {isDetecting ? 'Detecting...' : '📍 Auto-Detect GPS'}
+                                </button>
+                            </div>
 
                             {/* Read-Only Coordinates */}
                             {formData.lat && formData.lng && (
@@ -491,7 +492,7 @@ function SellerProfile_Setup() {
                                 </div>
                             )}
 
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginBottom: '15px' }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '12px', marginBottom: '12px' }}>
                                 <InputGroup label="House / Plot No." name="houseNumber" value={formData.houseNumber} onChange={handleChange} placeholder="e.g. 1-42" themeColor={currentTheme.primary} />
                                 <InputGroup label="Landmark" name="landmark" value={formData.landmark} onChange={handleChange} placeholder="Near Big Well" themeColor={currentTheme.primary} />
                                 <InputGroup label="Village" name="village" value={formData.village} onChange={handleChange} placeholder="Village Name" themeColor={currentTheme.primary} />
@@ -515,24 +516,24 @@ function SellerProfile_Setup() {
                             <SectionTitle title="Agriculture Profile" icon={<Briefcase size={20} color={currentTheme.primary} />} theme={currentTheme} />
 
                             {/* Categories */}
-                            <div style={{ marginBottom: '30px' }}>
-                                <label style={{ display: 'block', fontSize: '13px', fontWeight: '700', color: '#475569', marginBottom: '12px' }}>What services do you plan to offer?</label>
-                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+                            <div style={{ marginBottom: '20px' }}>
+                                <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '10px' }}>What services do you plan to offer?</label>
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
                                     {['Farm Fresh Produce', 'Harvested Crops', 'Machinery Rental', 'Agriculture Worker', 'Freelance Services', 'Local Agri Goods & Products', 'Not Sure'].map(cat => (
                                         <div 
                                             key={cat}
                                             onClick={() => handleCategoryToggle(cat)}
                                             style={{ 
-                                                padding: '10px 16px', 
-                                                borderRadius: '20px', 
-                                                fontSize: '13px', 
-                                                fontWeight: '600', 
+                                                padding: '6px 12px', 
+                                                borderRadius: '8px', 
+                                                fontSize: '12px', 
+                                                fontWeight: '700', 
                                                 cursor: 'pointer',
-                                                backgroundColor: formData.categories.includes(cat) ? currentTheme.primary : '#f1f5f9',
+                                                backgroundColor: formData.categories.includes(cat) ? currentTheme.primary : '#f8fafc',
                                                 color: formData.categories.includes(cat) ? '#fff' : '#475569',
-                                                border: formData.categories.includes(cat) ? `1px solid ${currentTheme.primary}` : '1px solid #cbd5e1',
+                                                border: formData.categories.includes(cat) ? `1px solid ${currentTheme.primary}` : '1px solid #e2e8f0',
                                                 transition: 'all 0.2s ease',
-                                                boxShadow: formData.categories.includes(cat) ? `0 4px 10px ${currentTheme.shadow}` : 'none'
+                                                boxShadow: formData.categories.includes(cat) ? `0 2px 8px ${currentTheme.shadow}` : 'none'
                                             }}
                                         >
                                             {cat}
@@ -758,7 +759,7 @@ function SellerProfile_Setup() {
                                     style={{ width: '22px', height: '22px', cursor: 'pointer', flexShrink: 0, marginTop: '2px', accentColor: '#DC2626' }}
                                 />
                                 <p style={{ margin: 0, fontSize: '13px', color: '#991B1B', lineHeight: '1.5' }}>
-                                    I agree to the <a href="#" onClick={(e) => { e.preventDefault(); window.open('/seller-terms', '_blank'); }} style={{ color: '#DC2626', fontWeight: '800', textDecoration: 'underline' }}>FarmCap Seller Terms & Conditions</a>. I acknowledge that I am solely responsible for the quality, safety, and financial transactions of my goods and services.
+                                    I agree to the <span onClick={() => setShowTermsModal(true)} style={{ color: '#DC2626', fontWeight: '800', textDecoration: 'underline', cursor: 'pointer' }}>FarmCap Seller Registration Terms</span>. I confirm that all provided details are 100% accurate and belong to me.
                                 </p>
                             </div>
 
@@ -773,56 +774,37 @@ function SellerProfile_Setup() {
                     </div>
                 )}
             </div>
+
+            {/* Terms Modal Overlay */}
+            {showTermsModal && (
+                <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 999999, backgroundColor: '#fff', overflowY: 'auto' }}>
+                    <SellerApplication_Terms isModal={true} onClose={() => setShowTermsModal(false)} />
+                </div>
+            )}
         </div>
     );
 }
 
-// --- Helper Components ---
-
 const SectionTitle = ({ title, icon, theme }) => (
-    <div style={{ margin: '35px 0 20px', display: 'flex', alignItems: 'center', gap: '12px', paddingBottom: '12px', borderBottom: '1px solid #f1f5f9' }}>
-        <div style={{ width: '36px', height: '36px', backgroundColor: theme.bg, borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            {icon}
-        </div>
-        <h4 style={{ margin: 0, fontSize: '18px', color: '#0f172a', fontWeight: '800' }}>{title}</h4>
+    <div style={{ margin: '24px 0 16px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+        <div style={{ color: theme.primary, display: 'flex' }}>{icon}</div>
+        <h4 style={{ margin: 0, fontSize: '14px', color: '#0f172a', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{title}</h4>
+        <div style={{ flex: 1, height: '1px', background: `linear-gradient(90deg, ${theme.primary}30, transparent)`, marginLeft: '10px' }}></div>
     </div>
 );
 
 const InputGroup = ({ label, themeColor = '#0f172a', prefix, ...props }) => {
     const [isFocused, setIsFocused] = useState(false);
-    
     return (
-        <div style={{ marginBottom: '20px' }}>
-            <label style={{ display: 'block', fontSize: '13px', fontWeight: '700', color: isFocused ? themeColor : '#475569', marginBottom: '8px', transition: 'color 0.2s' }}>{label}</label>
-            <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                backgroundColor: isFocused ? '#fff' : '#f8fafc', 
-                border: `1.5px solid ${isFocused ? themeColor : '#cbd5e1'}`, 
-                borderRadius: '12px',
-                boxShadow: isFocused ? `0 0 0 4px ${themeColor}15` : 'none',
-                transition: 'all 0.2s ease',
-            }}>
-                {prefix && (
-                    <span style={{ padding: '14px 0 14px 16px', color: '#64748b', fontWeight: '700', fontSize: '15px' }}>{prefix}</span>
-                )}
+        <div style={{ position: 'relative', marginBottom: '14px', backgroundColor: '#f8fafc', borderRadius: '10px', border: `1.5px solid ${isFocused ? themeColor : 'transparent'}`, transition: 'all 0.2s ease', display: 'flex', alignItems: 'center', overflow: 'hidden', boxShadow: isFocused ? `0 0 0 3px ${themeColor}15` : 'inset 0 2px 4px rgba(0,0,0,0.02)' }}>
+            {prefix && <span style={{ paddingLeft: '14px', color: '#64748b', fontWeight: '700', fontSize: '14px' }}>{prefix}</span>}
+            <div style={{ flex: 1, padding: '8px 14px 6px' }}>
+                <label style={{ display: 'block', fontSize: '10px', fontWeight: '800', color: isFocused ? themeColor : '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px', transition: 'color 0.2s' }}>{label}</label>
                 <input 
                     required
                     onFocus={() => setIsFocused(true)}
                     onBlur={() => setIsFocused(false)}
-                    style={{ 
-                        width: '100%', 
-                        padding: prefix ? '14px 16px 14px 8px' : '14px 16px', 
-                        backgroundColor: 'transparent', 
-                        border: 'none', 
-                        fontSize: '15px', 
-                        color: '#0f172a',
-                        fontWeight: '500',
-                        boxSizing: 'border-box',
-                        outline: 'none',
-                        ...(props.readOnly ? { backgroundColor: '#f1f5f9', color: '#64748b' } : {}),
-                        ...props.style
-                    }} 
+                    style={{ width: '100%', padding: '2px 0', backgroundColor: 'transparent', border: 'none', fontSize: '14px', color: '#0f172a', fontWeight: '600', outline: 'none', ...(props.readOnly ? { color: '#94a3b8' } : {}), ...props.style }} 
                     {...props} 
                 />
             </div>
@@ -833,26 +815,12 @@ const InputGroup = ({ label, themeColor = '#0f172a', prefix, ...props }) => {
 const SelectGroup = ({ label, themeColor = '#0f172a', options, ...props }) => {
     const [isFocused, setIsFocused] = useState(false);
     return (
-        <div>
-            <label style={{ display: 'block', fontSize: '13px', fontWeight: '700', color: isFocused ? themeColor : '#475569', marginBottom: '8px', transition: 'color 0.2s' }}>{label}</label>
+        <div style={{ position: 'relative', marginBottom: '14px', backgroundColor: '#f8fafc', borderRadius: '10px', border: `1.5px solid ${isFocused ? themeColor : 'transparent'}`, transition: 'all 0.2s ease', padding: '8px 14px 6px', boxShadow: isFocused ? `0 0 0 3px ${themeColor}15` : 'inset 0 2px 4px rgba(0,0,0,0.02)' }}>
+            <label style={{ display: 'block', fontSize: '10px', fontWeight: '800', color: isFocused ? themeColor : '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{label}</label>
             <select 
                 onFocus={() => setIsFocused(true)}
                 onBlur={() => setIsFocused(false)}
-                style={{ 
-                    width: '100%', 
-                    padding: '14px 16px', 
-                    backgroundColor: isFocused ? '#fff' : '#f8fafc', 
-                    border: `1.5px solid ${isFocused ? themeColor : '#cbd5e1'}`, 
-                    borderRadius: '12px', 
-                    fontSize: '15px', 
-                    color: '#0f172a',
-                    fontWeight: '500',
-                    boxSizing: 'border-box',
-                    outline: 'none',
-                    boxShadow: isFocused ? `0 0 0 4px ${themeColor}15` : 'none',
-                    transition: 'all 0.2s ease',
-                    cursor: 'pointer'
-                }} 
+                style={{ width: '100%', padding: '2px 0', backgroundColor: 'transparent', border: 'none', fontSize: '14px', color: '#0f172a', fontWeight: '600', outline: 'none', cursor: 'pointer' }} 
                 {...props}
             >
                 {options.map((opt, i) => <option key={i} value={opt.value}>{opt.label}</option>)}
@@ -864,28 +832,12 @@ const SelectGroup = ({ label, themeColor = '#0f172a', options, ...props }) => {
 const TextAreaGroup = ({ label, themeColor = '#0f172a', ...props }) => {
     const [isFocused, setIsFocused] = useState(false);
     return (
-        <div style={{ marginBottom: '20px' }}>
-            <label style={{ display: 'block', fontSize: '13px', fontWeight: '700', color: isFocused ? themeColor : '#475569', marginBottom: '8px', transition: 'color 0.2s' }}>{label}</label>
+        <div style={{ position: 'relative', marginBottom: '14px', backgroundColor: '#f8fafc', borderRadius: '10px', border: `1.5px solid ${isFocused ? themeColor : 'transparent'}`, transition: 'all 0.2s ease', padding: '8px 14px 6px', boxShadow: isFocused ? `0 0 0 3px ${themeColor}15` : 'inset 0 2px 4px rgba(0,0,0,0.02)' }}>
+            <label style={{ display: 'block', fontSize: '10px', fontWeight: '800', color: isFocused ? themeColor : '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '4px' }}>{label}</label>
             <textarea 
                 onFocus={() => setIsFocused(true)}
                 onBlur={() => setIsFocused(false)}
-                style={{ 
-                    width: '100%', 
-                    padding: '14px 16px', 
-                    backgroundColor: isFocused ? '#fff' : '#f8fafc', 
-                    border: `1.5px solid ${isFocused ? themeColor : '#cbd5e1'}`, 
-                    borderRadius: '12px', 
-                    fontSize: '15px', 
-                    color: '#0f172a',
-                    fontWeight: '500',
-                    boxSizing: 'border-box',
-                    outline: 'none',
-                    boxShadow: isFocused ? `0 0 0 4px ${themeColor}15` : 'none',
-                    transition: 'all 0.2s ease',
-                    minHeight: '100px',
-                    fontFamily: 'inherit',
-                    resize: 'vertical'
-                }} 
+                style={{ width: '100%', padding: '0', backgroundColor: 'transparent', border: 'none', fontSize: '14px', color: '#0f172a', fontWeight: '600', outline: 'none', minHeight: '60px', fontFamily: 'inherit', resize: 'vertical' }} 
                 {...props} 
             />
         </div>
@@ -901,60 +853,42 @@ const FileUploadUI = ({ label, accept, themeColor, onFileSelect, multiple = fals
             const files = Array.from(e.target.files);
             const firstFile = files[0];
             
-            // Generate preview URL if it's an image
             if (firstFile.type.startsWith('image/')) {
-                const url = URL.createObjectURL(firstFile);
-                setFileData({ 
-                    name: multiple && files.length > 1 ? `${files.length} files selected` : firstFile.name, 
-                    url: url, 
-                    isImage: true 
-                });
+                setFileData({ name: multiple && files.length > 1 ? `${files.length} files selected` : firstFile.name, url: URL.createObjectURL(firstFile), isImage: true });
             } else {
-                setFileData({ 
-                    name: multiple && files.length > 1 ? `${files.length} files selected` : firstFile.name, 
-                    url: null, 
-                    isImage: false 
-                });
+                setFileData({ name: multiple && files.length > 1 ? `${files.length} files selected` : firstFile.name, url: null, isImage: false });
             }
 
             if(onFileSelect) onFileSelect(multiple ? files : firstFile);
         }
     };
 
-    // Cleanup object URL to prevent memory leaks when component unmounts or file changes
     useEffect(() => {
         return () => {
-            if (fileData && fileData.url) {
-                URL.revokeObjectURL(fileData.url);
-            }
+            if (fileData && fileData.url) URL.revokeObjectURL(fileData.url);
         };
     }, [fileData]);
 
     return (
         <div 
             onClick={() => fileInputRef.current.click()}
-            style={{ marginBottom: '20px', padding: '25px 20px', border: `2px dashed ${fileData ? themeColor : '#cbd5e1'}`, borderRadius: '16px', textAlign: 'center', backgroundColor: fileData ? `${themeColor}08` : '#fff', cursor: 'pointer', transition: 'all 0.2s', position: 'relative' }}>
+            style={{ marginBottom: '16px', padding: '12px 14px', border: `1.5px dashed ${fileData ? themeColor : '#cbd5e1'}`, borderRadius: '12px', backgroundColor: fileData ? `${themeColor}08` : '#f8fafc', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between', transition: 'all 0.2s ease', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.01)' }}>
             <input type="file" ref={fileInputRef} onChange={handleFileChange} accept={accept} multiple={multiple} style={{ display: 'none' }} />
             
-            {fileData ? (
-                <div>
-                    {fileData.isImage ? (
-                        <div style={{ marginBottom: '15px', display: 'flex', justifyContent: 'center' }}>
-                            <img src={fileData.url} alt="Preview" style={{ width: '80px', height: '80px', borderRadius: '12px', objectFit: 'cover', boxShadow: '0 4px 10px rgba(0,0,0,0.1)', border: `2px solid ${themeColor}` }} />
-                        </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div style={{ width: '38px', height: '38px', borderRadius: '8px', backgroundColor: '#e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+                    {fileData && fileData.isImage ? (
+                        <img src={fileData.url} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                     ) : (
-                        <CheckCircle2 size={32} color={themeColor} style={{ marginBottom: '10px' }} />
+                        <UploadCloud size={18} color={fileData ? themeColor : "#64748b"} />
                     )}
-                    <p style={{ margin: 0, fontSize: '14px', color: '#0f172a', fontWeight: '700', wordBreak: 'break-all' }}>Selected: {fileData.name}</p>
-                    <p style={{ margin: '5px 0 0', fontSize: '12px', color: themeColor, fontWeight: '600' }}>Click to change {multiple ? 'files' : 'file'}</p>
                 </div>
-            ) : (
                 <div>
-                    <UploadCloud size={32} color={themeColor} style={{ marginBottom: '10px', opacity: 0.8 }} />
-                    <p style={{ margin: 0, fontSize: '14px', color: '#1e293b', fontWeight: '700' }}>{label}</p>
-                    <p style={{ margin: '5px 0 0', fontSize: '12px', color: '#64748b' }}>Click to browse files</p>
+                    <p style={{ margin: 0, fontSize: '10px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{label}</p>
+                    <p style={{ margin: '2px 0 0', fontSize: '13px', fontWeight: '700', color: fileData ? themeColor : '#0f172a' }}>{fileData ? fileData.name : 'Tap to select file...'}</p>
                 </div>
-            )}
+            </div>
+            {fileData && <CheckCircle2 size={20} color={themeColor} />}
         </div>
     );
 };
