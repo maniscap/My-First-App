@@ -9,6 +9,21 @@ export default function ManageListings() {
     const navigate = useNavigate();
     const [listings, setListings] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [activeTab, setActiveTab] = useState('all');
+
+    const tabs = [
+        { id: 'all', label: 'All Listings' },
+        { id: 'listings_farm_fresh', label: 'Farm Fresh' },
+        { id: 'listings_machinery', label: 'Machinery' },
+        { id: 'listings_workers', label: 'Workers' },
+        { id: 'listings_business', label: 'Business' },
+        { id: 'listings_freelancing', label: 'Freelancing' },
+        { id: 'listings_local_goods', label: 'Local Goods' }
+    ];
+
+    const displayListings = activeTab === 'all' 
+        ? listings 
+        : listings.filter(item => item.collectionName === activeTab);
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -91,23 +106,51 @@ export default function ManageListings() {
                 </div>
             </div>
 
+            {/* Scrollable Tabs */}
+            <div style={{ display: 'flex', overflowX: 'auto', padding: '0 20px', gap: '8px', borderBottom: '1px solid #f1f5f9', backgroundColor: '#fff', scrollbarWidth: 'none', msOverflowStyle: 'none', WebkitOverflowScrolling: 'touch' }}>
+                <style>{`
+                    div::-webkit-scrollbar { display: none; }
+                `}</style>
+                {tabs.map(tab => (
+                    <button
+                        key={tab.id}
+                        onClick={() => setActiveTab(tab.id)}
+                        style={{
+                            padding: '12px 16px',
+                            border: 'none',
+                            background: 'none',
+                            fontSize: '14px',
+                            fontWeight: activeTab === tab.id ? '800' : '600',
+                            color: activeTab === tab.id ? '#16a34a' : '#64748b',
+                            borderBottom: activeTab === tab.id ? '3px solid #16a34a' : '3px solid transparent',
+                            whiteSpace: 'nowrap',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s ease',
+                            outline: 'none'
+                        }}
+                    >
+                        {tab.label}
+                    </button>
+                ))}
+            </div>
+
             <div style={{ padding: '20px' }}>
                 {loading ? (
                     <div style={{ textAlign: 'center', padding: '40px 0', color: '#64748b' }}>Loading listings...</div>
-                ) : listings.length === 0 ? (
+                ) : displayListings.length === 0 ? (
                     <div style={{ textAlign: 'center', padding: '60px 20px' }}>
                         <div style={{ width: '64px', height: '64px', borderRadius: '32px', backgroundColor: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
                             <PackageOpen size={32} color="#94a3b8" />
                         </div>
                         <h3 style={{ margin: '0 0 8px 0', color: '#1e293b', fontSize: '16px' }}>No Listings Found</h3>
-                        <p style={{ margin: 0, color: '#64748b', fontSize: '14px' }}>You haven't added any listings yet.</p>
+                        <p style={{ margin: 0, color: '#64748b', fontSize: '14px' }}>You haven't added any {activeTab !== 'all' ? tabs.find(t=>t.id === activeTab).label : ''} listings yet.</p>
                         <button onClick={() => navigate('/Seller_HomePage')} style={{ marginTop: '20px', padding: '12px 24px', backgroundColor: '#16a34a', color: '#fff', border: 'none', borderRadius: '8px', fontWeight: 'bold' }}>
                             Go Add Listings
                         </button>
                     </div>
                 ) : (
                     <div style={{ display: 'grid', gap: '16px' }}>
-                        {listings.map(item => (
+                        {displayListings.map(item => (
                             <div key={item.id} style={{ backgroundColor: '#fff', borderRadius: '16px', padding: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.04)', display: 'flex', gap: '16px', alignItems: 'center' }}>
                                 
                                 <div style={{ width: '80px', height: '80px', borderRadius: '12px', backgroundColor: '#f1f5f9', overflow: 'hidden', flexShrink: 0 }}>
