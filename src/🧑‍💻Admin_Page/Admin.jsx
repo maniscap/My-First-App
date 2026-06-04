@@ -11,6 +11,7 @@ function Admin() {
   const [password, setPassword] = useState('');
   
   const [activeTab, setActiveTab] = useState('dashboard'); // dashboard, verifications, approved, listings
+  const [verificationTab, setVerificationTab] = useState('individual'); // individual or organisation
   const [sellerApplications, setSellerApplications] = useState([]);
   const [listingCounts, setListingCounts] = useState({ farmFresh: 0, machinery: 0, workers: 0, business: 0, freelance: 0, rejected: 0 });
   const [loading, setLoading] = useState(false);
@@ -236,26 +237,37 @@ function Admin() {
                       </div>
                   ) : (
                       <>
-                          {pendingInd.length > 0 && (
-                              <>
-                                  <h3 className="section-subtitle" style={{marginTop: '20px', marginBottom: '15px', color: '#8b5cf6'}}>👤 Single Shops / Individuals</h3>
-                                  <div className="cards-list">
-                                      {pendingInd.map(app => (
-                                          <ApplicationCard key={app.id} app={app} onApprove={() => handleApproveSeller(app)} onReject={() => handleReject(app)} />
-                                      ))}
-                                  </div>
-                              </>
-                          )}
+                          <div style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
+                              <button 
+                                  onClick={() => setVerificationTab('individual')}
+                                  style={{ flex: 1, padding: '12px', borderRadius: '12px', border: 'none', fontWeight: 'bold', cursor: 'pointer', background: verificationTab === 'individual' ? '#8b5cf6' : '#e2e8f0', color: verificationTab === 'individual' ? 'white' : '#64748b', transition: 'all 0.2s' }}
+                              >
+                                  👤 Individual Shops ({pendingInd.length})
+                              </button>
+                              <button 
+                                  onClick={() => setVerificationTab('organisation')}
+                                  style={{ flex: 1, padding: '12px', borderRadius: '12px', border: 'none', fontWeight: 'bold', cursor: 'pointer', background: verificationTab === 'organisation' ? '#3b82f6' : '#e2e8f0', color: verificationTab === 'organisation' ? 'white' : '#64748b', transition: 'all 0.2s' }}
+                              >
+                                  🏢 Organisations ({pendingOrg.length})
+                              </button>
+                          </div>
                           
-                          {pendingOrg.length > 0 && (
-                              <>
-                                  <h3 className="section-subtitle" style={{marginTop: '40px', marginBottom: '15px', color: '#3b82f6'}}>🏢 Organisations / Big Shops</h3>
-                                  <div className="cards-list">
-                                      {pendingOrg.map(app => (
-                                          <ApplicationCard key={app.id} app={app} onApprove={() => handleApproveSeller(app)} onReject={() => handleReject(app)} />
-                                      ))}
-                                  </div>
-                              </>
+                          {verificationTab === 'individual' && (
+                              pendingInd.length === 0 ? <p style={{color: '#64748b'}}>No pending individual applications.</p> :
+                              <div className="cards-list">
+                                  {pendingInd.map(app => (
+                                      <ApplicationCard key={app.id} app={app} onApprove={() => handleApproveSeller(app)} onReject={() => handleReject(app)} />
+                                  ))}
+                              </div>
+                          )}
+
+                          {verificationTab === 'organisation' && (
+                              pendingOrg.length === 0 ? <p style={{color: '#64748b'}}>No pending organisation applications.</p> :
+                              <div className="cards-list">
+                                  {pendingOrg.map(app => (
+                                      <ApplicationCard key={app.id} app={app} onApprove={() => handleApproveSeller(app)} onReject={() => handleReject(app)} />
+                                  ))}
+                              </div>
                           )}
                       </>
                   )}
@@ -565,7 +577,8 @@ const styles = `
   /* DASHBOARD LAYOUT */
   .admin-dashboard {
       display: flex;
-      min-height: 100vh;
+      height: 100vh;
+      overflow: hidden;
       background-color: var(--bg-color);
       font-family: 'Inter', sans-serif;
       color: var(--text-main);
