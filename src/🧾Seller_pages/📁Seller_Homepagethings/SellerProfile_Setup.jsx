@@ -796,7 +796,7 @@ function SellerProfile_Setup() {
 const SectionTitle = ({ title, icon, theme }) => (
     <div style={{ margin: '24px 0 16px', display: 'flex', alignItems: 'center', gap: '10px' }}>
         <div style={{ color: theme.primary, display: 'flex' }}>{icon}</div>
-        <h4 style={{ margin: 0, fontSize: '14px', color: '#000', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{title}</h4>
+        <h4 style={{ margin: 0, fontSize: '14px', color: '#1e293b', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{title}</h4>
         <div style={{ flex: 1, height: '1px', background: `linear-gradient(90deg, ${theme.primary}30, transparent)`, marginLeft: '10px' }}></div>
     </div>
 );
@@ -807,13 +807,13 @@ const InputGroup = ({ label, themeColor = '#0f172a', prefix, ...props }) => {
         <div style={{ position: 'relative', marginBottom: '14px', backgroundColor: '#f8fafc', borderRadius: '10px', border: `2px solid ${isFocused ? themeColor : '#e2e8f0'}`, transition: 'all 0.2s ease', display: 'flex', alignItems: 'center', overflow: 'hidden', boxShadow: isFocused ? `0 0 0 3px ${themeColor}15` : 'none' }}>
             {prefix && <span style={{ paddingLeft: '14px', color: '#64748b', fontWeight: '700', fontSize: '14px' }}>{prefix}</span>}
             <div style={{ flex: 1, padding: '8px 14px 6px' }}>
-                <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', color: isFocused ? themeColor : '#000', textTransform: 'uppercase', letterSpacing: '0.5px', transition: 'color 0.2s', marginBottom: '2px' }}>{label}</label>
+                <label style={{ display: 'block', fontSize: '11px', fontWeight: '700', color: isFocused ? themeColor : '#475569', textTransform: 'uppercase', letterSpacing: '0.5px', transition: 'color 0.2s', marginBottom: '2px' }}>{label}</label>
                 <input 
                     className="custom-input"
                     required
                     onFocus={() => setIsFocused(true)}
                     onBlur={() => setIsFocused(false)}
-                    style={{ width: '100%', padding: '4px 0', backgroundColor: 'transparent', border: 'none', fontSize: '15px', color: '#000', fontWeight: '800', outline: 'none', ...(props.readOnly ? { color: '#94a3b8' } : {}), ...props.style }} 
+                    style={{ width: '100%', padding: '4px 0', backgroundColor: 'transparent', border: 'none', fontSize: '15px', color: '#1e293b', fontWeight: '600', outline: 'none', ...(props.readOnly ? { color: '#94a3b8' } : {}), ...props.style }} 
                     {...props} 
                 />
             </div>
@@ -825,12 +825,12 @@ const SelectGroup = ({ label, themeColor = '#0f172a', options, ...props }) => {
     const [isFocused, setIsFocused] = useState(false);
     return (
         <div style={{ position: 'relative', marginBottom: '14px', backgroundColor: '#f8fafc', borderRadius: '10px', border: `2px solid ${isFocused ? themeColor : '#e2e8f0'}`, transition: 'all 0.2s ease', padding: '8px 14px 6px', boxShadow: isFocused ? `0 0 0 3px ${themeColor}15` : 'none' }}>
-            <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', color: isFocused ? themeColor : '#000', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '2px' }}>{label}</label>
+            <label style={{ display: 'block', fontSize: '11px', fontWeight: '700', color: isFocused ? themeColor : '#475569', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '2px' }}>{label}</label>
             <select 
                 className="custom-input"
                 onFocus={() => setIsFocused(true)}
                 onBlur={() => setIsFocused(false)}
-                style={{ width: '100%', padding: '4px 0', backgroundColor: 'transparent', border: 'none', fontSize: '15px', color: '#000', fontWeight: '800', outline: 'none', cursor: 'pointer' }} 
+                style={{ width: '100%', padding: '4px 0', backgroundColor: 'transparent', border: 'none', fontSize: '15px', color: '#1e293b', fontWeight: '600', outline: 'none', cursor: 'pointer' }} 
                 {...props}
             >
                 {options.map((opt, i) => <option key={i} value={opt.value}>{opt.label}</option>)}
@@ -843,12 +843,12 @@ const TextAreaGroup = ({ label, themeColor = '#0f172a', ...props }) => {
     const [isFocused, setIsFocused] = useState(false);
     return (
         <div style={{ position: 'relative', marginBottom: '14px', backgroundColor: '#f8fafc', borderRadius: '10px', border: `2px solid ${isFocused ? themeColor : '#e2e8f0'}`, transition: 'all 0.2s ease', padding: '8px 14px 6px', boxShadow: isFocused ? `0 0 0 3px ${themeColor}15` : 'none' }}>
-            <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', color: isFocused ? themeColor : '#000', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '6px' }}>{label}</label>
+            <label style={{ display: 'block', fontSize: '11px', fontWeight: '700', color: isFocused ? themeColor : '#475569', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '6px' }}>{label}</label>
             <textarea 
                 className="custom-input"
                 onFocus={() => setIsFocused(true)}
                 onBlur={() => setIsFocused(false)}
-                style={{ width: '100%', padding: '4px 0', backgroundColor: 'transparent', border: 'none', fontSize: '15px', color: '#000', fontWeight: '800', outline: 'none', minHeight: '80px', fontFamily: 'inherit', resize: 'vertical' }} 
+                style={{ width: '100%', padding: '4px 0', backgroundColor: 'transparent', border: 'none', fontSize: '15px', color: '#1e293b', fontWeight: '600', outline: 'none', minHeight: '80px', fontFamily: 'inherit', resize: 'vertical' }} 
                 {...props} 
             />
         </div>
