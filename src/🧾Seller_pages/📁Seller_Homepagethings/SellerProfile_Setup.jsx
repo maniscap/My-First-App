@@ -345,7 +345,13 @@ function SellerProfile_Setup() {
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                             <h3 style={{ margin: '10px 0', fontSize: '18px', color: '#1e293b', fontWeight: '800' }}>Select Account Type</h3>
                             
-                            {/* INDIVIDUAL CARD */}
+                            {(() => {
+                                const isIndActive = indApp?.status === 'pending_approval' || indApp?.status === 'approved';
+                                const isOrgActive = orgApp?.status === 'pending_approval' || orgApp?.status === 'approved';
+                                
+                                return (
+                                    <>
+                                        {/* INDIVIDUAL CARD */}
                             {indApp?.status === 'approved' ? (
                                 <div style={{ backgroundColor: '#ecfdf5', padding: '20px', borderRadius: '16px', border: '1px solid #10b981', display: 'flex', gap: '16px', alignItems: 'center' }}>
                                     <div style={{ width: '48px', height: '48px', backgroundColor: '#10b981', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
@@ -362,10 +368,11 @@ function SellerProfile_Setup() {
                             ) : (
                                 <div 
                                     onClick={() => {
-                                        if (indApp?.status === 'pending_approval') alert("Your Individual Profile application is under review.");
+                                        if (isOrgActive) alert("You already have an active Organisation account. Only one account type is allowed per user.");
+                                        else if (indApp?.status === 'pending_approval') alert("Your Individual Profile application is under review.");
                                         else setAccountType('individual');
                                     }}
-                                    style={{ background: '#fff', padding: '20px', borderRadius: '16px', boxShadow: '0 4px 15px rgba(0,0,0,0.03)', cursor: indApp?.status === 'pending_approval' ? 'not-allowed' : 'pointer', opacity: indApp?.status === 'pending_approval' ? 0.7 : 1, border: '1.5px solid #f1f5f9', position: 'relative', overflow: 'hidden', display: 'flex', gap: '16px', alignItems: 'center', transition: 'all 0.2s ease' }}
+                                    style={{ background: '#fff', padding: '20px', borderRadius: '16px', boxShadow: '0 4px 15px rgba(0,0,0,0.03)', cursor: (indApp?.status === 'pending_approval' || isOrgActive) ? 'not-allowed' : 'pointer', opacity: (indApp?.status === 'pending_approval' || isOrgActive) ? 0.5 : 1, border: '1.5px solid #f1f5f9', position: 'relative', overflow: 'hidden', display: 'flex', gap: '16px', alignItems: 'center', transition: 'all 0.2s ease', filter: isOrgActive ? 'grayscale(100%)' : 'none' }}
                                 >
                                     <div style={{ position: 'absolute', top: 0, left: 0, width: '4px', height: '100%', background: '#0284c7' }}></div>
                                     <div style={{ width: '48px', height: '48px', background: '#f0f9ff', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
@@ -405,10 +412,11 @@ function SellerProfile_Setup() {
                             ) : (
                                 <div 
                                     onClick={() => {
-                                        if (orgApp?.status === 'pending_approval') alert("Your Organisation Profile application is under review.");
+                                        if (isIndActive) alert("You already have an active Individual account. Only one account type is allowed per user.");
+                                        else if (orgApp?.status === 'pending_approval') alert("Your Organisation Profile application is under review.");
                                         else setAccountType('organisation');
                                     }}
-                                    style={{ background: '#fff', padding: '20px', borderRadius: '16px', boxShadow: '0 4px 15px rgba(0,0,0,0.03)', cursor: orgApp?.status === 'pending_approval' ? 'not-allowed' : 'pointer', opacity: orgApp?.status === 'pending_approval' ? 0.7 : 1, border: '1.5px solid #f1f5f9', position: 'relative', overflow: 'hidden', display: 'flex', gap: '16px', alignItems: 'center', transition: 'all 0.2s ease' }}
+                                    style={{ background: '#fff', padding: '20px', borderRadius: '16px', boxShadow: '0 4px 15px rgba(0,0,0,0.03)', cursor: (orgApp?.status === 'pending_approval' || isIndActive) ? 'not-allowed' : 'pointer', opacity: (orgApp?.status === 'pending_approval' || isIndActive) ? 0.5 : 1, border: '1.5px solid #f1f5f9', position: 'relative', overflow: 'hidden', display: 'flex', gap: '16px', alignItems: 'center', transition: 'all 0.2s ease', filter: isIndActive ? 'grayscale(100%)' : 'none' }}
                                 >
                                     <div style={{ position: 'absolute', top: 0, left: 0, width: '4px', height: '100%', background: '#4338ca' }}></div>
                                     <div style={{ width: '48px', height: '48px', background: '#e0e7ff', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
@@ -430,6 +438,9 @@ function SellerProfile_Setup() {
                                     </div>
                                 </div>
                             )}
+                                    </>
+                                );
+                            })()}
                         </div>
                     )
                 ) : (
