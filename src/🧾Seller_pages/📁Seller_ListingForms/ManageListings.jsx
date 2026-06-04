@@ -94,7 +94,7 @@ export default function ManageListings() {
 
     const handleOpenEdit = (item) => {
         if (item.collectionName === 'listings_farm_fresh') {
-            navigate('/Seller_ListingForms/FarmFresh', { state: { editData: item } });
+            navigate('/add-farm-fresh', { state: { editData: item } });
         } else {
             alert('Edit for this category is under construction.');
         }
