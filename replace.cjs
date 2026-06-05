@@ -1,9 +1,10 @@
 const fs = require('fs');
 
 const content = fs.readFileSync('src/🧾Seller_pages/📁Seller_ListingForms/ManageListings.jsx', 'utf8');
-const topPart = content.split('    return (')[0];
+const topPart = content.split('\n    return (')[0];
 
-const newRender = `    return (
+const newRender = `
+    return (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: '#FFFFFF', overflowY: 'auto', WebkitOverflowScrolling: 'touch', width: '100vw', boxSizing: 'border-box', overflowX: 'hidden', fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, Helvetica, sans-serif' }}>
             <style>{\`
                 * { box-sizing: border-box; }

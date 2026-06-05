@@ -37,7 +37,119 @@ export default function ManageListings() {
                 setLoading(false);
             }
         });
-        return (
+        return () => unsubscribe();
+    }, []);
+
+    const fetchListings = async (sellerAppId, forceRefresh = false) => {
+        try {
+            if (!forceRefresh) {
+                const cached = sessionStorage.getItem(`seller_listings_${sellerAppId}`);
+                if (cached) {
+                    setListings(JSON.parse(cached));
+                    setLoading(false);
+                    return; // Pure cache hit, massive read savings!
+                }
+            }
+
+            const collectionsToFetch = [
+                'listings_farm_fresh',
+                'listings_machinery',
+                'listings_workers',
+                'listings_business',
+                'listings_freelancing',
+                'listings_local_goods'
+            ];
+
+            const promises = collectionsToFetch.map(async (colName) => {
+                const q = query(collection(db, colName), where('sellerId', '==', sellerAppId));
+                const snapshot = await getDocs(q);
+                return snapshot.docs.map(doc => ({
+                    id: doc.id,
+                    collectionName: colName,
+                    ...doc.data()
+                }));
+            });
+            
+            const results = await Promise.all(promises);
+            const data = results.flat();
+            
+            // Sort client-side by date if createdAt exists
+            data.sort((a, b) => {
+                const timeA = a.createdAt?.seconds ? a.createdAt.seconds : 0;
+                const timeB = b.createdAt?.seconds ? b.createdAt.seconds : 0;
+                return timeB - timeA;
+            });
+            
+            setListings(data);
+            sessionStorage.setItem(`seller_listings_${sellerAppId}`, JSON.stringify(data));
+        } catch (error) {
+            console.error("Error fetching listings:", error);
+            if (!listings.length) alert("Failed to load your listings.");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleDelete = async (id, collectionName) => {
+        const confirmDelete = window.confirm("Are you sure you want to delete this listing?");
+        if (!confirmDelete) return;
+
+        try {
+            await deleteDoc(doc(db, collectionName, id));
+            setListings(listings.filter(item => item.id !== id));
+            const sellerAppId = localStorage.getItem('seller_app_id');
+            if (sellerAppId) sessionStorage.removeItem(`seller_listings_${sellerAppId}`);
+        } catch (error) {
+            console.error("Error deleting document:", error);
+            alert("Failed to delete listing.");
+        }
+    };
+
+    const handleOpenEdit = (item) => {
+        setSelectedItemForEdit(item);
+        setEditModalOpen(true);
+    };
+
+    const handleToggleVisibility = async () => {
+        if (!selectedItemForEdit) return;
+        
+        const isCurrentlyPaused = selectedItemForEdit.status === 'paused';
+        const newStatus = isCurrentlyPaused ? 'active' : 'paused';
+        
+        const confirmMsg = isCurrentlyPaused 
+            ? "Are you sure you want to activate this listing? It will become visible to all buyers."
+            : "Are you sure you want to pause this listing? It will be hidden from buyers.";
+            
+        if (!window.confirm(confirmMsg)) return;
+
+        try {
+            const itemRef = doc(db, selectedItemForEdit.collectionName, selectedItemForEdit.id);
+            await updateDoc(itemRef, { status: newStatus });
+            
+            setListings(listings.map(item => 
+                item.id === selectedItemForEdit.id ? { ...item, status: newStatus } : item
+            ));
+            const sellerAppId = localStorage.getItem('seller_app_id');
+            if (sellerAppId) sessionStorage.removeItem(`seller_listings_${sellerAppId}`);
+            setEditModalOpen(false);
+            setSelectedItemForEdit(null);
+        } catch (error) {
+            console.error("Error updating visibility:", error);
+            alert("Failed to update visibility.");
+        }
+    };
+
+    const handleEditDetails = () => {
+        if (!selectedItemForEdit) return;
+        if (selectedItemForEdit.collectionName === 'listings_farm_fresh') {
+            navigate('/add-farm-fresh', { state: { editData: selectedItemForEdit } });
+        } else {
+            alert('Edit for this category is under construction.');
+        }
+        setEditModalOpen(false);
+    };
+
+    return (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: '#FFFFFF', overflowY: 'auto', WebkitOverflowScrolling: 'touch', width: '100vw', boxSizing: 'border-box', overflowX: 'hidden', fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, Helvetica, sans-serif' }}>
             <style>{`
                 * { box-sizing: border-box; }
