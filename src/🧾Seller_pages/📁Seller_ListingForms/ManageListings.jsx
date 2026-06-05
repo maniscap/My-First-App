@@ -150,39 +150,60 @@ export default function ManageListings() {
     };
 
     return (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: '#F5F5F7', overflowY: 'auto', WebkitOverflowScrolling: 'touch', width: '100vw', boxSizing: 'border-box', overflowX: 'hidden', fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, Helvetica, sans-serif' }}>
+        <div className="aurora-bg" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, overflowY: 'auto', WebkitOverflowScrolling: 'touch', width: '100vw', boxSizing: 'border-box', overflowX: 'hidden', fontFamily: "'Inter', system-ui, sans-serif" }}>
             <style>{`
                 * { box-sizing: border-box; }
                 @keyframes spin { 100% { transform: rotate(360deg); } }
                 .spin-anim { animation: spin 1s linear infinite; }
                 div::-webkit-scrollbar { display: none; }
                 
-                .apple-card {
-                    background: #FFFFFF;
+                @keyframes aurora {
+                    0% { background-position: 0% 50%; }
+                    50% { background-position: 100% 50%; }
+                    100% { background-position: 0% 50%; }
+                }
+                .aurora-bg {
+                    background: linear-gradient(-45deg, #0f172a, #1e1b4b, #312e81, #4c1d95, #581c87, #020617);
+                    background-size: 400% 400%;
+                    animation: aurora 20s ease infinite;
+                }
+                
+                .glass-panel {
+                    background: rgba(255, 255, 255, 0.03);
+                    backdrop-filter: blur(24px);
+                    -webkit-backdrop-filter: blur(24px);
+                    border-top: 1px solid rgba(255, 255, 255, 0.1);
+                    border-left: 1px solid rgba(255, 255, 255, 0.05);
+                    border-right: 1px solid rgba(255, 255, 255, 0.02);
+                    border-bottom: 1px solid rgba(255, 255, 255, 0.02);
+                    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
                     border-radius: 20px;
-                    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
-                    transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+                    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s cubic-bezier(0.16, 1, 0.3, 1);
                 }
-                .apple-card:active {
+                .glass-panel:active {
                     transform: scale(0.97);
-                    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);
+                    box-shadow: 0 4px 16px 0 rgba(0, 0, 0, 0.6);
                 }
+                
+                .text-glow {
+                    text-shadow: 0 0 15px rgba(255,255,255,0.4);
+                }
+                
                 .btn-bounce {
                     transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
                 }
                 .btn-bounce:active {
                     transform: scale(0.92);
-                    opacity: 0.8;
                 }
             `}</style>
             
-            {/* Apple Glass Header */}
-            <div style={{ position: 'sticky', top: 0, zIndex: 50, padding: '16px 20px', background: 'rgba(245, 245, 247, 0.85)', backdropFilter: 'saturate(180%) blur(20px)', WebkitBackdropFilter: 'saturate(180%) blur(20px)', borderBottom: '0.5px solid rgba(0,0,0,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            {/* Aurora Glass Header */}
+            <div style={{ position: 'sticky', top: 0, zIndex: 50, padding: '20px 20px', background: 'rgba(2, 6, 23, 0.4)', backdropFilter: 'blur(30px)', WebkitBackdropFilter: 'blur(30px)', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', boxShadow: '0 4px 30px rgba(0,0,0,0.3)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <button onClick={() => navigate(-1)} className="btn-bounce" style={{ background: 'transparent', border: 'none', padding: '0', color: '#0071E3', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
-                        <ArrowLeft size={28} strokeWidth={2.5} />
+                    <button onClick={() => navigate(-1)} className="btn-bounce" style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.1)', padding: '8px', borderRadius: '12px', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
+                        <ArrowLeft size={24} strokeWidth={2} />
                     </button>
-                    <h1 style={{ margin: 0, fontSize: '24px', fontWeight: '700', color: '#1D1D1F', letterSpacing: '-0.5px' }}>Listings</h1>
+                    <h1 className="text-glow" style={{ margin: 0, fontSize: '24px', fontWeight: '700', color: '#FFFFFF', letterSpacing: '0.5px' }}>My Listings</h1>
                 </div>
                 <button 
                     onClick={() => {
@@ -193,29 +214,31 @@ export default function ManageListings() {
                         }
                     }}
                     className="btn-bounce"
-                    style={{ background: '#E8F0FE', border: 'none', padding: '8px 14px', borderRadius: '14px', cursor: 'pointer', color: '#0071E3', fontWeight: '600', fontSize: '14px', display: 'flex', alignItems: 'center', gap: '6px', opacity: loading ? 0.6 : 1 }}
+                    style={{ background: 'linear-gradient(135deg, #a855f7 0%, #7e22ce 100%)', border: '1px solid rgba(255,255,255,0.2)', padding: '8px 16px', borderRadius: '12px', cursor: 'pointer', color: '#fff', fontWeight: '600', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px', opacity: loading ? 0.6 : 1, boxShadow: '0 0 15px rgba(168, 85, 247, 0.4)' }}
                     disabled={loading}
                 >
-                    <RefreshCw size={16} className={loading ? "spin-anim" : ""} strokeWidth={2.5} /> {loading ? "Syncing" : "Sync"}
+                    <RefreshCw size={16} className={loading ? "spin-anim" : ""} strokeWidth={2} /> {loading ? "Syncing" : "Sync"}
                 </button>
             </div>
 
-            {/* Segmented Controls (Tabs) */}
-            <div style={{ padding: '20px 20px 10px 20px' }}>
-                <div style={{ display: 'flex', overflowX: 'auto', gap: '8px', scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' }}>
+            {/* Aurora Floating Pills */}
+            <div style={{ padding: '20px 20px 10px 20px', position: 'relative', zIndex: 10 }}>
+                <div style={{ display: 'flex', overflowX: 'auto', gap: '12px', scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch', paddingBottom: '10px' }}>
                     {tabs.map(tab => (
                         <button
                             key={tab.id}
                             onClick={() => setActiveTab(tab.id)}
                             className="btn-bounce"
                             style={{
-                                padding: '10px 18px',
-                                border: 'none',
-                                borderRadius: '999px',
-                                background: activeTab === tab.id ? '#1D1D1F' : '#E5E5EA',
-                                fontSize: '15px',
+                                padding: '10px 20px',
+                                border: activeTab === tab.id ? '1px solid rgba(168, 85, 247, 0.5)' : '1px solid rgba(255, 255, 255, 0.1)',
+                                borderRadius: '16px',
+                                background: activeTab === tab.id ? 'rgba(126, 34, 206, 0.4)' : 'rgba(255, 255, 255, 0.05)',
+                                backdropFilter: 'blur(10px)',
+                                fontSize: '14px',
                                 fontWeight: activeTab === tab.id ? '600' : '500',
-                                color: activeTab === tab.id ? '#FFFFFF' : '#1D1D1F',
+                                color: activeTab === tab.id ? '#FFFFFF' : 'rgba(255,255,255,0.6)',
+                                boxShadow: activeTab === tab.id ? '0 0 20px rgba(168, 85, 247, 0.3)' : 'none',
                                 whiteSpace: 'nowrap',
                                 cursor: 'pointer',
                                 flexShrink: 0
@@ -229,25 +252,25 @@ export default function ManageListings() {
 
             <div style={{ padding: '10px 20px 40px 20px' }}>
                 {loading ? (
-                    <div style={{ textAlign: 'center', padding: '60px 0', color: '#86868B', fontWeight: '500', fontSize: '15px' }}>
-                        <RefreshCw size={28} className="spin-anim" style={{ color: '#0071E3', marginBottom: '16px' }} />
+                    <div style={{ textAlign: 'center', padding: '60px 0', color: 'rgba(255,255,255,0.7)', fontWeight: '500', fontSize: '15px' }}>
+                        <RefreshCw size={28} className="spin-anim text-glow" style={{ color: '#a855f7', marginBottom: '16px' }} />
                         <p>Loading your products...</p>
                     </div>
                 ) : displayListings.length === 0 ? (
-                    <div className="apple-card" style={{ textAlign: 'center', padding: '50px 20px', marginTop: '10px' }}>
-                        <div style={{ width: '64px', height: '64px', borderRadius: '32px', backgroundColor: '#F5F5F7', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
-                            <PackageOpen size={32} color="#86868B" />
+                    <div className="glass-panel" style={{ textAlign: 'center', padding: '50px 20px', marginTop: '10px' }}>
+                        <div style={{ width: '64px', height: '64px', borderRadius: '32px', backgroundColor: 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px', border: '1px solid rgba(255,255,255,0.1)' }}>
+                            <PackageOpen size={32} color="rgba(255,255,255,0.5)" />
                         </div>
-                        <h3 style={{ margin: '0 0 8px 0', color: '#1D1D1F', fontSize: '18px', fontWeight: '600' }}>No Listings Found</h3>
-                        <p style={{ margin: 0, color: '#86868B', fontSize: '15px', lineHeight: '1.4' }}>You haven't added any {activeTab !== 'all' ? tabs.find(t=>t.id === activeTab).label : ''} items yet.</p>
-                        <button onClick={() => navigate('/Seller_HomePage')} className="btn-bounce" style={{ marginTop: '24px', padding: '14px 28px', background: '#0071E3', color: '#fff', border: 'none', borderRadius: '999px', fontWeight: '600', fontSize: '15px', cursor: 'pointer' }}>
+                        <h3 style={{ margin: '0 0 8px 0', color: '#FFFFFF', fontSize: '18px', fontWeight: '600' }}>No Listings Found</h3>
+                        <p style={{ margin: 0, color: 'rgba(255,255,255,0.5)', fontSize: '15px', lineHeight: '1.4' }}>You haven't added any {activeTab !== 'all' ? tabs.find(t=>t.id === activeTab).label : ''} items yet.</p>
+                        <button onClick={() => navigate('/Seller_HomePage')} className="btn-bounce" style={{ marginTop: '24px', padding: '14px 28px', background: 'linear-gradient(135deg, #a855f7 0%, #7e22ce 100%)', color: '#fff', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '16px', fontWeight: '600', fontSize: '15px', cursor: 'pointer', boxShadow: '0 0 20px rgba(168, 85, 247, 0.4)' }}>
                             Create Listing
                         </button>
                     </div>
                 ) : (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                         {displayListings.map(item => (
-                            <div key={item.id} className="apple-card" style={{ 
+                            <div key={item.id} className="glass-panel" style={{ 
                                 padding: '16px', 
                                 display: 'flex', 
                                 gap: '16px', 
@@ -256,45 +279,45 @@ export default function ManageListings() {
                                 overflow: 'hidden'
                             }}>
                                 
-                                <div style={{ width: '80px', height: '80px', borderRadius: '16px', backgroundColor: '#F5F5F7', overflow: 'hidden', flexShrink: 0 }}>
+                                <div style={{ width: '80px', height: '80px', borderRadius: '14px', backgroundColor: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', overflow: 'hidden', flexShrink: 0 }}>
                                     {item.imageUrl ? (
                                         <img src={item.imageUrl} alt={item.itemName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                                     ) : (
-                                        <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#86868B', fontSize: '24px' }}>⌘</div>
+                                        <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(255,255,255,0.3)', fontSize: '24px' }}>✦</div>
                                     )}
                                 </div>
                                 
                                 <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px', flexWrap: 'wrap' }}>
-                                        <span style={{ fontSize: '11px', fontWeight: '600', color: '#86868B', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px', flexWrap: 'wrap' }}>
+                                        <span style={{ fontSize: '10px', fontWeight: '600', color: '#e2e8f0', backgroundColor: 'rgba(255,255,255,0.1)', textTransform: 'uppercase', letterSpacing: '0.5px', padding: '2px 6px', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.05)' }}>
                                             {item.listingType.replace('_', ' ')}
                                         </span>
                                         {item.status === 'paused' && (
-                                            <span style={{ fontSize: '10px', fontWeight: '600', color: '#FF3B30', backgroundColor: '#FFEBEA', padding: '2px 6px', borderRadius: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                            <span style={{ fontSize: '10px', fontWeight: '600', color: '#fca5a5', backgroundColor: 'rgba(239, 68, 68, 0.2)', padding: '2px 6px', borderRadius: '6px', display: 'flex', alignItems: 'center', gap: '4px', border: '1px solid rgba(239, 68, 68, 0.3)' }}>
                                                 <Power size={10} /> Paused
                                             </span>
                                         )}
                                     </div>
-                                    <h3 style={{ margin: '0 0 4px 0', fontSize: '18px', fontWeight: '600', color: '#1D1D1F', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', letterSpacing: '-0.3px' }}>
+                                    <h3 style={{ margin: '0 0 4px 0', fontSize: '18px', fontWeight: '600', color: '#FFFFFF', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', letterSpacing: '0.2px' }}>
                                         {item.itemName}
                                     </h3>
-                                    <p style={{ margin: 0, fontSize: '16px', color: '#1D1D1F', fontWeight: '500' }}>₹{item.price} <span style={{ color: '#86868B', fontSize: '14px', fontWeight: '400' }}>/ {item.unit}</span></p>
+                                    <p style={{ margin: 0, fontSize: '16px', color: '#a855f7', fontWeight: '600', textShadow: '0 0 10px rgba(168, 85, 247, 0.3)' }}>₹{item.price} <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: '14px', fontWeight: '400', textShadow: 'none' }}>/ {item.unit}</span></p>
                                 </div>
                                 
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', flexShrink: 0 }}>
                                     <button 
                                         onClick={() => handleOpenEdit(item)}
                                         className="btn-bounce"
-                                        style={{ width: '38px', height: '38px', borderRadius: '19px', border: 'none', backgroundColor: '#E8F0FE', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#0071E3' }}
+                                        style={{ width: '38px', height: '38px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)', backgroundColor: 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#a855f7' }}
                                     >
-                                        <Edit2 size={16} strokeWidth={2.5} />
+                                        <Edit2 size={16} strokeWidth={2} />
                                     </button>
                                     <button 
                                         onClick={() => handleDelete(item.id, item.collectionName)}
                                         className="btn-bounce"
-                                        style={{ width: '38px', height: '38px', borderRadius: '19px', border: 'none', backgroundColor: '#FFEBEA', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#FF3B30' }}
+                                        style={{ width: '38px', height: '38px', borderRadius: '12px', border: '1px solid rgba(239, 68, 68, 0.2)', backgroundColor: 'rgba(239, 68, 68, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#fca5a5' }}
                                     >
-                                        <Trash2 size={16} strokeWidth={2.5} />
+                                        <Trash2 size={16} strokeWidth={2} />
                                     </button>
                                 </div>
                                 
@@ -304,57 +327,57 @@ export default function ManageListings() {
                 )}
             </div>
 
-            {/* Apple Bottom Sheet Modal */}
+            {/* Aurora Glass Edit Modal */}
             {editModalOpen && selectedItemForEdit && (
                 <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 9999, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
-                    {/* Backdrop */}
-                    <div onClick={() => setEditModalOpen(false)} style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.4)', animation: 'fadeIn 0.3s ease' }}></div>
+                    {/* Dark Aurora Backdrop */}
+                    <div onClick={() => setEditModalOpen(false)} style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(5px)', animation: 'fadeIn 0.3s ease' }}></div>
                     
-                    {/* Sheet */}
-                    <div style={{ position: 'relative', backgroundColor: '#F5F5F7', width: '100%', borderTopLeftRadius: '24px', borderTopRightRadius: '24px', padding: '24px 20px 40px 20px', animation: 'slideUpSheet 0.4s cubic-bezier(0.16, 1, 0.3, 1)', boxShadow: '0 -10px 40px rgba(0,0,0,0.1)' }}>
+                    {/* Glass Sheet */}
+                    <div style={{ position: 'relative', background: 'rgba(15, 23, 42, 0.7)', backdropFilter: 'blur(30px)', WebkitBackdropFilter: 'blur(30px)', width: '100%', borderTopLeftRadius: '32px', borderTopRightRadius: '32px', borderTop: '1px solid rgba(255,255,255,0.1)', padding: '20px 20px 40px 20px', animation: 'slideUpSheet 0.4s cubic-bezier(0.16, 1, 0.3, 1)', boxShadow: '0 -10px 50px rgba(0,0,0,0.5)' }}>
                         <style>{`
                             @keyframes slideUpSheet { from { transform: translateY(100%); } to { transform: translateY(0); } }
                             @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
                         `}</style>
                         
-                        {/* Drag Handle */}
-                        <div style={{ width: '40px', height: '5px', backgroundColor: '#D1D1D6', borderRadius: '3px', margin: '0 auto 20px auto' }}></div>
+                        {/* Glowing Drag Handle */}
+                        <div style={{ width: '40px', height: '4px', backgroundColor: 'rgba(255,255,255,0.3)', borderRadius: '2px', margin: '0 auto 24px auto', boxShadow: '0 0 10px rgba(255,255,255,0.2)' }}></div>
                         
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-                            <h3 style={{ margin: 0, fontSize: '22px', fontWeight: '700', color: '#1D1D1F', letterSpacing: '-0.5px' }}>Options</h3>
-                            <button onClick={() => setEditModalOpen(false)} className="btn-bounce" style={{ background: '#E5E5EA', border: 'none', borderRadius: '15px', cursor: 'pointer', padding: '8px', display: 'flex', color: '#86868B' }}>
-                                <X size={20} strokeWidth={2.5} />
+                            <h3 className="text-glow" style={{ margin: 0, fontSize: '22px', fontWeight: '700', color: '#FFFFFF', letterSpacing: '0.5px' }}>Listing Options</h3>
+                            <button onClick={() => setEditModalOpen(false)} className="btn-bounce" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', cursor: 'pointer', padding: '8px', display: 'flex', color: '#fff' }}>
+                                <X size={20} strokeWidth={2} />
                             </button>
                         </div>
 
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
                             <button 
                                 onClick={handleEditDetails}
-                                className="btn-bounce apple-card"
-                                style={{ width: '100%', padding: '16px', border: 'none', display: 'flex', alignItems: 'center', gap: '16px', cursor: 'pointer', textAlign: 'left' }}
+                                className="btn-bounce glass-panel"
+                                style={{ width: '100%', padding: '16px', display: 'flex', alignItems: 'center', gap: '16px', cursor: 'pointer', textAlign: 'left', borderTop: '1px solid rgba(255,255,255,0.1)', borderLeft: '1px solid rgba(255,255,255,0.1)' }}
                             >
-                                <div style={{ width: '48px', height: '48px', borderRadius: '14px', background: '#E8F0FE', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#0071E3', flexShrink: 0 }}>
+                                <div style={{ width: '48px', height: '48px', borderRadius: '14px', background: 'rgba(168, 85, 247, 0.2)', border: '1px solid rgba(168, 85, 247, 0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#d8b4fe', flexShrink: 0 }}>
                                     <Edit2 size={24} />
                                 </div>
                                 <div>
-                                    <h4 style={{ margin: '0 0 2px 0', fontSize: '17px', fontWeight: '600', color: '#1D1D1F' }}>Edit Details</h4>
-                                    <p style={{ margin: 0, fontSize: '14px', color: '#86868B', fontWeight: '400' }}>Modify price, photos, or text</p>
+                                    <h4 style={{ margin: '0 0 2px 0', fontSize: '16px', fontWeight: '600', color: '#FFFFFF' }}>Edit Details</h4>
+                                    <p style={{ margin: 0, fontSize: '13px', color: 'rgba(255,255,255,0.5)', fontWeight: '400' }}>Modify price, photos, or text</p>
                                 </div>
                             </button>
 
                             <button 
                                 onClick={handleToggleVisibility}
-                                className="btn-bounce apple-card"
-                                style={{ width: '100%', padding: '16px', border: 'none', display: 'flex', alignItems: 'center', gap: '16px', cursor: 'pointer', textAlign: 'left' }}
+                                className="btn-bounce glass-panel"
+                                style={{ width: '100%', padding: '16px', display: 'flex', alignItems: 'center', gap: '16px', cursor: 'pointer', textAlign: 'left', borderTop: '1px solid rgba(255,255,255,0.1)', borderLeft: '1px solid rgba(255,255,255,0.1)' }}
                             >
-                                <div style={{ width: '48px', height: '48px', borderRadius: '14px', background: selectedItemForEdit.status === 'paused' ? '#E8F5E9' : '#FFEBEA', display: 'flex', alignItems: 'center', justifyContent: 'center', color: selectedItemForEdit.status === 'paused' ? '#34C759' : '#FF3B30', flexShrink: 0 }}>
+                                <div style={{ width: '48px', height: '48px', borderRadius: '14px', background: selectedItemForEdit.status === 'paused' ? 'rgba(34, 197, 94, 0.2)' : 'rgba(239, 68, 68, 0.2)', border: `1px solid ${selectedItemForEdit.status === 'paused' ? 'rgba(34, 197, 94, 0.3)' : 'rgba(239, 68, 68, 0.3)'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: selectedItemForEdit.status === 'paused' ? '#86efac' : '#fca5a5', flexShrink: 0 }}>
                                     <Power size={24} />
                                 </div>
                                 <div>
-                                    <h4 style={{ margin: '0 0 2px 0', fontSize: '17px', fontWeight: '600', color: selectedItemForEdit.status === 'paused' ? '#34C759' : '#FF3B30' }}>
+                                    <h4 style={{ margin: '0 0 2px 0', fontSize: '16px', fontWeight: '600', color: selectedItemForEdit.status === 'paused' ? '#86efac' : '#fca5a5' }}>
                                         {selectedItemForEdit.status === 'paused' ? 'Activate Listing' : 'Pause Listing'}
                                     </h4>
-                                    <p style={{ margin: 0, fontSize: '14px', color: '#86868B', fontWeight: '400' }}>
+                                    <p style={{ margin: 0, fontSize: '13px', color: 'rgba(255,255,255,0.5)', fontWeight: '400' }}>
                                         {selectedItemForEdit.status === 'paused' ? 'Make visible to buyers' : 'Hide from the marketplace'}
                                     </p>
                                 </div>
