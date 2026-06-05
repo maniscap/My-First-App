@@ -198,15 +198,15 @@ export default function ManageListings() {
                 }
             `}</style>
             
-            {/* Header - Glassmorphic but pure white */}
-            <div style={{ position: 'sticky', top: 0, zIndex: 50, padding: '16px 20px', background: 'rgba(250, 250, 250, 0.85)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', borderBottom: '1px solid rgba(0,0,0,0.04)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <button onClick={() => navigate(-1)} className="action-btn" style={{ background: '#FFFFFF', border: '1px solid rgba(0,0,0,0.05)', padding: '8px', borderRadius: '50%', color: '#0066CC', cursor: 'pointer', display: 'flex', alignItems: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}>
+            {/* Header - Dark slate blue to match profile setup */}
+            <div style={{ position: 'sticky', top: 0, zIndex: 50, padding: '20px 20px 24px 20px', backgroundColor: '#0f172a', borderBottomLeftRadius: '24px', borderBottomRightRadius: '24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', boxShadow: '0 4px 20px rgba(15,23,42,0.15)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                    <button onClick={() => navigate(-1)} className="action-btn" style={{ background: 'rgba(255,255,255,0.1)', border: 'none', padding: '8px', borderRadius: '50%', color: '#FFFFFF', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
                         <ArrowLeft size={20} strokeWidth={2} />
                     </button>
                     <div style={{ display: 'flex', flexDirection: 'column' }}>
-                        <h1 style={{ margin: 0, fontSize: '20px', fontWeight: '600', color: '#111827', letterSpacing: '-0.3px' }}>My Listings</h1>
-                        <span style={{ fontSize: '13px', color: '#6B7280', fontWeight: '400', marginTop: '2px' }}>Edit and manage your listings</span>
+                        <h1 style={{ margin: 0, fontSize: '20px', fontWeight: '600', color: '#FFFFFF', letterSpacing: '-0.3px' }}>My Listings</h1>
+                        <span style={{ fontSize: '13px', color: '#94a3b8', fontWeight: '400', marginTop: '2px' }}>Edit and manage your listings</span>
                     </div>
                 </div>
                 <button 
@@ -218,7 +218,7 @@ export default function ManageListings() {
                         }
                     }}
                     className="action-btn"
-                    style={{ background: '#0066CC', border: 'none', padding: '10px 16px', borderRadius: '999px', cursor: 'pointer', color: '#FFFFFF', fontWeight: '500', fontSize: '14px', display: 'flex', alignItems: 'center', gap: '8px', opacity: loading ? 0.7 : 1, boxShadow: '0 4px 12px rgba(0, 102, 204, 0.25)' }}
+                    style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.1)', padding: '10px 16px', borderRadius: '999px', cursor: 'pointer', color: '#FFFFFF', fontWeight: '500', fontSize: '14px', display: 'flex', alignItems: 'center', gap: '8px', opacity: loading ? 0.7 : 1 }}
                     disabled={loading}
                 >
                     <RefreshCw size={16} className={loading ? "spin-anim" : ""} strokeWidth={2} /> {loading ? "Syncing" : "Sync"}
@@ -237,15 +237,15 @@ export default function ManageListings() {
                                 padding: '10px 20px',
                                 border: 'none',
                                 borderRadius: '12px',
-                                background: activeTab === tab.id ? '#111827' : '#FFFFFF',
+                                background: activeTab === tab.id ? '#0f172a' : '#FFFFFF',
                                 fontSize: '14px',
                                 fontWeight: activeTab === tab.id ? '500' : '400',
                                 color: activeTab === tab.id ? '#FFFFFF' : '#6B7280',
                                 whiteSpace: 'nowrap',
                                 cursor: 'pointer',
                                 flexShrink: 0,
-                                boxShadow: activeTab === tab.id ? '0 8px 20px rgba(0,0,0,0.1)' : '0 2px 8px rgba(0,0,0,0.03)',
-                                border: activeTab === tab.id ? '1px solid #111827' : '1px solid rgba(0,0,0,0.04)'
+                                boxShadow: activeTab === tab.id ? '0 8px 20px rgba(15,23,42,0.15)' : '0 2px 8px rgba(0,0,0,0.03)',
+                                border: activeTab === tab.id ? '1px solid #0f172a' : '1px solid rgba(0,0,0,0.04)'
                             }}
                         >
                             {tab.label}
@@ -275,7 +275,7 @@ export default function ManageListings() {
                         </div>
                         <h3 style={{ margin: '0 0 10px 0', color: '#111827', fontSize: '18px', fontWeight: '600' }}>No inventory found</h3>
                         <p style={{ margin: 0, color: '#6B7280', fontSize: '14px', lineHeight: '1.5', fontWeight: '400' }}>You don't have any {activeTab !== 'all' ? tabs.find(t=>t.id === activeTab).label.toLowerCase() : ''} items listed right now.</p>
-                        <button onClick={() => navigate('/Seller_HomePage')} className="action-btn" style={{ marginTop: '30px', padding: '14px 28px', background: '#111827', color: '#fff', border: 'none', borderRadius: '999px', fontWeight: '500', fontSize: '15px', cursor: 'pointer', boxShadow: '0 8px 24px rgba(0,0,0,0.1)' }}>
+                        <button onClick={() => navigate('/Seller_HomePage')} className="action-btn" style={{ marginTop: '30px', padding: '14px 28px', background: '#0f172a', color: '#fff', border: 'none', borderRadius: '999px', fontWeight: '500', fontSize: '15px', cursor: 'pointer', boxShadow: '0 8px 24px rgba(15,23,42,0.15)' }}>
                             Create a Listing
                         </button>
                     </div>
@@ -385,11 +385,11 @@ export default function ManageListings() {
                                 className="action-btn premium-card"
                                 style={{ width: '100%', padding: '16px', display: 'flex', alignItems: 'center', gap: '16px', cursor: 'pointer', textAlign: 'left', border: '1px solid rgba(0,0,0,0.05)', boxShadow: 'none' }}
                             >
-                                <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: selectedItemForEdit.status === 'paused' ? '#111827' : '#FEF2F2', display: 'flex', alignItems: 'center', justifyContent: 'center', color: selectedItemForEdit.status === 'paused' ? '#FFFFFF' : '#DC2626', flexShrink: 0 }}>
+                                <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: selectedItemForEdit.status === 'paused' ? '#0f172a' : '#FEF2F2', display: 'flex', alignItems: 'center', justifyContent: 'center', color: selectedItemForEdit.status === 'paused' ? '#FFFFFF' : '#DC2626', flexShrink: 0 }}>
                                     <Power size={20} strokeWidth={2} />
                                 </div>
                                 <div>
-                                    <h4 style={{ margin: '0 0 4px 0', fontSize: '16px', fontWeight: '600', color: selectedItemForEdit.status === 'paused' ? '#111827' : '#DC2626' }}>
+                                    <h4 style={{ margin: '0 0 4px 0', fontSize: '16px', fontWeight: '600', color: selectedItemForEdit.status === 'paused' ? '#0f172a' : '#DC2626' }}>
                                         {selectedItemForEdit.status === 'paused' ? 'Activate Listing' : 'Pause Listing'}
                                     </h4>
                                     <p style={{ margin: 0, fontSize: '13px', color: '#6B7280', fontWeight: '400' }}>
