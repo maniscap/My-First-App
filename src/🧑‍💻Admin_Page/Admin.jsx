@@ -17,6 +17,42 @@ function Admin() {
   const [listingCounts, setListingCounts] = useState({ farmFresh: 0, machinery: 0, workers: 0, business: 0, freelance: 0, rejected: 0 });
   const [loading, setLoading] = useState(false);
 
+  const [adminListings, setAdminListings] = useState([]);
+  const [listingCategory, setListingCategory] = useState('listings_farm_fresh');
+  const [loadingListings, setLoadingListings] = useState(false);
+
+  const fetchAdminListings = async () => {
+      setLoadingListings(true);
+      try {
+          // STRICT LIMIT: Costs exactly max 15 reads. Zero background updates.
+          const q = query(collection(db, listingCategory), limit(15));
+          const snap = await getDocs(q);
+          setAdminListings(snap.docs.map(d => ({id: d.id, ...d.data()})));
+      } catch (e) {
+          console.error(e);
+      }
+      setLoadingListings(false);
+  };
+
+  useEffect(() => {
+      if (activeTab === 'listings') {
+          fetchAdminListings();
+      }
+  }, [activeTab, listingCategory]);
+
+  const handleDeleteListing = async (id) => {
+      if(window.confirm("Are you sure you want to permanently delete this listing?")) {
+          try {
+              await deleteDoc(doc(db, listingCategory, id));
+              setAdminListings(adminListings.filter(item => item.id !== id));
+              fetchData(); // Update counts
+          } catch(e) {
+              alert("Failed to delete listing.");
+          }
+      }
+  };
+
+
   // --- LOGIN ---
   const handleLogin = (e) => {
       e.preventDefault();
