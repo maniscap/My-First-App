@@ -505,7 +505,7 @@ function Admin() {
                           { id: 'listings_workers', label: 'Workers' },
                           { id: 'listings_business', label: 'Business' },
                           { id: 'listings_freelancing', label: 'Freelance' },
-                          { id: 'listings_land', label: 'Land / Real Estate' }
+                          { id: 'listings_local_goods', label: 'Local Goods & Products' }
                       ].map(tab => (
                           <button
                               key={tab.id}

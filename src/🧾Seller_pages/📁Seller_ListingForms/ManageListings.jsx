@@ -288,7 +288,10 @@ export default function ManageListings() {
                                 gap: '16px', 
                                 alignItems: 'center',
                                 width: '100%',
-                                overflow: 'hidden'
+                                overflow: 'hidden',
+                                border: '1px solid #e2e8f0',
+                                borderRadius: '16px',
+                                boxShadow: '0 4px 12px rgba(0,0,0,0.03)'
                             }}>
                                 
                                 <div style={{ width: '92px', height: '92px', borderRadius: '14px', backgroundColor: '#F3F4F6', overflow: 'hidden', flexShrink: 0, border: '1px solid rgba(0,0,0,0.05)' }}>
