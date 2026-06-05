@@ -300,6 +300,12 @@ function Admin() {
               <button className={`nav-item ${activeTab === 'listings' ? 'active' : ''}`} onClick={() => setActiveTab('listings')}>
                   <List size={20} /> Active Listings
               </button>
+              <button className={`nav-item ${activeTab === 'reports' ? 'active' : ''}`} onClick={() => setActiveTab('reports')}>
+                  <ClipboardList size={20} /> Flagged Reports
+              </button>
+              <button className={`nav-item ${activeTab === 'announcements' ? 'active' : ''}`} onClick={() => setActiveTab('announcements')}>
+                  <LayoutDashboard size={20} /> Global Broadcast
+              </button>
           </nav>
 
           <div className="sidebar-footer">
@@ -492,13 +498,37 @@ function Admin() {
                       </button>
                   </div>
                   
-                  <div className="verification-tabs" style={{ marginBottom: '20px', display: 'flex', overflowX: 'auto', gap: '8px', paddingBottom: '8px', WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-                      <button style={{ whiteSpace: 'nowrap', flexShrink: 0 }} className={listingCategory === 'listings_farm_fresh' ? 'active' : ''} onClick={() => setListingCategory('listings_farm_fresh')}>Farm Fresh</button>
-                      <button style={{ whiteSpace: 'nowrap', flexShrink: 0 }} className={listingCategory === 'listings_machinery' ? 'active' : ''} onClick={() => setListingCategory('listings_machinery')}>Machinery</button>
-                      <button style={{ whiteSpace: 'nowrap', flexShrink: 0 }} className={listingCategory === 'listings_workers' ? 'active' : ''} onClick={() => setListingCategory('listings_workers')}>Workers</button>
-                      <button style={{ whiteSpace: 'nowrap', flexShrink: 0 }} className={listingCategory === 'listings_business' ? 'active' : ''} onClick={() => setListingCategory('listings_business')}>Business</button>
-                      <button style={{ whiteSpace: 'nowrap', flexShrink: 0 }} className={listingCategory === 'listings_freelancing' ? 'active' : ''} onClick={() => setListingCategory('listings_freelancing')}>Freelance</button>
-                      <button style={{ whiteSpace: 'nowrap', flexShrink: 0 }} className={listingCategory === 'listings_land' ? 'active' : ''} onClick={() => setListingCategory('listings_land')}>Land</button>
+                  <div style={{ display: 'flex', overflowX: 'auto', gap: '10px', scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch', paddingBottom: '20px', marginBottom: '10px' }}>
+                      {[
+                          { id: 'listings_farm_fresh', label: 'Farm Fresh' },
+                          { id: 'listings_machinery', label: 'Machinery' },
+                          { id: 'listings_workers', label: 'Workers' },
+                          { id: 'listings_business', label: 'Business' },
+                          { id: 'listings_freelancing', label: 'Freelance' },
+                          { id: 'listings_land', label: 'Land / Real Estate' }
+                      ].map(tab => (
+                          <button
+                              key={tab.id}
+                              onClick={() => setListingCategory(tab.id)}
+                              style={{
+                                  padding: '10px 20px',
+                                  border: 'none',
+                                  borderRadius: '12px',
+                                  background: listingCategory === tab.id ? '#0f172a' : '#FFFFFF',
+                                  fontSize: '14px',
+                                  fontWeight: listingCategory === tab.id ? '500' : '400',
+                                  color: listingCategory === tab.id ? '#FFFFFF' : '#6B7280',
+                                  whiteSpace: 'nowrap',
+                                  cursor: 'pointer',
+                                  flexShrink: 0,
+                                  boxShadow: listingCategory === tab.id ? '0 8px 20px rgba(15,23,42,0.15)' : '0 2px 8px rgba(0,0,0,0.03)',
+                                  border: listingCategory === tab.id ? '1px solid #0f172a' : '1px solid rgba(0,0,0,0.04)',
+                                  transition: 'all 0.2s'
+                              }}
+                          >
+                              {tab.label}
+                          </button>
+                      ))}
                   </div>
 
                   {loadingListings && adminListings.length === 0 ? (
