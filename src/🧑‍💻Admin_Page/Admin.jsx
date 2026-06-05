@@ -10,7 +10,7 @@ function Admin() {
   const [adminId, setAdminId] = useState('');
   const [password, setPassword] = useState('');
   
-  const [activeTab, setActiveTab] = useState('dashboard'); // dashboard, verifications, approved, listings
+  const [activeTab, setActiveTab] = useState('dashboard'); // dashboard, verifications, approved, listings, reports, announcements
   const [verificationTab, setVerificationTab] = useState('individual'); // individual or organisation
   const [approvedTab, setApprovedTab] = useState('individual'); // individual or organisation
   const [sellerApplications, setSellerApplications] = useState([]);
@@ -23,6 +23,48 @@ function Admin() {
   const [loadingListings, setLoadingListings] = useState(false);
   const [lastVisibleListing, setLastVisibleListing] = useState(null);
   const [hasMoreListings, setHasMoreListings] = useState(true);
+
+  
+  // --- REPORTS & ANNOUNCEMENTS STATE ---
+  const [reports, setReports] = useState([]);
+  const [loadingReports, setLoadingReports] = useState(false);
+  const [announcementText, setAnnouncementText] = useState('');
+  const [sendingAnnouncement, setSendingAnnouncement] = useState(false);
+
+  const fetchReports = async () => {
+      setLoadingReports(true);
+      try {
+          const q = query(collection(db, 'reported_listings'), limit(45));
+          const snap = await getDocs(q);
+          setReports(snap.docs.map(d => ({id: d.id, ...d.data()})));
+      } catch (e) {
+          console.error(e);
+      }
+      setLoadingReports(false);
+  };
+
+  useEffect(() => {
+      if (activeTab === 'reports') fetchReports();
+  }, [activeTab]);
+
+  const handlePublishAnnouncement = async (e) => {
+      e.preventDefault();
+      if (!announcementText.trim()) return;
+      setSendingAnnouncement(true);
+      try {
+          // Store in global_settings which all apps read ONCE on boot
+          await updateDoc(doc(db, 'global_settings', 'announcements'), {
+              message: announcementText,
+              timestamp: new Date().toISOString()
+          });
+          alert("Announcement published globally!");
+          setAnnouncementText('');
+      } catch (e) {
+          console.error(e);
+          alert("Failed to publish.");
+      }
+      setSendingAnnouncement(false);
+  };
 
   const observerTarget = React.useRef(null);
 
@@ -441,7 +483,7 @@ function Admin() {
               <div className="tab-content">
                   <div className="header-titles" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <div>
-                          <h1>Active Listings</h1>
+                  <h1>Active Listings</h1>
                           <p>Manage active market listings (Max 45 per fetch with auto-scroll).</p>
                       </div>
                       <button onClick={() => { setLastVisibleListing(null); setHasMoreListings(true); fetchAdminListings(false); }} className="btn-action btn-approve" style={{ padding: '8px 16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -449,12 +491,13 @@ function Admin() {
                       </button>
                   </div>
                   
-                  <div className="verification-tabs" style={{ marginBottom: '20px' }}>
-                      <button className={listingCategory === 'listings_farm_fresh' ? 'active' : ''} onClick={() => setListingCategory('listings_farm_fresh')}>Farm Fresh</button>
-                      <button className={listingCategory === 'listings_machinery' ? 'active' : ''} onClick={() => setListingCategory('listings_machinery')}>Machinery</button>
-                      <button className={listingCategory === 'listings_workers' ? 'active' : ''} onClick={() => setListingCategory('listings_workers')}>Workers</button>
-                      <button className={listingCategory === 'listings_business' ? 'active' : ''} onClick={() => setListingCategory('listings_business')}>Business</button>
-                      <button className={listingCategory === 'listings_freelancing' ? 'active' : ''} onClick={() => setListingCategory('listings_freelancing')}>Freelance</button>
+                  <div className="verification-tabs" style={{ marginBottom: '20px', display: 'flex', overflowX: 'auto', gap: '8px', paddingBottom: '8px', WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+                      <button style={{ whiteSpace: 'nowrap', flexShrink: 0 }} className={listingCategory === 'listings_farm_fresh' ? 'active' : ''} onClick={() => setListingCategory('listings_farm_fresh')}>Farm Fresh</button>
+                      <button style={{ whiteSpace: 'nowrap', flexShrink: 0 }} className={listingCategory === 'listings_machinery' ? 'active' : ''} onClick={() => setListingCategory('listings_machinery')}>Machinery</button>
+                      <button style={{ whiteSpace: 'nowrap', flexShrink: 0 }} className={listingCategory === 'listings_workers' ? 'active' : ''} onClick={() => setListingCategory('listings_workers')}>Workers</button>
+                      <button style={{ whiteSpace: 'nowrap', flexShrink: 0 }} className={listingCategory === 'listings_business' ? 'active' : ''} onClick={() => setListingCategory('listings_business')}>Business</button>
+                      <button style={{ whiteSpace: 'nowrap', flexShrink: 0 }} className={listingCategory === 'listings_freelancing' ? 'active' : ''} onClick={() => setListingCategory('listings_freelancing')}>Freelance</button>
+                      <button style={{ whiteSpace: 'nowrap', flexShrink: 0 }} className={listingCategory === 'listings_land' ? 'active' : ''} onClick={() => setListingCategory('listings_land')}>Land</button>
                   </div>
 
                   {loadingListings && adminListings.length === 0 ? (
@@ -495,6 +538,62 @@ function Admin() {
                   <div ref={observerTarget} style={{ height: '20px', margin: '20px 0' }}>
                       {loadingListings && adminListings.length > 0 && <p style={{textAlign: 'center', color: '#64748b'}}>Loading more...</p>}
                       {!hasMoreListings && adminListings.length > 0 && <p style={{textAlign: 'center', color: '#64748b'}}>End of listings.</p>}
+                  </div>
+              </div>
+          )}
+
+      
+          {/* REPORTS TAB */}
+          {activeTab === 'reports' && (
+              <div className="tab-content">
+                  <div className="header-titles" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div>
+                          <h1>Flagged Reports</h1>
+                          <p>Manage listings reported by users (Max 45 per fetch).</p>
+                      </div>
+                      <button onClick={fetchReports} className="btn-action btn-approve" style={{ padding: '8px 16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <RefreshCw size={16} className={loadingReports ? 'spin-anim' : ''} /> Refresh Data
+                      </button>
+                  </div>
+                  {loadingReports ? (
+                      <div className="empty-state"><RefreshCw size={48} className="spin-anim" color="#64748b" /><p>Fetching reports...</p></div>
+                  ) : reports.length === 0 ? (
+                      <div className="empty-state"><CheckCircle size={48} color="#10b981" /><p>Zero reported items. Your marketplace is safe!</p></div>
+                  ) : (
+                      <div className="grid-cards" style={{ display: 'grid', gap: '16px', gridTemplateColumns: '1fr' }}>
+                          {reports.map(rep => (
+                              <div key={rep.id} className="app-card" style={{ padding: '16px', borderLeft: '4px solid #ef4444' }}>
+                                  <h3 style={{ margin: '0 0 8px 0', fontSize: '16px', color: '#ef4444' }}>Reason: {rep.reason}</h3>
+                                  <p style={{ margin: '0 0 8px 0', color: '#64748b', fontSize: '14px' }}>Listing ID: {rep.listingId}</p>
+                                  <button style={{ padding: '8px 16px', background: '#ef4444', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>Investigate</button>
+                              </div>
+                          ))}
+                      </div>
+                  )}
+              </div>
+          )}
+
+          {/* ANNOUNCEMENTS TAB */}
+          {activeTab === 'announcements' && (
+              <div className="tab-content">
+                  <div className="header-titles">
+                      <h1>Global Broadcast</h1>
+                      <p>Push a banner announcement to all consumer apps instantly.</p>
+                  </div>
+                  <div className="app-card" style={{ padding: '24px', maxWidth: '600px' }}>
+                      <form onSubmit={handlePublishAnnouncement} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                          <label style={{ fontWeight: 'bold', color: '#334155' }}>Announcement Message</label>
+                          <textarea 
+                              value={announcementText}
+                              onChange={(e) => setAnnouncementText(e.target.value)}
+                              placeholder="e.g., Server maintenance at midnight..."
+                              style={{ padding: '16px', borderRadius: '12px', border: '1px solid #cbd5e1', minHeight: '100px', fontSize: '15px', fontFamily: 'inherit' }}
+                              required
+                          />
+                          <button type="submit" disabled={sendingAnnouncement} style={{ padding: '14px', background: '#3b82f6', color: 'white', border: 'none', borderRadius: '12px', cursor: 'pointer', fontWeight: 'bold', fontSize: '16px' }}>
+                              {sendingAnnouncement ? 'Publishing...' : 'Publish to All Users'}
+                          </button>
+                      </form>
                   </div>
               </div>
           )}
