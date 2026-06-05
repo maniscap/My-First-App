@@ -357,6 +357,4 @@ export default function ManageListings() {
             )}
         </div>
     );
-};
-
-export default ManageListings;
+}
