@@ -197,6 +197,8 @@ export default function FarmFresh_ListingForm() {
                 await addDoc(collection(db, 'listings_farm_fresh'), listingData);
             }
             
+            sessionStorage.removeItem(`seller_listings_${listingData.sellerId}`);
+            
             setSubmittedData(listingData);
             setShowSuccess(true);
             setTimeout(() => {
@@ -562,33 +564,7 @@ export default function FarmFresh_ListingForm() {
                         </div>
                     </div>
 
-                    {/* Status Toggle (Only show if editing) */}
-                    {editData && (
-                        <div style={{ marginBottom: '32px', backgroundColor: '#f8fafc', padding: '20px', borderRadius: '16px', border: '1px solid #e2e8f0' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <div>
-                                    <label style={{ display: 'block', fontSize: '15px', fontWeight: '700', color: '#0f172a', marginBottom: '4px' }}>Listing Status</label>
-                                    <span style={{ fontSize: '13px', color: '#64748b', display: 'block' }}>
-                                        {status === 'active' ? 'Customers can see and buy this item.' : 'Item is hidden (Out of Stock).'}
-                                    </span>
-                                </div>
-                                <select 
-                                    value={status} 
-                                    onChange={(e) => setStatus(e.target.value)}
-                                    style={{ 
-                                        padding: '12px 16px', borderRadius: '12px', 
-                                        border: status === 'active' ? '2px solid #16a34a' : '2px solid #ef4444', 
-                                        fontSize: '15px', fontWeight: '700', 
-                                        backgroundColor: status === 'active' ? '#f0fdf4' : '#fef2f2', 
-                                        color: status === 'active' ? '#16a34a' : '#ef4444', outline: 'none' 
-                                    }}
-                                >
-                                    <option value="active">Active (Visible)</option>
-                                    <option value="paused">Paused (Out of Stock)</option>
-                                </select>
-                            </div>
-                        </div>
-                    )}
+
 
                     {/* 6. Description */}
                     <div style={{ marginBottom: '32px' }}>

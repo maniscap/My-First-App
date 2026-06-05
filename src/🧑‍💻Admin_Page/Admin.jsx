@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { db } from '../firebase';
-import { collection, getDocs, doc, updateDoc, deleteField, deleteDoc, getCountFromServer, query, limit, onSnapshot } from 'firebase/firestore';
+import { collection, getDocs, doc, updateDoc, deleteField, deleteDoc, getCountFromServer, query, limit, onSnapshot, where } from 'firebase/firestore';
 import { IoMdArrowBack } from 'react-icons/io';
-import { CheckCircle, XCircle, User, Building, LayoutDashboard, ClipboardList, Users, List, LogOut, Lock } from 'lucide-react';
+import { CheckCircle, XCircle, User, Building, LayoutDashboard, ClipboardList, Users, List, LogOut, Lock, RefreshCw } from 'lucide-react';
 
 function Admin() {
   const [isAuthenticated, setIsAuthenticated] = useState(localStorage.getItem('adminAuth') === 'true');
@@ -44,8 +44,15 @@ function Admin() {
         // Fetch Listing Counts (Using getCountFromServer to avoid massive read costs)
         const fetchCount = async (colName) => {
             try {
-                const coll = collection(db, colName);
-                const snapshot = await getCountFromServer(coll);
+                if (colName === "rejected_applications") {
+                    const coll = collection(db, colName);
+                    const snapshot = await getCountFromServer(coll);
+                    return snapshot.data().count;
+                }
+                
+                // Only count listings that are active
+                const q = query(collection(db, colName), where('status', '==', 'active'));
+                const snapshot = await getCountFromServer(q);
                 return snapshot.data().count;
             } catch(e) { return 0; }
         };
@@ -193,9 +200,18 @@ function Admin() {
           {/* DASHBOARD TAB */}
           {activeTab === 'dashboard' && (
               <div className="tab-content">
-                  <div className="header-titles">
-                      <h1>Dashboard Overview</h1>
-                      <p>High-level statistics and system health.</p>
+                  <div className="header-titles" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                      <div>
+                          <h1>Dashboard Overview</h1>
+                          <p>High-level statistics and system health.</p>
+                      </div>
+                      <button 
+                          onClick={fetchData} 
+                          disabled={loading}
+                          style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', padding: '10px 16px', display: 'flex', alignItems: 'center', gap: '8px', borderRadius: '12px', cursor: loading ? 'wait' : 'pointer', color: '#16a34a', fontWeight: '700', fontSize: '14px', transition: 'all 0.2s', opacity: loading ? 0.7 : 1 }}
+                      >
+                          <RefreshCw size={18} /> {loading ? "Refreshing..." : "Refresh Stats"}
+                      </button>
                   </div>
                   
                   <h3 className="section-subtitle">Application Status</h3>

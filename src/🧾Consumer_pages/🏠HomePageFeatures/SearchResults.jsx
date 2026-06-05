@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation, Link } from 'react-router-dom';
 import { db } from '../../firebase';
-import { collection, getDocs } from 'firebase/firestore';
+import { collection, getDocs, query, limit } from 'firebase/firestore';
 
 function SearchResults() {
   const [results, setResults] = useState([]);
@@ -31,10 +31,10 @@ function SearchResults() {
     const fetchData = async () => {
       setLoading(true);
       try {
-        // Fetch from ALL collections
-        const cropsSnap = await getDocs(collection(db, "crops"));
-        const servicesSnap = await getDocs(collection(db, "services"));
-        const freshSnap = await getDocs(collection(db, "daily_products"));
+        // Fetch from ALL collections with limits to save costs (Strategy D)
+        const cropsSnap = await getDocs(query(collection(db, "crops"), limit(15)));
+        const servicesSnap = await getDocs(query(collection(db, "services"), limit(15)));
+        const freshSnap = await getDocs(query(collection(db, "daily_products"), limit(15)));
 
         const allItems = [
           ...cropsSnap.docs.map(d => ({ ...d.data(), type: 'Crop', id: d.id })),

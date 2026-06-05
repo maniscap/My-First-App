@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { db, auth } from '../../firebase';
 import { collection, query, where, getDocs, deleteDoc, doc, updateDoc } from 'firebase/firestore';
-import { ArrowLeft, Trash2, Edit2, PackageOpen, X, Power } from 'lucide-react';
+import { ArrowLeft, Trash2, Edit2, PackageOpen, X, Power, RefreshCw } from 'lucide-react';
 import { onAuthStateChanged } from 'firebase/auth';
 
 export default function ManageListings() {
@@ -10,6 +10,8 @@ export default function ManageListings() {
     const [listings, setListings] = useState([]);
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState('all');
+    const [editModalOpen, setEditModalOpen] = useState(false);
+    const [selectedItemForEdit, setSelectedItemForEdit] = useState(null);
 
     const tabs = [
         { id: 'all', label: 'All Listings' },
@@ -38,8 +40,17 @@ export default function ManageListings() {
         return () => unsubscribe();
     }, []);
 
-    const fetchListings = async (sellerAppId) => {
+    const fetchListings = async (sellerAppId, forceRefresh = false) => {
         try {
+            if (!forceRefresh) {
+                const cached = sessionStorage.getItem(`seller_listings_${sellerAppId}`);
+                if (cached) {
+                    setListings(JSON.parse(cached));
+                    setLoading(false);
+                    return; // Pure cache hit, massive read savings!
+                }
+            }
+
             const collectionsToFetch = [
                 'listings_farm_fresh',
                 'listings_machinery',
@@ -64,16 +75,16 @@ export default function ManageListings() {
             
             // Sort client-side by date if createdAt exists
             data.sort((a, b) => {
-                if (a.createdAt && b.createdAt) {
-                    return b.createdAt.toMillis() - a.createdAt.toMillis();
-                }
-                return 0;
+                const timeA = a.createdAt?.seconds ? a.createdAt.seconds : 0;
+                const timeB = b.createdAt?.seconds ? b.createdAt.seconds : 0;
+                return timeB - timeA;
             });
             
             setListings(data);
+            sessionStorage.setItem(`seller_listings_${sellerAppId}`, JSON.stringify(data));
         } catch (error) {
             console.error("Error fetching listings:", error);
-            alert("Failed to load your listings.");
+            if (!listings.length) alert("Failed to load your listings.");
         } finally {
             setLoading(false);
         }
@@ -86,6 +97,8 @@ export default function ManageListings() {
         try {
             await deleteDoc(doc(db, collectionName, id));
             setListings(listings.filter(item => item.id !== id));
+            const sellerAppId = localStorage.getItem('seller_app_id');
+            if (sellerAppId) sessionStorage.removeItem(`seller_listings_${sellerAppId}`);
         } catch (error) {
             console.error("Error deleting document:", error);
             alert("Failed to delete listing.");
@@ -93,11 +106,47 @@ export default function ManageListings() {
     };
 
     const handleOpenEdit = (item) => {
-        if (item.collectionName === 'listings_farm_fresh') {
-            navigate('/add-farm-fresh', { state: { editData: item } });
+        setSelectedItemForEdit(item);
+        setEditModalOpen(true);
+    };
+
+    const handleToggleVisibility = async () => {
+        if (!selectedItemForEdit) return;
+        
+        const isCurrentlyPaused = selectedItemForEdit.status === 'paused';
+        const newStatus = isCurrentlyPaused ? 'active' : 'paused';
+        
+        const confirmMsg = isCurrentlyPaused 
+            ? "Are you sure you want to activate this listing? It will become visible to all buyers."
+            : "Are you sure you want to pause this listing? It will be hidden from buyers.";
+            
+        if (!window.confirm(confirmMsg)) return;
+
+        try {
+            const itemRef = doc(db, selectedItemForEdit.collectionName, selectedItemForEdit.id);
+            await updateDoc(itemRef, { status: newStatus });
+            
+            setListings(listings.map(item => 
+                item.id === selectedItemForEdit.id ? { ...item, status: newStatus } : item
+            ));
+            const sellerAppId = localStorage.getItem('seller_app_id');
+            if (sellerAppId) sessionStorage.removeItem(`seller_listings_${sellerAppId}`);
+            setEditModalOpen(false);
+            setSelectedItemForEdit(null);
+        } catch (error) {
+            console.error("Error updating visibility:", error);
+            alert("Failed to update visibility.");
+        }
+    };
+
+    const handleEditDetails = () => {
+        if (!selectedItemForEdit) return;
+        if (selectedItemForEdit.collectionName === 'listings_farm_fresh') {
+            navigate('/add-farm-fresh', { state: { editData: selectedItemForEdit } });
         } else {
             alert('Edit for this category is under construction.');
         }
+        setEditModalOpen(false);
     };
 
     return (
@@ -108,10 +157,27 @@ export default function ManageListings() {
                 <button onClick={() => navigate(-1)} style={{ background: '#f8fafc', border: 'none', padding: '8px', marginRight: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '12px', cursor: 'pointer' }}>
                     <ArrowLeft size={20} color="#0f172a" />
                 </button>
+                <style>{`
+                    @keyframes spin { 100% { transform: rotate(360deg); } }
+                    .spin-anim { animation: spin 1s linear infinite; }
+                `}</style>
                 <div style={{ flex: 1 }}>
                     <h1 style={{ margin: 0, fontSize: '18px', fontWeight: '700', color: '#0f172a', letterSpacing: '-0.3px' }}>Manage Listings</h1>
                     <p style={{ margin: '2px 0 0', fontSize: '12px', color: '#64748b', fontWeight: '500' }}>Edit or remove your products</p>
                 </div>
+                <button 
+                    onClick={() => {
+                        const sellerAppId = localStorage.getItem('seller_app_id');
+                        if (sellerAppId) {
+                            setLoading(true);
+                            fetchListings(sellerAppId, true);
+                        }
+                    }}
+                    style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', padding: '8px 12px', display: 'flex', alignItems: 'center', gap: '6px', borderRadius: '12px', cursor: 'pointer', color: '#16a34a', fontWeight: '700', fontSize: '13px', transition: 'all 0.2s', opacity: loading ? 0.7 : 1 }}
+                    disabled={loading}
+                >
+                    <RefreshCw size={16} className={loading ? "spin-anim" : ""} /> {loading ? "Refreshing" : "Refresh"}
+                </button>
             </div>
 
             {/* Scrollable Tabs */}
@@ -211,6 +277,49 @@ export default function ManageListings() {
                     </div>
                 )}
             </div>
+
+            {/* Edit Modal */}
+            {editModalOpen && selectedItemForEdit && (
+                <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(15, 23, 42, 0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '20px' }}>
+                    <div style={{ backgroundColor: '#fff', borderRadius: '24px', width: '100%', maxWidth: '400px', overflow: 'hidden', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)', animation: 'slideUp 0.3s ease-out' }}>
+                        <div style={{ padding: '20px', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '800', color: '#0f172a' }}>Edit Listing</h3>
+                            <button onClick={() => setEditModalOpen(false)} style={{ background: '#f8fafc', border: 'none', borderRadius: '50%', cursor: 'pointer', padding: '8px', display: 'flex', color: '#64748b' }}>
+                                <X size={20} />
+                            </button>
+                        </div>
+                        <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                            <button 
+                                onClick={handleEditDetails}
+                                style={{ width: '100%', padding: '16px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '16px', display: 'flex', alignItems: 'center', gap: '16px', cursor: 'pointer', textAlign: 'left', transition: 'all 0.2s', boxShadow: '0 2px 5px rgba(0,0,0,0.02)' }}
+                                onMouseEnter={(e) => e.currentTarget.style.borderColor = '#3b82f6'}
+                                onMouseLeave={(e) => e.currentTarget.style.borderColor = '#e2e8f0'}
+                            >
+                                <div style={{ width: '48px', height: '48px', borderRadius: '14px', background: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#3b82f6', flexShrink: 0 }}>
+                                    <Edit2 size={24} />
+                                </div>
+                                <div>
+                                    <h4 style={{ margin: '0 0 4px', fontSize: '16px', fontWeight: '700', color: '#0f172a' }}>Edit Listing Details</h4>
+                                    <p style={{ margin: 0, fontSize: '13px', color: '#64748b', lineHeight: '1.4' }}>Update price, photos, description, and other product information</p>
+                                </div>
+                            </button>
+
+                            <button 
+                                onClick={handleToggleVisibility}
+                                style={{ width: '100%', padding: '16px', background: selectedItemForEdit.status === 'paused' ? '#f0fdf4' : '#fef2f2', border: selectedItemForEdit.status === 'paused' ? '1px solid #bbf7d0' : '1px solid #fecaca', borderRadius: '16px', display: 'flex', alignItems: 'center', gap: '16px', cursor: 'pointer', textAlign: 'left', transition: 'all 0.2s', boxShadow: '0 2px 5px rgba(0,0,0,0.02)' }}
+                            >
+                                <div style={{ width: '48px', height: '48px', borderRadius: '14px', background: selectedItemForEdit.status === 'paused' ? '#dcfce7' : '#fee2e2', display: 'flex', alignItems: 'center', justifyContent: 'center', color: selectedItemForEdit.status === 'paused' ? '#16a34a' : '#ef4444', flexShrink: 0 }}>
+                                    <Power size={24} />
+                                </div>
+                                <div>
+                                    <h4 style={{ margin: '0 0 4px', fontSize: '16px', fontWeight: '700', color: selectedItemForEdit.status === 'paused' ? '#16a34a' : '#ef4444' }}>{selectedItemForEdit.status === 'paused' ? 'Activate Listing' : 'Temporarily Pause'}</h4>
+                                    <p style={{ margin: 0, fontSize: '13px', color: selectedItemForEdit.status === 'paused' ? '#15803d' : '#b91c1c', lineHeight: '1.4' }}>{selectedItemForEdit.status === 'paused' ? 'Make this visible to buyers again' : 'Hide from buyers without deleting it'}</p>
+                                </div>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

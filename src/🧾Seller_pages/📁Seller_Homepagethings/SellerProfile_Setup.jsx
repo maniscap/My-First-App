@@ -5,7 +5,7 @@ import { db } from '../../firebase';
 import { getAuth } from 'firebase/auth';
 import { collection, addDoc, getDoc, doc, setDoc, deleteDoc, query, where, getDocs } from 'firebase/firestore';
 import SellerApplication_Terms from './SellerApplication_Terms';
-
+import imageCompression from 'browser-image-compression';
 function SellerProfile_Setup() {
     const navigate = useNavigate();
     
@@ -885,15 +885,34 @@ const FileUploadUI = ({ label, accept, themeColor, onFileSelect, multiple = fals
     const fileInputRef = useRef(null);
     const [fileData, setFileData] = useState(null);
 
-    const handleFileChange = (e) => {
+    const handleFileChange = async (e) => {
         if (e.target.files && e.target.files.length > 0) {
-            const files = Array.from(e.target.files);
+            let files = Array.from(e.target.files);
+            setFileData({ name: 'Compressing...', url: null, isImage: false, isCompressing: true });
+            
+            try {
+                // Compress images to save Firebase Storage costs
+                files = await Promise.all(files.map(async (file) => {
+                    if (file.type.startsWith('image/')) {
+                        const options = {
+                            maxSizeMB: 0.15, // 150KB limit
+                            maxWidthOrHeight: 1200,
+                            useWebWorker: true
+                        };
+                        return await imageCompression(file, options);
+                    }
+                    return file;
+                }));
+            } catch (error) {
+                console.error("Error compressing image:", error);
+            }
+            
             const firstFile = files[0];
             
             if (firstFile.type.startsWith('image/')) {
-                setFileData({ name: multiple && files.length > 1 ? `${files.length} files selected` : firstFile.name, url: URL.createObjectURL(firstFile), isImage: true });
+                setFileData({ name: multiple && files.length > 1 ? `${files.length} files selected` : firstFile.name, url: URL.createObjectURL(firstFile), isImage: true, isCompressing: false });
             } else {
-                setFileData({ name: multiple && files.length > 1 ? `${files.length} files selected` : firstFile.name, url: null, isImage: false });
+                setFileData({ name: multiple && files.length > 1 ? `${files.length} files selected` : firstFile.name, url: null, isImage: false, isCompressing: false });
             }
 
             if(onFileSelect) onFileSelect(multiple ? files : firstFile);
@@ -922,7 +941,7 @@ const FileUploadUI = ({ label, accept, themeColor, onFileSelect, multiple = fals
                 </div>
                 <div>
                     <p style={{ margin: 0, fontSize: '10px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{label}</p>
-                    <p style={{ margin: '2px 0 0', fontSize: '13px', fontWeight: '700', color: fileData ? themeColor : '#0f172a' }}>{fileData ? fileData.name : 'Tap to select file...'}</p>
+                    <p style={{ margin: '2px 0 0', fontSize: '13px', fontWeight: '700', color: fileData ? themeColor : '#0f172a' }}>{fileData && fileData.isCompressing ? 'Compressing image...' : (fileData ? fileData.name : 'Tap to select file...')}</p>
                 </div>
             </div>
             {fileData && <CheckCircle2 size={20} color={themeColor} />}
