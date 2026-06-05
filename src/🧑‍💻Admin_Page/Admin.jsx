@@ -70,6 +70,7 @@ function Admin() {
 
   const fetchAdminListings = async (isLoadMore = false) => {
       if (loadingListings || (!hasMoreListings && isLoadMore)) return;
+      if (isLoadMore && !lastVisibleListing) return; // FIX: Prevent duplicating first page
       setLoadingListings(true);
       try {
           let q;
