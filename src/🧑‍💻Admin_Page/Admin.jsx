@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { db } from '../firebase';
-import { collection, getDocs, doc, updateDoc, deleteField, deleteDoc, getCountFromServer, query, limit, onSnapshot, where } from 'firebase/firestore';
+import { collection, getDocs, doc, updateDoc, deleteField, deleteDoc, getCountFromServer, query, limit, onSnapshot, where, startAfter } from 'firebase/firestore';
 import { IoMdArrowBack } from 'react-icons/io';
 import { CheckCircle, XCircle, User, Building, LayoutDashboard, ClipboardList, Users, List, LogOut, Lock, RefreshCw } from 'lucide-react';
 
@@ -17,17 +17,34 @@ function Admin() {
   const [listingCounts, setListingCounts] = useState({ farmFresh: 0, machinery: 0, workers: 0, business: 0, freelance: 0, rejected: 0 });
   const [loading, setLoading] = useState(false);
 
+  // --- NEW LISTINGS STATE ---
   const [adminListings, setAdminListings] = useState([]);
   const [listingCategory, setListingCategory] = useState('listings_farm_fresh');
   const [loadingListings, setLoadingListings] = useState(false);
+  const [lastVisibleListing, setLastVisibleListing] = useState(null);
+  const [hasMoreListings, setHasMoreListings] = useState(true);
 
-  const fetchAdminListings = async () => {
+  const observerTarget = React.useRef(null);
+
+  const fetchAdminListings = async (isLoadMore = false) => {
+      if (loadingListings || (!hasMoreListings && isLoadMore)) return;
       setLoadingListings(true);
       try {
-          // STRICT LIMIT: Costs exactly max 15 reads. Zero background updates.
-          const q = query(collection(db, listingCategory), limit(15));
+          let q;
+          if (isLoadMore && lastVisibleListing) {
+              q = query(collection(db, listingCategory), startAfter(lastVisibleListing), limit(45));
+          } else {
+              q = query(collection(db, listingCategory), limit(45));
+          }
           const snap = await getDocs(q);
-          setAdminListings(snap.docs.map(d => ({id: d.id, ...d.data()})));
+          const newDocs = snap.docs.map(d => ({id: d.id, ...d.data()}));
+          
+          if (snap.docs.length > 0) setLastVisibleListing(snap.docs[snap.docs.length - 1]);
+          if (snap.docs.length < 45) setHasMoreListings(false);
+          else setHasMoreListings(true);
+
+          if (isLoadMore) setAdminListings(prev => [...prev, ...newDocs]);
+          else setAdminListings(newDocs);
       } catch (e) {
           console.error(e);
       }
@@ -36,9 +53,26 @@ function Admin() {
 
   useEffect(() => {
       if (activeTab === 'listings') {
-          fetchAdminListings();
+          setLastVisibleListing(null);
+          setHasMoreListings(true);
+          fetchAdminListings(false);
       }
   }, [activeTab, listingCategory]);
+
+  useEffect(() => {
+      const observer = new IntersectionObserver(
+          entries => {
+              if (entries[0].isIntersecting && hasMoreListings && !loadingListings && activeTab === 'listings') {
+                  fetchAdminListings(true);
+              }
+          },
+          { threshold: 1.0 }
+      );
+      if (observerTarget.current) observer.observe(observerTarget.current);
+      return () => {
+          if (observerTarget.current) observer.unobserve(observerTarget.current);
+      };
+  }, [observerTarget, hasMoreListings, loadingListings, activeTab, lastVisibleListing]);
 
   const handleDeleteListing = async (id) => {
       if(window.confirm("Are you sure you want to permanently delete this listing?")) {
@@ -51,6 +85,7 @@ function Admin() {
           }
       }
   };
+
 
 
   // --- LOGIN ---
@@ -404,13 +439,62 @@ function Admin() {
           {/* LISTINGS TAB */}
           {activeTab === 'listings' && (
               <div className="tab-content">
-                  <div className="header-titles">
-                      <h1>Active Listings</h1>
-                      <p>Manage all active market listings.</p>
+                  <div className="header-titles" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div>
+                          <h1>Active Listings</h1>
+                          <p>Manage active market listings (Max 45 per fetch with auto-scroll).</p>
+                      </div>
+                      <button onClick={() => { setLastVisibleListing(null); setHasMoreListings(true); fetchAdminListings(false); }} className="btn-action btn-approve" style={{ padding: '8px 16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <RefreshCw size={16} className={loadingListings && !lastVisibleListing ? 'spin-anim' : ''} /> Refresh Data
+                      </button>
                   </div>
-                  <div className="empty-state">
-                      <List size={48} color="#64748b" />
-                      <p>Listing management UI will be built alongside the listing forms.</p>
+                  
+                  <div className="verification-tabs" style={{ marginBottom: '20px' }}>
+                      <button className={listingCategory === 'listings_farm_fresh' ? 'active' : ''} onClick={() => setListingCategory('listings_farm_fresh')}>Farm Fresh</button>
+                      <button className={listingCategory === 'listings_machinery' ? 'active' : ''} onClick={() => setListingCategory('listings_machinery')}>Machinery</button>
+                      <button className={listingCategory === 'listings_workers' ? 'active' : ''} onClick={() => setListingCategory('listings_workers')}>Workers</button>
+                      <button className={listingCategory === 'listings_business' ? 'active' : ''} onClick={() => setListingCategory('listings_business')}>Business</button>
+                      <button className={listingCategory === 'listings_freelancing' ? 'active' : ''} onClick={() => setListingCategory('listings_freelancing')}>Freelance</button>
+                  </div>
+
+                  {loadingListings && adminListings.length === 0 ? (
+                      <div className="empty-state"><RefreshCw size={48} className="spin-anim" color="#64748b" /><p>Fetching listings cheaply...</p></div>
+                  ) : adminListings.length === 0 ? (
+                      <div className="empty-state"><List size={48} color="#64748b" /><p>No listings found in this category.</p></div>
+                  ) : (
+                      <div className="grid-cards" style={{ display: 'grid', gap: '16px', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))' }}>
+                          {adminListings.map(item => (
+                              <div key={item.id} className="app-card" style={{ padding: '16px' }}>
+                                  <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
+                                      {item.imageUrl ? (
+                                          <img src={item.imageUrl} alt="item" style={{ width: '80px', height: '80px', objectFit: 'cover', borderRadius: '8px', border: '1px solid #e2e8f0' }} />
+                                      ) : (
+                                          <div style={{ width: '80px', height: '80px', backgroundColor: '#f1f5f9', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px' }}>📦</div>
+                                      )}
+                                      <div style={{ flex: 1 }}>
+                                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                              <h3 style={{ margin: '0 0 4px 0', fontSize: '16px' }}>{item.itemName || item.cropName || item.serviceName || item.title || 'Item'}</h3>
+                                              <span style={{ fontSize: '12px', padding: '4px 8px', borderRadius: '4px', backgroundColor: item.status === 'active' ? '#dcfce7' : '#fef2f2', color: item.status === 'active' ? '#166534' : '#991b1b', fontWeight: 'bold' }}>
+                                                  {(item.status || 'active').toUpperCase()}
+                                              </span>
+                                          </div>
+                                          <p style={{ margin: '0 0 8px 0', color: '#64748b', fontSize: '14px', fontWeight: 'bold' }}>₹{item.price} / {item.unit || item.priceUnit || 'unit'}</p>
+                                          <p style={{ margin: '0', color: '#94a3b8', fontSize: '12px' }}>Seller ID: {item.sellerId ? item.sellerId.substring(0,8) : 'Unknown'}...</p>
+                                      </div>
+                                  </div>
+                                  <div style={{ marginTop: '16px', display: 'flex', justifyContent: 'flex-end' }}>
+                                      <button onClick={() => handleDeleteListing(item.id)} className="btn-action btn-reject" style={{ width: 'auto', padding: '8px 16px' }}>
+                                          <XCircle size={16} /> Delete Listing
+                                      </button>
+                                  </div>
+                              </div>
+                          ))}
+                      </div>
+                  )}
+                  {/* Invisible trigger for Infinite Scroll */}
+                  <div ref={observerTarget} style={{ height: '20px', margin: '20px 0' }}>
+                      {loadingListings && adminListings.length > 0 && <p style={{textAlign: 'center', color: '#64748b'}}>Loading more...</p>}
+                      {!hasMoreListings && adminListings.length > 0 && <p style={{textAlign: 'center', color: '#64748b'}}>End of listings.</p>}
                   </div>
               </div>
           )}
