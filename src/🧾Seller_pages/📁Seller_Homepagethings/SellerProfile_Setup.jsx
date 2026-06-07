@@ -373,7 +373,7 @@ function SellerProfile_Setup() {
                                     <div style={{ flex: 1 }}>
                                         <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', marginBottom: '4px', justifyContent: 'space-between' }}>
                                             <div>
-                                                <h4 style={{ margin: 0, fontSize: '16px', fontWeight: '800', color: '#065f46' }}>{indApp.fullName || "Single Person"}</h4>
+                                                <h4 style={{ margin: 0, fontSize: '16px', fontWeight: '800', color: '#065f46' }}>{indApp.shopName || indApp.fullName || "Single Person"}</h4>
                                                 <span style={{ fontSize: '11px', color: '#059669', fontWeight: 'bold', display: 'block', marginTop: '2px' }}>Single Person Account</span>
                                             </div>
                                             <span style={{ fontSize: '10px', background: '#34d399', color: '#fff', padding: '2px 6px', borderRadius: '4px', fontWeight: 'bold' }}>Approved</span>
@@ -419,7 +419,7 @@ function SellerProfile_Setup() {
                                     </div>
                                     <div style={{ flex: 1 }}>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px' }}>
-                                            <h4 style={{ margin: 0, fontSize: '16px', fontWeight: '800', color: '#0f172a' }}>Single Person</h4>
+                                            <h4 style={{ margin: 0, fontSize: '16px', fontWeight: '800', color: '#0f172a' }}>{indApp?.shopName || indApp?.fullName || "Single Person"}</h4>
                                             {indApp?.status === 'pending_approval' ? (
                                                 <span style={{ fontSize: '10px', fontWeight: '800', color: '#d97706', textTransform: 'uppercase', background: '#fffbeb', padding: '2px 6px', borderRadius: '4px' }}>Pending</span>
                                             ) : cachedIndReject ? (
@@ -492,7 +492,7 @@ function SellerProfile_Setup() {
                                     </div>
                                     <div style={{ flex: 1 }}>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px' }}>
-                                            <h4 style={{ margin: 0, fontSize: '16px', fontWeight: '800', color: '#0f172a' }}>Organisation</h4>
+                                            <h4 style={{ margin: 0, fontSize: '16px', fontWeight: '800', color: '#0f172a' }}>{orgApp?.companyName || "Organisation"}</h4>
                                             {orgApp?.status === 'pending_approval' ? (
                                                 <span style={{ fontSize: '10px', fontWeight: '800', color: '#d97706', textTransform: 'uppercase', background: '#fffbeb', padding: '2px 6px', borderRadius: '4px' }}>Pending</span>
                                             ) : cachedOrgReject ? (
