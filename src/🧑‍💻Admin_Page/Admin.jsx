@@ -492,39 +492,50 @@ function Admin() {
                       <div className="applications-grid">
                           {pendingEdits.map(app => (
                               <div key={app.id} className="app-card">
-                                  <div className="app-card-header">
-                                      <div className="app-card-badge">Edit Request</div>
-                                      <span className="app-type">{app.accountType === 'individual' ? 'Single Person' : 'Organisation'}</span>
-                                  </div>
-                                  <div className="app-card-body">
-                                      <h3 style={{color: '#d97706'}}>{app.editData?.companyName || app.editData?.shopName || app.editData?.fullName || "Seller"}</h3>
-                                      <p className="app-id">ID: {app.id}</p>
-                                      <div className="app-info" style={{marginTop: '12px', borderTop: '1px solid #e2e8f0', paddingTop: '10px'}}>
-                                          <p style={{fontSize:'12px', fontWeight:'bold', color:'#64748b', marginBottom:'8px', textTransform:'uppercase'}}>Requested Changes:</p>
-                                          {Object.keys(app.editData || {}).map(key => {
-                                              if (['hasPendingEdit', 'editData', 'submittedAt'].includes(key)) return null;
-                                              const oldVal = app[key];
-                                              const newVal = app.editData[key];
-                                              if (JSON.stringify(oldVal) !== JSON.stringify(newVal)) {
-                                                  const displayOld = Array.isArray(oldVal) ? oldVal.join(', ') : (oldVal || '(empty)');
-                                                  const displayNew = Array.isArray(newVal) ? newVal.join(', ') : (newVal || '(empty)');
-                                                  const displayKey = key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
-                                                  return (
-                                                      <p key={key} style={{ margin: '6px 0', fontSize: '13px', lineHeight: '1.4' }}>
-                                                          <strong>{displayKey}:</strong><br/>
-                                                          <span style={{ color: '#ef4444', textDecoration: 'line-through', marginRight: '6px' }}>{displayOld}</span>
-                                                          ➔
-                                                          <span style={{ color: '#10b981', fontWeight: 'bold', marginLeft: '6px' }}>{displayNew}</span>
-                                                      </p>
-                                                  );
-                                              }
-                                              return null;
-                                          })}
+                                  <div className="card-header">
+                                      <div className="card-title-group">
+                                          <div style={{width:'48px', height:'48px', background:'#fef3c7', borderRadius:'12px', display:'flex', alignItems:'center', justifyContent:'center'}}>
+                                              <Edit3 size={24} color="#d97706" />
+                                          </div>
+                                          <div>
+                                              <h3 className="seller-name">{app.companyName || app.shopName || app.fullName || "Seller"}</h3>
+                                              <p className="seller-id-text">{app.id}</p>
+                                          </div>
+                                      </div>
+                                      <div className="card-actions">
+                                          <button className="btn-action btn-reject" onClick={() => handleRejectEdit(app)}><X size={16}/> Reject Edit</button>
+                                          <button className="btn-action btn-approve" onClick={() => handleApproveEdit(app)}><Check size={16}/> Approve Edit</button>
                                       </div>
                                   </div>
-                                  <div className="app-card-actions">
-                                      <button className="btn-approve" onClick={() => handleApproveEdit(app)}><Check size={16}/> Approve Edit</button>
-                                      <button className="btn-reject" onClick={() => handleRejectEdit(app)}><X size={16}/> Reject Edit</button>
+                                  <div className="card-body">
+                                      <div className="detail-section">
+                                          <h4>Requested Field Changes</h4>
+                                          <div style={{display:'flex', flexDirection:'column', gap:'12px', background:'#f8fafc', padding:'20px', borderRadius:'12px', border:'1px solid #e2e8f0'}}>
+                                              {Object.keys(app.editData || {}).map(key => {
+                                                  if (['hasPendingEdit', 'editData', 'submittedAt'].includes(key)) return null;
+                                                  const oldVal = app[key];
+                                                  const newVal = app.editData[key];
+                                                  if (JSON.stringify(oldVal) !== JSON.stringify(newVal)) {
+                                                      const displayOld = Array.isArray(oldVal) ? oldVal.join(', ') : (oldVal || '(empty)');
+                                                      const displayNew = Array.isArray(newVal) ? newVal.join(', ') : (newVal || '(empty)');
+                                                      const displayKey = key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
+                                                      return (
+                                                          <div key={key} style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '15px' }}>
+                                                              <span style={{ fontSize: '14px', fontWeight: '800', color: '#475569', minWidth: '140px' }}>{displayKey}:</span>
+                                                              <div style={{ flex: 1, minWidth: '200px', background:'#fee2e2', color:'#b91c1c', padding:'10px 14px', borderRadius:'8px', fontSize:'14px', textDecoration:'line-through', border: '1px dashed #fca5a5' }}>
+                                                                  {displayOld}
+                                                              </div>
+                                                              <span style={{color:'#94a3b8', fontWeight:'bold'}}>➔</span>
+                                                              <div style={{ flex: 1, minWidth: '200px', background:'#d1fae5', color:'#047857', padding:'10px 14px', borderRadius:'8px', fontSize:'14px', fontWeight:'800', boxShadow:'0 4px 10px rgba(16,185,129,0.1)', border: '1px solid #a7f3d0' }}>
+                                                                  {displayNew}
+                                                              </div>
+                                                          </div>
+                                                      );
+                                                  }
+                                                  return null;
+                                              })}
+                                          </div>
+                                      </div>
                                   </div>
                               </div>
                           ))}
