@@ -23,7 +23,7 @@ function Seller_Profile() {
                     const docSnap = await getDoc(docRef);
                     if (docSnap.exists()) {
                         const data = docSnap.data();
-                        const nameToUse = data.accountType === 'organisation' ? data.companyName : data.fullName;
+                        const nameToUse = data.accountType === 'organisation' ? data.companyName : (data.shopName || data.fullName);
                         setSellerName(nameToUse || 'Shop Name');
                         setAccountType(data.accountType || 'single');
                         

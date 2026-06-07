@@ -66,7 +66,7 @@ function Seller_HomePage() {
                 // 3. Set the state based on what we found
                 if (appData) {
                     setAppStatus(appData.status);
-                    const nameToUse = appData.accountType === 'organisation' ? appData.companyName : appData.fullName;
+                    const nameToUse = appData.accountType === 'organisation' ? appData.companyName : (appData.shopName || appData.fullName);
                     setSellerName(nameToUse);
                     localStorage.setItem('seller_name', nameToUse);
                     localStorage.setItem('seller_account_type', appData.accountType);
