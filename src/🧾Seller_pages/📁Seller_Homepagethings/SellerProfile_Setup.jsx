@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Building2, User, ShieldCheck, Clock, ChevronLeft, UploadCloud, MapPin, Briefcase, CheckCircle2 } from 'lucide-react';
+import { Building2, User, ShieldCheck, Clock, ChevronLeft, UploadCloud, MapPin, Briefcase, CheckCircle2, Trash2, AlertTriangle, Edit3 } from 'lucide-react';
 import { db } from '../../firebase';
 import { getAuth } from 'firebase/auth';
 import { collection, addDoc, getDoc, doc, setDoc, deleteDoc, query, where, getDocs } from 'firebase/firestore';
@@ -99,7 +99,7 @@ function SellerProfile_Setup() {
     
     // Form Data State
     const [formData, setFormData] = useState({
-        phone: '', emergencyPhone: '', email: '', shopName: '',
+        phone: '', emergencyPhone: '', email: '', shopName: '', ownerName: '',
         houseNumber: '', landmark: '', village: '', mandal: '', nearerCity: '', district: '', state: '', pincode: '', lat: '', lng: '', serviceRadius: '20km',
         categories: [], experienceYears: '', farmSize: '',
         fullName: '', aadharNumber: '',
@@ -134,6 +134,7 @@ function SellerProfile_Setup() {
     const [isDetecting, setIsDetecting] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [showTermsModal, setShowTermsModal] = useState(false);
+    const [isEditingMode, setIsEditingMode] = useState(false);
 
 
     const handleChange = (e) => {
@@ -199,11 +200,13 @@ function SellerProfile_Setup() {
 
         // 2. Validate Identity Details
         if (accountType === 'individual') {
+            if (!formData.shopName.trim()) { alert("Please enter your Shop Name."); return; }
+            if (!formData.ownerName.trim()) { alert("Please enter the Owner Name."); return; }
             if (!formData.fullName.trim()) { alert("Please enter your Full Legal Name."); return; }
             if (!formData.aadharNumber.trim()) { alert("Please enter your Aadhar / Govt ID Number."); return; }
         } else {
             if (!formData.companyName.trim()) { alert("Please enter your Organisation Name."); return; }
-            if (!formData.representativeName.trim()) { alert("Please enter the Contact Person Name."); return; }
+            if (!formData.ownerName.trim()) { alert("Please enter the Owner Name."); return; }
             if (!formData.gstNumber.trim()) { alert("Please enter your GST / Registration Number."); return; }
         }
 
@@ -241,13 +244,13 @@ function SellerProfile_Setup() {
             // Clean up formData by removing File objects (they cause Firestore errors without Storage upload)
             const submissionData = { 
                 ...formData, 
-                phone: `+91 ${formData.phone}`,
-                emergencyPhone: formData.emergencyPhone ? `+91 ${formData.emergencyPhone}` : '',
-                sellerId: sellerId, 
+                phone: formData.phone.startsWith('+91') ? formData.phone : `+91 ${formData.phone}`,
+                emergencyPhone: formData.emergencyPhone ? (formData.emergencyPhone.startsWith('+91') ? formData.emergencyPhone : `+91 ${formData.emergencyPhone}`) : '',
+                sellerId: isEditingMode ? formData.sellerId : sellerId, 
                 userId: user ? user.uid : null,
-                status: 'pending_approval', 
+                status: isEditingMode ? formData.status : 'pending_approval', 
                 accountType: accountType, 
-                submittedAt: new Date().toISOString() 
+                submittedAt: formData.submittedAt || new Date().toISOString() 
             };
             
             delete submissionData.profilePic;
@@ -258,21 +261,31 @@ function SellerProfile_Setup() {
             delete submissionData.orgMachineryImages;
             delete submissionData.orgHarvestImages;
 
-            // STRICT FIX: Force the Document ID to perfectly match the generated sellerId
-            // And use setDoc to specify that explicit ID in the database
-            await setDoc(doc(db, 'seller_applications', sellerId), submissionData);
-            
-            // Set local storage using the exact sellerId (both specific and global tracker)
-            if (accountType === 'individual') {
-                localStorage.setItem('seller_individual_app_id', sellerId);
+            if (isEditingMode) {
+                // Submit as an Edit Request
+                await setDoc(doc(db, 'seller_applications', submissionData.sellerId), {
+                    hasPendingEdit: true,
+                    editData: submissionData
+                }, { merge: true });
+                
+                alert(`Edit Request Submitted Successfully!\n\nOur Admin team will review your changes shortly. Your live profile will remain unchanged until approved.`);
+                setIsEditingMode(false);
+                setAccountType(null); // Go back to selection screen
             } else {
-                localStorage.setItem('seller_organisation_app_id', sellerId);
+                // New Application
+                await setDoc(doc(db, 'seller_applications', sellerId), submissionData);
+                
+                if (accountType === 'individual') {
+                    localStorage.setItem('seller_individual_app_id', sellerId);
+                } else {
+                    localStorage.setItem('seller_organisation_app_id', sellerId);
+                }
+                localStorage.setItem('seller_app_id', sellerId);
+                
+                alert(`Application Submitted Successfully!\n\nYour Seller ID is: ${sellerId}\n\nOur Admin team will review your application shortly.`);
+                setApplicationStatus('pending');
+                navigate('/Seller_HomePage');
             }
-            localStorage.setItem('seller_app_id', sellerId);
-            
-            alert(`Application Submitted Successfully!\n\nYour Seller ID is: ${sellerId}\n\nOur Admin team will review your application shortly.`);
-            
-            setApplicationStatus('pending');navigate('/Seller_HomePage');
         } catch (error) {
             console.error("Submission failed:", error);
             alert("Failed to submit application. Please check your connection.");
@@ -308,7 +321,7 @@ function SellerProfile_Setup() {
 
     // --- RENDER: REGISTRATION FORM ---
     return (
-        <div style={{ backgroundColor: '#f8fafc', position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, width: '100vw', height: '100dvh', overflowY: 'auto', overflowX: 'hidden', touchAction: 'pan-y', WebkitOverflowScrolling: 'touch', paddingBottom: '60px' }}>
+        <div style={{ backgroundColor: '#f8fafc', position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, width: '100vw', height: '100dvh', overflowY: 'auto', overflowX: 'hidden', touchAction: 'pan-y', WebkitOverflowScrolling: 'touch', paddingBottom: '20px', display: 'flex', flexDirection: 'column' }}>
             <style>{`
                 .custom-input::placeholder {
                     font-size: 13px !important;
@@ -335,14 +348,14 @@ function SellerProfile_Setup() {
                 </div>
             </div>
 
-            <div style={{ padding: accountType ? '0 2%' : '16px 2%', maxWidth: '100%', margin: '0 auto', display: showTermsModal ? 'none' : 'block', transition: 'all 0.3s ease' }}>
+            <div style={{ padding: accountType ? '0 2%' : '16px 2%', maxWidth: '100%', margin: '0 auto', display: showTermsModal ? 'none' : 'flex', flexDirection: 'column', flex: 1, width: '100%', boxSizing: 'border-box', transition: 'all 0.3s ease' }}>
                 
                 {/* Step 1: Choose Account Type */}
                 {!accountType ? (
                     loadingData ? (
                         <div style={{ textAlign: 'center', padding: '40px', color: '#64748b' }}>Loading profile status...</div>
                     ) : (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', flex: 1 }}>
                             <h3 style={{ margin: '10px 0', fontSize: '18px', color: '#1e293b', fontWeight: '800' }}>Select Account Type</h3>
                             
                             {(() => {
@@ -353,7 +366,7 @@ function SellerProfile_Setup() {
                                     <>
                                         {/* INDIVIDUAL CARD */}
                             {indApp?.status === 'approved' ? (
-                                <div style={{ backgroundColor: '#ecfdf5', padding: '20px', borderRadius: '16px', border: '1px solid #10b981', display: 'flex', gap: '16px', alignItems: 'center' }}>
+                                <div style={{ backgroundColor: '#ecfdf5', padding: '20px', borderRadius: '16px', border: '1px solid #10b981', display: 'flex', gap: '16px', alignItems: 'flex-start', position: 'relative' }}>
                                     <div style={{ width: '48px', height: '48px', backgroundColor: '#10b981', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                                         <ShieldCheck size={24} color="#fff" />
                                     </div>
@@ -367,6 +380,28 @@ function SellerProfile_Setup() {
                                         </div>
                                         <p style={{ margin: 0, fontSize: '13px', color: '#047857', fontWeight: '700' }}>ID: {indApp.sellerId}</p>
                                         {indApp.district && <p style={{ margin: '4px 0 0 0', fontSize: '12px', color: '#065f46' }}>📍 {indApp.district}, {indApp.state}</p>}
+                                        
+                                        {indApp.hasPendingEdit ? (
+                                            <div style={{ marginTop: '12px', padding: '8px 12px', background: '#fef3c7', borderRadius: '8px', border: '1px solid #fcd34d' }}>
+                                                <p style={{ margin: 0, fontSize: '12px', color: '#d97706', fontWeight: '700' }}>⏳ Edit Request Under Review</p>
+                                                <p style={{ margin: '2px 0 0', fontSize: '11px', color: '#b45309' }}>Your changes are being verified.</p>
+                                            </div>
+                                        ) : (
+                                            <button 
+                                                onClick={() => {
+                                                    setFormData({
+                                                        ...indApp,
+                                                        phone: indApp.phone ? indApp.phone.replace('+91 ', '') : '',
+                                                        emergencyPhone: indApp.emergencyPhone ? indApp.emergencyPhone.replace('+91 ', '') : ''
+                                                    });
+                                                    setIsEditingMode(true);
+                                                    setAccountType('individual');
+                                                }}
+                                                style={{ marginTop: '12px', padding: '6px 12px', background: '#10b981', color: '#fff', border: 'none', borderRadius: '6px', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
+                                            >
+                                                <Edit3 size={14} /> Edit Profile Info
+                                            </button>
+                                        )}
                                     </div>
                                 </div>
                             ) : (
@@ -376,7 +411,7 @@ function SellerProfile_Setup() {
                                         else if (indApp?.status === 'pending_approval') alert("Your Individual Profile application is under review.");
                                         else setAccountType('individual');
                                     }}
-                                    style={{ background: '#fff', padding: '20px', borderRadius: '16px', boxShadow: '0 4px 15px rgba(0,0,0,0.03)', cursor: (indApp?.status === 'pending_approval' || isOrgActive) ? 'not-allowed' : 'pointer', opacity: (indApp?.status === 'pending_approval' || isOrgActive) ? 0.5 : 1, border: '1.5px solid #f1f5f9', position: 'relative', overflow: 'hidden', display: 'flex', gap: '16px', alignItems: 'center', transition: 'all 0.2s ease', filter: isOrgActive ? 'grayscale(100%)' : 'none' }}
+                                    style={{ background: '#fff', padding: '20px', borderRadius: '16px', boxShadow: '0 4px 15px rgba(0,0,0,0.03)', cursor: (indApp?.status === 'pending_approval' || isOrgActive) ? 'not-allowed' : 'pointer', opacity: isOrgActive ? 0.5 : 1, border: '1.5px solid #f1f5f9', position: 'relative', overflow: 'hidden', display: 'flex', gap: '16px', alignItems: 'center', transition: 'all 0.2s ease', filter: isOrgActive ? 'grayscale(100%)' : 'none' }}
                                 >
                                     <div style={{ position: 'absolute', top: 0, left: 0, width: '4px', height: '100%', background: '#0284c7' }}></div>
                                     <div style={{ width: '48px', height: '48px', background: '#f0f9ff', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
@@ -404,7 +439,7 @@ function SellerProfile_Setup() {
 
                             {/* ORGANISATION CARD */}
                             {orgApp?.status === 'approved' ? (
-                                <div style={{ backgroundColor: '#ecfdf5', padding: '20px', borderRadius: '16px', border: '1px solid #10b981', display: 'flex', gap: '16px', alignItems: 'center' }}>
+                                <div style={{ backgroundColor: '#ecfdf5', padding: '20px', borderRadius: '16px', border: '1px solid #10b981', display: 'flex', gap: '16px', alignItems: 'flex-start', position: 'relative' }}>
                                     <div style={{ width: '48px', height: '48px', backgroundColor: '#10b981', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                                         <ShieldCheck size={24} color="#fff" />
                                     </div>
@@ -418,6 +453,28 @@ function SellerProfile_Setup() {
                                         </div>
                                         <p style={{ margin: 0, fontSize: '13px', color: '#047857', fontWeight: '700' }}>ID: {orgApp.sellerId}</p>
                                         {orgApp.district && <p style={{ margin: '4px 0 0 0', fontSize: '12px', color: '#065f46' }}>📍 {orgApp.district}, {orgApp.state}</p>}
+                                        
+                                        {orgApp.hasPendingEdit ? (
+                                            <div style={{ marginTop: '12px', padding: '8px 12px', background: '#fef3c7', borderRadius: '8px', border: '1px solid #fcd34d' }}>
+                                                <p style={{ margin: 0, fontSize: '12px', color: '#d97706', fontWeight: '700' }}>⏳ Edit Request Under Review</p>
+                                                <p style={{ margin: '2px 0 0', fontSize: '11px', color: '#b45309' }}>Your changes are being verified.</p>
+                                            </div>
+                                        ) : (
+                                            <button 
+                                                onClick={() => {
+                                                    setFormData({
+                                                        ...orgApp,
+                                                        phone: orgApp.phone ? orgApp.phone.replace('+91 ', '') : '',
+                                                        emergencyPhone: orgApp.emergencyPhone ? orgApp.emergencyPhone.replace('+91 ', '') : ''
+                                                    });
+                                                    setIsEditingMode(true);
+                                                    setAccountType('organisation');
+                                                }}
+                                                style={{ marginTop: '12px', padding: '6px 12px', background: '#10b981', color: '#fff', border: 'none', borderRadius: '6px', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
+                                            >
+                                                <Edit3 size={14} /> Edit Profile Info
+                                            </button>
+                                        )}
                                     </div>
                                 </div>
                             ) : (
@@ -427,7 +484,7 @@ function SellerProfile_Setup() {
                                         else if (orgApp?.status === 'pending_approval') alert("Your Organisation Profile application is under review.");
                                         else setAccountType('organisation');
                                     }}
-                                    style={{ background: '#fff', padding: '20px', borderRadius: '16px', boxShadow: '0 4px 15px rgba(0,0,0,0.03)', cursor: (orgApp?.status === 'pending_approval' || isIndActive) ? 'not-allowed' : 'pointer', opacity: (orgApp?.status === 'pending_approval' || isIndActive) ? 0.5 : 1, border: '1.5px solid #f1f5f9', position: 'relative', overflow: 'hidden', display: 'flex', gap: '16px', alignItems: 'center', transition: 'all 0.2s ease', filter: isIndActive ? 'grayscale(100%)' : 'none' }}
+                                    style={{ background: '#fff', padding: '20px', borderRadius: '16px', boxShadow: '0 4px 15px rgba(0,0,0,0.03)', cursor: (orgApp?.status === 'pending_approval' || isIndActive) ? 'not-allowed' : 'pointer', opacity: isIndActive ? 0.5 : 1, border: '1.5px solid #f1f5f9', position: 'relative', overflow: 'hidden', display: 'flex', gap: '16px', alignItems: 'center', transition: 'all 0.2s ease', filter: isIndActive ? 'grayscale(100%)' : 'none' }}
                                 >
                                     <div style={{ position: 'absolute', top: 0, left: 0, width: '4px', height: '100%', background: '#4338ca' }}></div>
                                     <div style={{ width: '48px', height: '48px', background: '#e0e7ff', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
@@ -455,355 +512,241 @@ function SellerProfile_Setup() {
                                     </>
                                 );
                             })()}
+
+                            {/* Delete Seller Account Button */}
+                            <div style={{ marginTop: 'auto', paddingTop: '40px', display: 'flex', justifyContent: 'center' }}>
+                                <button 
+                                    onClick={() => navigate('/seller-delete-account')} 
+                                    style={{ background: '#fef2f2', border: '1.5px solid #fecaca', color: '#ef4444', padding: '12px 24px', borderRadius: '12px', fontSize: '14px', fontWeight: '700', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', transition: 'all 0.2s ease', fontFamily: "'Inter', sans-serif" }}>
+                                    <Trash2 size={18} /> Delete Seller Account
+                                </button>
+                            </div>
                         </div>
                     )
                 ) : (
                     
                     /* Step 2: Fill Details with Dynamic Theme */
-                    <div style={{ backgroundColor: '#fff', borderRadius: '24px', boxShadow: '0 10px 40px rgba(0,0,0,0.06)', overflow: 'hidden' }}>
-                        
-                        {/* Dynamic Hero Header */}
-                        <div style={{ background: currentTheme.gradient, padding: '20px 24px', color: '#fff', position: 'relative', display: 'flex', alignItems: 'center', gap: '16px' }}>
-                            <div style={{ width: '48px', height: '48px', backgroundColor: '#fff', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 10px rgba(0,0,0,0.2)', flexShrink: 0 }}>
-                                {React.cloneElement(currentTheme.icon, { size: 24 })}
-                            </div>
-                            <div style={{ flex: 1 }}>
-                                <h3 style={{ margin: '0 0 4px', fontSize: '20px', fontWeight: '800' }}>{currentTheme.title}</h3>
-                                <p style={{ margin: 0, fontSize: '13px', opacity: 0.9, lineHeight: '1.2' }}>{currentTheme.subtitle}</p>
-                            </div>
-                            <button type="button" onClick={() => setAccountType(null)} style={{ background: 'rgba(255,255,255,0.2)', border: 'none', color: '#fff', padding: '8px 14px', borderRadius: '20px', fontSize: '12px', fontWeight: '700', cursor: 'pointer', backdropFilter: 'blur(5px)', alignSelf: 'flex-start' }}>
-                                Change Type
+                    <div style={{ fontFamily: "'Inter', -apple-system, sans-serif" }}>
+
+                        {/* Form Sub-Header — curved top to mirror the dark nav header's bottom curves */}
+                        <div style={{ background: currentTheme.gradient, padding: '18px 20px 22px', color: '#fff', display: 'flex', alignItems: 'center', gap: '14px', borderTopLeftRadius: '20px', borderTopRightRadius: '20px', boxShadow: `0 4px 20px ${currentTheme.shadow}`, marginTop: '12px' }}>
+                            <button type="button" onClick={() => { setAccountType(null); setIsEditingMode(false); }} style={{ background: 'rgba(255,255,255,0.18)', border: 'none', color: '#fff', width: '36px', height: '36px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}>
+                                <ChevronLeft size={20} />
                             </button>
+                            <div style={{ width: '42px', height: '42px', backgroundColor: 'rgba(255,255,255,0.22)', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                {React.cloneElement(currentTheme.icon, { size: 22, color: '#fff' })}
+                            </div>
+                            <div>
+                                <p style={{ margin: '0 0 2px', fontSize: '11px', fontWeight: '600', opacity: 0.7, textTransform: 'uppercase', letterSpacing: '0.8px' }}>Seller Registration</p>
+                                <h3 style={{ margin: 0, fontSize: '17px', fontWeight: '800' }}>{currentTheme.title}</h3>
+                            </div>
                         </div>
 
-                        <div style={{ padding: '24px 24px' }}>
-                            
-                            {/* Personal/Business Info Section */}
-                            <SectionTitle title="Identity Details" icon={<User size={20} color={currentTheme.primary} />} theme={currentTheme} />
-                            
-                            {/* Profile / Logo Upload UI */}
-                            <FileUploadUI 
+                        {/* Form Body */}
+                        <div style={{ padding: '20px 16px 32px', display: 'flex', flexDirection: 'column' }}>
+
+                            {/* Profile Photo */}
+                            <p style={{ margin: '0 0 8px', fontSize: '14px', fontWeight: '600', color: '#374151', fontFamily: "'Inter', sans-serif" }}>
+                                {accountType === 'individual' ? 'Profile Photo' : 'Company Logo'}
+                            </p>
+                            <FileUploadUI
                                 label={accountType === 'individual' ? "Upload Profile Photo" : "Upload Company Logo"}
                                 accept="image/*"
                                 themeColor={currentTheme.primary}
                                 onFileSelect={(file) => setFormData({...formData, profilePic: file})}
                             />
-                            
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '15px' }}>
-                                {accountType === 'individual' ? (
-                                    <>
-                                        <InputGroup label="Shop / Display Name" name="shopName" value={formData.shopName} onChange={handleChange} placeholder="e.g. Ramesh's Fresh Farms" themeColor={currentTheme.primary} />
-                                        <InputGroup label="Full Legal Name" name="fullName" value={formData.fullName} onChange={handleChange} placeholder="As per Govt ID" themeColor={currentTheme.primary} />
-                                        <InputGroup label="Aadhar / Govt ID Number" name="aadharNumber" value={formData.aadharNumber} onChange={handleChange} placeholder="XXXX XXXX XXXX" themeColor={currentTheme.primary} />
-                                    </>
-                                ) : (
-                                    <>
-                                        <InputGroup label="Organisation Name" name="companyName" value={formData.companyName} onChange={handleChange} placeholder="e.g. Green Valley Co-op" themeColor={currentTheme.primary} />
-                                        <InputGroup label="Contact Person Name" name="representativeName" value={formData.representativeName} onChange={handleChange} placeholder="Full Name" themeColor={currentTheme.primary} />
-                                        <InputGroup label="GST / Registration Number" name="gstNumber" value={formData.gstNumber} onChange={handleChange} placeholder="GSTIN / CIN" themeColor={currentTheme.primary} />
-                                    </>
-                                )}
-                                <InputGroup label="Business Email Address" name="email" type="email" value={formData.email} onChange={handleChange} placeholder="store@example.com" themeColor={currentTheme.primary} />
-                                <InputGroup label="Primary Phone" name="phone" type="tel" value={formData.phone} onChange={handleChange} placeholder="9876543210" maxLength="10" prefix="+91" themeColor={currentTheme.primary} />
-                                <InputGroup label="Emergency Phone" name="emergencyPhone" type="tel" value={formData.emergencyPhone} onChange={handleChange} placeholder="9876543210" maxLength="10" prefix="+91" themeColor={currentTheme.primary} />
-                            </div>
 
-                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', margin: '24px 0 16px', borderBottom: '1px solid #f1f5f9', paddingBottom: '12px' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                    <div style={{ color: currentTheme.primary, display: 'flex' }}><MapPin size={20} /></div>
-                                    <h4 style={{ margin: 0, fontSize: '14px', color: '#0f172a', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Location</h4>
-                                </div>
-                                <button type="button" onClick={handleAutoDetectLocation} disabled={isDetecting} style={{ padding: '10px 20px', background: currentTheme.primary, color: '#fff', border: 'none', borderRadius: '10px', fontWeight: '700', fontSize: '14px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', boxShadow: `0 4px 10px ${currentTheme.shadow}` }}>
-                                    {isDetecting ? 'Detecting...' : '📍 Auto-Detect GPS'}
+                            {/* Identity Section */}
+                            <p style={{ margin: '20px 0 14px', fontSize: '16px', fontWeight: '700', color: '#111827', fontFamily: "'Inter', sans-serif" }}>Identity Details</p>
+                            {accountType === 'individual' ? (<>
+                                <InputGroup label="Shop Name" name="shopName" value={formData.shopName} onChange={handleChange} placeholder="e.g. Raju's Fresh Farms" themeColor={currentTheme.primary} />
+                                <InputGroup label="Owner Name" name="ownerName" value={formData.ownerName} onChange={handleChange} placeholder="Owner's full name" themeColor={currentTheme.primary} />
+                                <InputGroup label="Full Legal Name" name="fullName" value={formData.fullName} onChange={handleChange} placeholder="As per Govt ID" themeColor={currentTheme.primary} />
+                                <InputGroup label="Aadhar / Govt ID" name="aadharNumber" value={formData.aadharNumber} onChange={handleChange} placeholder="XXXX XXXX XXXX" themeColor={currentTheme.primary} />
+                            </>) : (<>
+                                <InputGroup label="Organisation Name" name="companyName" value={formData.companyName} onChange={handleChange} placeholder="e.g. Green Valley Co-op" themeColor={currentTheme.primary} />
+                                <InputGroup label="Owner / Director" name="ownerName" value={formData.ownerName} onChange={handleChange} placeholder="Owner's name" themeColor={currentTheme.primary} />
+                                <InputGroup label="GST / Reg. Number" name="gstNumber" value={formData.gstNumber} onChange={handleChange} placeholder="GSTIN / CIN" themeColor={currentTheme.primary} />
+                            </>)}
+                            <InputGroup label="Business Email" name="email" type="email" value={formData.email} onChange={handleChange} placeholder="store@example.com" themeColor={currentTheme.primary} />
+                            <InputGroup label="Primary Phone" name="phone" type="tel" value={formData.phone} onChange={handleChange} placeholder="9876543210" maxLength="10" prefix="+91" themeColor={currentTheme.primary} />
+                            <InputGroup label="Emergency Phone" name="emergencyPhone" type="tel" value={formData.emergencyPhone} onChange={handleChange} placeholder="9876543210" maxLength="10" prefix="+91" themeColor={currentTheme.primary} />
+
+                            {/* Location Section */}
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', margin: '20px 0 14px' }}>
+                                <p style={{ margin: 0, fontSize: '16px', fontWeight: '700', color: '#111827', fontFamily: "'Inter', sans-serif" }}>Location & Address</p>
+                                <button type="button" onClick={handleAutoDetectLocation} disabled={isDetecting} style={{ padding: '8px 16px', background: currentTheme.primary, color: '#fff', border: 'none', borderRadius: '20px', fontWeight: '600', fontSize: '13px', cursor: 'pointer', boxShadow: `0 2px 8px ${currentTheme.shadow}`, fontFamily: "'Inter', sans-serif" }}>
+                                    {isDetecting ? '⏳ Detecting...' : '📍 Auto GPS'}
                                 </button>
                             </div>
+                            {formData.lat && formData.lng && <>
+                                <InputGroup label="Latitude (Auto)" readOnly value={formData.lat} themeColor={currentTheme.primary} />
+                                <InputGroup label="Longitude (Auto)" readOnly value={formData.lng} themeColor={currentTheme.primary} />
+                            </>}
+                            <InputGroup label="House / Plot No." name="houseNumber" value={formData.houseNumber} onChange={handleChange} placeholder="e.g. 1-42" themeColor={currentTheme.primary} />
+                            <InputGroup label="Landmark" name="landmark" value={formData.landmark} onChange={handleChange} placeholder="Near Big Well" themeColor={currentTheme.primary} />
+                            <InputGroup label="Village / Town" name="village" value={formData.village} onChange={handleChange} placeholder="Village Name" themeColor={currentTheme.primary} />
+                            <InputGroup label="Mandal / Taluka" name="mandal" value={formData.mandal} onChange={handleChange} placeholder="Mandal Name" themeColor={currentTheme.primary} />
+                            <InputGroup label="Nearer City" name="nearerCity" value={formData.nearerCity} onChange={handleChange} placeholder="City Name" themeColor={currentTheme.primary} />
+                            <InputGroup label="District" name="district" value={formData.district} onChange={handleChange} placeholder="District" themeColor={currentTheme.primary} />
+                            <InputGroup label="State" name="state" value={formData.state} onChange={handleChange} placeholder="State" themeColor={currentTheme.primary} />
+                            <InputGroup label="Pincode" name="pincode" type="number" value={formData.pincode} onChange={handleChange} placeholder="123456" themeColor={currentTheme.primary} />
+                            <SelectGroup label="Delivery Radius" name="serviceRadius" value={formData.serviceRadius} onChange={handleChange} themeColor={currentTheme.primary} options={[
+                                { value: '5km', label: 'Within 5 km — Local Only' },
+                                { value: '20km', label: 'Within 20 km — Nearby Towns' },
+                                { value: 'district', label: 'Entire District' },
+                                { value: 'state', label: 'Entire State' }
+                            ]} />
 
-                            {/* Read-Only Coordinates */}
-                            {formData.lat && formData.lng && (
-                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginBottom: '20px' }}>
-                                    <InputGroup label="Latitude (Auto)" readOnly value={formData.lat} themeColor={currentTheme.primary} style={{ backgroundColor: '#f1f5f9', color: '#64748b' }} />
-                                    <InputGroup label="Longitude (Auto)" readOnly value={formData.lng} themeColor={currentTheme.primary} style={{ backgroundColor: '#f1f5f9', color: '#64748b' }} />
-                                </div>
-                            )}
-
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '16px' }}>
-                                <InputGroup label="House / Plot No." name="houseNumber" value={formData.houseNumber} onChange={handleChange} placeholder="e.g. 1-42" themeColor={currentTheme.primary} />
-                                <InputGroup label="Landmark" name="landmark" value={formData.landmark} onChange={handleChange} placeholder="Near Big Well" themeColor={currentTheme.primary} />
-                                <InputGroup label="Village" name="village" value={formData.village} onChange={handleChange} placeholder="Village Name" themeColor={currentTheme.primary} />
-                                <InputGroup label="Mandal / Taluka" name="mandal" value={formData.mandal} onChange={handleChange} placeholder="Mandal Name" themeColor={currentTheme.primary} />
-                                <InputGroup label="Nearer City" name="nearerCity" value={formData.nearerCity} onChange={handleChange} placeholder="City Name" themeColor={currentTheme.primary} />
-                                <InputGroup label="District" name="district" value={formData.district} onChange={handleChange} placeholder="District Name" themeColor={currentTheme.primary} />
-                                <InputGroup label="State" name="state" value={formData.state} onChange={handleChange} placeholder="State" themeColor={currentTheme.primary} />
-                                <InputGroup label="Pincode" name="pincode" type="number" value={formData.pincode} onChange={handleChange} placeholder="123456" themeColor={currentTheme.primary} />
-                            </div>
-
-                            <div style={{ marginBottom: '20px' }}>
-                                <SelectGroup label="Service / Delivery Radius" name="serviceRadius" value={formData.serviceRadius} onChange={handleChange} themeColor={currentTheme.primary} options={[
-                                    { value: '5km', label: 'Within 5 km (Local Only)' },
-                                    { value: '20km', label: 'Within 20 km (Nearby Towns)' },
-                                    { value: 'district', label: 'Entire District' },
-                                    { value: 'state', label: 'Entire State' }
-                                ]} />
-                            </div>
-
-                            {/* Ag Profile Section */}
-                            <SectionTitle title="Agriculture Profile" icon={<Briefcase size={20} color={currentTheme.primary} />} theme={currentTheme} />
-
-                            {/* Categories */}
-                            <div style={{ marginBottom: '20px' }}>
-                                <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '10px' }}>What services do you plan to offer?</label>
-                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                                    {['Farm Fresh Produce', 'Harvested Crops', 'Machinery Rental', 'Agriculture Worker', 'Freelance Services', 'Local Agri Goods & Products', 'Not Sure'].map(cat => (
-                                        <div 
-                                            key={cat}
-                                            onClick={() => handleCategoryToggle(cat)}
-                                            style={{ 
-                                                padding: '6px 12px', 
-                                                borderRadius: '8px', 
-                                                fontSize: '12px', 
-                                                fontWeight: '700', 
-                                                cursor: 'pointer',
-                                                backgroundColor: formData.categories.includes(cat) ? currentTheme.primary : '#f8fafc',
-                                                color: formData.categories.includes(cat) ? '#fff' : '#475569',
-                                                border: formData.categories.includes(cat) ? `1px solid ${currentTheme.primary}` : '1px solid #e2e8f0',
-                                                transition: 'all 0.2s ease',
-                                                boxShadow: formData.categories.includes(cat) ? `0 2px 8px ${currentTheme.shadow}` : 'none'
-                                            }}
-                                        >
-                                            {cat}
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-
-                            {/* Individual Form Deep Dive Questions */}
-                            {accountType === 'individual' && formData.categories.includes('Farm Fresh Produce') && (
-                                <div style={{ padding: '25px', backgroundColor: '#fff', borderRadius: '16px', border: `1.5px solid ${currentTheme.primary}30`, marginBottom: '20px', boxShadow: '0 4px 15px rgba(0,0,0,0.03)' }}>
-                                    <h5 style={{ margin: '0 0 20px', color: currentTheme.primary, fontSize: '16px', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '8px' }}>🌿 Farm Fresh Produce</h5>
-                                    
-                                    <div style={{ marginBottom: '20px' }}>
-                                        <label style={{ display: 'block', fontSize: '13px', fontWeight: '700', color: '#475569', marginBottom: '10px' }}>Are these products Organic?</label>
-                                        <div style={{ display: 'flex', gap: '15px' }}>
-                                            <div 
-                                                onClick={() => setFormData({...formData, isOrganic: 'yes'})}
-                                                style={{ flex: 1, padding: '14px', textAlign: 'center', borderRadius: '12px', cursor: 'pointer', border: formData.isOrganic === 'yes' ? `2px solid ${currentTheme.primary}` : '1.5px solid #cbd5e1', backgroundColor: formData.isOrganic === 'yes' ? `${currentTheme.primary}10` : '#fff', color: formData.isOrganic === 'yes' ? currentTheme.primary : '#475569', fontWeight: '700', transition: 'all 0.2s', boxShadow: formData.isOrganic === 'yes' ? `0 4px 10px ${currentTheme.primary}20` : 'none' }}>
-                                                Yes, Organic
-                                            </div>
-                                            <div 
-                                                onClick={() => setFormData({...formData, isOrganic: 'no'})}
-                                                style={{ flex: 1, padding: '14px', textAlign: 'center', borderRadius: '12px', cursor: 'pointer', border: formData.isOrganic === 'no' ? `2px solid ${currentTheme.primary}` : '1.5px solid #cbd5e1', backgroundColor: formData.isOrganic === 'no' ? `${currentTheme.primary}10` : '#fff', color: formData.isOrganic === 'no' ? currentTheme.primary : '#475569', fontWeight: '700', transition: 'all 0.2s', boxShadow: formData.isOrganic === 'no' ? `0 4px 10px ${currentTheme.primary}20` : 'none' }}>
-                                                No, Regular
-                                            </div>
-                                        </div>
+                            {/* Business Categories */}
+                            <p style={{ margin: '20px 0 14px', fontSize: '16px', fontWeight: '700', color: '#111827', fontFamily: "'Inter', sans-serif" }}>Services You Offer</p>
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '16px' }}>
+                                {['Farm Fresh Produce', 'Harvested Crops', 'Machinery Rental', 'Agriculture Worker', 'Freelance Services', 'Local Agri Goods & Products', 'Not Sure'].map(cat => (
+                                    <div key={cat} onClick={() => handleCategoryToggle(cat)}
+                                        style={{ padding: '7px 14px', borderRadius: '20px', fontSize: '13px', fontWeight: '600', cursor: 'pointer',
+                                            backgroundColor: formData.categories.includes(cat) ? currentTheme.primary : '#fff',
+                                            color: formData.categories.includes(cat) ? '#fff' : '#3a3a3c',
+                                            border: formData.categories.includes(cat) ? `1.5px solid ${currentTheme.primary}` : '1.5px solid rgba(0,0,0,0.1)',
+                                            boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
+                                            transition: 'all 0.2s ease',
+                                        }}>
+                                        {formData.categories.includes(cat) ? '✓ ' : ''}{cat}
                                     </div>
+                                ))}
+                            </div>
 
-                                    {formData.isOrganic === 'yes' && (
-                                        <FileUploadUI label="Upload Organic Certificate (PDF/Image)" accept=".pdf,image/*" themeColor={currentTheme.primary} onFileSelect={(f) => setFormData({...formData, organicCertificate: f})} />
-                                    )}
-
-                                    <TextAreaGroup 
-                                        label="What products do you keep? (e.g. Vegetables: Tomatoes. Fruits: Mangoes)" 
-                                        name="freshProduceTypes" 
-                                        value={formData.freshProduceTypes} 
-                                        onChange={handleChange} 
-                                        placeholder="List your product types and specific names here..." 
-                                        themeColor={currentTheme.primary} 
-                                    />
-                                </div>
+                            {/* ── CATEGORY-SPECIFIC QUESTIONS ── */}
+                            {accountType === 'individual' && formData.categories.includes('Farm Fresh Produce') && (
+                                <>
+                                    <p style={{ margin: '20px 0 14px', fontSize: '16px', fontWeight: '700', color: '#111827', fontFamily: "'Inter', sans-serif" }}>🌿 Farm Fresh Produce</p>
+                                    <p style={{ margin: '0 0 10px', fontSize: '14px', fontWeight: '600', color: '#374151', fontFamily: "'Inter', sans-serif" }}>Are these products Organic?</p>
+                                    <div style={{ display: 'flex', gap: '10px', marginBottom: '14px' }}>
+                                        {['yes', 'no'].map(val => (
+                                            <div key={val} onClick={() => setFormData({...formData, isOrganic: val})}
+                                                style={{ flex: 1, padding: '12px', textAlign: 'center', borderRadius: '12px', cursor: 'pointer', border: formData.isOrganic === val ? `2px solid ${currentTheme.primary}` : '2px solid #e5e7eb', backgroundColor: formData.isOrganic === val ? `${currentTheme.primary}12` : '#f9fafb', color: formData.isOrganic === val ? currentTheme.primary : '#374151', fontWeight: '600', fontSize: '14px', transition: 'all 0.2s', fontFamily: "'Inter', sans-serif" }}>
+                                                {val === 'yes' ? '🌱 Yes, Organic' : '🌾 No, Regular'}
+                                            </div>
+                                        ))}
+                                    </div>
+                                    {formData.isOrganic === 'yes' && <FileUploadUI label="Organic Certificate (PDF/Image)" accept=".pdf,image/*" themeColor={currentTheme.primary} onFileSelect={(f) => setFormData({...formData, organicCertificate: f})} />}
+                                    <TextAreaGroup label="What products do you sell? (e.g. Vegetables: Tomatoes, Fruits: Mangoes)" name="freshProduceTypes" value={formData.freshProduceTypes} onChange={handleChange} placeholder="List your product types and specific names..." themeColor={currentTheme.primary} />
+                                </>
                             )}
 
                             {accountType === 'individual' && formData.categories.includes('Machinery Rental') && (
-                                <div style={{ padding: '25px', backgroundColor: '#fff', borderRadius: '16px', border: `1.5px solid ${currentTheme.primary}30`, marginBottom: '20px', boxShadow: '0 4px 15px rgba(0,0,0,0.03)' }}>
-                                    <h5 style={{ margin: '0 0 20px', color: currentTheme.primary, fontSize: '16px', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '8px' }}>🚜 Machinery Rental</h5>
-                                    
-                                    <TextAreaGroup 
-                                        label="What machinery do you have and how many? (e.g. 2 Tractors, 1 Harvester)" 
-                                        name="machineryDetails" 
-                                        value={formData.machineryDetails} 
-                                        onChange={handleChange} 
-                                        placeholder="List machinery types and counts..." 
-                                        themeColor={currentTheme.primary} 
-                                    />
-
+                                <>
+                                    <p style={{ margin: '20px 0 14px', fontSize: '16px', fontWeight: '700', color: '#111827', fontFamily: "'Inter', sans-serif" }}>🚜 Machinery Rental</p>
+                                    <TextAreaGroup label="What machinery do you have? (e.g. 2 Tractors, 1 Harvester)" name="machineryDetails" value={formData.machineryDetails} onChange={handleChange} placeholder="List machinery types and counts..." themeColor={currentTheme.primary} />
                                     <FileUploadUI label="Upload Machinery Images" accept="image/*" themeColor={currentTheme.primary} onFileSelect={(f) => setFormData({...formData, machineryImages: f})} />
-                                </div>
+                                </>
                             )}
 
                             {accountType === 'individual' && formData.categories.includes('Harvested Crops') && (
-                                <div style={{ padding: '25px', backgroundColor: '#fff', borderRadius: '16px', border: `1.5px solid ${currentTheme.primary}30`, marginBottom: '20px', boxShadow: '0 4px 15px rgba(0,0,0,0.03)' }}>
-                                    <h5 style={{ margin: '0 0 20px', color: currentTheme.primary, fontSize: '16px', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '8px' }}>🌾 Harvested Crops</h5>
-                                    
-                                    <InputGroup label="What crops will you sell?" name="harvestCrops" value={formData.harvestCrops} onChange={handleChange} placeholder="e.g. Rice, Wheat, Cotton..." themeColor={currentTheme.primary} />
-                                    <InputGroup label="Expected Quantity (in Quintals)" name="harvestQuantity" type="number" value={formData.harvestQuantity} onChange={handleChange} placeholder="e.g. 50" themeColor={currentTheme.primary} />
-                                </div>
+                                <>
+                                    <p style={{ margin: '20px 0 14px', fontSize: '16px', fontWeight: '700', color: '#111827', fontFamily: "'Inter', sans-serif" }}>🌾 Harvested Crops</p>
+                                    <InputGroup label="Crops to Sell" name="harvestCrops" value={formData.harvestCrops} onChange={handleChange} placeholder="e.g. Rice, Wheat, Cotton..." themeColor={currentTheme.primary} />
+                                    <InputGroup label="Expected Quantity (Quintals)" name="harvestQuantity" type="number" value={formData.harvestQuantity} onChange={handleChange} placeholder="e.g. 50" themeColor={currentTheme.primary} />
+                                </>
                             )}
 
                             {accountType === 'individual' && formData.categories.includes('Agriculture Worker') && (
-                                <div style={{ padding: '25px', backgroundColor: '#fff', borderRadius: '16px', border: `1.5px solid ${currentTheme.primary}30`, marginBottom: '20px', boxShadow: '0 4px 15px rgba(0,0,0,0.03)' }}>
-                                    <h5 style={{ margin: '0 0 20px', color: currentTheme.primary, fontSize: '16px', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '8px' }}>👷 Agriculture Worker</h5>
-                                    
-                                    <TextAreaGroup 
-                                        label="What types of farm work can you do?" 
-                                        name="workerSkills" 
-                                        value={formData.workerSkills} 
-                                        onChange={handleChange} 
-                                        placeholder="e.g. Harvesting, Sowing, Pesticide Spraying..." 
-                                        themeColor={currentTheme.primary} 
-                                    />
-                                </div>
+                                <>
+                                    <p style={{ margin: '20px 0 14px', fontSize: '16px', fontWeight: '700', color: '#111827', fontFamily: "'Inter', sans-serif" }}>👷 Agriculture Worker</p>
+                                    <TextAreaGroup label="What types of farm work can you do?" name="workerSkills" value={formData.workerSkills} onChange={handleChange} placeholder="e.g. Harvesting, Sowing, Pesticide Spraying..." themeColor={currentTheme.primary} />
+                                </>
                             )}
 
                             {accountType === 'individual' && formData.categories.includes('Freelance Services') && (
-                                <div style={{ padding: '25px', backgroundColor: '#fff', borderRadius: '16px', border: `1.5px solid ${currentTheme.primary}30`, marginBottom: '20px', boxShadow: '0 4px 15px rgba(0,0,0,0.03)' }}>
-                                    <h5 style={{ margin: '0 0 20px', color: currentTheme.primary, fontSize: '16px', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '8px' }}>💼 Freelance Services</h5>
-                                    
-                                    <TextAreaGroup 
-                                        label="What specific freelance works can you do?" 
-                                        name="freelanceWorks" 
-                                        value={formData.freelanceWorks} 
-                                        onChange={handleChange} 
-                                        placeholder="e.g. Drone Piloting, Soil Testing, Accounting..." 
-                                        themeColor={currentTheme.primary} 
-                                    />
-                                    
-                                    <InputGroup label="Years of Experience in this work" name="freelanceExperience" type="number" value={formData.freelanceExperience} onChange={handleChange} placeholder="e.g. 5" themeColor={currentTheme.primary} />
-                                    
-                                    <TextAreaGroup 
-                                        label="What is your technical skill set?" 
-                                        name="freelanceSkillSet" 
-                                        value={formData.freelanceSkillSet} 
-                                        onChange={handleChange} 
-                                        placeholder="e.g. Certified DJI Pilot, Agribusiness Degree..." 
-                                        themeColor={currentTheme.primary} 
-                                    />
-                                </div>
+                                <>
+                                    <p style={{ margin: '20px 0 14px', fontSize: '16px', fontWeight: '700', color: '#111827', fontFamily: "'Inter', sans-serif" }}>💼 Freelance Services</p>
+                                    <TextAreaGroup label="What freelance works can you do?" name="freelanceWorks" value={formData.freelanceWorks} onChange={handleChange} placeholder="e.g. Drone Piloting, Soil Testing, Accounting..." themeColor={currentTheme.primary} />
+                                    <InputGroup label="Years of Experience" name="freelanceExperience" type="number" value={formData.freelanceExperience} onChange={handleChange} placeholder="e.g. 5" themeColor={currentTheme.primary} />
+                                    <TextAreaGroup label="Technical Skill Set" name="freelanceSkillSet" value={formData.freelanceSkillSet} onChange={handleChange} placeholder="e.g. Certified DJI Pilot, Agribusiness Degree..." themeColor={currentTheme.primary} />
+                                </>
                             )}
 
-                            {/* Organisation Form Deep Dive Questions */}
                             {accountType === 'organisation' && formData.categories.includes('Farm Fresh Produce') && (
-                                <div style={{ padding: '25px', backgroundColor: '#fff', borderRadius: '16px', border: `1.5px solid ${currentTheme.primary}30`, marginBottom: '20px', boxShadow: '0 4px 15px rgba(0,0,0,0.03)' }}>
-                                    <h5 style={{ margin: '0 0 20px', color: currentTheme.primary, fontSize: '16px', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '8px' }}>🌿 Farm Fresh Produce Supply</h5>
-                                    
-                                    <div style={{ marginBottom: '20px' }}>
-                                        <label style={{ display: 'block', fontSize: '13px', fontWeight: '700', color: '#475569', marginBottom: '10px' }}>Are these products Organic?</label>
-                                        <div style={{ display: 'flex', gap: '15px' }}>
-                                            <div 
-                                                onClick={() => setFormData({...formData, isOrganic: 'yes'})}
-                                                style={{ flex: 1, padding: '14px', textAlign: 'center', borderRadius: '12px', cursor: 'pointer', border: formData.isOrganic === 'yes' ? `2px solid ${currentTheme.primary}` : '1.5px solid #cbd5e1', backgroundColor: formData.isOrganic === 'yes' ? `${currentTheme.primary}10` : '#fff', color: formData.isOrganic === 'yes' ? currentTheme.primary : '#475569', fontWeight: '700', transition: 'all 0.2s', boxShadow: formData.isOrganic === 'yes' ? `0 4px 10px ${currentTheme.primary}20` : 'none' }}>
-                                                Yes, Organic
+                                <>
+                                    <p style={{ margin: '20px 0 14px', fontSize: '16px', fontWeight: '700', color: '#111827', fontFamily: "'Inter', sans-serif" }}>🌿 Farm Fresh Supply</p>
+                                    <p style={{ margin: '0 0 10px', fontSize: '14px', fontWeight: '600', color: '#374151', fontFamily: "'Inter', sans-serif" }}>Are these products Organic?</p>
+                                    <div style={{ display: 'flex', gap: '10px', marginBottom: '14px' }}>
+                                        {['yes', 'no'].map(val => (
+                                            <div key={val} onClick={() => setFormData({...formData, isOrganic: val})}
+                                                style={{ flex: 1, padding: '12px', textAlign: 'center', borderRadius: '12px', cursor: 'pointer', border: formData.isOrganic === val ? `2px solid ${currentTheme.primary}` : '2px solid #e5e7eb', backgroundColor: formData.isOrganic === val ? `${currentTheme.primary}12` : '#f9fafb', color: formData.isOrganic === val ? currentTheme.primary : '#374151', fontWeight: '600', fontSize: '14px', transition: 'all 0.2s', fontFamily: "'Inter', sans-serif" }}>
+                                                {val === 'yes' ? '🌱 Yes, Organic' : '🌾 No, Regular'}
                                             </div>
-                                            <div 
-                                                onClick={() => setFormData({...formData, isOrganic: 'no'})}
-                                                style={{ flex: 1, padding: '14px', textAlign: 'center', borderRadius: '12px', cursor: 'pointer', border: formData.isOrganic === 'no' ? `2px solid ${currentTheme.primary}` : '1.5px solid #cbd5e1', backgroundColor: formData.isOrganic === 'no' ? `${currentTheme.primary}10` : '#fff', color: formData.isOrganic === 'no' ? currentTheme.primary : '#475569', fontWeight: '700', transition: 'all 0.2s', boxShadow: formData.isOrganic === 'no' ? `0 4px 10px ${currentTheme.primary}20` : 'none' }}>
-                                                No, Regular
-                                            </div>
-                                        </div>
+                                        ))}
                                     </div>
-
-                                    {formData.isOrganic === 'yes' && (
-                                        <FileUploadUI label="Upload Organic Certificate (PDF/Image)" accept=".pdf,image/*" themeColor={currentTheme.primary} onFileSelect={(f) => setFormData({...formData, organicCertificate: f})} />
-                                    )}
-
+                                    {formData.isOrganic === 'yes' && <FileUploadUI label="Organic Certificate (PDF/Image)" accept=".pdf,image/*" themeColor={currentTheme.primary} onFileSelect={(f) => setFormData({...formData, organicCertificate: f})} />}
                                     <InputGroup label="Supply Capacity (e.g. 500 Tons/Month)" name="orgProduceCapacity" value={formData.orgProduceCapacity} onChange={handleChange} placeholder="Enter supply capacity..." themeColor={currentTheme.primary} />
-                                    
                                     <FileUploadUI label="Upload Product Images (2-3 Images)" accept="image/*" multiple={true} themeColor={currentTheme.primary} onFileSelect={(f) => setFormData({...formData, orgProduceImages: f})} />
-                                </div>
+                                </>
                             )}
 
                             {accountType === 'organisation' && formData.categories.includes('Machinery Rental') && (
-                                <div style={{ padding: '25px', backgroundColor: '#fff', borderRadius: '16px', border: `1.5px solid ${currentTheme.primary}30`, marginBottom: '20px', boxShadow: '0 4px 15px rgba(0,0,0,0.03)' }}>
-                                    <h5 style={{ margin: '0 0 20px', color: currentTheme.primary, fontSize: '16px', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '8px' }}>🚜 Machinery Rental Supply</h5>
-                                    
-                                    <TextAreaGroup 
-                                        label="What machinery do you have?" 
-                                        name="orgMachineryDetails" 
-                                        value={formData.orgMachineryDetails} 
-                                        onChange={handleChange} 
-                                        placeholder="List available machinery models and types..." 
-                                        themeColor={currentTheme.primary} 
-                                    />
-                                    
-                                    <InputGroup label="Supply Capacity (e.g. 50 Tractors, 10 Harvesters)" name="orgMachineryCapacity" value={formData.orgMachineryCapacity} onChange={handleChange} placeholder="Enter fleet size / capacity..." themeColor={currentTheme.primary} />
-
+                                <>
+                                    <p style={{ margin: '20px 0 14px', fontSize: '16px', fontWeight: '700', color: '#111827', fontFamily: "'Inter', sans-serif" }}>🚜 Machinery Supply</p>
+                                    <TextAreaGroup label="What machinery do you have?" name="orgMachineryDetails" value={formData.orgMachineryDetails} onChange={handleChange} placeholder="List available machinery models and types..." themeColor={currentTheme.primary} />
+                                    <InputGroup label="Fleet Size (e.g. 50 Tractors, 10 Harvesters)" name="orgMachineryCapacity" value={formData.orgMachineryCapacity} onChange={handleChange} placeholder="Enter fleet size..." themeColor={currentTheme.primary} />
                                     <FileUploadUI label="Upload Machinery Fleet Images (2-3 Images)" accept="image/*" multiple={true} themeColor={currentTheme.primary} onFileSelect={(f) => setFormData({...formData, orgMachineryImages: f})} />
-                                </div>
+                                </>
                             )}
 
                             {accountType === 'organisation' && formData.categories.includes('Harvested Crops') && (
-                                <div style={{ padding: '25px', backgroundColor: '#fff', borderRadius: '16px', border: `1.5px solid ${currentTheme.primary}30`, marginBottom: '20px', boxShadow: '0 4px 15px rgba(0,0,0,0.03)' }}>
-                                    <h5 style={{ margin: '0 0 20px', color: currentTheme.primary, fontSize: '16px', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '8px' }}>🌾 Harvested Crops Supply</h5>
-                                    
-                                    <InputGroup label="What crops do you supply?" name="orgHarvestCrops" value={formData.orgHarvestCrops} onChange={handleChange} placeholder="e.g. Bulk Rice, Wheat, Sugarcane..." themeColor={currentTheme.primary} />
-                                    <InputGroup label="Supply Capacity (e.g. 1000 Quintals/Month)" name="orgHarvestCapacity" value={formData.orgHarvestCapacity} onChange={handleChange} placeholder="Enter expected yield / capacity..." themeColor={currentTheme.primary} />
-                                    
+                                <>
+                                    <p style={{ margin: '20px 0 14px', fontSize: '16px', fontWeight: '700', color: '#111827', fontFamily: "'Inter', sans-serif" }}>🌾 Harvest Supply</p>
+                                    <InputGroup label="Crops Supplied" name="orgHarvestCrops" value={formData.orgHarvestCrops} onChange={handleChange} placeholder="e.g. Bulk Rice, Wheat, Sugarcane..." themeColor={currentTheme.primary} />
+                                    <InputGroup label="Supply Capacity (e.g. 1000 Quintals/Month)" name="orgHarvestCapacity" value={formData.orgHarvestCapacity} onChange={handleChange} placeholder="Enter expected yield..." themeColor={currentTheme.primary} />
                                     <FileUploadUI label="Upload Warehouse/Crop Images (2-3 Images)" accept="image/*" multiple={true} themeColor={currentTheme.primary} onFileSelect={(f) => setFormData({...formData, orgHarvestImages: f})} />
-                                </div>
+                                </>
                             )}
 
                             {accountType === 'organisation' && formData.categories.includes('Agriculture Worker') && (
-                                <div style={{ padding: '25px', backgroundColor: '#fff', borderRadius: '16px', border: `1.5px solid ${currentTheme.primary}30`, marginBottom: '20px', boxShadow: '0 4px 15px rgba(0,0,0,0.03)' }}>
-                                    <h5 style={{ margin: '0 0 20px', color: currentTheme.primary, fontSize: '16px', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '8px' }}>👷 Agriculture Worker Supply</h5>
-                                    
-                                    <InputGroup label="How many workers can you supply?" name="orgWorkerCount" type="number" value={formData.orgWorkerCount} onChange={handleChange} placeholder="e.g. 50" themeColor={currentTheme.primary} />
-                                    
-                                    <TextAreaGroup 
-                                        label="What are their skill sets?" 
-                                        name="orgWorkerSkills" 
-                                        value={formData.orgWorkerSkills} 
-                                        onChange={handleChange} 
-                                        placeholder="e.g. General labor, certified pesticide sprayers, heavy machinery operators..." 
-                                        themeColor={currentTheme.primary} 
-                                    />
-                                </div>
+                                <>
+                                    <p style={{ margin: '20px 0 14px', fontSize: '16px', fontWeight: '700', color: '#111827', fontFamily: "'Inter', sans-serif" }}>👷 Worker Supply</p>
+                                    <InputGroup label="Workers Available" name="orgWorkerCount" type="number" value={formData.orgWorkerCount} onChange={handleChange} placeholder="e.g. 50" themeColor={currentTheme.primary} />
+                                    <TextAreaGroup label="Their skill sets" name="orgWorkerSkills" value={formData.orgWorkerSkills} onChange={handleChange} placeholder="e.g. General labor, certified pesticide sprayers..." themeColor={currentTheme.primary} />
+                                </>
                             )}
 
                             {accountType === 'organisation' && formData.categories.includes('Freelance Services') && (
-                                <div style={{ padding: '25px', backgroundColor: '#fff', borderRadius: '16px', border: `1.5px solid ${currentTheme.primary}30`, marginBottom: '20px', boxShadow: '0 4px 15px rgba(0,0,0,0.03)' }}>
-                                    <h5 style={{ margin: '0 0 20px', color: currentTheme.primary, fontSize: '16px', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '8px' }}>💼 Freelance Agency Supply</h5>
-                                    
-                                    <InputGroup label="How many freelancers/specialists can you supply?" name="orgFreelancerCount" type="number" value={formData.orgFreelancerCount} onChange={handleChange} placeholder="e.g. 10" themeColor={currentTheme.primary} />
-                                    
-                                    <TextAreaGroup 
-                                        label="What are their specific skill sets?" 
-                                        name="orgFreelancerSkills" 
-                                        value={formData.orgFreelancerSkills} 
-                                        onChange={handleChange} 
-                                        placeholder="e.g. Agronomists, Drone Pilots, Farm Managers..." 
-                                        themeColor={currentTheme.primary} 
-                                    />
-                                </div>
+                                <>
+                                    <p style={{ margin: '20px 0 14px', fontSize: '16px', fontWeight: '700', color: '#111827', fontFamily: "'Inter', sans-serif" }}>💼 Freelance Agency</p>
+                                    <InputGroup label="Freelancers Available" name="orgFreelancerCount" type="number" value={formData.orgFreelancerCount} onChange={handleChange} placeholder="e.g. 10" themeColor={currentTheme.primary} />
+                                    <TextAreaGroup label="Their specific skill sets" name="orgFreelancerSkills" value={formData.orgFreelancerSkills} onChange={handleChange} placeholder="e.g. Agronomists, Drone Pilots, Farm Managers..." themeColor={currentTheme.primary} />
+                                </>
                             )}
 
-                            {/* Document Upload */}
-                            <FileUploadUI 
+                            {/* Verification Document */}
+                            <p style={{ margin: '20px 0 14px', fontSize: '16px', fontWeight: '700', color: '#111827', fontFamily: "'Inter', sans-serif" }}>Verification Document</p>
+                            <FileUploadUI
                                 label="Upload ID / Registration Proof (PDF/JPG)"
                                 accept=".pdf,image/*"
                                 themeColor={currentTheme.primary}
                                 onFileSelect={(f) => setFormData({...formData, idProof: f})}
                             />
 
-                            {/* Legal Terms Checkbox */}
-                            <div style={{ marginBottom: '30px', backgroundColor: '#FEF2F2', border: '1px solid #FCA5A5', padding: '15px 20px', borderRadius: '14px', display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
-                                <input 
-                                    type="checkbox" 
+                            {/* Legal Terms */}
+                            <div style={{ marginTop: '8px', marginBottom: '20px', background: '#fff8f0', border: '2px solid #fcd34d', borderRadius: '12px', padding: '14px 16px', display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
+                                <input
+                                    type="checkbox"
                                     required
                                     name="agreedToTerms"
                                     checked={formData.agreedToTerms || false}
                                     onChange={(e) => setFormData({...formData, agreedToTerms: e.target.checked})}
-                                    style={{ width: '22px', height: '22px', cursor: 'pointer', flexShrink: 0, marginTop: '2px', accentColor: '#DC2626' }}
+                                    style={{ width: '20px', height: '20px', cursor: 'pointer', flexShrink: 0, marginTop: '2px', accentColor: currentTheme.primary }}
                                 />
-                                <p style={{ margin: 0, fontSize: '13px', color: '#991B1B', lineHeight: '1.5' }}>
-                                    I agree to the <span onClick={() => setShowTermsModal(true)} style={{ color: '#DC2626', fontWeight: '800', textDecoration: 'underline', cursor: 'pointer' }}>FarmCap Seller Registration Terms</span>. I confirm that all provided details are 100% accurate and belong to me.
+                                <p style={{ margin: 0, fontSize: '13px', color: '#3a3a3c', lineHeight: '1.6' }}>
+                                    I agree to the <span onClick={() => setShowTermsModal(true)} style={{ color: currentTheme.primary, fontWeight: '700', textDecoration: 'underline', cursor: 'pointer' }}>FarmCap Seller Registration Terms</span>. All provided details are accurate and belong to me.
                                 </p>
                             </div>
 
-                            <button 
-                                type="button" 
-                                onClick={handleSubmit}
-                                disabled={isSubmitting}
-                                style={{ width: '100%', padding: '18px', background: currentTheme.gradient, color: '#fff', border: 'none', borderRadius: '14px', fontWeight: '800', fontSize: '16px', cursor: isSubmitting ? 'not-allowed' : 'pointer', boxShadow: `0 8px 25px ${currentTheme.shadow}`, transition: 'transform 0.2s', letterSpacing: '0.5px', opacity: isSubmitting ? 0.7 : 1 }}>
-                                {isSubmitting ? 'Submitting Application...' : 'Submit Profile Application'}
-                            </button>
+                            {/* Save Button */}
+                            <div style={{ padding: '0 0 20px' }}>
+                                <button onClick={handleSubmit} disabled={isSubmitting} style={{ width: '100%', padding: '16px', background: currentTheme.primary, color: '#fff', border: 'none', borderRadius: '16px', fontSize: '16px', fontWeight: '800', cursor: 'pointer', boxShadow: `0 4px 15px ${currentTheme.shadow}`, transition: 'all 0.2s ease', fontFamily: "'Inter', sans-serif" }}>
+                                    {isSubmitting ? 'Submitting...' : (isEditingMode ? 'Submit Edit Request' : 'Submit Registration')}
+                                </button>
+                            </div>
                         </div>
                     </div>
                 )}
@@ -819,28 +762,21 @@ function SellerProfile_Setup() {
     );
 }
 
-const SectionTitle = ({ title, icon, theme }) => (
-    <div style={{ margin: '24px 0 16px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-        <div style={{ color: theme.primary, display: 'flex' }}>{icon}</div>
-        <h4 style={{ margin: 0, fontSize: '18px', color: '#0f172a', fontWeight: '800', letterSpacing: '-0.5px' }}>{title}</h4>
-        <div style={{ flex: 1, height: '1px', background: `linear-gradient(90deg, ${theme.primary}30, transparent)`, marginLeft: '10px' }}></div>
-    </div>
-);
+// ── INPUT COMPONENTS (FarmFresh-inspired, individual clean boxes) ──
 
 const InputGroup = ({ label, themeColor = '#0f172a', prefix, ...props }) => {
     const [isFocused, setIsFocused] = useState(false);
     return (
-        <div style={{ position: 'relative', marginBottom: '14px', backgroundColor: '#f8fafc', borderRadius: '10px', border: `2px solid ${isFocused ? themeColor : '#e2e8f0'}`, transition: 'all 0.2s ease', display: 'flex', alignItems: 'center', overflow: 'hidden', boxShadow: isFocused ? `0 0 0 3px ${themeColor}15` : 'none' }}>
-            {prefix && <span style={{ paddingLeft: '14px', color: '#64748b', fontWeight: '700', fontSize: '14px' }}>{prefix}</span>}
-            <div style={{ flex: 1, padding: '8px 14px 6px' }}>
-                <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', color: isFocused ? themeColor : '#334155', textTransform: 'uppercase', letterSpacing: '0.5px', transition: 'color 0.2s', marginBottom: '2px' }}>{label}</label>
-                <input 
+        <div style={{ marginBottom: '14px' }}>
+            <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', color: '#374151', marginBottom: '6px', fontFamily: "'Inter', sans-serif" }}>{label}</label>
+            <div style={{ display: 'flex', alignItems: 'center', width: '100%', boxSizing: 'border-box', borderRadius: '12px', border: `2px solid ${isFocused ? themeColor : '#e5e7eb'}`, backgroundColor: isFocused ? '#fff' : '#f9fafb', transition: 'all 0.2s ease', boxShadow: isFocused ? `0 0 0 3px ${themeColor}18` : 'none', overflow: 'hidden' }}>
+                {prefix && <span style={{ paddingLeft: '14px', color: '#6b7280', fontWeight: '500', fontSize: '15px', fontFamily: "'Inter', sans-serif", flexShrink: 0 }}>{prefix}</span>}
+                <input
                     className="custom-input"
-                    required
                     onFocus={() => setIsFocused(true)}
                     onBlur={() => setIsFocused(false)}
-                    style={{ width: '100%', padding: '4px 0', backgroundColor: 'transparent', border: 'none', fontSize: '15px', color: '#1e293b', fontWeight: '600', outline: 'none', ...(props.readOnly ? { color: '#94a3b8' } : {}), ...props.style }} 
-                    {...props} 
+                    style={{ flex: 1, padding: '13px 14px', backgroundColor: 'transparent', border: 'none', fontSize: '15px', color: '#111827', fontWeight: '500', outline: 'none', fontFamily: "'Inter', sans-serif", ...(props.readOnly ? { color: '#9ca3af' } : {}), ...props.style }}
+                    {...props}
                 />
             </div>
         </div>
@@ -850,13 +786,13 @@ const InputGroup = ({ label, themeColor = '#0f172a', prefix, ...props }) => {
 const SelectGroup = ({ label, themeColor = '#0f172a', options, ...props }) => {
     const [isFocused, setIsFocused] = useState(false);
     return (
-        <div style={{ position: 'relative', marginBottom: '14px', backgroundColor: '#f8fafc', borderRadius: '10px', border: `2px solid ${isFocused ? themeColor : '#e2e8f0'}`, transition: 'all 0.2s ease', padding: '8px 14px 6px', boxShadow: isFocused ? `0 0 0 3px ${themeColor}15` : 'none' }}>
-            <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', color: isFocused ? themeColor : '#334155', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '2px' }}>{label}</label>
-            <select 
+        <div style={{ marginBottom: '14px' }}>
+            <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', color: '#374151', marginBottom: '6px', fontFamily: "'Inter', sans-serif" }}>{label}</label>
+            <select
                 className="custom-input"
                 onFocus={() => setIsFocused(true)}
                 onBlur={() => setIsFocused(false)}
-                style={{ width: '100%', padding: '4px 0', backgroundColor: 'transparent', border: 'none', fontSize: '15px', color: '#1e293b', fontWeight: '600', outline: 'none', cursor: 'pointer' }} 
+                style={{ width: '100%', padding: '13px 14px', borderRadius: '12px', border: `2px solid ${isFocused ? themeColor : '#e5e7eb'}`, backgroundColor: isFocused ? '#fff' : '#f9fafb', fontSize: '15px', color: '#111827', fontWeight: '500', outline: 'none', cursor: 'pointer', fontFamily: "'Inter', sans-serif", transition: 'all 0.2s ease', boxShadow: isFocused ? `0 0 0 3px ${themeColor}18` : 'none', boxSizing: 'border-box' }}
                 {...props}
             >
                 {options.map((opt, i) => <option key={i} value={opt.value}>{opt.label}</option>)}
@@ -868,18 +804,20 @@ const SelectGroup = ({ label, themeColor = '#0f172a', options, ...props }) => {
 const TextAreaGroup = ({ label, themeColor = '#0f172a', ...props }) => {
     const [isFocused, setIsFocused] = useState(false);
     return (
-        <div style={{ position: 'relative', marginBottom: '14px', backgroundColor: '#f8fafc', borderRadius: '10px', border: `2px solid ${isFocused ? themeColor : '#e2e8f0'}`, transition: 'all 0.2s ease', padding: '8px 14px 6px', boxShadow: isFocused ? `0 0 0 3px ${themeColor}15` : 'none' }}>
-            <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', color: isFocused ? themeColor : '#334155', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '6px' }}>{label}</label>
-            <textarea 
+        <div style={{ marginBottom: '14px' }}>
+            <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', color: '#374151', marginBottom: '6px', fontFamily: "'Inter', sans-serif" }}>{label}</label>
+            <textarea
                 className="custom-input"
                 onFocus={() => setIsFocused(true)}
                 onBlur={() => setIsFocused(false)}
-                style={{ width: '100%', padding: '4px 0', backgroundColor: 'transparent', border: 'none', fontSize: '15px', color: '#1e293b', fontWeight: '600', outline: 'none', minHeight: '80px', fontFamily: 'inherit', resize: 'vertical' }} 
-                {...props} 
+                style={{ width: '100%', padding: '13px 14px', borderRadius: '12px', border: `2px solid ${isFocused ? themeColor : '#e5e7eb'}`, backgroundColor: isFocused ? '#fff' : '#f9fafb', fontSize: '15px', color: '#111827', fontWeight: '500', outline: 'none', minHeight: '88px', fontFamily: "'Inter', sans-serif", resize: 'none', lineHeight: '1.5', transition: 'all 0.2s ease', boxShadow: isFocused ? `0 0 0 3px ${themeColor}18` : 'none', boxSizing: 'border-box' }}
+                {...props}
             />
         </div>
     );
 };
+
+
 
 const FileUploadUI = ({ label, accept, themeColor, onFileSelect, multiple = false }) => {
     const fileInputRef = useRef(null);

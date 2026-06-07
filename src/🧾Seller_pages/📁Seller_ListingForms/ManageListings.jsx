@@ -235,11 +235,10 @@ export default function ManageListings() {
                             className="refined-tab"
                             style={{
                                 padding: '10px 20px',
-                                border: 'none',
                                 borderRadius: '12px',
                                 background: activeTab === tab.id ? '#0f172a' : '#FFFFFF',
                                 fontSize: '14px',
-                                fontWeight: activeTab === tab.id ? '500' : '400',
+                                fontWeight: activeTab === tab.id ? '700' : '600',
                                 color: activeTab === tab.id ? '#FFFFFF' : '#6B7280',
                                 whiteSpace: 'nowrap',
                                 cursor: 'pointer',

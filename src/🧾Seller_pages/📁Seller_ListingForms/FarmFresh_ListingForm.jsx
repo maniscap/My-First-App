@@ -34,6 +34,7 @@ export default function FarmFresh_ListingForm() {
     const [customName, setCustomName] = useState(editData?.itemId?.includes('other') ? editData.itemName : '');
     const [description, setDescription] = useState(editData?.description || '');
     const [price, setPrice] = useState(editData?.price || '');
+    const [totalQuantityAvailable, setTotalQuantityAvailable] = useState(editData?.totalQuantityAvailable || '');
     const [status, setStatus] = useState(editData?.status || 'active');
     
     const initialUnit = editData?.unit || '1kg';
@@ -137,14 +138,19 @@ export default function FarmFresh_ListingForm() {
             showError("Please enter a valid Price (numbers only, greater than 0).");
             return;
         }
+        const quantityRegex = /^\d+(\.\d+)?\s*[a-zA-Z]+/i;
+        if (!totalQuantityAvailable || !quantityRegex.test(totalQuantityAvailable.trim())) {
+            showError("Total Quantity format is incorrect! Use number + unit (e.g., '1000 kg', '1 ton').");
+            return;
+        }
         if (!description || description.trim().length < 10) {
             showError("Please provide a good, descriptive text about your produce (at least 10 characters).");
             return;
         }
         
-        const shelfLifeRegex = /^\d+\s+(day|days|week|weeks|month|months|year|years)$/i;
+        const shelfLifeRegex = /^\d+\s*(day|days|week|weeks|month|months|year|years)$/i;
         if (!shelfLife || !shelfLifeRegex.test(shelfLife.trim())) {
-            showError("Please specify the Estimated Shelf Life in the correct format (e.g., '5 Days', '2 Weeks', '1 Month').");
+            showError("Shelf Life format is incorrect! Use number + unit (e.g., '15days', '2 Weeks', '1 Month').");
             return;
         }
         if (!qualityGuarantee) {
@@ -179,6 +185,7 @@ export default function FarmFresh_ListingForm() {
                 itemName: selectedItemName,
                 description: description,
                 price: parseFloat(price),
+                totalQuantityAvailable: totalQuantityAvailable.trim(),
                 unit: unit === 'custom_other_unit' ? customUnitName : unit,
                 isOrganic: isOrganic,
                 organicCertName: isOrganic ? organicCertName : null,
@@ -201,9 +208,6 @@ export default function FarmFresh_ListingForm() {
             
             setSubmittedData(listingData);
             setShowSuccess(true);
-            setTimeout(() => {
-                navigate('/Seller_HomePage');
-            }, 10000);
         } catch (error) {
             console.error("Error adding document: ", error);
             alert("Failed to save listing. Please try again.");
@@ -213,13 +217,13 @@ export default function FarmFresh_ListingForm() {
 
     if (showSuccess && submittedData) {
         return (
-            <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)', color: 'white', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', zIndex: 99999, padding: '24px', overflowY: 'auto', WebkitOverflowScrolling: 'touch', boxSizing: 'border-box' }}>
+            <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)', color: 'white', display: 'flex', flexDirection: 'column', alignItems: 'center', zIndex: 99999, padding: '24px', overflowY: 'auto', WebkitOverflowScrolling: 'touch', boxSizing: 'border-box' }}>
                 
                 {/* Floating glowing orbs in background for premium feel */}
-                <div style={{ position: 'absolute', top: '-10%', left: '-10%', width: '300px', height: '300px', background: 'radial-gradient(circle, rgba(34,197,94,0.15) 0%, rgba(0,0,0,0) 70%)', borderRadius: '50%', pointerEvents: 'none', animation: 'pulseOrb 4s infinite alternate' }} />
-                <div style={{ position: 'absolute', bottom: '-10%', right: '-10%', width: '250px', height: '250px', background: 'radial-gradient(circle, rgba(59,130,246,0.15) 0%, rgba(0,0,0,0) 70%)', borderRadius: '50%', pointerEvents: 'none', animation: 'pulseOrb 3s infinite alternate-reverse' }} />
+                <div style={{ position: 'fixed', top: '-10%', left: '-10%', width: '300px', height: '300px', background: 'radial-gradient(circle, rgba(34,197,94,0.15) 0%, rgba(0,0,0,0) 70%)', borderRadius: '50%', pointerEvents: 'none', animation: 'pulseOrb 4s infinite alternate' }} />
+                <div style={{ position: 'fixed', bottom: '-10%', right: '-10%', width: '250px', height: '250px', background: 'radial-gradient(circle, rgba(59,130,246,0.15) 0%, rgba(0,0,0,0) 70%)', borderRadius: '50%', pointerEvents: 'none', animation: 'pulseOrb 3s infinite alternate-reverse' }} />
 
-                <div style={{ animation: 'slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1)', display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', maxWidth: '360px', position: 'relative', zIndex: 1, boxSizing: 'border-box' }}>
+                <div style={{ margin: 'auto', animation: 'slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1)', display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', maxWidth: '360px', position: 'relative', zIndex: 1, boxSizing: 'border-box', padding: '20px 0' }}>
                     
                     {/* The Premium Receipt Card */}
                     <div style={{ backgroundColor: '#ffffff', borderRadius: '24px', width: '100%', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)', overflow: 'hidden', display: 'flex', flexDirection: 'column', boxSizing: 'border-box' }}>
@@ -313,14 +317,14 @@ export default function FarmFresh_ListingForm() {
     return (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: '#f8fafc', overflowY: 'auto', WebkitOverflowScrolling: 'touch', touchAction: 'pan-y' }}>
 
-            {/* Header */}
-            <div style={{ position: 'sticky', top: 0, backgroundColor: '#ffffff', zIndex: 10, padding: '16px 20px', display: 'flex', alignItems: 'center', borderBottom: '1px solid #f1f5f9' }}>
-                <button onClick={() => navigate(-1)} style={{ background: '#f8fafc', border: 'none', padding: '8px', marginRight: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '12px', cursor: 'pointer' }}>
-                    <ArrowLeft size={20} color="#0f172a" />
+            {/* Premium Header */}
+            <div style={{ position: 'sticky', top: 0, zIndex: 50, padding: '20px 20px 24px 20px', background: 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)', borderBottomLeftRadius: '24px', borderBottomRightRadius: '24px', display: 'flex', alignItems: 'center', boxShadow: '0 10px 25px -5px rgba(22, 163, 74, 0.3)' }}>
+                <button onClick={() => navigate(-1)} style={{ background: 'rgba(255,255,255,0.2)', border: '1px solid rgba(255,255,255,0.1)', padding: '10px', marginRight: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '14px', cursor: 'pointer', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)', transition: 'all 0.2s', boxShadow: '0 4px 6px rgba(0,0,0,0.05)' }}>
+                    <ArrowLeft size={20} color="#ffffff" strokeWidth={2.5} />
                 </button>
                 <div style={{ flex: 1 }}>
-                    <h1 style={{ margin: 0, fontSize: '18px', fontWeight: '700', color: '#0f172a' }}>{editData ? 'Edit Listing' : 'New Listing'}</h1>
-                    <p style={{ margin: '2px 0 0', fontSize: '12px', color: '#64748b', fontWeight: '500' }}>Farm Fresh Products</p>
+                    <h1 style={{ margin: 0, fontSize: '22px', fontWeight: '800', color: '#ffffff', letterSpacing: '-0.5px' }}>{editData ? 'Edit Listing' : 'New Listing'}</h1>
+                    <p style={{ margin: '4px 0 0', fontSize: '13px', color: '#dcfce7', fontWeight: '500', opacity: 0.9 }}>🌱 Farm Fresh Products</p>
                 </div>
             </div>
 
@@ -495,11 +499,15 @@ export default function FarmFresh_ListingForm() {
                         <div style={{ flex: 1 }}>
                             <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: '#1e293b', marginBottom: '8px' }}>Price (₹)</label>
                             <input 
-                                type="number" 
+                                type="text" 
+                                inputMode="decimal"
                                 placeholder="0.00" 
                                 value={price}
-                                onChange={(e) => setPrice(e.target.value)}
-                                style={{ width: '100%', padding: '16px 12px', borderRadius: '16px', border: '1px solid #cbd5e1', fontSize: '15px', backgroundColor: '#fff', color: '#0f172a', fontWeight: '600', outline: 'none', boxSizing: 'border-box', WebkitAppearance: 'none' }}
+                                onChange={(e) => {
+                                    const val = e.target.value.replace(/[^0-9.]/g, '');
+                                    setPrice(val);
+                                }}
+                                style={{ width: '100%', padding: '16px 12px', borderRadius: '16px', border: '1px solid #cbd5e1', fontSize: '15px', backgroundColor: '#fff', color: '#0f172a', fontWeight: '600', outline: 'none', boxSizing: 'border-box' }}
                                 required
                             />
                         </div>
@@ -564,7 +572,30 @@ export default function FarmFresh_ListingForm() {
                         </div>
                     </div>
 
-
+                    {/* 5.5 Total Capacity Container */}
+                    <div style={{ marginBottom: '32px', backgroundColor: '#f8fafc', padding: '16px', borderRadius: '16px', border: '1px solid #e2e8f0' }}>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '15px', fontWeight: '700', color: '#0f172a', marginBottom: '8px' }}>
+                            📦 Total Maximum Quantity Can Supply
+                        </label>
+                        <p style={{ margin: '0 0 12px 0', fontSize: '12px', color: '#64748b' }}>
+                            Let wholesale buyers know your total stock or production capacity (e.g. if selling 1kg bags, but you have 1000kg total).
+                        </p>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                            <input 
+                                type="text" 
+                                placeholder="e.g. 1000 kg or 1 ton" 
+                                value={totalQuantityAvailable}
+                                onChange={(e) => setTotalQuantityAvailable(e.target.value)}
+                                style={{ width: '100%', padding: '16px 12px', borderRadius: '12px', border: '1px solid #cbd5e1', fontSize: '15px', backgroundColor: '#fff', color: '#0f172a', fontWeight: '600', outline: 'none', boxSizing: 'border-box' }}
+                                required
+                            />
+                            {totalQuantityAvailable && !/^\d+(\.\d+)?\s*[a-zA-Z]+/i.test(totalQuantityAvailable.trim()) && (
+                                <span style={{ display: 'block', color: '#ef4444', fontSize: '11px', fontWeight: '600' }}>
+                                    Format Error: Use number + unit (e.g. 1000 kg, 1 ton)
+                                </span>
+                            )}
+                        </div>
+                    </div>
 
                     {/* 6. Description */}
                     <div style={{ marginBottom: '32px' }}>
@@ -594,12 +625,17 @@ export default function FarmFresh_ListingForm() {
                                 <label style={{ display: 'block', fontSize: '12px', color: '#475569', fontWeight: '600', marginBottom: '4px' }}>Expected Shelf Life <span style={{color: '#ef4444'}}>*</span></label>
                                 <input 
                                     type="text" 
-                                    placeholder="e.g. 5 Days, 2 Months" 
+                                    placeholder="e.g. 15days, 2 Months" 
                                     value={shelfLife}
                                     onChange={(e) => setShelfLife(e.target.value)}
                                     style={{ width: '100%', padding: '10px 12px', borderRadius: '12px', border: '1px solid #bbf7d0', fontSize: '14px', backgroundColor: '#fff', color: '#0f172a', outline: 'none', boxSizing: 'border-box' }}
                                     required
                                 />
+                                {shelfLife && !/^\d+\s*(day|days|week|weeks|month|months|year|years)$/i.test(shelfLife.trim()) && (
+                                    <span style={{ display: 'block', color: '#ef4444', fontSize: '11px', marginTop: '4px', fontWeight: '600' }}>
+                                        Format Error: Use number + unit (e.g. 15days, 2 weeks)
+                                    </span>
+                                )}
                             </div>
                         </div>
 

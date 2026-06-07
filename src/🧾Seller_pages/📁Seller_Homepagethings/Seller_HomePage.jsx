@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { CircleUserRound, ShieldAlert, ShieldCheck, ShieldX, Clock, MapPin } from 'lucide-react';
+import { CircleUserRound, ShieldAlert, ShieldCheck, ShieldX, Clock, Building2 } from 'lucide-react';
 import Seller_BannerPromo from './Seller_BannerPromo';
 import { db, auth } from '../../firebase';
 import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
@@ -8,8 +8,7 @@ import { onAuthStateChanged } from 'firebase/auth';
 
 function Seller_HomePage() {
     const navigate = useNavigate();
-    const [userLocation, setUserLocation] = useState('Select Shop Location'); 
-    const [locationTitle, setLocationTitle] = useState('My Shop'); 
+
     
     // Live Application Status state
     const [appStatus, setAppStatus] = useState('loading'); // loading, none, pending_approval, approved, rejected
@@ -25,15 +24,7 @@ function Seller_HomePage() {
     };
 
     useEffect(() => {
-        const loadLocation = () => {
-            const savedLoc = localStorage.getItem('userLocation'); 
-            const savedTitle = localStorage.getItem('locationTitle');
-            if (savedLoc) setUserLocation(savedLoc);
-            if (savedTitle) setLocationTitle(savedTitle); 
-        };
-        loadLocation();
-        window.addEventListener('storage', loadLocation);
-        return () => window.removeEventListener('storage', loadLocation);
+
     }, []);
 
     // Fetch the live status from Firebase
@@ -75,7 +66,10 @@ function Seller_HomePage() {
                 // 3. Set the state based on what we found
                 if (appData) {
                     setAppStatus(appData.status);
-                    setSellerName(appData.accountType === 'organisation' ? appData.companyName : appData.fullName);
+                    const nameToUse = appData.accountType === 'organisation' ? appData.companyName : appData.fullName;
+                    setSellerName(nameToUse);
+                    localStorage.setItem('seller_name', nameToUse);
+                    localStorage.setItem('seller_account_type', appData.accountType);
                 } else {
                     setAppStatus('none');
                 }
@@ -106,15 +100,14 @@ function Seller_HomePage() {
             
             {/* TOP HEADER */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#fff', padding: '16px 20px', borderRadius: '20px', boxShadow: '0 4px 20px rgba(0,0,0,0.03)', border: '1px solid rgba(226, 232, 240, 0.8)', marginBottom: '24px' }}>
-                <div onClick={() => navigate('/seller-location')} style={{ cursor: 'pointer', display: 'flex', flexDirection: 'column' }}>
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                         <div style={{ width: '28px', height: '28px', borderRadius: '8px', background: '#ecfdf5', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <MapPin size={16} color="#10b981" />
+                            <Building2 size={16} color="#10b981" />
                         </div>
-                        <h1 style={{ margin: 0, fontSize: '18px', color: '#0f172a', fontWeight: '800', letterSpacing: '-0.3px' }}>{locationTitle}</h1>
-                        <span style={{ fontSize: '10px', color: '#64748b', marginLeft: '2px' }}>▼</span>
+                        <h1 style={{ margin: 0, fontSize: '18px', color: '#0f172a', fontWeight: '800', letterSpacing: '-0.3px' }}>Seller Dashboard</h1>
                     </div>
-                    <p style={{ margin: '4px 0 0 36px', fontSize: '12px', color: '#64748b', width: '200px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontWeight: '500' }}>{userLocation}</p>
+                    <p style={{ margin: '4px 0 0 36px', fontSize: '12px', color: '#64748b', fontWeight: '500' }}>Manage your storefront & listings</p>
                 </div>
                 
                 <Link to="/profile" style={{ textDecoration: 'none' }}>

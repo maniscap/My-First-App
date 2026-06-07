@@ -48,7 +48,8 @@ import Seller_Settings from './🧾Seller_pages/📁seller_BottomNavigation/Sell
 import Seller_MoreMenu from './🧾Seller_pages/📁seller_BottomNavigation/Seller_MoreMenu';
 import SellerBottomNavigation from './🧾Seller_pages/📁seller_BottomNavigation/SellerBottomNavigation';
 
-import Seller_UserLocation from './🧾Seller_pages/📁Seller_Homepagethings/Seller_UserLocation';
+import Seller_StorefrontSetup from './🧾Seller_pages/📁Seller_Homepagethings/Seller_StorefrontSetup';
+import Seller_DeleteAccount from './🧾Seller_pages/📁Seller_Homepagethings/Seller_DeleteAccount';
 import FarmFresh_ListingForm from './🧾Seller_pages/📁Seller_ListingForms/FarmFresh_ListingForm';
 import LocalAgriGoods_ListingForm from './🧾Seller_pages/📁Seller_ListingForms/LocalAgriGoods_ListingForm';
 import ManageListings from './🧾Seller_pages/📁Seller_ListingForms/ManageListings';
@@ -136,7 +137,8 @@ function App() {
               <Route path="/Seller_HomePage" element={<Seller_HomePage />} />
               <Route path="/profile" element={<Seller_Profile />} />
               <Route path="/seller-setup" element={<SellerProfile_Setup />} />
-              <Route path="/seller-application-terms" element={<SellerApplication_Terms />} />
+              <Route path="/storefront-setup" element={<Seller_StorefrontSetup />} />
+              <Route path="/seller-delete-account" element={<Seller_DeleteAccount />} />
               <Route path="/seller-notifications" element={<Seller_NotificationsPage />} />
               <Route path="/seller-messages" element={<Seller_Messages />} />
               <Route path="/seller-settings" element={<Seller_Settings />} />
@@ -147,7 +149,7 @@ function App() {
 
               
               {/* --- LOCATION --- */}
-              <Route path="/seller-location" element={<Seller_UserLocation />} />
+              <Route path="/storefront-setup" element={<Seller_StorefrontSetup />} />
               
 
               <Route path="*" element={

@@ -9,6 +9,8 @@ import {
 import L from 'leaflet'; 
 import 'leaflet/dist/leaflet.css';
 import axios from 'axios';
+import { db } from '../../firebase';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 
 // --- CUSTOM ICONS ---
 const gpsIcon = L.divIcon({
@@ -88,7 +90,7 @@ const Skeleton = ({ width, height }) => (
 );
 
 // --- MAIN COMPONENT ---
-const Seller_UserLocation = () => {
+const Seller_StorefrontSetup = () => {
   const navigate = useNavigate();
   const [view, setView] = useState('list'); 
   const [deviceLoc, setDeviceLoc] = useState(null); 
@@ -116,17 +118,15 @@ const Seller_UserLocation = () => {
   const [nearbyLocs, setNearbyLocs] = useState([]);
   const [activeMenuId, setActiveMenuId] = useState(null); 
 
-  const [editingId, setEditingId] = useState(null);
+  const sellerId = localStorage.getItem('seller_app_id');
   const [coords, setCoords] = useState({ lat: 12.92, lng: 80.22 }); 
   const [isFlying, setIsFlying] = useState(false);
   const [isAddressLoading, setIsAddressLoading] = useState(false);
   
   const [pinDetails, setPinDetails] = useState({ name: '', city: '', full: '' });
-  const [addressType, setAddressType] = useState('Home');
   
   const [formData, setFormData] = useState({ 
-      houseNo: '', landmark: '', receiverName: '', phone: '', 
-      village: '', mandal: '', city: '', pincode: '' 
+      houseNo: '', landmark: '', village: '', mandal: '', city: '', pincode: ''
   });
   
   const [selectedImage, setSelectedImage] = useState(null);
@@ -151,16 +151,12 @@ const Seller_UserLocation = () => {
   };
 
   const startAddAddress = () => {
-    setEditingId(null);
-    setFormData({ houseNo: '', landmark: '', receiverName: '', phone: '', village: '', mandal: '', city: '', pincode: '' });
-    setSelectedImage(null);
     if (deviceLoc) {
         setCoords(deviceLoc);
         setIsFlying(true);
         setTimeout(() => setIsFlying(false), 1500);
         handleMapMoveEnd(deviceLoc);
     }
-    setView('map');
   };
 
   // NATIVE SHARING FEATURE
@@ -306,66 +302,35 @@ const Seller_UserLocation = () => {
       if(deviceLoc) { setCoords(deviceLoc); setIsFlying(true); setTimeout(() => setIsFlying(false), 1500); handleMapMoveEnd(deviceLoc); }
   };
 
-  const saveAddress = () => {
+  const saveStorefront = async () => {
+    if (!sellerId || sellerId === 'Unknown_ID') return alert("Seller ID missing");
     setIsSaving(true); 
-    setTimeout(() => {
-        const parts = [formData.houseNo, pinDetails.name, pinDetails.city].filter(p => p && p.trim().length > 0);
-        const fullAddress = parts.join(', ');
-        const newEntry = { id: editingId || Date.now(), type: addressType, address: fullAddress, details: formData, lat: coords.lat, lng: coords.lng, image: selectedImage };
-        let updatedList = editingId ? savedAddresses.map(a => a.id === editingId ? newEntry : a) : [newEntry, ...savedAddresses];
-        setSavedAddresses(updatedList);
-        localStorage.setItem('my_saved_addresses', JSON.stringify(updatedList));
-        updateSeller_HomePageLocation(fullAddress, addressType, coords.lat, coords.lng);
+    try {
+        const payload = {
+            sellerId,
+            location: {
+                lat: coords.lat, lng: coords.lng,
+                houseNo: formData.houseNo,
+                landmark: formData.landmark,
+                village: formData.village,
+                mandal: formData.mandal,
+                city: formData.city,
+                pincode: formData.pincode
+            },
+            shopImage: selectedImage ? "uploaded_url_placeholder" : null
+        };
+        await setDoc(doc(db, 'seller_profiles', sellerId), payload, { merge: true });
+        
+        // Save to local storage for quick access
+        const fullAddress = [formData.houseNo, pinDetails.name, pinDetails.city].filter(p => p && p.trim().length > 0).join(', ');
+        updateSeller_HomePageLocation(fullAddress, "Store Location", coords.lat, coords.lng);
+        
         setIsSaving(false);
-        setView('list'); 
-    }, 800); 
-  };
-
-  const handleSelectPlace = (address, title, lat, lng) => {
-      addToHistory(title); 
-      updateSeller_HomePageLocation(address, title, lat, lng);
-      navigate('/Seller_HomePage');
-  };
-
-  const deleteAddress = (idToDelete) => {
-    // 1. Filter out the address with the matching ID
-    const updatedList = savedAddresses.filter(addr => addr.id !== idToDelete);
-    
-    // 2. Update the state
-    setSavedAddresses(updatedList);
-    
-    // 3. Update local storage so the deletion persists
-    localStorage.setItem('my_saved_addresses', JSON.stringify(updatedList));
-    
-    // 4. Close the popup menu
-    setActiveMenuId(null);
-  };
-
-  const startEditAddress = (addressToEdit) => {
-    // 1. Close the popup menu
-    setActiveMenuId(null);
-    
-    // 2. Set the editing ID so the app knows we are updating, not creating new
-    setEditingId(addressToEdit.id);
-    
-    // 3. Populate the form data with the saved details
-    setFormData(addressToEdit.details || { 
-      houseNo: '', landmark: '', receiverName: '', phone: '', 
-      village: '', mandal: '', city: '', pincode: '' 
-    });
-    
-    // 4. Set the address type (Home, Work, Other)
-    setAddressType(addressToEdit.type || 'Home');
-    
-    // 5. Set the coordinates and trigger the map view
-    if (addressToEdit.lat && addressToEdit.lng) {
-      setCoords({ lat: addressToEdit.lat, lng: addressToEdit.lng });
-      setIsFlying(true);
-      setTimeout(() => setIsFlying(false), 1500);
+        navigate('/Seller_HomePage');
+    } catch (err) {
+        console.error(err);
+        setIsSaving(false);
     }
-    
-    // 6. Switch to the map view to allow editing
-    setView('map');
   };
 
   const getGoogleTileUrl = (type) => {
@@ -374,80 +339,7 @@ const Seller_UserLocation = () => {
       : "https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}";
   };
 
-  // --- RENDERING LIST VIEW ---
-  if (view === 'list') {
-    return (
-      <div style={styles.pageGray} onClick={() => setActiveMenuId(null)}>
-        <div style={styles.header}>
-          <ArrowLeft onClick={() => navigate(-1)} style={{cursor:'pointer'}} color="#1C1C1C" />
-          <span style={styles.headerTitle}>Select a location</span>
-        </div>
-        
-        <div style={styles.searchSectionWrapper}>
-            <div style={styles.searchBar}>
-                <Search color="#F84464" size={20} />
-                <input type="text" placeholder="Search area, street..." style={styles.searchInput} value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
-                {searchQuery && <X size={18} color="#999" onClick={() => setSearchQuery('')} style={{cursor:'pointer'}} />}
-            </div>
-            
-            <div style={styles.historyRow}>
-               {(searchHistory.length > 0 ? searchHistory : ['Chennai', 'Salem']).map((tag, i) => (
-                 <div key={i} onClick={() => setSearchQuery(tag)} style={styles.tagBtn}>
-                   <Clock size={12}/> {tag}
-                 </div>
-               ))}
-            </div>
-        </div>
-
-        <div style={styles.scrollArea}>
-            <div style={styles.actionsWrapper}>
-                <div style={styles.capsuleCard} onClick={handleDirectCurrentLocation}>
-                    <div style={styles.iconCircleRed}><LocateFixed size={22} color="#F84464" strokeWidth={2.5} /></div>
-                    <div style={{flex:1}}><div style={styles.actionTitle}>Use current location</div><div style={styles.actionSub}>{currentLocName}</div></div>
-                    <span style={{color:'#ccc'}}>›</span>
-                </div>
-                <div style={styles.capsuleCard} onClick={startAddAddress}>
-                    <div style={styles.iconCircleRed}><Plus size={22} color="#F84464" /></div>
-                    <div style={{flex:1}}><div style={styles.actionTitle}>Add Address</div></div>
-                    <span style={{color:'#ccc'}}>›</span>
-                </div>
-            </div>
-            
-            {savedAddresses.length > 0 && <div style={styles.sectionTitle}>SAVED ADDRESSES</div>}
-            
-            {savedAddresses.map(addr => (
-                <div key={addr.id} style={styles.addressCard}>
-                    <div style={styles.cardLeft}><div style={styles.iconBox}>{addr.type === 'Work' ? <Briefcase size={18} color="#555"/> : <Home size={18} color="#555"/>}</div></div>
-                    <div style={styles.cardRight} onClick={() => handleSelectPlace(addr.address, addr.type, addr.lat, addr.lng)}>
-                        <div style={styles.cardType}>{addr.type}</div>
-                        <div style={styles.cardAddress}>{addr.address}</div>
-                        <div style={styles.cardPhone}>Phone: {addr.details?.phone || "N/A"}</div>
-                    </div>
-                    <div style={{position:'relative'}}>
-                        <div style={styles.menuIcon} onClick={(e) => { e.stopPropagation(); setActiveMenuId(activeMenuId === addr.id ? null : addr.id); }}><MoreVertical size={20} color="#333" /></div>
-                        {activeMenuId === addr.id && (
-                            <div style={styles.popupMenu}>
-                                <div style={styles.menuItem} onClick={() => startEditAddress(addr)}><Edit2 size={14} color="#333"/> Edit</div>
-                                <div style={styles.menuItem} onClick={() => handleShareAddress(addr)}><Share2 size={14} color="#333"/> Share</div>
-                                <div style={{...styles.menuItem, color:'#F84464'}} onClick={() => deleteAddress(addr.id)}><Trash2 size={14}/> Delete</div>
-                            </div>
-                        )}
-                    </div>
-                </div>
-            ))}
-
-            <div style={styles.sectionTitle}>NEARBY PLACES</div>
-            {nearbyLocs.map(loc => (
-                <div key={loc.id} style={styles.nearbyRow} onClick={() => handleSelectPlace(loc.address, loc.name, loc.lat, loc.lng)}>
-                    <div style={styles.pinCircle}><MapPin size={18} color="#555" /></div>
-                    <div><div style={styles.nearbyTitle}>{loc.name}</div><div style={styles.nearbySub}>{loc.address} • <span style={{color:'#F84464', fontWeight:600}}>{formatDistance(loc.meters)}</span></div></div>
-                </div>
-            ))}
-            <div style={{height:'30px'}}></div>
-        </div>
-      </div>
-    );
-  }
+  // LIST VIEW REMOVED — Storefront is directly the Map/Form View
 
   // --- RENDERING MAP VIEW ---
   return (
@@ -456,8 +348,8 @@ const Seller_UserLocation = () => {
             <div style={styles.headerGlass}>
                 <div style={styles.mapHeaderTop}>
                     <div style={styles.mapHeaderLeft}>
-                        <div onClick={() => setView('list')} style={styles.backCircle}><ArrowLeft size={18} color="#1C1C1C" strokeWidth={3} /></div>
-                        <span style={styles.headerTitleLarge}>Set Location</span>
+                        <div onClick={() => navigate(-1)} style={styles.backCircle}><ArrowLeft size={18} color="#1C1C1C" strokeWidth={3} /></div>
+                        <span style={styles.headerTitleLarge}>Storefront Setup</span>
                     </div>
                     <div style={{ ...styles.statusBadge, background: gpsStatus === 'active' ? '#E7F9F2' : '#FFF0F0' }} onClick={requestGPS}>
                         <div className="blink-indicator" style={{ background: gpsStatus === 'active' ? '#10B981' : '#F84464' }}></div>
@@ -509,45 +401,34 @@ const Seller_UserLocation = () => {
                     </div>
                 </div>
 
-                <div style={styles.inputBoxFull}><input style={styles.inputRaw} placeholder="House / Flat / Block No.*" value={formData.houseNo} onChange={e => setFormData({...formData, houseNo: e.target.value})} /></div>
+                {/* ONE CLICK IMPORT BUTTON */}
+                <div style={styles.label}>LOCATION DETAILS</div>
+                <div style={styles.inputBoxFull}><input style={styles.inputRaw} placeholder="House / Plot / Farm No.*" value={formData.houseNo} onChange={e => setFormData({...formData, houseNo: e.target.value})} /></div>
                 <div style={styles.inputBoxFull}><input style={styles.inputRaw} placeholder="Landmark (Optional)" value={formData.landmark} onChange={e => setFormData({...formData, landmark: e.target.value})} /></div>
-
-                <div style={styles.label}>AUTO-FILLED</div>
-                <div style={styles.inputBoxFull}><input style={styles.inputRaw} placeholder="Village" value={formData.village} readOnly /></div>
+                <div style={styles.inputBoxFull}><input style={styles.inputRaw} placeholder="Village" value={formData.village} onChange={e => setFormData({...formData, village: e.target.value})} /></div>
                 <div style={styles.inputRow}>
-                    <div style={styles.inputBoxHalf}><input style={styles.inputRaw} placeholder="Mandal" value={formData.mandal} readOnly /></div>
-                    <div style={styles.inputBoxHalf}><input style={styles.inputRaw} placeholder="City" value={formData.city} readOnly /></div>
+                    <div style={styles.inputBoxHalf}><input style={styles.inputRaw} placeholder="Mandal" value={formData.mandal} onChange={e => setFormData({...formData, mandal: e.target.value})} /></div>
+                    <div style={styles.inputBoxHalf}><input style={styles.inputRaw} placeholder="City" value={formData.city} onChange={e => setFormData({...formData, city: e.target.value})} /></div>
                 </div>
-                <div style={styles.inputBoxFull}><input style={styles.inputRaw} placeholder="Pincode" value={formData.pincode} readOnly /></div>
-
-                <div style={styles.label}>CONTACT INFO</div>
-                <div style={styles.inputBoxFull}><input style={styles.inputRaw} placeholder="Receiver's Name" value={formData.receiverName} onChange={e => setFormData({...formData, receiverName: e.target.value})} /></div>
-                <div style={styles.inputBoxFull}><input style={styles.inputRaw} placeholder="Phone Number" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} /></div>
-
-                <div style={styles.label}>SAVE AS</div>
-                <div style={styles.chips}>
-                    {[ {t:'Home', i:<Home size={14}/>}, {t:'Work', i:<Briefcase size={14}/>}, {t:'Other', i:<Bookmark size={14}/>} ].map(item => (
-                        <button key={item.t} style={addressType === item.t ? styles.chipActive : styles.chip} onClick={() => setAddressType(item.t)}>{item.i} {item.t}</button>
-                    ))}
-                </div>
+                <div style={styles.inputBoxFull}><input style={styles.inputRaw} placeholder="Pincode" value={formData.pincode} onChange={e => setFormData({...formData, pincode: e.target.value})} /></div>
 
                 <div style={styles.photoUploadBox} onClick={() => fileInputRef.current.click()}>
                     <input type="file" ref={fileInputRef} style={{display: 'none'}} accept="image/*" onChange={handleImageUpload} />
                     {selectedImage ? (
                         <div style={styles.photoPreviewWrapper}>
-                            <img src={selectedImage} alt="Addr" style={styles.photoPreview}/><div style={{flex:1}}><div style={styles.photoAddedTitle}>Photo Added</div><div style={styles.photoChangeText}>Tap to change</div></div><Check size={20} color="#10B981" />
+                            <img src={selectedImage} alt="Location" style={styles.photoPreview}/><div style={{flex:1}}><div style={styles.photoAddedTitle}>Photo Added</div><div style={styles.photoChangeText}>Tap to change</div></div><Check size={20} color="#10B981" />
                         </div>
                     ) : (
                         <>
                             <div style={styles.photoIconCircle}><Camera size={20} color="#F84464" /></div>
-                            <div style={{flex:1}}><div style={styles.photoInstructionsTitle}>Add building photo</div><div style={styles.photoInstructionsSub}>Helps delivery worker find location</div></div>
+                            <div style={{flex:1}}><div style={styles.photoInstructionsTitle}>Add Location Photo</div><div style={styles.photoInstructionsSub}>Helps buyers recognize your location</div></div>
                         </>
                     )}
                 </div>
 
                 <div style={styles.saveActionWrapper}>
-                    <button style={{...styles.saveBtn, opacity: (formData.houseNo && formData.receiverName) ? 1 : 0.7, background: isSaving ? '#10B981' : '#F84464'}} onClick={saveAddress}>
-                        {isSaving ? <Check color="white" size={24} /> : 'Save Address & Proceed'}
+                    <button style={{...styles.saveBtn, opacity: formData.houseNo ? 1 : 0.7, background: isSaving ? '#10B981' : '#F84464'}} onClick={saveStorefront} disabled={isSaving}>
+                        {isSaving ? <Check color="white" size={24} /> : 'Save Location'}
                     </button>
                 </div>
             </div>
@@ -672,4 +553,4 @@ const styles = {
   gpsUseText: { fontWeight:'800', color:'#F84464' }
 };
 
-export default Seller_UserLocation;
+export default Seller_StorefrontSetup;

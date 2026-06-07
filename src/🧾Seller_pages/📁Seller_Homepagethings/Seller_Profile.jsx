@@ -1,13 +1,45 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { db } from '../../firebase';
+import { doc, getDoc, collection, query, where, getDocs, deleteDoc } from 'firebase/firestore';
 import { Link, useNavigate } from 'react-router-dom';
 import { useUserMode } from '../../UserModeContext';
 import BrandedTransition3D from '../../🛠️Shared_Components/BrandedTransition3D';
-import { ChevronLeft, Edit3, Settings, HelpCircle, Package, Wallet, ShieldCheck, MapPin, Building2, User } from 'lucide-react';
+import { ChevronLeft, Edit3, Settings, HelpCircle, Package, Wallet, ShieldCheck, MapPin, Building2, User, Trash2, AlertTriangle } from 'lucide-react';
 
 function Seller_Profile() {
     const navigate = useNavigate();
     const { toggleUserMode } = useUserMode();
     const [isTransforming, setIsTransforming] = useState(false);
+
+    const [sellerName, setSellerName] = useState(localStorage.getItem('seller_name') || 'Loading...');
+    const [accountType, setAccountType] = useState(localStorage.getItem('seller_account_type') || 'single');
+    const sellerId = localStorage.getItem('seller_app_id') || 'Unknown_ID';
+
+    useEffect(() => {
+        const fetchProfileData = async () => {
+            if (sellerId && sellerId !== 'Unknown_ID') {
+                try {
+                    const docRef = doc(db, 'seller_applications', sellerId);
+                    const docSnap = await getDoc(docRef);
+                    if (docSnap.exists()) {
+                        const data = docSnap.data();
+                        const nameToUse = data.accountType === 'organisation' ? data.companyName : data.fullName;
+                        setSellerName(nameToUse || 'Shop Name');
+                        setAccountType(data.accountType || 'single');
+                        
+                        localStorage.setItem('seller_name', nameToUse || 'Shop Name');
+                        localStorage.setItem('seller_account_type', data.accountType || 'single');
+                    }
+                } catch (error) {
+                    console.error("Error fetching profile data:", error);
+                }
+            }
+        };
+        
+        if (sellerName === 'Loading...') {
+            fetchProfileData();
+        }
+    }, [sellerId, sellerName]);
 
     const handleSwitchToConsumer = () => {
         setIsTransforming(true);
@@ -35,15 +67,15 @@ function Seller_Profile() {
 
                 <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
                     <div style={{ width: '80px', height: '80px', borderRadius: '24px', background: 'linear-gradient(135deg, #3b82f6, #2563eb)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 8px 24px rgba(0,0,0,0.3)', border: '2px solid rgba(255,255,255,0.2)', position: 'relative', flexShrink: 0 }}>
-                        <Building2 size={36} color="#fff" />
+                        {accountType === 'organisation' ? <Building2 size={36} color="#fff" /> : <User size={36} color="#fff" />}
                         <div style={{ position: 'absolute', bottom: '-5px', right: '-5px', background: '#10b981', width: '22px', height: '22px', borderRadius: '50%', border: '3px solid #0f172a', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                             <ShieldCheck size={12} color="#fff" />
                         </div>
                     </div>
                     <div style={{ flex: 1, overflow: 'hidden' }}>
-                        <h1 style={{ margin: '0 0 4px', fontSize: '24px', fontWeight: '800', letterSpacing: '-0.5px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>My Awesome Shop</h1>
-                        <p style={{ margin: '0 0 8px', fontSize: '14px', color: '#94a3b8', display: 'flex', alignItems: 'center', gap: '5px' }}>
-                            <MapPin size={14} /> Global Market, IND
+                        <h1 style={{ margin: '0 0 4px', fontSize: '24px', fontWeight: '800', letterSpacing: '-0.5px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{sellerName}</h1>
+                        <p style={{ margin: '0 0 8px', fontSize: '12px', color: '#94a3b8', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                            <User size={14} /> {accountType === 'organisation' ? 'Organisation' : 'Individual'} • ID: {sellerId}
                         </p>
                         <span style={{ fontSize: '11px', fontWeight: '700', color: '#fff', textTransform: 'uppercase', letterSpacing: '1px', background: 'rgba(255,255,255,0.15)', padding: '4px 10px', borderRadius: '12px' }}>Verified Seller</span>
                     </div>
@@ -75,13 +107,26 @@ function Seller_Profile() {
                 
                 <div style={{ background: '#fff', borderRadius: '24px', padding: '10px', boxShadow: '0 4px 15px rgba(0,0,0,0.03)', border: '1px solid #e2e8f0', marginBottom: '25px' }}>
                     
+                    <Link to="/storefront-setup" style={{ textDecoration: 'none', color: 'inherit' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', padding: '15px', borderBottom: '1px solid #f1f5f9' }}>
+                            <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: '#fce7f3', display: 'flex', alignItems: 'center', justifyContent: 'center', marginRight: '15px' }}>
+                                <Building2 size={20} color="#db2777" />
+                            </div>
+                            <div style={{ flex: 1 }}>
+                                <h4 style={{ margin: '0 0 3px', fontSize: '15px', fontWeight: '700', color: '#1e293b' }}>Store front Setup</h4>
+                                <p style={{ margin: 0, fontSize: '12px', color: '#64748b' }}>Location, contacts, and delivery range</p>
+                            </div>
+                            <ChevronLeft size={20} color="#cbd5e1" style={{ transform: 'rotate(180deg)' }} />
+                        </div>
+                    </Link>
+
                     <Link to="/seller-setup" style={{ textDecoration: 'none', color: 'inherit' }}>
                         <div style={{ display: 'flex', alignItems: 'center', padding: '15px', borderBottom: '1px solid #f1f5f9' }}>
                             <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: '#e0f2fe', display: 'flex', alignItems: 'center', justifyContent: 'center', marginRight: '15px' }}>
                                 <Edit3 size={20} color="#0284c7" />
                             </div>
                             <div style={{ flex: 1 }}>
-                                <h4 style={{ margin: '0 0 3px', fontSize: '15px', fontWeight: '700', color: '#1e293b' }}>Edit Shop Details</h4>
+                                <h4 style={{ margin: '0 0 3px', fontSize: '15px', fontWeight: '700', color: '#1e293b' }}>Seller Registration</h4>
                                 <p style={{ margin: 0, fontSize: '12px', color: '#64748b' }}>Update your business information</p>
                             </div>
                             <ChevronLeft size={20} color="#cbd5e1" style={{ transform: 'rotate(180deg)' }} />

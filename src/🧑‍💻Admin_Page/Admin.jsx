@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { db } from '../firebase';
 import { collection, getDocs, doc, updateDoc, deleteField, deleteDoc, getCountFromServer, query, limit, onSnapshot, where, startAfter } from 'firebase/firestore';
 import { IoMdArrowBack } from 'react-icons/io';
-import { CheckCircle, XCircle, User, Building, LayoutDashboard, ClipboardList, Users, List, LogOut, Lock, RefreshCw } from 'lucide-react';
+import { CheckCircle, XCircle, User, Building, LayoutDashboard, ClipboardList, Users, List, LogOut, Lock, RefreshCw, Edit3, CheckCircle2, Check, X } from 'lucide-react';
 
 function Admin() {
   const [isAuthenticated, setIsAuthenticated] = useState(localStorage.getItem('adminAuth') === 'true');
@@ -193,9 +193,26 @@ function Admin() {
       if (isAuthenticated) fetchData(); 
   }, [isAuthenticated]);
 
+  const wipeSellerData = async (sellerId) => {
+      const collectionsToClear = [
+          'listings_farm_fresh', 'listings_machinery', 'listings_workers',
+          'listings_business', 'listings_freelancing', 'listings_local_goods'
+      ];
+      for (const colName of collectionsToClear) {
+          const q = query(collection(db, colName), where('sellerId', '==', sellerId));
+          const snap = await getDocs(q);
+          const deletePromises = snap.docs.map(d => deleteDoc(doc(db, colName, d.id)));
+          await Promise.all(deletePromises);
+      }
+      try {
+          await deleteDoc(doc(db, 'seller_profiles', sellerId));
+      } catch (e) { console.log(e); }
+  };
+
   const handleReject = async (app) => {
-      if(window.confirm("Are you sure you want to completely reject and erase this application from Firebase?")) {
+      if(window.confirm("Are you sure you want to completely reject and erase this application from Firebase? This will wipe all their listings too.")) {
           try {
+              await wipeSellerData(app.id);
               await deleteDoc(doc(db, "seller_applications", app.id));
               fetchData();
           } catch (error) {
@@ -229,13 +246,49 @@ function Admin() {
   };
 
   const handleDeleteApproved = async (id) => {
-      if(window.confirm("Are you sure you want to permanently delete this verified seller from Firebase?")) {
+      if(window.confirm("Are you sure you want to permanently delete this verified seller from Firebase? This will WIPE OUT ALL THEIR LISTINGS instantly.")) {
           try {
+              await wipeSellerData(id);
               await deleteDoc(doc(db, "seller_applications", id));
               fetchData();
-          } catch (err) { alert("Failed to delete seller."); }
-      }
-  };
+           } catch (err) { alert("Failed to delete seller."); }
+       }
+   };
+
+   const handleApproveEdit = async (app) => {
+       if(window.confirm("Approve this edit? This will update their live profile with the new details.")) {
+           try {
+               const sellerRef = doc(db, "seller_applications", app.id);
+               await updateDoc(sellerRef, { 
+                   ...app.editData,
+                   hasPendingEdit: false,
+                   editData: deleteField()
+               });
+               fetchData();
+               alert("Edit approved successfully.");
+           } catch (error) {
+               console.error("Error approving edit:", error);
+               alert("Failed to approve edit request.");
+           }
+       }
+   };
+
+   const handleRejectEdit = async (app) => {
+       if(window.confirm("Reject this edit? The seller's live profile will remain unchanged.")) {
+           try {
+               const sellerRef = doc(db, "seller_applications", app.id);
+               await updateDoc(sellerRef, { 
+                   hasPendingEdit: false,
+                   editData: deleteField()
+               });
+               fetchData();
+               alert("Edit rejected successfully.");
+           } catch (error) {
+               console.error("Error rejecting edit:", error);
+               alert("Failed to reject edit request.");
+           }
+       }
+   };
 
   if (!isAuthenticated) {
       return (
@@ -276,6 +329,8 @@ function Admin() {
   const approvedInd = sellerApplications.filter(a => a.status === 'approved' && a.accountType === 'individual');
   const approvedOrg = sellerApplications.filter(a => a.status === 'approved' && a.accountType === 'organisation');
 
+  const pendingEdits = sellerApplications.filter(a => a.hasPendingEdit);
+
   return (
     <div className="admin-dashboard">
       <style>{styles}</style>
@@ -293,6 +348,9 @@ function Admin() {
               </button>
               <button className={`nav-item ${activeTab === 'verifications' ? 'active' : ''}`} onClick={() => setActiveTab('verifications')}>
                   <ClipboardList size={20} /> Verifications <span className="badge">{pendingAppsCount}</span>
+              </button>
+              <button className={`nav-item ${activeTab === 'edit_approvals' ? 'active' : ''}`} onClick={() => setActiveTab('edit_approvals')}>
+                  <Edit3 size={20} /> Edit Approvals {pendingEdits.length > 0 && <span className="badge" style={{background: '#f59e0b'}}>{pendingEdits.length}</span>}
               </button>
               <button className={`nav-item ${activeTab === 'approved' ? 'active' : ''}`} onClick={() => setActiveTab('approved')}>
                   <Users size={20} /> Approved Sellers
@@ -417,6 +475,64 @@ function Admin() {
               </div>
           )}
 
+          {/* EDIT APPROVALS TAB */}
+          {activeTab === 'edit_approvals' && (
+              <div className="tab-content">
+                  <div className="header-titles">
+                      <h1>Edit Approvals</h1>
+                      <p>Review and approve profile edits submitted by active sellers.</p>
+                  </div>
+                  
+                  {pendingEdits.length === 0 ? (
+                      <div className="empty-state">
+                          <CheckCircle2 size={48} color="#10b981" />
+                          <p>No pending edit requests.</p>
+                      </div>
+                  ) : (
+                      <div className="applications-grid">
+                          {pendingEdits.map(app => (
+                              <div key={app.id} className="app-card">
+                                  <div className="app-card-header">
+                                      <div className="app-card-badge">Edit Request</div>
+                                      <span className="app-type">{app.accountType === 'individual' ? 'Single Person' : 'Organisation'}</span>
+                                  </div>
+                                  <div className="app-card-body">
+                                      <h3 style={{color: '#d97706'}}>{app.editData?.companyName || app.editData?.shopName || app.editData?.fullName || "Seller"}</h3>
+                                      <p className="app-id">ID: {app.id}</p>
+                                      <div className="app-info" style={{marginTop: '12px', borderTop: '1px solid #e2e8f0', paddingTop: '10px'}}>
+                                          <p style={{fontSize:'12px', fontWeight:'bold', color:'#64748b', marginBottom:'8px', textTransform:'uppercase'}}>Requested Changes:</p>
+                                          {Object.keys(app.editData || {}).map(key => {
+                                              if (['hasPendingEdit', 'editData', 'submittedAt'].includes(key)) return null;
+                                              const oldVal = app[key];
+                                              const newVal = app.editData[key];
+                                              if (JSON.stringify(oldVal) !== JSON.stringify(newVal)) {
+                                                  const displayOld = Array.isArray(oldVal) ? oldVal.join(', ') : (oldVal || '(empty)');
+                                                  const displayNew = Array.isArray(newVal) ? newVal.join(', ') : (newVal || '(empty)');
+                                                  const displayKey = key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
+                                                  return (
+                                                      <p key={key} style={{ margin: '6px 0', fontSize: '13px', lineHeight: '1.4' }}>
+                                                          <strong>{displayKey}:</strong><br/>
+                                                          <span style={{ color: '#ef4444', textDecoration: 'line-through', marginRight: '6px' }}>{displayOld}</span>
+                                                          ➔
+                                                          <span style={{ color: '#10b981', fontWeight: 'bold', marginLeft: '6px' }}>{displayNew}</span>
+                                                      </p>
+                                                  );
+                                              }
+                                              return null;
+                                          })}
+                                      </div>
+                                  </div>
+                                  <div className="app-card-actions">
+                                      <button className="btn-approve" onClick={() => handleApproveEdit(app)}><Check size={16}/> Approve Edit</button>
+                                      <button className="btn-reject" onClick={() => handleRejectEdit(app)}><X size={16}/> Reject Edit</button>
+                                  </div>
+                              </div>
+                          ))}
+                      </div>
+                  )}
+              </div>
+          )}
+
           {/* APPROVED SELLERS TAB */}
           {activeTab === 'approved' && (
               <div className="tab-content">
@@ -512,7 +628,6 @@ function Admin() {
                               onClick={() => setListingCategory(tab.id)}
                               style={{
                                   padding: '10px 20px',
-                                  border: 'none',
                                   borderRadius: '12px',
                                   background: listingCategory === tab.id ? '#0f172a' : '#FFFFFF',
                                   fontSize: '14px',
