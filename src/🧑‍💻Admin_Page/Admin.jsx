@@ -814,11 +814,11 @@ const ApplicationCard = ({ app, onApprove, onReject }) => {
                         <div className="info-block">
                             <span className="lbl">Farm & Produce</span>
                             <span className="val">
-                                {app.isOrganic || app.freshProduceTypes || app.orgProduceCapacity ? (
+                                {app.isOrganic || app.freshProduceTypes || app.orgProduceCapacity || app.produceQuantity ? (
                                     <>
                                         {app.isOrganic === 'yes' ? <span style={{color: '#10b981', fontWeight: 'bold'}}>100% Organic 🌱</span> : (app.isOrganic === 'no' ? 'Conventional' : '')} 
                                         {app.freshProduceTypes && <><br/>Crops: {app.freshProduceTypes}</>}
-                                        {app.orgProduceCapacity && <><br/>Capacity: {app.orgProduceCapacity}</>}
+                                        {(app.orgProduceCapacity || app.produceQuantity) && <><br/>Capacity: {app.orgProduceCapacity || app.produceQuantity}</>}
                                     </>
                                 ) : 'N/A'}
                             </span>
@@ -826,10 +826,10 @@ const ApplicationCard = ({ app, onApprove, onReject }) => {
                         <div className="info-block">
                             <span className="lbl">Machinery / Vehicles</span>
                             <span className="val">
-                                {app.machineryDetails || app.orgMachineryDetails || app.orgMachineryCapacity ? (
+                                {app.machineryDetails || app.orgMachineryDetails || app.orgMachineryCapacity || app.machineryCount ? (
                                     <>
                                         {app.machineryDetails || app.orgMachineryDetails}
-                                        {(app.orgMachineryCapacity) && ` (Capacity: ${app.orgMachineryCapacity})`}
+                                        {(app.orgMachineryCapacity || app.machineryCount) && ` (Count/Capacity: ${app.orgMachineryCapacity || app.machineryCount})`}
                                     </>
                                 ) : 'N/A'}
                             </span>
@@ -848,10 +848,10 @@ const ApplicationCard = ({ app, onApprove, onReject }) => {
                         <div className="info-block">
                             <span className="lbl">Labor / Workers</span>
                             <span className="val">
-                                {app.workerSkills || app.orgWorkerSkills || app.orgWorkerCount ? (
+                                {app.workerSkills || app.orgWorkerSkills || app.orgWorkerCount || app.workerCount ? (
                                     <>
                                         {app.workerSkills || app.orgWorkerSkills}
-                                        {app.orgWorkerCount && ` (Count: ${app.orgWorkerCount})`}
+                                        {(app.orgWorkerCount || app.workerCount) && ` (Count: ${app.orgWorkerCount || app.workerCount})`}
                                     </>
                                 ) : 'N/A'}
                             </span>
@@ -859,13 +859,30 @@ const ApplicationCard = ({ app, onApprove, onReject }) => {
                         <div className="info-block">
                             <span className="lbl">Freelance / Skills</span>
                             <span className="val">
-                                {app.freelanceWorks || app.freelanceSkillSet || app.orgFreelancerSkills || app.freelanceExperience || app.orgFreelancerCount ? (
+                                {app.freelanceWorks || app.freelanceSkillSet || app.orgFreelancerSkills || app.freelanceExperience || app.orgFreelancerCount || app.freelancerCount ? (
                                     <>
                                         {app.freelanceWorks || app.freelanceSkillSet || app.orgFreelancerSkills}
                                         {app.freelanceExperience && ` (${app.freelanceExperience} Yrs Exp)`}
-                                        {app.orgFreelancerCount && ` (Count: ${app.orgFreelancerCount})`}
+                                        {(app.orgFreelancerCount || app.freelancerCount) && ` (Count: ${app.orgFreelancerCount || app.freelancerCount})`}
                                     </>
                                 ) : 'N/A'}
+                            </span>
+                        </div>
+                        <div className="info-block">
+                            <span className="lbl">Local Agri Goods</span>
+                            <span className="val">
+                                {app.localGoodsTypes || app.orgLocalGoodsTypes || app.orgLocalGoodsCapacity || app.localGoodsQuantity ? (
+                                    <>
+                                        {app.localGoodsTypes || app.orgLocalGoodsTypes}
+                                        {(app.orgLocalGoodsCapacity || app.localGoodsQuantity) && ` (Capacity: ${app.orgLocalGoodsCapacity || app.localGoodsQuantity})`}
+                                    </>
+                                ) : 'N/A'}
+                            </span>
+                        </div>
+                        <div className="info-block" style={{ gridColumn: '1 / -1' }}>
+                            <span className="lbl">Delivery Preference</span>
+                            <span className="val" style={{ fontWeight: 'bold', color: '#3b82f6' }}>
+                                {app.deliveryPreference === 'delivery' ? '🚚 Seller Manages Delivery' : (app.deliveryPreference === 'pickup' ? '🏪 Customer Pickup Required' : 'Not Specified')}
                             </span>
                         </div>
                     </div>

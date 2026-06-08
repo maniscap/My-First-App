@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Building2, User, ShieldCheck, Clock, ChevronLeft, UploadCloud, MapPin, Briefcase, CheckCircle2, Trash2, AlertTriangle, Edit3 } from 'lucide-react';
 import { db } from '../../firebase';
 import { getAuth } from 'firebase/auth';
-import { collection, addDoc, getDoc, doc, setDoc, deleteDoc, query, where, getDocs } from 'firebase/firestore';
+import { collection, addDoc, getDoc, doc, setDoc, deleteDoc, query, where, getDocs, onSnapshot } from 'firebase/firestore';
 import SellerApplication_Terms from './SellerApplication_Terms';
 import imageCompression from 'browser-image-compression';
 function SellerProfile_Setup() {
@@ -27,6 +27,9 @@ function SellerProfile_Setup() {
     const [cachedOrgReject, setCachedOrgReject] = useState(localStorage.getItem('cached_reject_org'));
 
     useEffect(() => {
+        let unsubInd = () => {};
+        let unsubOrg = () => {};
+
         const fetchStatus = async () => {
             const auth = getAuth();
             const user = auth.currentUser;
@@ -57,44 +60,51 @@ function SellerProfile_Setup() {
                 }
             }
 
-            // --- 2. FETCH LATEST DATA ---
+            // --- 2. FETCH LATEST DATA VIA SNAPSHOT ---
             if (currentIndId) {
-                const docSnap = await getDoc(doc(db, 'seller_applications', currentIndId));
-                if (docSnap.exists()) {
-                    const data = docSnap.data();
-                    if (data.status === 'rejected') {
-                        localStorage.setItem('cached_reject_ind', data.rejectionReason || "Does not meet requirements");
-                        setCachedIndReject(data.rejectionReason || "Does not meet requirements");
-                        await deleteDoc(doc(db, 'seller_applications', currentIndId));
+                unsubInd = onSnapshot(doc(db, 'seller_applications', currentIndId), async (docSnap) => {
+                    if (docSnap.exists()) {
+                        const data = docSnap.data();
+                        if (data.status === 'rejected') {
+                            localStorage.setItem('cached_reject_ind', data.rejectionReason || "Does not meet requirements");
+                            setCachedIndReject(data.rejectionReason || "Does not meet requirements");
+                            await deleteDoc(doc(db, 'seller_applications', currentIndId));
+                            localStorage.removeItem('seller_individual_app_id');
+                            if(localStorage.getItem('seller_app_id') === currentIndId) localStorage.removeItem('seller_app_id');
+                        } else {
+                            setIndApp(data);
+                        }
+                    } else {
                         localStorage.removeItem('seller_individual_app_id');
-                        if(localStorage.getItem('seller_app_id') === currentIndId) localStorage.removeItem('seller_app_id');
-                    } else {
-                        setIndApp(data);
                     }
-                } else {
-                    localStorage.removeItem('seller_individual_app_id');
-                }
+                    if (!currentOrgId) setLoadingData(false);
+                });
+            } else {
+                if (!currentOrgId) setLoadingData(false);
             }
+
             if (currentOrgId) {
-                const docSnap = await getDoc(doc(db, 'seller_applications', currentOrgId));
-                if (docSnap.exists()) {
-                    const data = docSnap.data();
-                    if (data.status === 'rejected') {
-                        localStorage.setItem('cached_reject_org', data.rejectionReason || "Does not meet requirements");
-                        setCachedOrgReject(data.rejectionReason || "Does not meet requirements");
-                        await deleteDoc(doc(db, 'seller_applications', currentOrgId));
-                        localStorage.removeItem('seller_organisation_app_id');
-                        if(localStorage.getItem('seller_app_id') === currentOrgId) localStorage.removeItem('seller_app_id');
+                unsubOrg = onSnapshot(doc(db, 'seller_applications', currentOrgId), async (docSnap) => {
+                    if (docSnap.exists()) {
+                        const data = docSnap.data();
+                        if (data.status === 'rejected') {
+                            localStorage.setItem('cached_reject_org', data.rejectionReason || "Does not meet requirements");
+                            setCachedOrgReject(data.rejectionReason || "Does not meet requirements");
+                            await deleteDoc(doc(db, 'seller_applications', currentOrgId));
+                            localStorage.removeItem('seller_organisation_app_id');
+                            if(localStorage.getItem('seller_app_id') === currentOrgId) localStorage.removeItem('seller_app_id');
+                        } else {
+                            setOrgApp(data);
+                        }
                     } else {
-                        setOrgApp(data);
+                        localStorage.removeItem('seller_organisation_app_id');
                     }
-                } else {
-                    localStorage.removeItem('seller_organisation_app_id');
-                }
+                    setLoadingData(false);
+                });
             }
-            setLoadingData(false);
         };
         fetchStatus();
+        return () => { unsubInd(); unsubOrg(); };
     }, []);
     
     // Form Data State
@@ -518,7 +528,7 @@ function SellerProfile_Setup() {
                                 <button 
                                     onClick={() => navigate('/seller-delete-account')} 
                                     style={{ background: '#fef2f2', border: '1.5px solid #fecaca', color: '#ef4444', padding: '12px 24px', borderRadius: '12px', fontSize: '14px', fontWeight: '700', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', transition: 'all 0.2s ease', fontFamily: "'Inter', sans-serif" }}>
-                                    <Trash2 size={18} /> Delete Seller Account
+                                    <Trash2 size={18} /> Delete Seller Account & ALL Data
                                 </button>
                             </div>
                         </div>
@@ -556,6 +566,15 @@ function SellerProfile_Setup() {
                                 onFileSelect={(file) => setFormData({...formData, profilePic: file})}
                             />
 
+                            {/* Verification Document */}
+                            <p style={{ margin: '20px 0 14px', fontSize: '16px', fontWeight: '700', color: '#111827', fontFamily: "'Inter', sans-serif" }}>Verification Document</p>
+                            <FileUploadUI
+                                label="Upload ID / Registration Proof (PDF/JPG)"
+                                accept=".pdf,image/*"
+                                themeColor={currentTheme.primary}
+                                onFileSelect={(f) => setFormData({...formData, idProof: f})}
+                            />
+
                             {/* Identity Section */}
                             <p style={{ margin: '20px 0 14px', fontSize: '16px', fontWeight: '700', color: '#111827', fontFamily: "'Inter', sans-serif" }}>Identity Details</p>
                             {accountType === 'individual' ? (<>
@@ -590,7 +609,7 @@ function SellerProfile_Setup() {
                             <InputGroup label="Nearer City" name="nearerCity" value={formData.nearerCity} onChange={handleChange} placeholder="City Name" themeColor={currentTheme.primary} />
                             <InputGroup label="District" name="district" value={formData.district} onChange={handleChange} placeholder="District" themeColor={currentTheme.primary} />
                             <InputGroup label="State" name="state" value={formData.state} onChange={handleChange} placeholder="State" themeColor={currentTheme.primary} />
-                            <InputGroup label="Pincode" name="pincode" type="number" value={formData.pincode} onChange={handleChange} placeholder="123456" themeColor={currentTheme.primary} />
+                            <InputGroup label="Pincode" name="pincode" type="tel" value={formData.pincode} onChange={handleChange} placeholder="123456" themeColor={currentTheme.primary} />
                             <SelectGroup label="Delivery Radius" name="serviceRadius" value={formData.serviceRadius} onChange={handleChange} themeColor={currentTheme.primary} options={[
                                 { value: '5km', label: 'Within 5 km — Local Only' },
                                 { value: '20km', label: 'Within 20 km — Nearby Towns' },
@@ -617,114 +636,143 @@ function SellerProfile_Setup() {
 
                             {/* ── CATEGORY-SPECIFIC QUESTIONS ── */}
                             {accountType === 'individual' && formData.categories.includes('Farm Fresh Produce') && (
-                                <>
-                                    <p style={{ margin: '20px 0 14px', fontSize: '16px', fontWeight: '700', color: '#111827', fontFamily: "'Inter', sans-serif" }}>🌿 Farm Fresh Produce</p>
+                                <div style={{ background: '#f8fafc', border: `3px solid #10b981`, borderRadius: '16px', padding: '20px', marginBottom: '20px', boxShadow: '0 4px 12px rgba(16,185,129,0.1)' }}>
+                                    <p style={{ margin: '0 0 14px', fontSize: '16px', fontWeight: '700', color: '#111827', fontFamily: "'Inter', sans-serif" }}>🌿 Farm Fresh Produce</p>
                                     <p style={{ margin: '0 0 10px', fontSize: '14px', fontWeight: '600', color: '#374151', fontFamily: "'Inter', sans-serif" }}>Are these products Organic?</p>
                                     <div style={{ display: 'flex', gap: '10px', marginBottom: '14px' }}>
                                         {['yes', 'no'].map(val => (
                                             <div key={val} onClick={() => setFormData({...formData, isOrganic: val})}
-                                                style={{ flex: 1, padding: '12px', textAlign: 'center', borderRadius: '12px', cursor: 'pointer', border: formData.isOrganic === val ? `2px solid ${currentTheme.primary}` : '2px solid #e5e7eb', backgroundColor: formData.isOrganic === val ? `${currentTheme.primary}12` : '#f9fafb', color: formData.isOrganic === val ? currentTheme.primary : '#374151', fontWeight: '600', fontSize: '14px', transition: 'all 0.2s', fontFamily: "'Inter', sans-serif" }}>
+                                                style={{ flex: 1, padding: '12px', textAlign: 'center', borderRadius: '12px', cursor: 'pointer', border: formData.isOrganic === val ? `2px solid #10b981` : '2px solid #e5e7eb', backgroundColor: formData.isOrganic === val ? `#10b98112` : '#f9fafb', color: formData.isOrganic === val ? '#10b981' : '#374151', fontWeight: '600', fontSize: '14px', transition: 'all 0.2s', fontFamily: "'Inter', sans-serif" }}>
                                                 {val === 'yes' ? '🌱 Yes, Organic' : '🌾 No, Regular'}
                                             </div>
                                         ))}
                                     </div>
-                                    {formData.isOrganic === 'yes' && <FileUploadUI label="Organic Certificate (PDF/Image)" accept=".pdf,image/*" themeColor={currentTheme.primary} onFileSelect={(f) => setFormData({...formData, organicCertificate: f})} />}
-                                    <TextAreaGroup label="What products do you sell? (e.g. Vegetables: Tomatoes, Fruits: Mangoes)" name="freshProduceTypes" value={formData.freshProduceTypes} onChange={handleChange} placeholder="List your product types and specific names..." themeColor={currentTheme.primary} />
-                                </>
+                                    {formData.isOrganic === 'yes' && <FileUploadUI label="Organic Certificate (PDF/Image)" accept=".pdf,image/*" themeColor="#10b981" onFileSelect={(f) => setFormData({...formData, organicCertificate: f})} />}
+                                    <InputGroup label="List of products you produce" name="freshProduceTypes" value={formData.freshProduceTypes} onChange={handleChange} placeholder="e.g. Tomatoes, Mangoes, Wheat..." themeColor="#10b981" />
+                                    <InputGroup label="Expected Quantity (e.g. 500 kg)" name="produceQuantity" type="tel" value={formData.produceQuantity || ''} onChange={handleChange} placeholder="Enter expected quantity..." themeColor="#10b981" />
+                                </div>
                             )}
 
                             {accountType === 'individual' && formData.categories.includes('Machinery Rental') && (
-                                <>
-                                    <p style={{ margin: '20px 0 14px', fontSize: '16px', fontWeight: '700', color: '#111827', fontFamily: "'Inter', sans-serif" }}>🚜 Machinery Rental</p>
-                                    <TextAreaGroup label="What machinery do you have? (e.g. 2 Tractors, 1 Harvester)" name="machineryDetails" value={formData.machineryDetails} onChange={handleChange} placeholder="List machinery types and counts..." themeColor={currentTheme.primary} />
-                                    <FileUploadUI label="Upload Machinery Images" accept="image/*" themeColor={currentTheme.primary} onFileSelect={(f) => setFormData({...formData, machineryImages: f})} />
-                                </>
+                                <div style={{ background: '#f8fafc', border: `3px solid #f97316`, borderRadius: '16px', padding: '20px', marginBottom: '20px', boxShadow: '0 4px 12px rgba(249,115,22,0.1)' }}>
+                                    <p style={{ margin: '0 0 14px', fontSize: '16px', fontWeight: '700', color: '#111827', fontFamily: "'Inter', sans-serif" }}>🚜 Machinery Rental</p>
+                                    <TextAreaGroup label="What machinery do you have? (e.g. 2 Tractors, 1 Harvester)" name="machineryDetails" value={formData.machineryDetails} onChange={handleChange} placeholder="List machinery types and counts..." themeColor="#f97316" />
+                                    <InputGroup label="Number of Machineries" name="machineryCount" type="tel" value={formData.machineryCount || ''} onChange={handleChange} placeholder="e.g. 3" themeColor="#f97316" />
+                                    <FileUploadUI label="Upload Machinery Images" accept="image/*" themeColor="#f97316" onFileSelect={(f) => setFormData({...formData, machineryImages: f})} />
+                                </div>
                             )}
 
                             {accountType === 'individual' && formData.categories.includes('Harvested Crops') && (
-                                <>
-                                    <p style={{ margin: '20px 0 14px', fontSize: '16px', fontWeight: '700', color: '#111827', fontFamily: "'Inter', sans-serif" }}>🌾 Harvested Crops</p>
-                                    <InputGroup label="Crops to Sell" name="harvestCrops" value={formData.harvestCrops} onChange={handleChange} placeholder="e.g. Rice, Wheat, Cotton..." themeColor={currentTheme.primary} />
-                                    <InputGroup label="Expected Quantity (Quintals)" name="harvestQuantity" type="number" value={formData.harvestQuantity} onChange={handleChange} placeholder="e.g. 50" themeColor={currentTheme.primary} />
-                                </>
+                                <div style={{ background: '#f8fafc', border: `3px solid #eab308`, borderRadius: '16px', padding: '20px', marginBottom: '20px', boxShadow: '0 4px 12px rgba(234,179,8,0.1)' }}>
+                                    <p style={{ margin: '0 0 14px', fontSize: '16px', fontWeight: '700', color: '#111827', fontFamily: "'Inter', sans-serif" }}>🌾 Harvested Crops</p>
+                                    <InputGroup label="Crops You Produce" name="harvestCrops" value={formData.harvestCrops} onChange={handleChange} placeholder="e.g. Rice, Wheat, Cotton..." themeColor="#eab308" />
+                                    <InputGroup label="Expected Quantity (Quintals)" name="harvestQuantity" type="tel" value={formData.harvestQuantity} onChange={handleChange} placeholder="e.g. 50" themeColor="#eab308" />
+                                </div>
                             )}
 
                             {accountType === 'individual' && formData.categories.includes('Agriculture Worker') && (
-                                <>
-                                    <p style={{ margin: '20px 0 14px', fontSize: '16px', fontWeight: '700', color: '#111827', fontFamily: "'Inter', sans-serif" }}>👷 Agriculture Worker</p>
-                                    <TextAreaGroup label="What types of farm work can you do?" name="workerSkills" value={formData.workerSkills} onChange={handleChange} placeholder="e.g. Harvesting, Sowing, Pesticide Spraying..." themeColor={currentTheme.primary} />
-                                </>
+                                <div style={{ background: '#f8fafc', border: `3px solid #06b6d4`, borderRadius: '16px', padding: '20px', marginBottom: '20px', boxShadow: '0 4px 12px rgba(6,182,212,0.1)' }}>
+                                    <p style={{ margin: '0 0 14px', fontSize: '16px', fontWeight: '700', color: '#111827', fontFamily: "'Inter', sans-serif" }}>👷 Agriculture Worker</p>
+                                    <TextAreaGroup label="What types of farm work can you do?" name="workerSkills" value={formData.workerSkills} onChange={handleChange} placeholder="e.g. Harvesting, Sowing, Pesticide Spraying..." themeColor="#06b6d4" />
+                                    <InputGroup label="Number of Workers" name="workerCount" type="tel" value={formData.workerCount || ''} onChange={handleChange} placeholder="e.g. 5" themeColor="#06b6d4" />
+                                </div>
                             )}
 
                             {accountType === 'individual' && formData.categories.includes('Freelance Services') && (
-                                <>
-                                    <p style={{ margin: '20px 0 14px', fontSize: '16px', fontWeight: '700', color: '#111827', fontFamily: "'Inter', sans-serif" }}>💼 Freelance Services</p>
-                                    <TextAreaGroup label="What freelance works can you do?" name="freelanceWorks" value={formData.freelanceWorks} onChange={handleChange} placeholder="e.g. Drone Piloting, Soil Testing, Accounting..." themeColor={currentTheme.primary} />
-                                    <InputGroup label="Years of Experience" name="freelanceExperience" type="number" value={formData.freelanceExperience} onChange={handleChange} placeholder="e.g. 5" themeColor={currentTheme.primary} />
-                                    <TextAreaGroup label="Technical Skill Set" name="freelanceSkillSet" value={formData.freelanceSkillSet} onChange={handleChange} placeholder="e.g. Certified DJI Pilot, Agribusiness Degree..." themeColor={currentTheme.primary} />
-                                </>
+                                <div style={{ background: '#f8fafc', border: `3px solid #8b5cf6`, borderRadius: '16px', padding: '20px', marginBottom: '20px', boxShadow: '0 4px 12px rgba(139,92,246,0.1)' }}>
+                                    <p style={{ margin: '0 0 14px', fontSize: '16px', fontWeight: '700', color: '#111827', fontFamily: "'Inter', sans-serif" }}>💼 Freelance Services</p>
+                                    <TextAreaGroup label="What freelance works can you do?" name="freelanceWorks" value={formData.freelanceWorks} onChange={handleChange} placeholder="e.g. Drone Piloting, Soil Testing, Accounting..." themeColor="#8b5cf6" />
+                                    <InputGroup label="Years of Experience" name="freelanceExperience" type="tel" value={formData.freelanceExperience} onChange={handleChange} placeholder="e.g. 5" themeColor="#8b5cf6" />
+                                    <InputGroup label="Number of Freelancers" name="freelancerCount" type="tel" value={formData.freelancerCount || ''} onChange={handleChange} placeholder="e.g. 2" themeColor="#8b5cf6" />
+                                    <TextAreaGroup label="Technical Skill Set" name="freelanceSkillSet" value={formData.freelanceSkillSet} onChange={handleChange} placeholder="e.g. Certified DJI Pilot, Agribusiness Degree..." themeColor="#8b5cf6" />
+                                </div>
+                            )}
+
+                            {accountType === 'individual' && formData.categories.includes('Local Agri Goods & Products') && (
+                                <div style={{ background: '#f8fafc', border: `3px solid #ec4899`, borderRadius: '16px', padding: '20px', marginBottom: '20px', boxShadow: '0 4px 12px rgba(236,72,153,0.1)' }}>
+                                    <p style={{ margin: '0 0 14px', fontSize: '16px', fontWeight: '700', color: '#111827', fontFamily: "'Inter', sans-serif" }}>🛍️ Local Agri Goods</p>
+                                    <TextAreaGroup label="What local goods do you sell?" name="localGoodsTypes" value={formData.localGoodsTypes || ''} onChange={handleChange} placeholder="e.g. Honey, Pickles, Handicrafts..." themeColor="#ec4899" />
+                                    <InputGroup label="Supply Quantity (e.g. 50 Jars)" name="localGoodsQuantity" type="tel" value={formData.localGoodsQuantity || ''} onChange={handleChange} placeholder="Enter expected quantity..." themeColor="#ec4899" />
+                                </div>
                             )}
 
                             {accountType === 'organisation' && formData.categories.includes('Farm Fresh Produce') && (
-                                <>
-                                    <p style={{ margin: '20px 0 14px', fontSize: '16px', fontWeight: '700', color: '#111827', fontFamily: "'Inter', sans-serif" }}>🌿 Farm Fresh Supply</p>
+                                <div style={{ background: '#f8fafc', border: `3px solid #10b981`, borderRadius: '16px', padding: '20px', marginBottom: '20px', boxShadow: '0 4px 12px rgba(16,185,129,0.1)' }}>
+                                    <p style={{ margin: '0 0 14px', fontSize: '16px', fontWeight: '700', color: '#111827', fontFamily: "'Inter', sans-serif" }}>🌿 Farm Fresh Supply</p>
                                     <p style={{ margin: '0 0 10px', fontSize: '14px', fontWeight: '600', color: '#374151', fontFamily: "'Inter', sans-serif" }}>Are these products Organic?</p>
                                     <div style={{ display: 'flex', gap: '10px', marginBottom: '14px' }}>
                                         {['yes', 'no'].map(val => (
                                             <div key={val} onClick={() => setFormData({...formData, isOrganic: val})}
-                                                style={{ flex: 1, padding: '12px', textAlign: 'center', borderRadius: '12px', cursor: 'pointer', border: formData.isOrganic === val ? `2px solid ${currentTheme.primary}` : '2px solid #e5e7eb', backgroundColor: formData.isOrganic === val ? `${currentTheme.primary}12` : '#f9fafb', color: formData.isOrganic === val ? currentTheme.primary : '#374151', fontWeight: '600', fontSize: '14px', transition: 'all 0.2s', fontFamily: "'Inter', sans-serif" }}>
+                                                style={{ flex: 1, padding: '12px', textAlign: 'center', borderRadius: '12px', cursor: 'pointer', border: formData.isOrganic === val ? `2px solid #10b981` : '2px solid #e5e7eb', backgroundColor: formData.isOrganic === val ? `#10b98112` : '#f9fafb', color: formData.isOrganic === val ? '#10b981' : '#374151', fontWeight: '600', fontSize: '14px', transition: 'all 0.2s', fontFamily: "'Inter', sans-serif" }}>
                                                 {val === 'yes' ? '🌱 Yes, Organic' : '🌾 No, Regular'}
                                             </div>
                                         ))}
                                     </div>
-                                    {formData.isOrganic === 'yes' && <FileUploadUI label="Organic Certificate (PDF/Image)" accept=".pdf,image/*" themeColor={currentTheme.primary} onFileSelect={(f) => setFormData({...formData, organicCertificate: f})} />}
-                                    <InputGroup label="Supply Capacity (e.g. 500 Tons/Month)" name="orgProduceCapacity" value={formData.orgProduceCapacity} onChange={handleChange} placeholder="Enter supply capacity..." themeColor={currentTheme.primary} />
-                                    <FileUploadUI label="Upload Product Images (2-3 Images)" accept="image/*" multiple={true} themeColor={currentTheme.primary} onFileSelect={(f) => setFormData({...formData, orgProduceImages: f})} />
-                                </>
+                                    {formData.isOrganic === 'yes' && <FileUploadUI label="Organic Certificate (PDF/Image)" accept=".pdf,image/*" themeColor="#10b981" onFileSelect={(f) => setFormData({...formData, organicCertificate: f})} />}
+                                    <InputGroup label="List of products you produce" name="freshProduceTypes" value={formData.freshProduceTypes} onChange={handleChange} placeholder="e.g. Tomatoes, Mangoes, Wheat..." themeColor="#10b981" />
+                                    <InputGroup label="Supply Capacity (e.g. 500 Tons/Month)" name="orgProduceCapacity" value={formData.orgProduceCapacity} onChange={handleChange} placeholder="Enter supply capacity..." themeColor="#10b981" />
+                                    <FileUploadUI label="Upload Product Images (2-3 Images)" accept="image/*" multiple={true} themeColor="#10b981" onFileSelect={(f) => setFormData({...formData, orgProduceImages: f})} />
+                                </div>
                             )}
 
                             {accountType === 'organisation' && formData.categories.includes('Machinery Rental') && (
-                                <>
-                                    <p style={{ margin: '20px 0 14px', fontSize: '16px', fontWeight: '700', color: '#111827', fontFamily: "'Inter', sans-serif" }}>🚜 Machinery Supply</p>
-                                    <TextAreaGroup label="What machinery do you have?" name="orgMachineryDetails" value={formData.orgMachineryDetails} onChange={handleChange} placeholder="List available machinery models and types..." themeColor={currentTheme.primary} />
-                                    <InputGroup label="Fleet Size (e.g. 50 Tractors, 10 Harvesters)" name="orgMachineryCapacity" value={formData.orgMachineryCapacity} onChange={handleChange} placeholder="Enter fleet size..." themeColor={currentTheme.primary} />
-                                    <FileUploadUI label="Upload Machinery Fleet Images (2-3 Images)" accept="image/*" multiple={true} themeColor={currentTheme.primary} onFileSelect={(f) => setFormData({...formData, orgMachineryImages: f})} />
-                                </>
+                                <div style={{ background: '#f8fafc', border: `3px solid #f97316`, borderRadius: '16px', padding: '20px', marginBottom: '20px', boxShadow: '0 4px 12px rgba(249,115,22,0.1)' }}>
+                                    <p style={{ margin: '0 0 14px', fontSize: '16px', fontWeight: '700', color: '#111827', fontFamily: "'Inter', sans-serif" }}>🚜 Machinery Supply</p>
+                                    <TextAreaGroup label="What machinery do you have?" name="orgMachineryDetails" value={formData.orgMachineryDetails} onChange={handleChange} placeholder="List available machinery models and types..." themeColor="#f97316" />
+                                    <InputGroup label="Fleet Size (e.g. 50 Tractors, 10 Harvesters)" name="orgMachineryCapacity" value={formData.orgMachineryCapacity} onChange={handleChange} placeholder="Enter fleet size..." themeColor="#f97316" />
+                                    <FileUploadUI label="Upload Machinery Fleet Images (2-3 Images)" accept="image/*" multiple={true} themeColor="#f97316" onFileSelect={(f) => setFormData({...formData, orgMachineryImages: f})} />
+                                </div>
                             )}
 
                             {accountType === 'organisation' && formData.categories.includes('Harvested Crops') && (
-                                <>
-                                    <p style={{ margin: '20px 0 14px', fontSize: '16px', fontWeight: '700', color: '#111827', fontFamily: "'Inter', sans-serif" }}>🌾 Harvest Supply</p>
-                                    <InputGroup label="Crops Supplied" name="orgHarvestCrops" value={formData.orgHarvestCrops} onChange={handleChange} placeholder="e.g. Bulk Rice, Wheat, Sugarcane..." themeColor={currentTheme.primary} />
-                                    <InputGroup label="Supply Capacity (e.g. 1000 Quintals/Month)" name="orgHarvestCapacity" value={formData.orgHarvestCapacity} onChange={handleChange} placeholder="Enter expected yield..." themeColor={currentTheme.primary} />
-                                    <FileUploadUI label="Upload Warehouse/Crop Images (2-3 Images)" accept="image/*" multiple={true} themeColor={currentTheme.primary} onFileSelect={(f) => setFormData({...formData, orgHarvestImages: f})} />
-                                </>
+                                <div style={{ background: '#f8fafc', border: `3px solid #eab308`, borderRadius: '16px', padding: '20px', marginBottom: '20px', boxShadow: '0 4px 12px rgba(234,179,8,0.1)' }}>
+                                    <p style={{ margin: '0 0 14px', fontSize: '16px', fontWeight: '700', color: '#111827', fontFamily: "'Inter', sans-serif" }}>🌾 Harvest Supply</p>
+                                    <InputGroup label="Crops Supplied" name="orgHarvestCrops" value={formData.orgHarvestCrops} onChange={handleChange} placeholder="e.g. Bulk Rice, Wheat, Sugarcane..." themeColor="#eab308" />
+                                    <InputGroup label="Supply Capacity (e.g. 1000 Quintals/Month)" name="orgHarvestCapacity" value={formData.orgHarvestCapacity} onChange={handleChange} placeholder="Enter expected yield..." themeColor="#eab308" />
+                                    <FileUploadUI label="Upload Warehouse/Crop Images (2-3 Images)" accept="image/*" multiple={true} themeColor="#eab308" onFileSelect={(f) => setFormData({...formData, orgHarvestImages: f})} />
+                                </div>
                             )}
 
                             {accountType === 'organisation' && formData.categories.includes('Agriculture Worker') && (
-                                <>
-                                    <p style={{ margin: '20px 0 14px', fontSize: '16px', fontWeight: '700', color: '#111827', fontFamily: "'Inter', sans-serif" }}>👷 Worker Supply</p>
-                                    <InputGroup label="Workers Available" name="orgWorkerCount" type="number" value={formData.orgWorkerCount} onChange={handleChange} placeholder="e.g. 50" themeColor={currentTheme.primary} />
-                                    <TextAreaGroup label="Their skill sets" name="orgWorkerSkills" value={formData.orgWorkerSkills} onChange={handleChange} placeholder="e.g. General labor, certified pesticide sprayers..." themeColor={currentTheme.primary} />
-                                </>
+                                <div style={{ background: '#f8fafc', border: `3px solid #06b6d4`, borderRadius: '16px', padding: '20px', marginBottom: '20px', boxShadow: '0 4px 12px rgba(6,182,212,0.1)' }}>
+                                    <p style={{ margin: '0 0 14px', fontSize: '16px', fontWeight: '700', color: '#111827', fontFamily: "'Inter', sans-serif" }}>👷 Worker Supply</p>
+                                    <InputGroup label="Workers Available" name="orgWorkerCount" type="tel" value={formData.orgWorkerCount} onChange={handleChange} placeholder="e.g. 50" themeColor="#06b6d4" />
+                                    <TextAreaGroup label="Their skill sets" name="orgWorkerSkills" value={formData.orgWorkerSkills} onChange={handleChange} placeholder="e.g. General labor, certified pesticide sprayers..." themeColor="#06b6d4" />
+                                </div>
                             )}
 
                             {accountType === 'organisation' && formData.categories.includes('Freelance Services') && (
-                                <>
-                                    <p style={{ margin: '20px 0 14px', fontSize: '16px', fontWeight: '700', color: '#111827', fontFamily: "'Inter', sans-serif" }}>💼 Freelance Agency</p>
-                                    <InputGroup label="Freelancers Available" name="orgFreelancerCount" type="number" value={formData.orgFreelancerCount} onChange={handleChange} placeholder="e.g. 10" themeColor={currentTheme.primary} />
-                                    <TextAreaGroup label="Their specific skill sets" name="orgFreelancerSkills" value={formData.orgFreelancerSkills} onChange={handleChange} placeholder="e.g. Agronomists, Drone Pilots, Farm Managers..." themeColor={currentTheme.primary} />
-                                </>
+                                <div style={{ background: '#f8fafc', border: `3px solid #8b5cf6`, borderRadius: '16px', padding: '20px', marginBottom: '20px', boxShadow: '0 4px 12px rgba(139,92,246,0.1)' }}>
+                                    <p style={{ margin: '0 0 14px', fontSize: '16px', fontWeight: '700', color: '#111827', fontFamily: "'Inter', sans-serif" }}>💼 Freelance Agency</p>
+                                    <InputGroup label="Freelancers Available" name="orgFreelancerCount" type="tel" value={formData.orgFreelancerCount} onChange={handleChange} placeholder="e.g. 10" themeColor="#8b5cf6" />
+                                    <TextAreaGroup label="Their specific skill sets" name="orgFreelancerSkills" value={formData.orgFreelancerSkills} onChange={handleChange} placeholder="e.g. Agronomists, Drone Pilots, Farm Managers..." themeColor="#8b5cf6" />
+                                </div>
                             )}
 
-                            {/* Verification Document */}
-                            <p style={{ margin: '20px 0 14px', fontSize: '16px', fontWeight: '700', color: '#111827', fontFamily: "'Inter', sans-serif" }}>Verification Document</p>
-                            <FileUploadUI
-                                label="Upload ID / Registration Proof (PDF/JPG)"
-                                accept=".pdf,image/*"
-                                themeColor={currentTheme.primary}
-                                onFileSelect={(f) => setFormData({...formData, idProof: f})}
-                            />
+                            {accountType === 'organisation' && formData.categories.includes('Local Agri Goods & Products') && (
+                                <div style={{ background: '#f8fafc', border: `3px solid #ec4899`, borderRadius: '16px', padding: '20px', marginBottom: '20px', boxShadow: '0 4px 12px rgba(236,72,153,0.1)' }}>
+                                    <p style={{ margin: '0 0 14px', fontSize: '16px', fontWeight: '700', color: '#111827', fontFamily: "'Inter', sans-serif" }}>🛍️ Local Agri Goods</p>
+                                    <TextAreaGroup label="What local goods do you supply?" name="orgLocalGoodsTypes" value={formData.orgLocalGoodsTypes || ''} onChange={handleChange} placeholder="e.g. Organic Honey, Packaged Spices..." themeColor="#ec4899" />
+                                    <InputGroup label="Supply Capacity (e.g. 500 Jars/Month)" name="orgLocalGoodsCapacity" value={formData.orgLocalGoodsCapacity || ''} onChange={handleChange} placeholder="Enter supply capacity..." themeColor="#ec4899" />
+                                    <FileUploadUI label="Upload Product Images (2-3 Images)" accept="image/*" multiple={true} themeColor="#ec4899" onFileSelect={(f) => setFormData({...formData, orgLocalGoodsImages: f})} />
+                                </div>
+                            )}
+
+
+                            {/* Delivery Preference */}
+                            <p style={{ margin: '20px 0 14px', fontSize: '16px', fontWeight: '700', color: '#111827', fontFamily: "'Inter', sans-serif" }}>Delivery Preference</p>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '24px' }}>
+                                <div onClick={() => setFormData({...formData, deliveryPreference: 'delivery'})}
+                                    style={{ padding: '14px 16px', borderRadius: '12px', border: formData.deliveryPreference === 'delivery' ? `2px solid ${currentTheme.primary}` : '2px solid #e2e8f0', backgroundColor: formData.deliveryPreference === 'delivery' ? `${currentTheme.primary}12` : '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '12px', transition: 'all 0.2s ease' }}>
+                                    <div style={{ width: '20px', height: '20px', borderRadius: '50%', border: formData.deliveryPreference === 'delivery' ? `6px solid ${currentTheme.primary}` : '2px solid #cbd5e1', backgroundColor: '#fff', transition: 'all 0.2s ease', flexShrink: 0 }} />
+                                    <span style={{ fontSize: '15px', fontWeight: '600', color: formData.deliveryPreference === 'delivery' ? currentTheme.primary : '#334155' }}>I can manage to deliver to the consumer</span>
+                                </div>
+                                <div onClick={() => setFormData({...formData, deliveryPreference: 'pickup'})}
+                                    style={{ padding: '14px 16px', borderRadius: '12px', border: formData.deliveryPreference === 'pickup' ? `2px solid ${currentTheme.primary}` : '2px solid #e2e8f0', backgroundColor: formData.deliveryPreference === 'pickup' ? `${currentTheme.primary}12` : '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '12px', transition: 'all 0.2s ease' }}>
+                                    <div style={{ width: '20px', height: '20px', borderRadius: '50%', border: formData.deliveryPreference === 'pickup' ? `6px solid ${currentTheme.primary}` : '2px solid #cbd5e1', backgroundColor: '#fff', transition: 'all 0.2s ease', flexShrink: 0 }} />
+                                    <span style={{ fontSize: '15px', fontWeight: '600', color: formData.deliveryPreference === 'pickup' ? currentTheme.primary : '#334155' }}>Consumers must come to the shop/farm to pickup</span>
+                                </div>
+                            </div>
 
                             {/* Legal Terms */}
                             <div style={{ marginTop: '8px', marginBottom: '20px', background: '#fff8f0', border: '2px solid #fcd34d', borderRadius: '12px', padding: '14px 16px', display: 'flex', gap: '12px', alignItems: 'flex-start' }}>

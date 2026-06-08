@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../../firebase';
-import { doc, getDoc, collection, query, where, getDocs, deleteDoc } from 'firebase/firestore';
+import { doc, getDoc, collection, query, where, getDocs, deleteDoc, onSnapshot } from 'firebase/firestore';
 import { Link, useNavigate } from 'react-router-dom';
 import { useUserMode } from '../../UserModeContext';
 import BrandedTransition3D from '../../🛠️Shared_Components/BrandedTransition3D';
@@ -16,30 +16,33 @@ function Seller_Profile() {
     const sellerId = localStorage.getItem('seller_app_id') || 'Unknown_ID';
 
     useEffect(() => {
+        let unsub = () => {};
         const fetchProfileData = async () => {
             if (sellerId && sellerId !== 'Unknown_ID') {
                 try {
                     const docRef = doc(db, 'seller_applications', sellerId);
-                    const docSnap = await getDoc(docRef);
-                    if (docSnap.exists()) {
-                        const data = docSnap.data();
-                        const nameToUse = data.accountType === 'organisation' ? data.companyName : (data.shopName || data.fullName);
-                        setSellerName(nameToUse || 'Shop Name');
-                        setAccountType(data.accountType || 'single');
-                        
-                        localStorage.setItem('seller_name', nameToUse || 'Shop Name');
-                        localStorage.setItem('seller_account_type', data.accountType || 'single');
-                    }
+                    unsub = onSnapshot(docRef, (docSnap) => {
+                        if (docSnap.exists()) {
+                            const data = docSnap.data();
+                            const nameToUse = data.accountType === 'organisation' ? data.companyName : (data.shopName || data.fullName);
+                            setSellerName(nameToUse || 'Shop Name');
+                            setAccountType(data.accountType || 'single');
+                            
+                            localStorage.setItem('seller_name', nameToUse || 'Shop Name');
+                            localStorage.setItem('seller_account_type', data.accountType || 'single');
+                        }
+                    });
                 } catch (error) {
                     console.error("Error fetching profile data:", error);
                 }
             }
         };
         
-        if (sellerName === 'Loading...') {
+        if (sellerName === 'Loading...' || sellerId !== 'Unknown_ID') {
             fetchProfileData();
         }
-    }, [sellerId, sellerName]);
+        return () => unsub();
+    }, [sellerId]);
 
     const handleSwitchToConsumer = () => {
         setIsTransforming(true);

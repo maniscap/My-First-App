@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { CircleUserRound, ShieldAlert, ShieldCheck, ShieldX, Clock, Building2 } from 'lucide-react';
 import Seller_BannerPromo from './Seller_BannerPromo';
 import { db, auth } from '../../firebase';
-import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
+import { doc, getDoc, collection, query, where, getDocs, onSnapshot } from 'firebase/firestore';
 import { onAuthStateChanged } from 'firebase/auth';
 
 function Seller_HomePage() {
@@ -37,41 +37,45 @@ function Seller_HomePage() {
 
             try {
                 let appId = localStorage.getItem('seller_app_id');
-                let appData = null;
-
-                // 1. Try local storage first
-                if (appId) {
-                    const docRef = doc(db, 'seller_applications', appId);
-                    const docSnap = await getDoc(docRef);
-                    if (docSnap.exists()) {
-                        appData = docSnap.data();
-                    }
-                }
-
-                // 2. If not found via local storage, query Firestore by userId
-                if (!appData) {
+                
+                // 1. If not found via local storage, query Firestore by userId
+                if (!appId) {
                     const q = query(collection(db, 'seller_applications'), where("userId", "==", user.uid));
                     const querySnapshot = await getDocs(q);
                     
                     if (!querySnapshot.empty) {
-                        // Found their application in the database!
                         const appDoc = querySnapshot.docs[0];
-                        appData = appDoc.data();
-                        
-                        // Restore it to local storage so we don't have to query next time
-                        localStorage.setItem('seller_app_id', appDoc.id);
+                        appId = appDoc.id;
+                        localStorage.setItem('seller_app_id', appId);
+                    } else {
+                        setAppStatus('none');
+                        return;
                     }
                 }
 
-                // 3. Set the state based on what we found
-                if (appData) {
-                    setAppStatus(appData.status);
-                    const nameToUse = appData.accountType === 'organisation' ? appData.companyName : (appData.shopName || appData.fullName);
-                    setSellerName(nameToUse);
-                    localStorage.setItem('seller_name', nameToUse);
-                    localStorage.setItem('seller_account_type', appData.accountType);
-                } else {
-                    setAppStatus('none');
+                // 2. Set up realtime listener
+                if (appId) {
+                    const docRef = doc(db, 'seller_applications', appId);
+                    const unsubscribeSnapshot = onSnapshot(docRef, (docSnap) => {
+                        if (docSnap.exists()) {
+                            const appData = docSnap.data();
+                            setAppStatus(appData.status);
+                            const nameToUse = appData.accountType === 'organisation' ? appData.companyName : (appData.shopName || appData.fullName);
+                            setSellerName(nameToUse);
+                            localStorage.setItem('seller_name', nameToUse);
+                            localStorage.setItem('seller_account_type', appData.accountType);
+                        } else {
+                            setAppStatus('none');
+                        }
+                    }, (error) => {
+                        console.error("Error with application snapshot:", error);
+                        setAppStatus('error');
+                    });
+                    
+                    // We need to return this so the auth listener can unsubscribe it when user changes
+                    // but onAuthStateChanged only allows returning its own unsubscribe.
+                    // We will store it globally or clear it when unmounting
+                    window.sellerHomeSnapshotUnsub = unsubscribeSnapshot;
                 }
 
             } catch (error) {
@@ -80,7 +84,13 @@ function Seller_HomePage() {
             }
         });
 
-        return () => unsubscribe();
+        return () => {
+            unsubscribe();
+            if (window.sellerHomeSnapshotUnsub) {
+                window.sellerHomeSnapshotUnsub();
+                window.sellerHomeSnapshotUnsub = null;
+            }
+        };
     }, []);
 
     // RENDER: Application Rejected
