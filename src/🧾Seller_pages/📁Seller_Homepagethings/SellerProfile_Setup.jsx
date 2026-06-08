@@ -744,8 +744,10 @@ function SellerProfile_Setup() {
                             {accountType === 'organisation' && formData.categories.includes('Freelance Services') && (
                                 <div style={{ background: '#f8fafc', border: `3px solid #8b5cf6`, borderRadius: '16px', padding: '20px', marginBottom: '20px', boxShadow: '0 4px 12px rgba(139,92,246,0.1)' }}>
                                     <p style={{ margin: '0 0 14px', fontSize: '16px', fontWeight: '700', color: '#111827', fontFamily: "'Inter', sans-serif" }}>💼 Freelance Agency</p>
+                                    <TextAreaGroup label="What freelance works does your agency offer?" name="orgFreelanceWorks" value={formData.orgFreelanceWorks || ''} onChange={handleChange} placeholder="e.g. Drone Piloting, Soil Testing, Agronomy Consulting..." themeColor="#8b5cf6" />
+                                    <InputGroup label="Agency Years of Experience" name="orgFreelanceExperience" type="tel" value={formData.orgFreelanceExperience || ''} onChange={handleChange} placeholder="e.g. 10" themeColor="#8b5cf6" />
                                     <InputGroup label="Freelancers Available" name="orgFreelancerCount" type="tel" value={formData.orgFreelancerCount} onChange={handleChange} placeholder="e.g. 10" themeColor="#8b5cf6" />
-                                    <TextAreaGroup label="Their specific skill sets" name="orgFreelancerSkills" value={formData.orgFreelancerSkills} onChange={handleChange} placeholder="e.g. Agronomists, Drone Pilots, Farm Managers..." themeColor="#8b5cf6" />
+                                    <TextAreaGroup label="Their specific skill sets" name="orgFreelancerSkills" value={formData.orgFreelancerSkills} onChange={handleChange} placeholder="e.g. Certified Agronomists, Drone Pilots, Farm Managers..." themeColor="#8b5cf6" />
                                 </div>
                             )}
 

@@ -859,10 +859,10 @@ const ApplicationCard = ({ app, onApprove, onReject }) => {
                         <div className="info-block">
                             <span className="lbl">Freelance / Skills</span>
                             <span className="val">
-                                {app.freelanceWorks || app.freelanceSkillSet || app.orgFreelancerSkills || app.freelanceExperience || app.orgFreelancerCount || app.freelancerCount ? (
+                                {app.freelanceWorks || app.orgFreelanceWorks || app.freelanceSkillSet || app.orgFreelancerSkills || app.freelanceExperience || app.orgFreelanceExperience || app.orgFreelancerCount || app.freelancerCount ? (
                                     <>
-                                        {app.freelanceWorks || app.freelanceSkillSet || app.orgFreelancerSkills}
-                                        {app.freelanceExperience && ` (${app.freelanceExperience} Yrs Exp)`}
+                                        {app.freelanceWorks || app.orgFreelanceWorks || app.freelanceSkillSet || app.orgFreelancerSkills}
+                                        {(app.freelanceExperience || app.orgFreelanceExperience) && ` (${app.freelanceExperience || app.orgFreelanceExperience} Yrs Exp)`}
                                         {(app.orgFreelancerCount || app.freelancerCount) && ` (Count: ${app.orgFreelancerCount || app.freelancerCount})`}
                                     </>
                                 ) : 'N/A'}
