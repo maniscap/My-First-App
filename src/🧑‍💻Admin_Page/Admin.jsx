@@ -720,7 +720,7 @@ const EditCard = ({ app, onApprove, onReject }) => {
 
     return (
         <div className="app-card" style={{ transition: 'all 0.3s ease' }}>
-            <div className="card-header" style={{ cursor: 'pointer', paddingBottom: isExpanded ? '15px' : '0' }} onClick={() => setIsExpanded(!isExpanded)}>
+            <div className="card-header" style={{ cursor: 'pointer', paddingBottom: isExpanded ? '15px' : undefined }} onClick={() => setIsExpanded(!isExpanded)}>
                 <div className="card-title-group">
                     <div style={{width:'48px', height:'48px', background:'#fef3c7', borderRadius:'12px', display:'flex', alignItems:'center', justifyContent:'center'}}>
                         <Edit3 size={24} color="#d97706" />
@@ -781,9 +781,17 @@ const ApplicationCard = ({ app, onApprove, onReject }) => {
 
     return (
         <div className="app-card" style={{ transition: 'all 0.3s ease' }}>
-            <div className="card-header" style={{ cursor: 'pointer', paddingBottom: isExpanded ? '15px' : '0' }} onClick={() => setIsExpanded(!isExpanded)}>
+            <div className="card-header" style={{ cursor: 'pointer', paddingBottom: isExpanded ? '15px' : undefined }} onClick={() => setIsExpanded(!isExpanded)}>
                 <div className="card-title-group">
-                    {app.accountType === 'organisation' ? <Building size={24} color="#3b82f6" /> : <User size={24} color="#8b5cf6" />}
+                    {app.accountType === 'organisation' ? (
+                        <div style={{width:'56px', height:'56px', background:'#eff6ff', borderRadius:'14px', display:'flex', alignItems:'center', justifyContent:'center', border:'2px solid #bfdbfe', boxShadow: '0 4px 10px rgba(59,130,246,0.1)'}}>
+                            <Building size={28} color="#2563eb" />
+                        </div>
+                    ) : (
+                        <div style={{width:'56px', height:'56px', background:'#f5f3ff', borderRadius:'14px', display:'flex', alignItems:'center', justifyContent:'center', border:'2px solid #ddd6fe', boxShadow: '0 4px 10px rgba(139,92,246,0.1)'}}>
+                            <User size={28} color="#7c3aed" />
+                        </div>
+                    )}
                     <div>
                         <h3 className="seller-name">{app.accountType === 'organisation' ? app.companyName : app.fullName}</h3>
                         <p className="seller-id-text">ID: {app.sellerId} • {app.accountType?.toUpperCase()}</p>
