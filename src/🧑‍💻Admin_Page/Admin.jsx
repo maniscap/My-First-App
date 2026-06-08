@@ -731,11 +731,11 @@ const EditCard = ({ app, onApprove, onReject }) => {
                     </div>
                 </div>
                 <div className="card-actions" onClick={(e) => e.stopPropagation()}>
-                    <button onClick={() => setIsExpanded(!isExpanded)} style={{ background: '#f1f5f9', border: '1px solid #e2e8f0', padding: '8px 16px', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', color: '#475569', transition: 'all 0.2s', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <button className="btn-action btn-fold" onClick={() => setIsExpanded(!isExpanded)}>
                         {isExpanded ? 'Fold Up ▲' : 'Open Details ▼'}
                     </button>
-                    <button className="btn-action btn-reject" onClick={onReject}><X size={16}/> Reject Edit</button>
-                    <button className="btn-action btn-approve" onClick={onApprove}><Check size={16}/> Approve Edit</button>
+                    <button className="btn-action btn-reject" onClick={onReject}><X size={20} strokeWidth={2.5}/> Reject Edit</button>
+                    <button className="btn-action btn-approve" onClick={onApprove}><Check size={20} strokeWidth={2.5}/> Approve Edit</button>
                 </div>
             </div>
             
@@ -790,11 +790,11 @@ const ApplicationCard = ({ app, onApprove, onReject }) => {
                     </div>
                 </div>
                 <div className="card-actions" onClick={(e) => e.stopPropagation()}>
-                    <button onClick={() => setIsExpanded(!isExpanded)} style={{ background: '#f1f5f9', border: '1px solid #e2e8f0', padding: '8px 16px', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', color: '#475569', transition: 'all 0.2s', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <button className="btn-action btn-fold" onClick={() => setIsExpanded(!isExpanded)}>
                         {isExpanded ? 'Fold Up ▲' : 'Open Details ▼'}
                     </button>
-                    <button onClick={onReject} className="btn-action btn-reject"><XCircle size={18} /> Reject</button>
-                    <button onClick={onApprove} className="btn-action btn-approve"><CheckCircle size={18} /> Approve</button>
+                    <button onClick={onReject} className="btn-action btn-reject"><XCircle size={20} /> Reject</button>
+                    <button onClick={onApprove} className="btn-action btn-approve"><CheckCircle size={20} /> Approve</button>
                 </div>
             </div>
 
@@ -1164,18 +1164,22 @@ const styles = `
   .seller-name { margin: 0; font-size: 22px; font-weight: 800; color: #0f172a; letter-spacing: -0.5px; }
   .seller-id-text { margin: 6px 0 0 0; font-size: 14px; font-weight: 700; color: #64748b; font-family: monospace; background: #e2e8f0; padding: 4px 8px; border-radius: 6px; display: inline-block; }
   
-  .card-actions { display: flex; gap: 12px; }
+  .card-actions { display: flex; gap: 14px; }
   .btn-action {
       display: flex; align-items: center; gap: 8px;
-      padding: 10px 16px; border-radius: 8px; border: none;
-      font-weight: 700; font-size: 14px; cursor: pointer; transition: 0.2s;
+      padding: 12px 20px; border-radius: 12px; border: none;
+      font-weight: 800; font-size: 15px; cursor: pointer; transition: all 0.3s ease;
   }
-  .btn-reject { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
-  .btn-reject:hover { background: #fee2e2; }
-  .btn-approve { background: var(--success); color: white; box-shadow: 0 4px 10px rgba(16, 185, 129, 0.3); }
-  .btn-approve:hover { background: #059669; }
+  .btn-fold { background: white; border: 2px solid #cbd5e1; color: #475569; }
+  .btn-fold:hover { background: #f8fafc; border-color: #94a3b8; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
 
-  .card-body { padding: 24px; display: flex; flex-direction: column; gap: 24px; }
+  .btn-reject { background: white; color: #ef4444; border: 2px solid #fca5a5; }
+  .btn-reject:hover { background: #ef4444; color: white; border-color: #ef4444; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2); }
+  
+  .btn-approve { background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3); border: 2px solid transparent; }
+  .btn-approve:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4); filter: brightness(1.1); }
+
+  .card-body { padding: 30px; padding-bottom: 40px; display: flex; flex-direction: column; gap: 30px; }
   
   .detail-section h4 { margin: 0 0 15px 0; font-size: 14px; color: var(--primary); text-transform: uppercase; letter-spacing: 0.5px; }
   .detail-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 24px; }
