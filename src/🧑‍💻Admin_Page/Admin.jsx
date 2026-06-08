@@ -762,9 +762,11 @@ function Admin() {
 
 // Sub-component for the application card (Shows FULL DETAILS for employee to verify)
 const ApplicationCard = ({ app, onApprove, onReject }) => {
+    const [isExpanded, setIsExpanded] = useState(false);
+
     return (
-        <div className="app-card">
-            <div className="card-header">
+        <div className="app-card" style={{ transition: 'all 0.3s ease' }}>
+            <div className="card-header" style={{ cursor: 'pointer', paddingBottom: isExpanded ? '15px' : '0' }} onClick={() => setIsExpanded(!isExpanded)}>
                 <div className="card-title-group">
                     {app.accountType === 'organisation' ? <Building size={24} color="#3b82f6" /> : <User size={24} color="#8b5cf6" />}
                     <div>
@@ -772,13 +774,17 @@ const ApplicationCard = ({ app, onApprove, onReject }) => {
                         <p className="seller-id-text">ID: {app.sellerId} • {app.accountType?.toUpperCase()}</p>
                     </div>
                 </div>
-                <div className="card-actions">
-                    <button onClick={onReject} className="btn-action btn-reject"><XCircle size={18} /> Reject & Delete</button>
-                    <button onClick={onApprove} className="btn-action btn-approve"><CheckCircle size={18} /> Approve Application</button>
+                <div className="card-actions" onClick={(e) => e.stopPropagation()}>
+                    <button onClick={() => setIsExpanded(!isExpanded)} style={{ background: '#f1f5f9', border: '1px solid #e2e8f0', padding: '8px 16px', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', color: '#475569', transition: 'all 0.2s', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        {isExpanded ? 'Fold Up ▲' : 'Open Details ▼'}
+                    </button>
+                    <button onClick={onReject} className="btn-action btn-reject"><XCircle size={18} /> Reject</button>
+                    <button onClick={onApprove} className="btn-action btn-approve"><CheckCircle size={18} /> Approve</button>
                 </div>
             </div>
 
-            <div className="card-body">
+            {isExpanded && (
+                <div className="card-body" style={{ borderTop: '1px solid #e2e8f0', marginTop: '15px', paddingTop: '15px' }}>
                 
                 {/* 1. TEXT DETAILS (Will be saved permanently) */}
                 <div className="detail-section">
@@ -889,6 +895,7 @@ const ApplicationCard = ({ app, onApprove, onReject }) => {
                 </div>
 
             </div>
+            )}
         </div>
     );
 };
