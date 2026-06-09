@@ -376,28 +376,40 @@ function Admin() {
     <div className="admin-dashboard">
       <style>{styles}</style>
       
-      {/* Deletion Modal */}
+      {/* Deletion Modal - Apple Premium Style */}
       {deleteModalOpen && (
-        <div style={{position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
-          <div style={{backgroundColor: '#fff', padding: '24px', borderRadius: '12px', width: '400px', maxWidth: '90%', boxSizing: 'border-box'}}>
-            <h3 style={{marginTop: 0, color: '#ef4444'}}>Delete Seller Account</h3>
-            <p style={{fontSize: '14px', color: '#64748b'}}>Specify the reason for deleting this account. This message will be sent to the seller before their app permanently wipes their data.</p>
+        <div style={{position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(4px)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
+          <div style={{backgroundColor: '#ffffff', padding: '32px', borderRadius: '24px', width: '420px', maxWidth: '90%', boxSizing: 'border-box', boxShadow: '0 20px 40px rgba(0,0,0,0.1)', border: '1px solid #E5E7EB'}}>
             
-            <label style={{display: 'block', fontSize: '12px', fontWeight: 'bold', marginBottom: '8px', color: '#334155'}}>Reason</label>
-            <select value={deleteReason} onChange={e => setDeleteReason(e.target.value)} style={{width: '100%', padding: '10px', marginBottom: '16px', borderRadius: '8px', border: '1px solid #cbd5e1', outline: 'none', boxSizing: 'border-box'}}>
-              <option>Violation of Terms & Conditions</option>
-              <option>Fraudulent Activity</option>
-              <option>User Requested Deletion</option>
-              <option>Incomplete or Fake Profile</option>
-              <option>Other</option>
-            </select>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
+              <div style={{ backgroundColor: '#FEF2F2', padding: '10px', borderRadius: '12px', color: '#EF4444' }}>
+                <XCircle size={24} strokeWidth={2} />
+              </div>
+              <h3 style={{ margin: 0, color: '#111827', fontSize: '20px', fontWeight: '800' }}>Delete Account</h3>
+            </div>
+            
+            <p style={{ fontSize: '14px', color: '#6B7280', marginBottom: '24px', lineHeight: '1.5' }}>
+              Specify the reason for deleting this account. This message will be sent to the seller before their app permanently wipes their data.
+            </p>
+            
+            <label style={{display: 'block', fontSize: '13px', fontWeight: '800', marginBottom: '8px', color: '#374151', textTransform: 'uppercase', letterSpacing: '0.5px'}}>Reason</label>
+            <div style={{ position: 'relative', marginBottom: '20px' }}>
+              <select value={deleteReason} onChange={e => setDeleteReason(e.target.value)} style={{width: '100%', padding: '16px', borderRadius: '14px', border: '1px solid #D1D5DB', backgroundColor: '#F9FAFB', fontSize: '15px', color: '#111827', outline: 'none', appearance: 'none', boxSizing: 'border-box', cursor: 'pointer', fontWeight: '500'}}>
+                <option>Violation of Terms & Conditions</option>
+                <option>Fraudulent Activity</option>
+                <option>User Requested Deletion</option>
+                <option>Incomplete or Fake Profile</option>
+                <option>Other</option>
+              </select>
+              <div style={{ position: 'absolute', right: '16px', top: '16px', pointerEvents: 'none', color: '#9CA3AF' }}>▼</div>
+            </div>
 
-            <label style={{display: 'block', fontSize: '12px', fontWeight: 'bold', marginBottom: '8px', color: '#334155'}}>Custom Message</label>
-            <textarea value={deleteMessage} onChange={e => setDeleteMessage(e.target.value)} placeholder="Explain the reason..." rows={4} style={{width: '100%', padding: '10px', marginBottom: '20px', borderRadius: '8px', border: '1px solid #cbd5e1', outline: 'none', boxSizing: 'border-box', resize: 'vertical'}}></textarea>
+            <label style={{display: 'block', fontSize: '13px', fontWeight: '800', marginBottom: '8px', color: '#374151', textTransform: 'uppercase', letterSpacing: '0.5px'}}>Custom Message</label>
+            <textarea value={deleteMessage} onChange={e => setDeleteMessage(e.target.value)} placeholder="Explain the reason..." rows={3} style={{width: '100%', padding: '16px', borderRadius: '14px', border: '1px solid #D1D5DB', backgroundColor: '#F9FAFB', fontSize: '15px', color: '#111827', outline: 'none', boxSizing: 'border-box', resize: 'none', fontWeight: '500', marginBottom: '32px'}}></textarea>
 
-            <div style={{display: 'flex', justifyContent: 'flex-end', gap: '10px'}}>
-              <button onClick={() => setDeleteModalOpen(false)} style={{padding: '10px 16px', background: '#f1f5f9', color: '#475569', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold'}}>Cancel</button>
-              <button onClick={executeSellerDeletion} disabled={isDeletingSeller} style={{padding: '10px 16px', background: '#ef4444', color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', opacity: isDeletingSeller ? 0.7 : 1}}>{isDeletingSeller ? 'Deleting...' : 'Confirm Delete'}</button>
+            <div style={{display: 'flex', gap: '12px'}}>
+              <button onClick={() => setDeleteModalOpen(false)} style={{flex: 1, padding: '16px', backgroundColor: '#F3F4F6', color: '#4B5563', border: 'none', borderRadius: '14px', cursor: 'pointer', fontWeight: '800', fontSize: '15px', transition: 'background-color 0.2s'}}>Cancel</button>
+              <button onClick={executeSellerDeletion} disabled={isDeletingSeller} style={{flex: 1, padding: '16px', backgroundColor: '#EF4444', color: '#FFFFFF', border: 'none', borderRadius: '14px', cursor: isDeletingSeller ? 'not-allowed' : 'pointer', fontWeight: '800', fontSize: '15px', transition: 'opacity 0.2s', opacity: isDeletingSeller ? 0.7 : 1}}>{isDeletingSeller ? 'Deleting...' : 'Confirm Delete'}</button>
             </div>
           </div>
         </div>
