@@ -77,6 +77,7 @@ function SellerProfile_Setup() {
                 if (prevStatus && prevStatus !== data.status) {
                     if (data.status === 'approved') addNotif('Application Approved', 'Congratulations! Your seller application has been approved.', 'success');
                     if (data.status === 'rejected') addNotif('Application Rejected', data.rejectionReason || 'Please check your application details.', 'error');
+                    if (data.status === 'deleted_by_admin') addNotif('Account Deleted', `Reason: ${data.deletionReason || 'Admin Action'}. Message: ${data.deletionMessage || ''}`, 'error');
                 }
 
                 if (prevEdit && !data.hasPendingEdit) {
@@ -97,7 +98,14 @@ function SellerProfile_Setup() {
                     if (docSnap.exists()) {
                         const data = docSnap.data();
                         processNotification(data);
-                        if (data.status === 'rejected') {
+                        if (data.status === 'deleted_by_admin') {
+                            localStorage.setItem('seller_app_deleted_reason', data.deletionReason || 'Violation of terms');
+                            localStorage.setItem('seller_app_deleted_msg', data.deletionMessage || '');
+                            localStorage.setItem('seller_app_status', 'permanently_deleted');
+                            await deleteDoc(doc(db, 'seller_applications', currentIndId));
+                            window.location.href = '/seller-home'; // Let the home page render the massive red screen
+                            return;
+                        } else if (data.status === 'rejected') {
                             localStorage.setItem('cached_reject_ind', data.rejectionReason || "Does not meet requirements");
                             setCachedIndReject(data.rejectionReason || "Does not meet requirements");
                             await deleteDoc(doc(db, 'seller_applications', currentIndId));
@@ -120,7 +128,14 @@ function SellerProfile_Setup() {
                     if (docSnap.exists()) {
                         const data = docSnap.data();
                         processNotification(data);
-                        if (data.status === 'rejected') {
+                        if (data.status === 'deleted_by_admin') {
+                            localStorage.setItem('seller_app_deleted_reason', data.deletionReason || 'Violation of terms');
+                            localStorage.setItem('seller_app_deleted_msg', data.deletionMessage || '');
+                            localStorage.setItem('seller_app_status', 'permanently_deleted');
+                            await deleteDoc(doc(db, 'seller_applications', currentOrgId));
+                            window.location.href = '/seller-home'; // Let the home page render the massive red screen
+                            return;
+                        } else if (data.status === 'rejected') {
                             localStorage.setItem('cached_reject_org', data.rejectionReason || "Does not meet requirements");
                             setCachedOrgReject(data.rejectionReason || "Does not meet requirements");
                             await deleteDoc(doc(db, 'seller_applications', currentOrgId));

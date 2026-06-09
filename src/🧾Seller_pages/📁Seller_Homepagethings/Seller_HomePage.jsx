@@ -48,7 +48,11 @@ function Seller_HomePage() {
                         appId = appDoc.id;
                         localStorage.setItem('seller_app_id', appId);
                     } else {
-                        setAppStatus('none');
+                        if (localStorage.getItem('seller_app_status') === 'permanently_deleted') {
+                            setAppStatus('permanently_deleted');
+                        } else {
+                            setAppStatus('none');
+                        }
                         return;
                     }
                 }
@@ -106,7 +110,11 @@ function Seller_HomePage() {
                             localStorage.setItem('seller_app_pending_edit', appData.hasPendingEdit ? 'true' : 'false');
                             // ----------------------------------------------------
                         } else {
-                            setAppStatus('none');
+                            if (localStorage.getItem('seller_app_status') === 'permanently_deleted') {
+                                setAppStatus('permanently_deleted');
+                            } else {
+                                setAppStatus('none');
+                            }
                         }
                     }, (error) => {
                         console.error("Error with application snapshot:", error);
