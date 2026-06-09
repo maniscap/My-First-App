@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { db } from '../firebase';
 import { collection, getDocs, doc, updateDoc, deleteField, deleteDoc, getCountFromServer, query, limit, onSnapshot, where, startAfter } from 'firebase/firestore';
 import { IoMdArrowBack } from 'react-icons/io';
-import { CheckCircle, XCircle, User, Building, LayoutDashboard, ClipboardList, Users, List, LogOut, Lock, RefreshCw, Edit3, CheckCircle2, Check, X } from 'lucide-react';
+import { CheckCircle, XCircle, User, Building, LayoutDashboard, ClipboardList, Users, List, LogOut, Lock, RefreshCw, Edit3, CheckCircle2, Check, X, Search } from 'lucide-react';
 
 function Admin() {
   const [isAuthenticated, setIsAuthenticated] = useState(localStorage.getItem('adminAuth') === 'true');
@@ -13,6 +13,7 @@ function Admin() {
   const [activeTab, setActiveTab] = useState('dashboard'); // dashboard, verifications, approved, listings, reports, announcements
   const [verificationTab, setVerificationTab] = useState('individual'); // individual or organisation
   const [approvedTab, setApprovedTab] = useState('individual'); // individual or organisation
+  const [approvedSearchQuery, setApprovedSearchQuery] = useState('');
   const [sellerApplications, setSellerApplications] = useState([]);
   const [listingCounts, setListingCounts] = useState({ farmFresh: 0, machinery: 0, workers: 0, business: 0, freelance: 0, rejected: 0 });
   const [loading, setLoading] = useState(false);
@@ -262,6 +263,7 @@ function Admin() {
                await updateDoc(sellerRef, { 
                    ...app.editData,
                    hasPendingEdit: false,
+                   lastEditAction: 'approved',
                    editData: deleteField()
                });
                fetchData();
@@ -279,6 +281,7 @@ function Admin() {
                const sellerRef = doc(db, "seller_applications", app.id);
                await updateDoc(sellerRef, { 
                    hasPendingEdit: false,
+                   lastEditAction: 'rejected',
                    editData: deleteField()
                });
                fetchData();
@@ -326,8 +329,23 @@ function Admin() {
   const pendingInd = sellerApplications.filter(a => a.status === 'pending_approval' && a.accountType === 'individual');
   const pendingOrg = sellerApplications.filter(a => a.status === 'pending_approval' && a.accountType === 'organisation');
 
-  const approvedInd = sellerApplications.filter(a => a.status === 'approved' && a.accountType === 'individual');
-  const approvedOrg = sellerApplications.filter(a => a.status === 'approved' && a.accountType === 'organisation');
+  const approvedSearchLower = approvedSearchQuery.toLowerCase();
+  
+  const approvedInd = sellerApplications.filter(a => {
+      if (a.status !== 'approved' || a.accountType !== 'individual') return false;
+      if (!approvedSearchQuery) return true;
+      const idMatch = a.sellerId?.toLowerCase().includes(approvedSearchLower);
+      const nameMatch = a.fullName?.toLowerCase().includes(approvedSearchLower) || a.shopName?.toLowerCase().includes(approvedSearchLower);
+      return idMatch || nameMatch;
+  });
+
+  const approvedOrg = sellerApplications.filter(a => {
+      if (a.status !== 'approved' || a.accountType !== 'organisation') return false;
+      if (!approvedSearchQuery) return true;
+      const idMatch = a.sellerId?.toLowerCase().includes(approvedSearchLower);
+      const nameMatch = a.companyName?.toLowerCase().includes(approvedSearchLower) || a.shopName?.toLowerCase().includes(approvedSearchLower);
+      return idMatch || nameMatch;
+  });
 
   const pendingEdits = sellerApplications.filter(a => a.hasPendingEdit);
 
@@ -504,6 +522,17 @@ function Admin() {
                   <div className="header-titles">
                       <h1>Approved Sellers Directory</h1>
                       <p>Lightweight text-only directory of verified sellers.</p>
+                  </div>
+                  
+                  <div style={{ marginBottom: '20px', position: 'relative' }}>
+                      <Search size={20} color="#94a3b8" style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)' }} />
+                      <input 
+                          type="text" 
+                          placeholder="Search by Seller ID or Shop/Company/Owner Name..." 
+                          value={approvedSearchQuery}
+                          onChange={(e) => setApprovedSearchQuery(e.target.value)}
+                          style={{ width: '100%', padding: '14px 16px 14px 44px', borderRadius: '12px', border: '1px solid #cbd5e1', fontSize: '15px', outline: 'none', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}
+                      />
                   </div>
                   
                   <div className="approved-directory">

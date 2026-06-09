@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Home, MessageCircle, Bell, Settings, Menu } from 'lucide-react';
 
@@ -57,6 +57,17 @@ const MessageIconWithBadge = ({ size, strokeWidth, count }) => (
 const SellerBottomNavigation = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    const updateCount = () => {
+      const notifs = JSON.parse(localStorage.getItem('seller_notifications') || '[]');
+      setUnreadCount(notifs.filter(n => !n.isRead).length);
+    };
+    updateCount();
+    window.addEventListener('seller_notifications_updated', updateCount);
+    return () => window.removeEventListener('seller_notifications_updated', updateCount);
+  }, []);
 
   // Hide navigation on Profile page as requested
   const allowedPaths = ['/Seller_HomePage', '/seller-messages', '/seller-notifications', '/seller-more'];
@@ -67,7 +78,7 @@ const SellerBottomNavigation = () => {
   const navItems = [
     { label: 'Home', icon: Home, path: '/Seller_HomePage', active: location.pathname === '/Seller_HomePage', onClick: () => navigate('/Seller_HomePage') },
     { label: 'Messages', icon: MessageIconWithBadge, path: '/seller-messages', count: 0, active: location.pathname === '/seller-messages', onClick: () => navigate('/seller-messages') },
-    { label: 'Alerts', icon: NotificationBellIcon, path: '/seller-notifications', count: 0, active: location.pathname === '/seller-notifications', onClick: () => navigate('/seller-notifications') },
+    { label: 'Alerts', icon: NotificationBellIcon, path: '/seller-notifications', count: unreadCount, active: location.pathname === '/seller-notifications', onClick: () => navigate('/seller-notifications') },
     { label: 'Menu', icon: Menu, path: '/seller-more', active: location.pathname === '/seller-more', onClick: () => navigate('/seller-more') }
   ];
 

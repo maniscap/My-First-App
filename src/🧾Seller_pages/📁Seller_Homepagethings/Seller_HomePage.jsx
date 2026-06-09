@@ -64,6 +64,34 @@ function Seller_HomePage() {
                             setSellerName(nameToUse);
                             localStorage.setItem('seller_name', nameToUse);
                             localStorage.setItem('seller_account_type', appData.accountType);
+
+                            // --- LOCAL NOTIFICATION LOGIC (ZERO EXTRA READS) ---
+                            const prevStatus = localStorage.getItem('seller_app_status');
+                            const prevEdit = localStorage.getItem('seller_app_pending_edit') === 'true';
+                            
+                            const addNotif = (title, msg, type) => {
+                                const notifs = JSON.parse(localStorage.getItem('seller_notifications') || '[]');
+                                notifs.unshift({ id: Date.now().toString(), title, message: msg, type, timestamp: new Date().toISOString(), isRead: false });
+                                localStorage.setItem('seller_notifications', JSON.stringify(notifs));
+                                window.dispatchEvent(new Event('seller_notifications_updated'));
+                            };
+
+                            if (prevStatus && prevStatus !== appData.status) {
+                                if (appData.status === 'approved') addNotif('Application Approved', 'Congratulations! Your seller application has been approved.', 'success');
+                                if (appData.status === 'rejected') addNotif('Application Rejected', appData.rejectionReason || 'Please check your application details.', 'error');
+                            }
+
+                            if (prevEdit && !appData.hasPendingEdit) {
+                                if (appData.lastEditAction === 'rejected') {
+                                    addNotif('Edit Request Rejected', 'Your profile edit request was rejected by the admin. Your live profile remains unchanged.', 'error');
+                                } else {
+                                    addNotif('✓✓✓ Edit Request Approved', 'Your profile edit request has been approved and applied to your live profile.', 'success');
+                                }
+                            }
+
+                            localStorage.setItem('seller_app_status', appData.status);
+                            localStorage.setItem('seller_app_pending_edit', appData.hasPendingEdit ? 'true' : 'false');
+                            // ----------------------------------------------------
                         } else {
                             setAppStatus('none');
                         }

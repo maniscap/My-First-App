@@ -7,16 +7,18 @@
   font-weight: 400;
   color-scheme: light dark;
   color: rgba(255, 255, 255, 0.87);
-  background-color: #242424; /* Fallback color */
+  background-color: #F2F2F7; /* Fallback color */
 }
 
-/* 2. KILL THE BLACK GAP */
+/* 2. KILL THE BLACK GAP AND STRETCHING */
 html, body {
   margin: 0 !important;
   padding: 0 !important;
   width: 100% !important;
   height: 100% !important;
   overflow-x: hidden; /* No side scroll */
+  overscroll-behavior: none !important; /* UNIVERSAL STRETCH/BOUNCE FIX */
+  background-color: #F8F9FB !important; /* Apple System Gray 6 */
 }
 
 /* 3. FORCE THE REACT ROOT TO FILL THE SCREEN */

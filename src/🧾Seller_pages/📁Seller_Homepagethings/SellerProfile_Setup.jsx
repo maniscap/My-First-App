@@ -60,11 +60,41 @@ function SellerProfile_Setup() {
                 }
             }
 
+            // --- LOCAL NOTIFICATION HELPER ---
+            const processNotification = (data) => {
+                const prevStatus = localStorage.getItem('seller_app_status');
+                const prevEdit = localStorage.getItem('seller_app_pending_edit') === 'true';
+                
+                const addNotif = (title, msg, type) => {
+                    const notifs = JSON.parse(localStorage.getItem('seller_notifications') || '[]');
+                    notifs.unshift({ id: Date.now().toString(), title, message: msg, type, timestamp: new Date().toISOString(), isRead: false });
+                    localStorage.setItem('seller_notifications', JSON.stringify(notifs));
+                    window.dispatchEvent(new Event('seller_notifications_updated'));
+                };
+
+                if (prevStatus && prevStatus !== data.status) {
+                    if (data.status === 'approved') addNotif('Application Approved', 'Congratulations! Your seller application has been approved.', 'success');
+                    if (data.status === 'rejected') addNotif('Application Rejected', data.rejectionReason || 'Please check your application details.', 'error');
+                }
+
+                if (prevEdit && !data.hasPendingEdit) {
+                    if (data.lastEditAction === 'rejected') {
+                        addNotif('Edit Request Rejected', 'Your profile edit request was rejected by the admin. Your live profile remains unchanged.', 'error');
+                    } else {
+                        addNotif('✓✓✓ Edit Request Approved', 'Your profile edit request has been approved and applied to your live profile.', 'success');
+                    }
+                }
+
+                localStorage.setItem('seller_app_status', data.status);
+                localStorage.setItem('seller_app_pending_edit', data.hasPendingEdit ? 'true' : 'false');
+            };
+
             // --- 2. FETCH LATEST DATA VIA SNAPSHOT ---
             if (currentIndId) {
                 unsubInd = onSnapshot(doc(db, 'seller_applications', currentIndId), async (docSnap) => {
                     if (docSnap.exists()) {
                         const data = docSnap.data();
+                        processNotification(data);
                         if (data.status === 'rejected') {
                             localStorage.setItem('cached_reject_ind', data.rejectionReason || "Does not meet requirements");
                             setCachedIndReject(data.rejectionReason || "Does not meet requirements");
@@ -87,6 +117,7 @@ function SellerProfile_Setup() {
                 unsubOrg = onSnapshot(doc(db, 'seller_applications', currentOrgId), async (docSnap) => {
                     if (docSnap.exists()) {
                         const data = docSnap.data();
+                        processNotification(data);
                         if (data.status === 'rejected') {
                             localStorage.setItem('cached_reject_org', data.rejectionReason || "Does not meet requirements");
                             setCachedOrgReject(data.rejectionReason || "Does not meet requirements");
@@ -272,8 +303,39 @@ function SellerProfile_Setup() {
             delete submissionData.orgHarvestImages;
 
             if (isEditingMode) {
+                // Fetch live data to verify if changes were actually made
+                const liveDocRef = doc(db, 'seller_applications', submissionData.sellerId);
+                const liveDocSnap = await getDoc(liveDocRef);
+                
+                if (liveDocSnap.exists()) {
+                    const liveData = liveDocSnap.data();
+                    let hasChanges = false;
+                    
+                    const fieldsToCheck = [
+                        'shopName', 'companyName', 'ownerName', 'fullName', 'aadharNumber', 'gstNumber', 
+                        'email', 'phone', 'emergencyPhone', 'village', 'mandal', 'district', 'state', 'pincode', 'description'
+                    ];
+
+                    for (const field of fieldsToCheck) {
+                        if ((submissionData[field] || '') !== (liveData[field] || '')) {
+                            hasChanges = true;
+                            break;
+                        }
+                    }
+
+                    if (!hasChanges && JSON.stringify(submissionData.categories || []) !== JSON.stringify(liveData.categories || [])) {
+                        hasChanges = true;
+                    }
+
+                    if (!hasChanges) {
+                        alert("No changes were detected. Your application remains unmodified.");
+                        setIsSubmitting(false);
+                        return;
+                    }
+                }
+
                 // Submit as an Edit Request
-                await setDoc(doc(db, 'seller_applications', submissionData.sellerId), {
+                await setDoc(liveDocRef, {
                     hasPendingEdit: true,
                     editData: submissionData
                 }, { merge: true });
@@ -577,6 +639,14 @@ function SellerProfile_Setup() {
 
                             {/* Identity Section */}
                             <p style={{ margin: '20px 0 14px', fontSize: '16px', fontWeight: '700', color: '#111827', fontFamily: "'Inter', sans-serif" }}>Identity Details</p>
+                            
+                            {/* Critical Warning Note */}
+                            <div style={{ backgroundColor: '#FEF2F2', borderRadius: '6px', padding: '8px 10px', marginBottom: '16px', display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
+                                <AlertTriangle size={14} color="#DC2626" style={{ flexShrink: 0, marginTop: '1px' }} />
+                                <p style={{ margin: 0, fontSize: '11px', color: '#B91C1C', fontWeight: '400', lineHeight: '1.4' }}>
+                                    <strong style={{ fontWeight: '600' }}>Note:</strong> Ensure these details are accurate. They will be displayed publicly on your Storefront and cannot be edited later without manual re-approval.
+                                </p>
+                            </div>
                             {accountType === 'individual' ? (<>
                                 <InputGroup label="Shop Name" name="shopName" value={formData.shopName} onChange={handleChange} placeholder="e.g. Raju's Fresh Farms" themeColor={currentTheme.primary} />
                                 <InputGroup label="Owner Name" name="ownerName" value={formData.ownerName} onChange={handleChange} placeholder="Owner's full name" themeColor={currentTheme.primary} />
@@ -597,6 +667,11 @@ function SellerProfile_Setup() {
                                 <button type="button" onClick={handleAutoDetectLocation} disabled={isDetecting} style={{ padding: '8px 16px', background: currentTheme.primary, color: '#fff', border: 'none', borderRadius: '20px', fontWeight: '600', fontSize: '13px', cursor: 'pointer', boxShadow: `0 2px 8px ${currentTheme.shadow}`, fontFamily: "'Inter', sans-serif" }}>
                                     {isDetecting ? '⏳ Detecting...' : '📍 Auto GPS'}
                                 </button>
+                            </div>
+                            <div style={{ marginBottom: '16px', padding: '10px 12px', backgroundColor: '#FEF2F2', borderLeft: '4px solid #EF4444', borderRadius: '6px' }}>
+                                <p style={{ margin: 0, fontSize: '13px', color: '#991B1B', fontWeight: '500', fontFamily: "'Inter', sans-serif", lineHeight: '1.4' }}>
+                                    <span style={{ fontWeight: '700', color: '#DC2626' }}>Important Note:</span> When using Auto GPS to fill your location details, please ensure you are physically present at the exact location of your farm, house, shop, or organisation.
+                                </p>
                             </div>
                             {formData.lat && formData.lng && <>
                                 <InputGroup label="Latitude (Auto)" readOnly value={formData.lat} themeColor={currentTheme.primary} />
