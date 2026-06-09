@@ -240,7 +240,7 @@ function Seller_HomePage() {
             </div>
 
             {/* BLOCK CLICKS IF NOT APPROVED */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', opacity: appStatus !== 'approved' ? 0.6 : 1, pointerEvents: appStatus !== 'approved' ? 'none' : 'auto' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                 
                 <Link to="/add-business" style={{ textDecoration: 'none' }}>
                     <div style={{ borderRadius: '24px', overflow: 'hidden', boxShadow: '0 10px 30px rgba(0,0,0,0.04)', display: 'flex', flexDirection: 'column', backgroundColor: '#fff', height: '100%', border: '1px solid #e2e8f0', position: 'relative' }}>

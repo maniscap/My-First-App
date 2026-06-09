@@ -52,6 +52,10 @@ import Seller_StorefrontSetup from './🧾Seller_pages/📁Seller_Homepagethings
 import Seller_DeleteAccount from './🧾Seller_pages/📁Seller_Homepagethings/Seller_DeleteAccount';
 import FarmFresh_ListingForm from './🧾Seller_pages/📁Seller_ListingForms/FarmFresh_ListingForm';
 import LocalAgriGoods_ListingForm from './🧾Seller_pages/📁Seller_ListingForms/LocalAgriGoods_ListingForm';
+import BusinessZone_ListingForm from './🧾Seller_pages/📁Seller_ListingForms/BusinessZone_ListingForm';
+import HireMachinary_ListingForm from './🧾Seller_pages/📁Seller_ListingForms/HireMachinary_ListingForm';
+import HireWorkers_ListingForm from './🧾Seller_pages/📁Seller_ListingForms/HireWorkers_ListingForm';
+import Freelancing_ListingForm from './🧾Seller_pages/📁Seller_ListingForms/Freelancing_ListingForm';
 import ManageListings from './🧾Seller_pages/📁Seller_ListingForms/ManageListings';
 
 // --- IMPORT COMPONENTS ---
@@ -145,6 +149,10 @@ function App() {
               <Route path="/seller-more" element={<Seller_MoreMenu />} />
               <Route path="/add-farm-fresh" element={<FarmFresh_ListingForm />} />
               <Route path="/add-local-goods" element={<LocalAgriGoods_ListingForm />} />
+              <Route path="/add-business" element={<BusinessZone_ListingForm />} />
+              <Route path="/add-machinery" element={<HireMachinary_ListingForm />} />
+              <Route path="/add-workers" element={<HireWorkers_ListingForm />} />
+              <Route path="/add-freelancing" element={<Freelancing_ListingForm />} />
               <Route path="/manage-listings" element={<ManageListings />} />
 
               

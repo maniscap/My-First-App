@@ -4,6 +4,7 @@ import { ArrowLeft, Leaf, CheckCircle2 } from 'lucide-react';
 import { farmFreshCategories, farmFreshUnits } from '../../utils/ProductLibrary';
 import TermsAgreementCheckbox from '../../🛠️Shared_Components/TermsAgreementCheckbox';
 import UniversalImagePicker from '../../utils/UniversalImagePicker';
+import LockedListingScreen from '../../🛠️Shared_Components/LockedListingScreen';
 import { db, auth } from '../../firebase';
 import { collection, addDoc, serverTimestamp, doc, updateDoc } from 'firebase/firestore';
 // Custom iOS-style toggle switch
@@ -56,6 +57,26 @@ export default function FarmFresh_ListingForm() {
     const [isCategoryOpen, setIsCategoryOpen] = useState(false);
     const [isItemOpen, setIsItemOpen] = useState(false);
     const [errorToast, setErrorToast] = useState('');
+    
+    // Check Seller Approval Status
+    const appStatus = localStorage.getItem('seller_app_status') || 'none';
+    if (appStatus !== 'approved' && appStatus !== 'loading') {
+        return (
+            <LockedListingScreen 
+                categoryName="Farm Fresh"
+                icon={Leaf}
+                title="Farm Fresh is Locked"
+                description="You are just one step away from bringing your fresh produce to thousands of customers live on our platform."
+                colorTheme={{
+                    main: '#10B981', // Green
+                    bg: '#ECFDF5',
+                    border: '#A7F3D0',
+                    shadow: '#6EE7B7'
+                }}
+            />
+        );
+    }
+
     // Derived logic for dropdowns
     const activeCategoryObj = farmFreshCategories.find(c => c.category === selectedCategory);
     const activeItems = activeCategoryObj ? activeCategoryObj.items : [];

@@ -157,14 +157,46 @@ export default function Seller_StorefrontSetup() {
   // 3. Security Guard: Only Approved profiles get in
   if (appStatus !== 'approved' && appStatus !== 'loading') {
     return (
-      <div style={styles.container}>
-        <div style={{display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flex: 1, padding: '24px', textAlign: 'center'}}>
-           <AlertCircle size={64} color="#EF4444" style={{ marginBottom: '16px' }} />
-           <h2 style={{color: '#111827', fontSize: '24px', fontWeight: '800', marginBottom: '8px'}}>Registration Required</h2>
-           <p style={{color: '#6B7280', marginBottom: '24px', fontSize: '15px', lineHeight: '1.5'}}>Go to the seller registration and send your application. After approval, you can set up your storefront.</p>
-           <button onClick={() => navigate('/seller-setup')} style={{ padding: '14px 28px', backgroundColor: '#3B82F6', color: '#FFF', border: 'none', borderRadius: '12px', fontSize: '16px', fontWeight: '800', boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)', cursor: 'pointer' }}>
-             Go to Seller Registration
-           </button>
+      <div style={{...styles.container, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', backgroundColor: '#F8FAFC', padding: '24px'}}>
+        
+        {/* Top Back Button */}
+        <div style={{ position: 'absolute', top: '24px', left: '24px', zIndex: 50 }}>
+          <button onClick={() => navigate(-1)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '44px', height: '44px', backgroundColor: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '14px', cursor: 'pointer', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}>
+            <ArrowLeft size={22} color="#0F172A" />
+          </button>
+        </div>
+
+        {/* Minimalist 3D Block Card */}
+        <div style={{ 
+            backgroundColor: '#FFFFFF', 
+            borderRadius: '32px', 
+            padding: '40px 32px', 
+            width: '100%', 
+            maxWidth: '400px', 
+            boxSizing: 'border-box',
+            display: 'flex', 
+            flexDirection: 'column', 
+            alignItems: 'center', 
+            textAlign: 'center', 
+            border: '8px solid #F1F5F9',
+            boxShadow: '0 12px 0 #E2E8F0, 0 24px 40px rgba(0,0,0,0.06)'
+        }}>
+            
+            <div style={{ width: '64px', height: '64px', backgroundColor: '#EFF6FF', borderRadius: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '20px', border: '2px solid #DBEAFE', boxShadow: '0 6px 0 #BFDBFE' }}>
+               <AlertCircle size={32} color="#3B82F6" strokeWidth={2.5} />
+            </div>
+            
+            <h2 style={{color: '#0F172A', fontSize: '24px', fontWeight: '800', marginBottom: '12px', letterSpacing: '-0.3px'}}>Storefront Locked</h2>
+            
+            <p style={{color: '#475569', margin: 0, fontSize: '15px', lineHeight: '1.6', fontWeight: '600'}}>
+                Go to the <span style={{color: '#0F172A', fontWeight: '800', backgroundColor: '#F1F5F9', padding: '2px 8px', borderRadius: '6px'}}>Seller Registration</span> and send your application. 
+            </p>
+            
+            <div style={{ width: '40px', height: '3px', backgroundColor: '#E2E8F0', margin: '24px 0', borderRadius: '4px' }}></div>
+            
+            <p style={{color: '#64748B', margin: 0, fontSize: '14px', lineHeight: '1.6', fontWeight: '500'}}>
+                Once verified by our admin team, this section will automatically unlock for you to design your storefront.
+            </p>
         </div>
       </div>
     );

@@ -1,6 +1,26 @@
 import React from 'react';
+import LockedListingScreen from '../../🛠️Shared_Components/LockedListingScreen';
+import { Truck } from 'lucide-react';
 
 function HireMachinary_ListingForm() {
+    const appStatus = localStorage.getItem('seller_app_status') || 'none';
+    if (appStatus !== 'approved' && appStatus !== 'loading') {
+        return (
+            <LockedListingScreen 
+                categoryName="Machinery"
+                icon={Truck}
+                title="Machinery is Locked"
+                description="Put your idle equipment to work! Finish your application to start renting out your tractors and machinery to farmers in need."
+                colorTheme={{
+                    main: '#F59E0B', // Orange
+                    bg: '#FFFBEB',
+                    border: '#FDE68A',
+                    shadow: '#FCD34D'
+                }}
+            />
+        );
+    }
+
     return (
         <div style={{ padding: '20px', backgroundColor: '#f4f7f6', minHeight: '100vh', paddingBottom: '100px' }}>
             <h1 style={{ fontSize: '24px', color: '#2c3e50', marginBottom: '20px', fontWeight: '800' }}>Add Machinery/Tools</h1>
