@@ -32,6 +32,13 @@ function Admin() {
   const [announcementText, setAnnouncementText] = useState('');
   const [sendingAnnouncement, setSendingAnnouncement] = useState(false);
 
+  // Deletion Modal State
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [sellerToDelete, setSellerToDelete] = useState(null);
+  const [deleteReason, setDeleteReason] = useState('Violation of Terms & Conditions');
+  const [deleteMessage, setDeleteMessage] = useState('');
+  const [isDeletingSeller, setIsDeletingSeller] = useState(false);
+
   const fetchReports = async () => {
       setLoadingReports(true);
       try {
@@ -246,14 +253,30 @@ function Admin() {
       }
   };
 
-  const handleDeleteApproved = async (id) => {
-      if(window.confirm("Are you sure you want to permanently delete this verified seller from Firebase? This will WIPE OUT ALL THEIR LISTINGS instantly.")) {
-          try {
-              await wipeSellerData(id);
-              await deleteDoc(doc(db, "seller_applications", id));
-              fetchData();
-           } catch (err) { alert("Failed to delete seller."); }
+  const handleDeleteApproved = (id) => {
+      setSellerToDelete(id);
+      setDeleteReason('Violation of Terms & Conditions');
+      setDeleteMessage('');
+      setDeleteModalOpen(true);
+  };
+
+  const executeSellerDeletion = async () => {
+      if(!sellerToDelete) return;
+      setIsDeletingSeller(true);
+      try {
+          await wipeSellerData(sellerToDelete);
+          await updateDoc(doc(db, "seller_applications", sellerToDelete), {
+              status: 'deleted_by_admin',
+              deletionReason: deleteReason,
+              deletionMessage: deleteMessage
+          });
+          setDeleteModalOpen(false);
+          setSellerToDelete(null);
+          fetchData();
+       } catch (err) { 
+          alert("Failed to delete seller."); 
        }
+       setIsDeletingSeller(false);
    };
 
    const handleApproveEdit = async (app) => {
@@ -352,6 +375,33 @@ function Admin() {
   return (
     <div className="admin-dashboard">
       <style>{styles}</style>
+      
+      {/* Deletion Modal */}
+      {deleteModalOpen && (
+        <div style={{position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
+          <div style={{backgroundColor: '#fff', padding: '24px', borderRadius: '12px', width: '400px', maxWidth: '90%', boxSizing: 'border-box'}}>
+            <h3 style={{marginTop: 0, color: '#ef4444'}}>Delete Seller Account</h3>
+            <p style={{fontSize: '14px', color: '#64748b'}}>Specify the reason for deleting this account. This message will be sent to the seller before their app permanently wipes their data.</p>
+            
+            <label style={{display: 'block', fontSize: '12px', fontWeight: 'bold', marginBottom: '8px', color: '#334155'}}>Reason</label>
+            <select value={deleteReason} onChange={e => setDeleteReason(e.target.value)} style={{width: '100%', padding: '10px', marginBottom: '16px', borderRadius: '8px', border: '1px solid #cbd5e1', outline: 'none', boxSizing: 'border-box'}}>
+              <option>Violation of Terms & Conditions</option>
+              <option>Fraudulent Activity</option>
+              <option>User Requested Deletion</option>
+              <option>Incomplete or Fake Profile</option>
+              <option>Other</option>
+            </select>
+
+            <label style={{display: 'block', fontSize: '12px', fontWeight: 'bold', marginBottom: '8px', color: '#334155'}}>Custom Message</label>
+            <textarea value={deleteMessage} onChange={e => setDeleteMessage(e.target.value)} placeholder="Explain the reason..." rows={4} style={{width: '100%', padding: '10px', marginBottom: '20px', borderRadius: '8px', border: '1px solid #cbd5e1', outline: 'none', boxSizing: 'border-box', resize: 'vertical'}}></textarea>
+
+            <div style={{display: 'flex', justifyContent: 'flex-end', gap: '10px'}}>
+              <button onClick={() => setDeleteModalOpen(false)} style={{padding: '10px 16px', background: '#f1f5f9', color: '#475569', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold'}}>Cancel</button>
+              <button onClick={executeSellerDeletion} disabled={isDeletingSeller} style={{padding: '10px 16px', background: '#ef4444', color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', opacity: isDeletingSeller ? 0.7 : 1}}>{isDeletingSeller ? 'Deleting...' : 'Confirm Delete'}</button>
+            </div>
+          </div>
+        </div>
+      )}
       
       {/* SIDEBAR */}
       <aside className="sidebar">

@@ -25,6 +25,20 @@ export default function Seller_StorefrontSetup() {
   const [isDetecting, setIsDetecting] = useState(false);
   const [mapLayer, setMapLayer] = useState('k'); // 'm' for map, 'k' for satellite
   const [attemptedSubmit, setAttemptedSubmit] = useState(false);
+  
+  // Operations & Logistics State
+  const [operationsForm, setOperationsForm] = useState({
+    openTime: '',
+    closeTime: '',
+    closedDays: [], // e.g., ['Sunday']
+    customMessage: '',
+    deliveryMode: 'home_delivery', // 'home_delivery' or 'store_pickup'
+    deliveryRadius: '', // in km
+    deliveryFee: '',
+    freeDeliveryThreshold: '',
+    minOrderValue: ''
+  });
+  const [isSavingOperations, setIsSavingOperations] = useState(false);
 
   useEffect(() => {
     // 1. Try local storage first to show data immediately
@@ -72,9 +86,13 @@ export default function Seller_StorefrontSetup() {
           setAppStatus(appData.status);
 
           // Pre-fill location form from existing storefront data OR fallback to blank
-          setLocationForm(appData.storefrontLocation || {
-            houseNumber: '', landmark: '', village: '', mandal: '', nearerCity: '', district: '', state: 'Andhra Pradesh', pincode: '', lat: '', lng: '', serviceRadius: '20km'
-          });
+          if (appData.storefrontLocation) {
+            setLocationForm(appData.storefrontLocation);
+          }
+          
+          if (appData.storeOperations) {
+            setOperationsForm(appData.storeOperations);
+          }
           
           setAccountType(appData.accountType);
           const nameToUse = appData.accountType === 'organisation' ? appData.companyName : (appData.shopName || appData.fullName);
@@ -140,12 +158,12 @@ export default function Seller_StorefrontSetup() {
   if (appStatus !== 'approved' && appStatus !== 'loading') {
     return (
       <div style={styles.container}>
-        <div style={{display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flex: 1}}>
+        <div style={{display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flex: 1, padding: '24px', textAlign: 'center'}}>
            <AlertCircle size={64} color="#EF4444" style={{ marginBottom: '16px' }} />
-           <h2 style={{color: '#111827', fontSize: '24px', fontWeight: '700', marginBottom: '8px'}}>Access Denied</h2>
-           <p style={{color: '#6B7280', marginBottom: '24px'}}>Your profile must be approved before setting up the storefront.</p>
-           <button onClick={() => navigate('/seller-setup')} style={{ ...styles.primaryButton, background: '#0066FF', color: '#FFF', padding: '12px 24px' }}>
-             Go to Application Setup
+           <h2 style={{color: '#111827', fontSize: '24px', fontWeight: '800', marginBottom: '8px'}}>Registration Required</h2>
+           <p style={{color: '#6B7280', marginBottom: '24px', fontSize: '15px', lineHeight: '1.5'}}>Go to the seller registration and send your application. After approval, you can set up your storefront.</p>
+           <button onClick={() => navigate('/seller-setup')} style={{ padding: '14px 28px', backgroundColor: '#3B82F6', color: '#FFF', border: 'none', borderRadius: '12px', fontSize: '16px', fontWeight: '800', boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)', cursor: 'pointer' }}>
+             Go to Seller Registration
            </button>
         </div>
       </div>
@@ -509,6 +527,261 @@ export default function Seller_StorefrontSetup() {
     );
   }
 
+  // 6. Operations & Logistics Full Page View
+  if (expandedCard === 'operations') {
+    const DAYS_OF_WEEK = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+
+    const toggleClosedDay = (day) => {
+      setOperationsForm(prev => {
+        if (prev.closedDays.includes(day)) {
+          return { ...prev, closedDays: prev.closedDays.filter(d => d !== day) };
+        } else {
+          return { ...prev, closedDays: [...prev.closedDays, day] };
+        }
+      });
+    };
+
+    const handleSaveOperations = async () => {
+      // --- STRICT VALIDATION ---
+      if (!operationsForm.openTime || !operationsForm.closeTime) {
+        alert("Please specify your Shop Opening and Closing times.");
+        return;
+      }
+      if (operationsForm.deliveryMode === 'home_delivery') {
+        if (!operationsForm.deliveryRadius || !operationsForm.deliveryFee || !operationsForm.minOrderValue) {
+          alert("Please fill out all Home Delivery details (Radius, Fee, Min Order).");
+          return;
+        }
+      }
+
+      setIsSavingOperations(true);
+      try {
+        const collectionName = accountType === 'organisation' ? 'seller_organisations' : 'seller_individuals';
+        const docRef = doc(db, collectionName, sellerId);
+        await updateDoc(docRef, {
+          storeOperations: operationsForm,
+          setupStepOperationsCompleted: true
+        });
+        alert("Operations & Logistics saved successfully!");
+        setExpandedCard(null); // Return to main setup menu
+      } catch (error) {
+        console.error("Error saving operations", error);
+        alert("Failed to save operations details.");
+      } finally {
+        setIsSavingOperations(false);
+      }
+    };
+
+    return (
+      <div style={styles.container}>
+        <header style={styles.header}>
+          <button style={styles.iconButton} onClick={() => setExpandedCard(null)}>
+            <ArrowLeft size={24} color="#FFFFFF" />
+          </button>
+          <h1 style={styles.headerTitle}>Operating Hours</h1>
+          <div style={{ width: '42px' }}></div>
+        </header>
+
+        <main style={{ flex: 1, padding: '24px 20px', overflowY: 'auto', backgroundColor: '#F9FAFB' }}>
+          
+          {/* Operating Hours Section */}
+          <div style={{ marginBottom: '32px' }}>
+            <h3 style={{ margin: 0, fontSize: '20px', fontWeight: '800', color: '#111827' }}>Shop Timings</h3>
+            <p style={{ margin: '6px 0 20px', fontSize: '13px', color: '#6B7280' }}>Set your daily opening and closing hours.</p>
+
+            <div style={{ display: 'flex', gap: '16px', marginBottom: '20px' }}>
+              <div style={{ flex: 1 }}>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: '800', color: '#374151', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Opens At</label>
+                <input 
+                  type="text" 
+                  placeholder="e.g. 09:00 AM"
+                  value={operationsForm.openTime} 
+                  onChange={(e) => setOperationsForm({...operationsForm, openTime: e.target.value})} 
+                  style={{ width: '100%', padding: '16px', borderRadius: '12px', border: '1px solid #D1D5DB', fontSize: '16px', color: '#111827', backgroundColor: '#FFFFFF', outline: 'none', boxShadow: '0 2px 4px rgba(0,0,0,0.02)', boxSizing: 'border-box' }} 
+                />
+              </div>
+              <div style={{ flex: 1 }}>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: '800', color: '#374151', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Closes At</label>
+                <input 
+                  type="text" 
+                  placeholder="e.g. 09:00 PM"
+                  value={operationsForm.closeTime} 
+                  onChange={(e) => setOperationsForm({...operationsForm, closeTime: e.target.value})} 
+                  style={{ width: '100%', padding: '16px', borderRadius: '12px', border: '1px solid #D1D5DB', fontSize: '16px', color: '#111827', backgroundColor: '#FFFFFF', outline: 'none', boxShadow: '0 2px 4px rgba(0,0,0,0.02)', boxSizing: 'border-box' }} 
+                />
+              </div>
+            </div>
+
+            <label style={{ display: 'block', fontSize: '13px', fontWeight: '800', color: '#374151', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Mark Closed Days</label>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+              {DAYS_OF_WEEK.map(day => {
+                const isClosed = operationsForm.closedDays.includes(day);
+                return (
+                  <button 
+                    key={day}
+                    onClick={() => toggleClosedDay(day)}
+                    style={{ 
+                      padding: '8px 16px', 
+                      borderRadius: '20px', 
+                      border: isClosed ? '1px solid #EF4444' : '1px solid #D1D5DB', 
+                      backgroundColor: isClosed ? '#FEF2F2' : '#FFFFFF', 
+                      color: isClosed ? '#EF4444' : '#4B5563', 
+                      fontSize: '13px', 
+                      fontWeight: '700', 
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease'
+                    }}
+                  >
+                    {day.substring(0, 3)}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+
+          <div style={{ height: '1px', backgroundColor: '#E5E7EB', margin: '32px 0' }}></div>
+
+          {/* Logistics & Delivery Section */}
+          <div style={{ marginBottom: '32px' }}>
+            <h3 style={{ margin: 0, fontSize: '20px', fontWeight: '800', color: '#111827' }}>Logistics & Delivery</h3>
+            <p style={{ margin: '6px 0 20px', fontSize: '13px', color: '#6B7280' }}>How do you want to serve your customers?</p>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              
+              {/* Toggle: Store Pickup */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px', backgroundColor: '#FFFFFF', borderRadius: '16px', border: operationsForm.deliveryMode === 'store_pickup' ? '2px solid #10B981' : '1px solid #E5E7EB', boxShadow: '0 2px 8px rgba(0,0,0,0.02)' }}>
+                <div>
+                  <h4 style={{ margin: '0 0 4px', fontSize: '15px', fontWeight: '800', color: '#111827' }}>Store Pickup Only</h4>
+                  <p style={{ margin: 0, fontSize: '12px', color: '#6B7280' }}>Customers collect orders directly.</p>
+                </div>
+                <button 
+                  onClick={() => setOperationsForm({...operationsForm, deliveryMode: 'store_pickup'})}
+                  style={{ width: '50px', height: '28px', backgroundColor: operationsForm.deliveryMode === 'store_pickup' ? '#10B981' : '#D1D5DB', borderRadius: '30px', position: 'relative', border: 'none', cursor: 'pointer', transition: 'background-color 0.3s' }}
+                >
+                  <div style={{ width: '22px', height: '22px', backgroundColor: '#FFF', borderRadius: '50%', position: 'absolute', top: '3px', left: operationsForm.deliveryMode === 'store_pickup' ? '25px' : '3px', transition: 'left 0.3s', boxShadow: '0 2px 4px rgba(0,0,0,0.2)' }} />
+                </button>
+              </div>
+
+              {/* Toggle: Home Delivery */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px', backgroundColor: '#FFFFFF', borderRadius: '16px', border: operationsForm.deliveryMode === 'home_delivery' ? '2px solid #3B82F6' : '1px solid #E5E7EB', boxShadow: '0 2px 8px rgba(0,0,0,0.02)' }}>
+                <div>
+                  <h4 style={{ margin: '0 0 4px', fontSize: '15px', fontWeight: '800', color: '#111827' }}>Home Delivery</h4>
+                  <p style={{ margin: 0, fontSize: '12px', color: '#6B7280' }}>You deliver directly to them.</p>
+                </div>
+                <button 
+                  onClick={() => setOperationsForm({...operationsForm, deliveryMode: 'home_delivery'})}
+                  style={{ width: '50px', height: '28px', backgroundColor: operationsForm.deliveryMode === 'home_delivery' ? '#3B82F6' : '#D1D5DB', borderRadius: '30px', position: 'relative', border: 'none', cursor: 'pointer', transition: 'background-color 0.3s' }}
+                >
+                  <div style={{ width: '22px', height: '22px', backgroundColor: '#FFF', borderRadius: '50%', position: 'absolute', top: '3px', left: operationsForm.deliveryMode === 'home_delivery' ? '25px' : '3px', transition: 'left 0.3s', boxShadow: '0 2px 4px rgba(0,0,0,0.2)' }} />
+                </button>
+              </div>
+
+              {/* Conditional Delivery Settings */}
+              {operationsForm.deliveryMode === 'home_delivery' && (
+                <div style={{ backgroundColor: '#FFFFFF', borderRadius: '16px', padding: '20px', border: '1px solid #E5E7EB', boxShadow: '0 4px 12px rgba(0,0,0,0.03)', display: 'flex', flexDirection: 'column', gap: '16px', animation: 'fadeIn 0.3s ease' }}>
+                  
+                  <div style={{ display: 'flex', gap: '16px' }}>
+                    <div style={{ flex: 1 }}>
+                      <label style={{ display: 'block', fontSize: '13px', fontWeight: '800', color: '#374151', marginBottom: '8px' }}>Delivery Radius (km)</label>
+                      <input 
+                        type="text" 
+                        inputMode="numeric"
+                        value={operationsForm.deliveryRadius} 
+                        onChange={(e) => setOperationsForm({...operationsForm, deliveryRadius: e.target.value})} 
+                        style={{ width: '100%', padding: '14px 16px', borderRadius: '10px', border: '1px solid #D1D5DB', fontSize: '16px', color: '#111827', backgroundColor: '#FFFFFF', outline: 'none', boxSizing: 'border-box' }} 
+                        placeholder="e.g. 5"
+                      />
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <label style={{ display: 'block', fontSize: '13px', fontWeight: '800', color: '#374151', marginBottom: '8px' }}>Min Order Value (₹)</label>
+                      <input 
+                        type="text" 
+                        inputMode="numeric"
+                        value={operationsForm.minOrderValue} 
+                        onChange={(e) => setOperationsForm({...operationsForm, minOrderValue: e.target.value})} 
+                        style={{ width: '100%', padding: '14px 16px', borderRadius: '10px', border: '1px solid #D1D5DB', fontSize: '16px', color: '#111827', backgroundColor: '#FFFFFF', outline: 'none', boxSizing: 'border-box' }} 
+                        placeholder="e.g. 100"
+                      />
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '16px' }}>
+                    <div style={{ flex: 1 }}>
+                      <label style={{ display: 'block', fontSize: '13px', fontWeight: '800', color: '#374151', marginBottom: '8px' }}>Delivery Fee (₹)</label>
+                      <input 
+                        type="text" 
+                        inputMode="numeric"
+                        value={operationsForm.deliveryFee} 
+                        onChange={(e) => setOperationsForm({...operationsForm, deliveryFee: e.target.value})} 
+                        style={{ width: '100%', padding: '14px 16px', borderRadius: '10px', border: '1px solid #D1D5DB', fontSize: '16px', color: '#111827', backgroundColor: '#FFFFFF', outline: 'none', boxSizing: 'border-box' }} 
+                        placeholder="0 for free"
+                      />
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <label style={{ display: 'block', fontSize: '13px', fontWeight: '800', color: '#374151', marginBottom: '8px' }}>Free Above (₹)</label>
+                      <input 
+                        type="text" 
+                        inputMode="numeric"
+                        value={operationsForm.freeDeliveryThreshold} 
+                        onChange={(e) => setOperationsForm({...operationsForm, freeDeliveryThreshold: e.target.value})} 
+                        style={{ width: '100%', padding: '14px 16px', borderRadius: '10px', border: '1px solid #D1D5DB', fontSize: '16px', color: '#111827', backgroundColor: '#FFFFFF', outline: 'none', boxSizing: 'border-box' }} 
+                        placeholder="e.g. 500"
+                      />
+                    </div>
+                  </div>
+
+                </div>
+              )}
+
+            </div>
+          </div>
+
+          <div style={{ height: '1px', backgroundColor: '#E5E7EB', margin: '32px 0' }}></div>
+
+          {/* Custom Message Section */}
+          <div style={{ marginBottom: '32px' }}>
+            <h3 style={{ margin: 0, fontSize: '20px', fontWeight: '800', color: '#111827' }}>Custom Notice</h3>
+            <p style={{ margin: '6px 0 20px', fontSize: '13px', color: '#6B7280' }}>Visible to all customers visiting your shop.</p>
+
+            <textarea 
+              value={operationsForm.customMessage}
+              onChange={(e) => setOperationsForm({...operationsForm, customMessage: e.target.value})}
+              rows={3}
+              style={{ width: '100%', padding: '16px', borderRadius: '12px', border: '1px solid #D1D5DB', fontSize: '15px', color: '#111827', backgroundColor: '#FFFFFF', outline: 'none', boxShadow: '0 2px 4px rgba(0,0,0,0.02)', boxSizing: 'border-box', resize: 'vertical' }}
+              placeholder="e.g. Get 10% extra discount for regular customers! Fresh stock arriving every Monday."
+            />
+          </div>
+
+          <button 
+            type="button" 
+            onClick={handleSaveOperations} 
+            disabled={isSavingOperations}
+            style={{ marginTop: '10px', marginBottom: '40px', width: '100%', padding: '18px', backgroundColor: '#1E3A8A', color: '#FFFFFF', border: 'none', borderRadius: '14px', fontSize: '16px', fontWeight: '800', cursor: isSavingOperations ? 'not-allowed' : 'pointer', boxShadow: '0 6px 16px rgba(30, 58, 138, 0.25)', opacity: isSavingOperations ? 0.7 : 1 }}
+          >
+            {isSavingOperations ? 'Saving Details...' : 'Save Logistics Details'}
+          </button>
+
+        </main>
+      </div>
+    );
+  }
+
+  // --- Progress Calculation ---
+  const detailsProgress = 100; // Registration already captured basic details
+
+  const locFields = ['lat', 'lng', 'houseNumber', 'landmark', 'village', 'mandal', 'district', 'pincode'];
+  const filledLoc = locFields.filter(f => locationForm[f] && locationForm[f].toString().trim() !== '').length;
+  const locationProgress = Math.round((filledLoc / locFields.length) * 100);
+
+  const opFields = ['openTime', 'closeTime'];
+  if (operationsForm.deliveryMode === 'home_delivery') {
+    opFields.push('deliveryRadius', 'deliveryFee', 'minOrderValue');
+  }
+  const filledOp = opFields.filter(f => operationsForm[f] && operationsForm[f].toString().trim() !== '').length;
+  const operationsProgress = Math.round((filledOp / opFields.length) * 100);
+
+  const overallProgress = Math.round((detailsProgress + locationProgress + operationsProgress) / 3);
+
   return (
     <div style={styles.container}>
       {/* Top Header */}
@@ -603,6 +876,17 @@ export default function Seller_StorefrontSetup() {
               </div>
             </div>
 
+            {/* Overall Progress Bar */}
+            <div style={{ margin: '0 0 24px 0', backgroundColor: '#FFFFFF', borderRadius: '16px', padding: '16px', boxShadow: '0 4px 12px rgba(0,0,0,0.03)', border: '1px solid #E5E7EB' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                <span style={{ fontSize: '14px', fontWeight: '800', color: '#111827' }}>Storefront Readiness</span>
+                <span style={{ fontSize: '14px', fontWeight: '900', color: overallProgress === 100 ? '#10B981' : '#3B82F6' }}>{overallProgress}%</span>
+              </div>
+              <div style={{ height: '8px', backgroundColor: '#F3F4F6', borderRadius: '4px', overflow: 'hidden' }}>
+                <div style={{ width: `${overallProgress}%`, height: '100%', backgroundColor: overallProgress === 100 ? '#10B981' : '#3B82F6', borderRadius: '4px', transition: 'width 0.5s ease-out' }}></div>
+              </div>
+            </div>
+
             {/* Visual Divider */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '16px', margin: '32px 0 16px 0' }}>
               <div style={{ flex: 1, height: '2px', background: 'linear-gradient(to right, transparent, #E5E7EB)' }}></div>
@@ -627,7 +911,10 @@ export default function Seller_StorefrontSetup() {
                   <h3 style={{ margin: '0 0 4px 0', fontSize: '15px', fontWeight: '800', color: '#111827' }}>
                     {accountType === 'organisation' ? 'Organisation Details' : 'Shop Details'}
                   </h3>
-                  <p style={{ margin: 0, fontSize: '13px', color: '#6B7280', fontWeight: '500' }}>Setup your basic profile and description</p>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <p style={{ margin: 0, fontSize: '13px', color: '#6B7280', fontWeight: '500' }}>Setup your profile</p>
+                    <span style={{ fontSize: '10px', fontWeight: '800', color: detailsProgress === 100 ? '#10B981' : '#3B82F6', backgroundColor: detailsProgress === 100 ? '#D1FAE5' : '#DBEAFE', padding: '2px 6px', borderRadius: '6px' }}>{detailsProgress}% DONE</span>
+                  </div>
                 </div>
                 <ChevronRight size={20} color="#D1D5DB" strokeWidth={3} style={{ flexShrink: 0 }} />
               </div>
@@ -642,9 +929,12 @@ export default function Seller_StorefrontSetup() {
                 </div>
                 <div style={{ flex: 1 }}>
                   <h3 style={{ margin: '0 0 4px 0', fontSize: '15px', fontWeight: '800', color: '#111827' }}>
-                    {accountType === 'organisation' ? 'Location & Address' : 'Location & Address'}
+                    Location & Address
                   </h3>
-                  <p style={{ margin: 0, fontSize: '13px', color: '#6B7280', fontWeight: '500' }}>Pinpoint your exact physical location</p>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <p style={{ margin: 0, fontSize: '13px', color: '#6B7280', fontWeight: '500' }}>Pinpoint location</p>
+                    <span style={{ fontSize: '10px', fontWeight: '800', color: locationProgress === 100 ? '#10B981' : (locationProgress > 0 ? '#F59E0B' : '#6B7280'), backgroundColor: locationProgress === 100 ? '#D1FAE5' : (locationProgress > 0 ? '#FEF3C7' : '#F3F4F6'), padding: '2px 6px', borderRadius: '6px' }}>{locationProgress}% DONE</span>
+                  </div>
                 </div>
                 <ChevronRight size={20} color="#D1D5DB" strokeWidth={3} style={{ flexShrink: 0 }} />
               </div>
@@ -659,9 +949,12 @@ export default function Seller_StorefrontSetup() {
                 </div>
                 <div style={{ flex: 1 }}>
                   <h3 style={{ margin: '0 0 4px 0', fontSize: '15px', fontWeight: '800', color: '#111827' }}>
-                    Operating Hours & Logistics
+                    Operating Hours
                   </h3>
-                  <p style={{ margin: 0, fontSize: '13px', color: '#6B7280', fontWeight: '500' }}>Set timings, pickup, and delivery fees</p>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <p style={{ margin: 0, fontSize: '13px', color: '#6B7280', fontWeight: '500' }}>Set timings & fees</p>
+                    <span style={{ fontSize: '10px', fontWeight: '800', color: operationsProgress === 100 ? '#10B981' : (operationsProgress > 0 ? '#EC4899' : '#6B7280'), backgroundColor: operationsProgress === 100 ? '#D1FAE5' : (operationsProgress > 0 ? '#FCE7F3' : '#F3F4F6'), padding: '2px 6px', borderRadius: '6px' }}>{operationsProgress}% DONE</span>
+                  </div>
                 </div>
                 <ChevronRight size={20} color="#D1D5DB" strokeWidth={3} style={{ flexShrink: 0 }} />
               </div>

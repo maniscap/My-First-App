@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { CircleUserRound, ShieldAlert, ShieldCheck, ShieldX, Clock, Building2 } from 'lucide-react';
 import Seller_BannerPromo from './Seller_BannerPromo';
 import { db, auth } from '../../firebase';
-import { doc, getDoc, collection, query, where, getDocs, onSnapshot } from 'firebase/firestore';
+import { doc, getDoc, collection, query, where, getDocs, onSnapshot, deleteDoc } from 'firebase/firestore';
 import { onAuthStateChanged } from 'firebase/auth';
 
 function Seller_HomePage() {
@@ -59,6 +59,19 @@ function Seller_HomePage() {
                     const unsubscribeSnapshot = onSnapshot(docRef, (docSnap) => {
                         if (docSnap.exists()) {
                             const appData = docSnap.data();
+                            if (appData.status === 'deleted_by_admin') {
+                                // Store the reason locally so user can see it
+                                localStorage.setItem('seller_app_deleted_reason', appData.deletionReason || 'Violation of terms');
+                                localStorage.setItem('seller_app_deleted_msg', appData.deletionMessage || '');
+                                
+                                // Actually delete the document from firebase now that we received it
+                                deleteDoc(docRef).catch(e => console.error(e));
+                                
+                                setAppStatus('permanently_deleted');
+                                localStorage.setItem('seller_app_status', 'permanently_deleted');
+                                return; // Stop processing this snapshot
+                            }
+
                             setAppStatus(appData.status);
                             const nameToUse = appData.accountType === 'organisation' ? appData.companyName : (appData.shopName || appData.fullName);
                             setSellerName(nameToUse);
@@ -133,6 +146,33 @@ function Seller_HomePage() {
         );
     }
 
+    // RENDER: Account Permanently Deleted by Admin
+    if (appStatus === 'permanently_deleted') {
+        const delReason = localStorage.getItem('seller_app_deleted_reason') || 'Violation of terms';
+        const delMsg = localStorage.getItem('seller_app_deleted_msg');
+        return (
+            <div style={{ backgroundColor: '#fef2f2', minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '20px', textAlign: 'center', fontFamily: 'system-ui, sans-serif' }}>
+                <ShieldAlert size={80} color="#b91c1c" style={{ marginBottom: '20px' }} />
+                <h1 style={{ color: '#991b1b', margin: '0 0 10px 0', fontSize: '24px', fontWeight: '900' }}>Account Deleted</h1>
+                <p style={{ color: '#7f1d1d', maxWidth: '400px', lineHeight: '1.6', fontSize: '15px', fontWeight: '500' }}>
+                    Your seller account and all associated listings have been permanently removed by the administration.
+                </p>
+                <div style={{ backgroundColor: '#fff', padding: '20px', borderRadius: '16px', border: '1px solid #fecaca', marginTop: '24px', maxWidth: '400px', width: '100%', boxShadow: '0 4px 12px rgba(185, 28, 28, 0.05)', textAlign: 'left' }}>
+                    <p style={{ margin: '0 0 8px 0', fontSize: '12px', fontWeight: '800', color: '#b91c1c', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Reason for Deletion</p>
+                    <p style={{ margin: '0 0 16px 0', fontSize: '16px', color: '#111827', fontWeight: '700' }}>{delReason}</p>
+                    
+                    {delMsg && (
+                        <>
+                            <p style={{ margin: '0 0 8px 0', fontSize: '12px', fontWeight: '800', color: '#b91c1c', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Admin Message</p>
+                            <p style={{ margin: 0, fontSize: '14px', color: '#374151', lineHeight: '1.5', backgroundColor: '#f9fafb', padding: '12px', borderRadius: '8px', border: '1px solid #e5e7eb' }}>"{delMsg}"</p>
+                        </>
+                    )}
+                </div>
+                <button onClick={() => { localStorage.clear(); window.location.href = '/'; }} style={{ marginTop: '40px', padding: '14px 28px', background: '#dc2626', color: 'white', border: 'none', borderRadius: '12px', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 4px 12px rgba(220, 38, 38, 0.3)' }}>Exit Dashboard</button>
+            </div>
+        );
+    }
+
     return (
         <div style={{ backgroundColor: '#f8fafc', position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, width: '100vw', height: '100dvh', overflowY: 'auto', overflowX: 'hidden', touchAction: 'pan-y', WebkitOverflowScrolling: 'touch', padding: '20px', paddingBottom: '120px', boxSizing: 'border-box' }}>
             
@@ -166,9 +206,9 @@ function Seller_HomePage() {
                 <div style={{ background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)', padding: '24px', borderRadius: '24px', marginBottom: '24px', color: 'white', display: 'flex', alignItems: 'flex-start', gap: '16px', boxShadow: '0 10px 30px rgba(37, 99, 235, 0.25)' }}>
                     <ShieldAlert size={32} color="white" style={{ flexShrink: 0, marginTop: '2px' }} />
                     <div>
-                        <h3 style={{ margin: '0 0 6px 0', fontSize: '18px', fontWeight: '800' }}>Profile Not Setup</h3>
-                        <p style={{ margin: 0, fontSize: '14px', opacity: 0.9, lineHeight: '1.5' }}>You need to submit your seller application before you can post listings.</p>
-                        <button onClick={() => navigate('/seller-setup')} style={{ marginTop: '16px', background: 'white', color: '#2563eb', border: 'none', padding: '10px 20px', borderRadius: '10px', fontWeight: '800', fontSize: '14px', cursor: 'pointer', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>Set Up Profile Now</button>
+                        <h3 style={{ margin: '0 0 6px 0', fontSize: '18px', fontWeight: '800' }}>Add your first listings and start your business</h3>
+                        <p style={{ margin: 0, fontSize: '14px', opacity: 0.9, lineHeight: '1.5' }}>Go to the seller registration and send your application. After that, you will be able to add the listings.</p>
+                        <button onClick={() => navigate('/seller-setup')} style={{ marginTop: '16px', background: 'white', color: '#2563eb', border: 'none', padding: '10px 20px', borderRadius: '10px', fontWeight: '800', fontSize: '14px', cursor: 'pointer', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>Go to Seller Registration</button>
                     </div>
                 </div>
             )}
