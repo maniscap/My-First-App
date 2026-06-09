@@ -21,6 +21,7 @@ import {
   Map, 
   Share2 
 } from 'lucide-react';
+import axios from 'axios';
 
 const LocationSheet = ({ 
   onLocationSelect, 
@@ -60,16 +61,20 @@ const LocationSheet = ({
         const { latitude, longitude } = position.coords;
         
         try {
-          const apiRes = await fetch(
-            `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=en`
-          );
+          const res = await axios.post('/api/UserLocation', { action: 'reverseGeocode', lat: latitude, lng: longitude });
+          const data = res.data;
           
-          const data = await apiRes.json();
+          let fullDisplay = "Current Location";
+          if (data.addresses && data.addresses.length > 0) {
+              const addr = data.addresses[0].address;
+              const locationLabel = addr.streetName || addr.municipalitySubdivision || addr.municipality || "Unknown Area";
+              const subLabel = addr.municipality || addr.countrySubdivision || "";
+              fullDisplay = `${locationLabel}${subLabel && locationLabel !== subLabel ? `, ${subLabel}` : ''}`;
+          }
           
-          // Construct location label
-          const locationLabel = data.locality || data.city || "Unknown Area";
-          const subLabel = data.principalSubdivision || "";
-          const fullDisplay = `${locationLabel}, ${subLabel}`;
+          if (!data.addresses || data.addresses.length === 0) {
+              throw new Error("No results from TomTom");
+          }
           
           onLocationSelect(
             "Current Location", 
@@ -79,8 +84,24 @@ const LocationSheet = ({
           );
           
         } catch (err) { 
-          console.error("Reverse Geocoding Error:", err);
-          alert("GPS coordinates found, but failed to fetch address name."); 
+          console.warn("TomTom failed/limit reached in Sheet. Falling back to OpenStreetMap...", err);
+          try {
+              const osmRes = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1`);
+              const osmData = await osmRes.json();
+              const addr = osmData.address || {};
+              const locationLabel = addr.village || addr.suburb || addr.town || addr.city || "Unknown Area";
+              const subLabel = addr.county || addr.state_district || "";
+              const fullDisplay = `${locationLabel}${subLabel && locationLabel !== subLabel ? `, ${subLabel}` : ''}`;
+              
+              onLocationSelect(
+                "Current Location", 
+                fullDisplay, 
+                latitude, 
+                longitude
+              );
+          } catch (osmError) {
+              alert("GPS coordinates found, but failed to fetch address name."); 
+          }
         } finally { 
           setIsGpsLoading(false); 
         }
@@ -163,8 +184,8 @@ const LocationSheet = ({
                  <div style={styles.pinIconContainer}>
                     <Navigation 
                       size={24} 
-                      color="#F84464" 
-                      fill="#F84464" 
+                      color="#3B82F6" 
+                      fill="#3B82F6" 
                     />
                  </div>
                  
@@ -277,7 +298,7 @@ const LocationSheet = ({
              <div style={styles.searchIconBox}>
                 <Search 
                   size={22} 
-                  color="#F84464" 
+                  color="#3B82F6" 
                   strokeWidth={2.5} 
                 />
              </div>
@@ -329,7 +350,7 @@ const styles = {
     alignItems: 'center' 
   },
   closeBtnStyle: { 
-    background: '#1C1C1C', 
+    background: '#111827', 
     border: 'none', 
     width: '48px', 
     height: '48px', 
@@ -364,14 +385,15 @@ const styles = {
     flexShrink: 0
   },
   gpsCard: { 
-    background: '#FAFAFA', 
+    background: 'white', 
     borderRadius: '24px', 
     padding: '18px', 
     display: 'flex', 
     alignItems: 'center', 
-    border: '1.5px solid #F5F5F5', 
+    border: '1px solid #E5E7EB', 
     marginBottom: '20px', 
-    flexShrink: 0 
+    flexShrink: 0,
+    boxShadow: '0 8px 30px rgba(0,0,0,0.04)'
   },
   gpsFlex: { 
     display: 'flex', 
@@ -385,7 +407,7 @@ const styles = {
     display: 'flex', 
     alignItems: 'center', 
     justifyContent: 'center', 
-    background: '#FFF0F2', 
+    background: '#EFF6FF', 
     borderRadius: '14px' 
   },
   gpsTextContent: { 
@@ -394,17 +416,17 @@ const styles = {
   gpsTitle: { 
     fontSize: '16px', 
     fontWeight: '800', 
-    color: '#1C1C1C',
+    color: '#111827',
     lineHeight: '1.2'
   },
   gpsSub: { 
     fontSize: '12px', 
-    color: '#888', 
+    color: '#6B7280', 
     marginTop: '4px',
     lineHeight: '1.4'
   },
   enableBtn: { 
-    background: '#F84464', 
+    background: '#3B82F6', 
     color: 'white', 
     border: 'none', 
     padding: '12px 20px', 
@@ -413,7 +435,7 @@ const styles = {
     fontSize: '14px',
     cursor: 'pointer',
     transition: 'all 0.2s ease',
-    boxShadow: '0 4px 12px rgba(248, 68, 100, 0.2)'
+    boxShadow: '0 4px 12px rgba(59, 130, 246, 0.25)'
   },
   scrollableWrapper: { 
     flex: 1, 
@@ -434,13 +456,13 @@ const styles = {
   sectionLabelSmall: { 
     fontSize: '12px', 
     fontWeight: '900', 
-    color: '#BBBBBB', 
+    color: '#9CA3AF', 
     letterSpacing: '1.2px' 
   },
   seeAllBtn: { 
     fontSize: '13px', 
     fontWeight: '800', 
-    color: '#F84464',
+    color: '#3B82F6',
     cursor: 'pointer'
   },
   listContainer: { 
@@ -453,17 +475,17 @@ const styles = {
     gap: '16px', 
     cursor: 'pointer', 
     padding: '18px 0', 
-    borderBottom: '1px solid #F9F9F9' 
+    borderBottom: '1px solid #E5E7EB' 
   },
   iconBox: { 
     width: '44px', 
     height: '44px', 
     borderRadius: '14px', 
-    background: '#F8F8F8', 
+    background: '#F3F4F6', 
     display: 'flex', 
     alignItems: 'center', 
     justifyContent: 'center', 
-    color: '#555555' 
+    color: '#4B5563' 
   },
   addressInfo: { 
     flex: 1, 
@@ -472,11 +494,11 @@ const styles = {
   addrTypeTitle: { 
     fontSize: '16px', 
     fontWeight: '800', 
-    color: '#1C1C1C' 
+    color: '#111827' 
   },
   addrFullText: { 
     fontSize: '13px', 
-    color: '#777777', 
+    color: '#6B7280', 
     whiteSpace: 'nowrap', 
     overflow: 'hidden', 
     textOverflow: 'ellipsis',
@@ -485,19 +507,19 @@ const styles = {
   shareSheetBtn: { 
     padding: '10px',
     borderRadius: '10px',
-    background: '#F9F9F9'
+    background: '#F3F4F6'
   },
   searchRow: { 
     display: 'flex', 
     alignItems: 'center', 
     gap: '16px', 
     padding: '22px', 
-    background: '#FAFAFA', 
-    borderRadius: '26px', 
-    border: '1px solid #EEEEEE', 
+    background: 'white', 
+    borderRadius: '24px', 
+    border: '1px solid #E5E7EB', 
     cursor: 'pointer', 
     flexShrink: 0,
-    boxShadow: '0 4px 10px rgba(0,0,0,0.02)'
+    boxShadow: '0 8px 30px rgba(0,0,0,0.04)'
   },
   searchIconBox: { 
     display: 'flex', 
@@ -507,7 +529,7 @@ const styles = {
   searchPlaceholderText: { 
     flex: 1, 
     fontSize: '16px', 
-    color: '#999999', 
+    color: '#6B7280', 
     fontWeight: '600' 
   },
   emptyState: { 
@@ -522,7 +544,7 @@ const styles = {
     width: '64px', 
     height: '64px', 
     borderRadius: '22px', 
-    background: '#FBFBFB', 
+    background: '#F3F4F6', 
     display: 'flex', 
     alignItems: 'center', 
     justifyContent: 'center' 
@@ -530,7 +552,7 @@ const styles = {
   emptyText: { 
     fontSize: '14px', 
     fontWeight: '700', 
-    color: '#CCCCCC', 
+    color: '#9CA3AF', 
     textAlign: 'center',
     maxWidth: '220px',
     lineHeight: '1.5'

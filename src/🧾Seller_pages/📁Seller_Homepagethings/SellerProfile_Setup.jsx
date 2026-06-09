@@ -6,6 +6,8 @@ import { getAuth } from 'firebase/auth';
 import { collection, addDoc, getDoc, doc, setDoc, deleteDoc, query, where, getDocs, onSnapshot } from 'firebase/firestore';
 import SellerApplication_Terms from './SellerApplication_Terms';
 import imageCompression from 'browser-image-compression';
+import axios from 'axios';
+
 function SellerProfile_Setup() {
     const navigate = useNavigate();
     
@@ -201,26 +203,49 @@ function SellerProfile_Setup() {
             async (position) => {
                 const { latitude, longitude } = position.coords;
                 try {
-                    const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1`);
-                    const data = await response.json();
-                    if (data && data.address) {
-                        const addr = data.address;
+                    const res = await axios.post('/api/UserLocation', { action: 'reverseGeocode', lat: latitude, lng: longitude });
+                    const data = res.data;
+                    if (data.addresses && data.addresses.length > 0) {
+                        const addr = data.addresses[0].address;
                         setFormData(prev => ({
                             ...prev,
                             lat: latitude.toFixed(6),
                             lng: longitude.toFixed(6),
-                            pincode: addr.postcode || prev.pincode,
-                            state: addr.state || prev.state,
-                            district: addr.state_district || addr.county || prev.district,
-                            nearerCity: addr.city || addr.town || addr.municipality || prev.nearerCity,
-                            village: addr.village || addr.suburb || addr.neighbourhood || addr.hamlet || prev.village,
-                            houseNumber: addr.house_number || prev.houseNumber,
-                            landmark: addr.attraction || addr.tourism || addr.amenity || prev.landmark
+                            pincode: addr.postalCode || addr.postcode || prev.pincode,
+                            state: addr.countrySubdivision || prev.state,
+                            district: addr.countrySecondarySubdivision || addr.municipality || prev.district,
+                            nearerCity: addr.municipality || prev.nearerCity,
+                            village: addr.municipalitySubdivision || prev.village,
+                            houseNumber: prev.houseNumber,
+                            landmark: addr.streetName || prev.landmark
                         }));
+                    } else {
+                        throw new Error("No results from TomTom");
                     }
-                } catch (error) {
-                    console.error("Geocoding failed", error);
-                    alert("Failed to auto-detect full address. Please enter manually.");
+                } catch (tomTomError) {
+                    console.warn("TomTom failed in Seller Setup. Falling back to OSM...", tomTomError);
+                    try {
+                        const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1`);
+                        const data = await response.json();
+                        if (data && data.address) {
+                            const addr = data.address;
+                            setFormData(prev => ({
+                                ...prev,
+                                lat: latitude.toFixed(6),
+                                lng: longitude.toFixed(6),
+                                pincode: addr.postcode || prev.pincode,
+                                state: addr.state || prev.state,
+                                district: addr.state_district || addr.county || prev.district,
+                                nearerCity: addr.city || addr.town || addr.municipality || prev.nearerCity,
+                                village: addr.village || addr.suburb || addr.neighbourhood || addr.hamlet || prev.village,
+                                houseNumber: addr.house_number || prev.houseNumber,
+                                landmark: addr.attraction || addr.tourism || addr.amenity || prev.landmark
+                            }));
+                        }
+                    } catch (osmError) {
+                        console.error("Geocoding failed", osmError);
+                        alert("Failed to auto-detect full address. Please enter manually.");
+                    }
                 } finally {
                     setIsDetecting(false);
                 }

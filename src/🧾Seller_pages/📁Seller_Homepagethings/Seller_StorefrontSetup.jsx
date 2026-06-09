@@ -2,9 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Store, Building2, User, AlertCircle, ShieldCheck, Info, MapPin, Truck, ChevronRight } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { db, auth } from '../../firebase';
-import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
+import { doc, getDoc, collection, query, where, getDocs, updateDoc } from 'firebase/firestore';
 import { onAuthStateChanged } from 'firebase/auth';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 
 export default function Seller_StorefrontSetup() {
   const navigate = useNavigate();
@@ -15,6 +16,15 @@ export default function Seller_StorefrontSetup() {
   const [sellerId, setSellerId] = useState('');
   const [ownerName, setOwnerName] = useState('');
   const [fullAppData, setFullAppData] = useState(null);
+
+  // Location Form State
+  const [locationForm, setLocationForm] = useState({
+    houseNumber: '', landmark: '', village: '', mandal: '', nearerCity: '', district: '', state: 'Andhra Pradesh', pincode: '', lat: '', lng: '', serviceRadius: '20km'
+  });
+  const [isSavingLocation, setIsSavingLocation] = useState(false);
+  const [isDetecting, setIsDetecting] = useState(false);
+  const [mapLayer, setMapLayer] = useState('k'); // 'm' for map, 'k' for satellite
+  const [attemptedSubmit, setAttemptedSubmit] = useState(false);
 
   useEffect(() => {
     // 1. Try local storage first to show data immediately
@@ -58,8 +68,14 @@ export default function Seller_StorefrontSetup() {
         }
 
         if (appData) {
-          setAppStatus(appData.status);
           setFullAppData(appData);
+          setAppStatus(appData.status);
+
+          // Pre-fill location form from existing storefront data OR fallback to blank
+          setLocationForm(appData.storefrontLocation || {
+            houseNumber: '', landmark: '', village: '', mandal: '', nearerCity: '', district: '', state: 'Andhra Pradesh', pincode: '', lat: '', lng: '', serviceRadius: '20km'
+          });
+          
           setAccountType(appData.accountType);
           const nameToUse = appData.accountType === 'organisation' ? appData.companyName : (appData.shopName || appData.fullName);
           const ownerToUse = appData.ownerName || appData.fullName;
@@ -237,11 +253,267 @@ export default function Seller_StorefrontSetup() {
     );
   }
 
+  // 5. Location Details Full Page View
+  if (expandedCard === 'location') {
+    const handleAutoDetectLocation = () => {
+      if (!navigator.geolocation) {
+        alert("GPS not supported by your browser.");
+        return;
+      }
+      setIsDetecting(true);
+      navigator.geolocation.getCurrentPosition(
+        async (position) => {
+          const { latitude, longitude } = position.coords;
+          try {
+            const res = await axios.post('/api/UserLocation', { action: 'reverseGeocode', lat: latitude, lng: longitude });
+            const data = res.data;
+            if (data.addresses && data.addresses.length > 0) {
+              const addr = data.addresses[0].address;
+              setLocationForm(prev => ({
+                ...prev,
+                lat: latitude.toFixed(6),
+                lng: longitude.toFixed(6),
+                pincode: addr.postalCode || addr.postcode || prev.pincode,
+                state: addr.countrySubdivision || prev.state,
+                district: addr.countrySecondarySubdivision || addr.municipality || prev.district,
+                nearerCity: addr.municipality || prev.nearerCity,
+                mandal: addr.municipality || prev.mandal || '',
+                village: addr.municipalitySubdivision || prev.village,
+                houseNumber: prev.houseNumber || '',
+                landmark: addr.streetName || prev.landmark || ''
+              }));
+            } else {
+              throw new Error("No results from TomTom");
+            }
+          } catch (tomTomError) {
+            console.warn("TomTom failed. Falling back to OpenStreetMap...", tomTomError);
+            try {
+              const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1`, {
+                headers: {
+                  'Accept-Language': 'en-US,en;q=0.9',
+                  'User-Agent': 'FarmCapApp/1.0'
+                }
+              });
+              const data = await response.json();
+              if (data && data.address) {
+                const addr = data.address;
+                setLocationForm(prev => ({
+                  ...prev,
+                  lat: latitude.toFixed(6),
+                  lng: longitude.toFixed(6),
+                  pincode: addr.postcode || prev.pincode,
+                  state: addr.state || prev.state,
+                  district: addr.state_district || addr.county || prev.district,
+                  nearerCity: addr.city || addr.town || addr.municipality || prev.nearerCity,
+                  mandal: addr.county || addr.subregion || addr.city_district || addr.suburb || prev.mandal || '',
+                  village: addr.village || addr.suburb || addr.neighbourhood || addr.hamlet || prev.village,
+                  houseNumber: addr.house_number || prev.houseNumber || '',
+                  landmark: addr.attraction || addr.tourism || addr.amenity || addr.road || prev.landmark || ''
+                }));
+              }
+            } catch (osmError) {
+              console.error("Geocoding failed entirely", osmError);
+              alert("Failed to auto-detect full address. Please enter manually.");
+            }
+          } finally {
+            setIsDetecting(false);
+          }
+        },
+        (error) => { 
+          setIsDetecting(false);
+          if (error.code === error.PERMISSION_DENIED) {
+            alert("Location access denied! Please TURN ON GPS / Location services in your device settings and allow permission.");
+          } else if (error.code === error.POSITION_UNAVAILABLE) {
+            alert("GPS location is unavailable right now. Please check if your GPS is turned on.");
+          } else {
+            alert("Failed to access GPS. Please ensure Location is turned ON.");
+          }
+        },
+        { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+      );
+    };
+    const handleSaveLocation = async () => {
+      setAttemptedSubmit(true);
+      const reqFields = ['lat', 'lng', 'houseNumber', 'landmark', 'village', 'nearerCity', 'mandal', 'district', 'pincode', 'state', 'serviceRadius'];
+      for (const field of reqFields) {
+        if (!locationForm[field]) {
+          alert("Please fill all the details completely and ensure GPS location is detected. Empty field found.");
+          const el = document.getElementById('input-' + field);
+          if (el) {
+            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            el.focus();
+          }
+          return;
+        }
+      }
+      setIsSavingLocation(true);
+      try {
+        const appId = localStorage.getItem('seller_app_id');
+        await updateDoc(doc(db, 'seller_applications', appId), {
+          storefrontLocation: locationForm
+        });
+        // Update local state so it reflects instantly
+        setFullAppData(prev => ({ ...prev, storefrontLocation: locationForm }));
+        alert("Location details saved successfully!");
+        setExpandedCard(null); // Go back to main menu
+      } catch (e) {
+        console.error(e);
+        alert("Failed to save location details.");
+      }
+      setIsSavingLocation(false);
+    };
+
+    return (
+      <div style={styles.container}>
+        <header style={styles.header}>
+          <button style={styles.iconButton} onClick={() => setExpandedCard(null)}>
+            <ArrowLeft size={24} color="#FFFFFF" />
+          </button>
+          <div style={styles.headerTitleContainer}>
+            <MapPin size={26} color="#FFFFFF" />
+            <h1 style={styles.headerTitle}>Location Details</h1>
+          </div>
+          <div style={{ width: '42px' }}></div>
+        </header>
+
+        <main style={{ flex: 1, overflowY: 'auto', padding: '20px', backgroundColor: '#F9FAFB' }}>
+          
+          <div style={{ margin: '0 -10px 32px -10px', backgroundColor: '#FFFFFF', borderRadius: '24px', padding: '20px', boxShadow: '0 8px 30px rgba(0,0,0,0.04)', border: '1px solid #E5E7EB' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '800', color: '#111827' }}>Location GPS</h3>
+                  {(locationForm.lat && locationForm.lng) && (
+                    <div style={{ padding: '4px 10px', backgroundColor: '#D1FAE5', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '6px', border: '1px solid #10B981' }}>
+                       <div style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#10B981', animation: 'pulse 2s infinite' }} />
+                       <span style={{ fontSize: '11px', fontWeight: '800', color: '#065F46' }}>LOCKED</span>
+                    </div>
+                  )}
+                </div>
+                <p style={{ margin: '4px 0 0', fontSize: '13px', color: '#6B7280' }}>Pinpoint your exact shop location.</p>
+              </div>
+              <div style={{ display: 'flex', backgroundColor: '#F3F4F6', borderRadius: '10px', padding: '4px' }}>
+                 <button onClick={() => setMapLayer('m')} style={{ padding: '8px 14px', fontSize: '13px', fontWeight: '800', border: 'none', borderRadius: '8px', backgroundColor: mapLayer === 'm' ? '#FFFFFF' : 'transparent', color: mapLayer === 'm' ? '#111827' : '#6B7280', cursor: 'pointer', boxShadow: mapLayer === 'm' ? '0 2px 8px rgba(0,0,0,0.08)' : 'none', transition: 'all 0.2s' }}>Map</button>
+                 <button onClick={() => setMapLayer('k')} style={{ padding: '8px 14px', fontSize: '13px', fontWeight: '800', border: 'none', borderRadius: '8px', backgroundColor: mapLayer === 'k' ? '#FFFFFF' : 'transparent', color: mapLayer === 'k' ? '#111827' : '#6B7280', cursor: 'pointer', boxShadow: mapLayer === 'k' ? '0 2px 8px rgba(0,0,0,0.08)' : 'none', transition: 'all 0.2s' }}>Satellite</button>
+              </div>
+            </div>
+
+            <div style={{ borderRadius: '16px', overflow: 'hidden', height: '280px', position: 'relative', backgroundColor: '#E5E7EB', border: '1px solid #D1D5DB' }}>
+              <iframe 
+                width="100%" 
+                height="100%" 
+                frameBorder="0" 
+                scrolling="no" 
+                marginHeight="0" 
+                marginWidth="0" 
+                src={`https://maps.google.com/maps?q=${locationForm.lat || 'Andhra Pradesh'},${locationForm.lng || ''}&t=${mapLayer}&z=${locationForm.lat ? 18 : 6}&ie=UTF8&iwloc=&output=embed`}
+                style={{ display: 'block' }}
+                title="Storefront Map"
+              />
+            </div>
+
+            <button 
+              type="button" 
+              onClick={handleAutoDetectLocation} 
+              disabled={isDetecting} 
+              style={{ width: '100%', marginTop: '20px', padding: '16px', background: '#EFF6FF', color: '#3B82F6', border: '1px dashed #3B82F6', borderRadius: '14px', fontWeight: '800', fontSize: '15px', cursor: isDetecting ? 'not-allowed' : 'pointer', transition: 'all 0.2s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+            >
+              <MapPin size={20} />
+              {isDetecting ? 'Detecting...' : 'Auto-Detect with GPS'}
+            </button>
+          </div>
+          
+          <div style={{ marginBottom: '24px' }}>
+            <h3 style={{ margin: 0, fontSize: '20px', fontWeight: '800', color: '#111827' }}>Storefront Address</h3>
+            <p style={{ margin: '6px 0 0', fontSize: '13px', color: '#6B7280' }}>Please fill out all the address details below.</p>
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+
+            <div style={{ display: 'flex', gap: '16px' }}>
+              <div style={{ flex: 1 }}>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: '800', color: '#374151', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Latitude <span style={{color: '#EF4444'}}>*</span></label>
+                <input id="input-lat" type="text" readOnly value={locationForm.lat} style={{ width: '100%', padding: '16px', borderRadius: '12px', border: (attemptedSubmit && !locationForm.lat) ? '1px solid #EF4444' : '1px solid #D1D5DB', fontSize: '16px', color: '#6B7280', backgroundColor: '#F3F4F6', outline: 'none', boxSizing: 'border-box' }} placeholder="Auto-filled" />
+              </div>
+              <div style={{ flex: 1 }}>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: '800', color: '#374151', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Longitude <span style={{color: '#EF4444'}}>*</span></label>
+                <input id="input-lng" type="text" readOnly value={locationForm.lng} style={{ width: '100%', padding: '16px', borderRadius: '12px', border: (attemptedSubmit && !locationForm.lng) ? '1px solid #EF4444' : '1px solid #D1D5DB', fontSize: '16px', color: '#6B7280', backgroundColor: '#F3F4F6', outline: 'none', boxSizing: 'border-box' }} placeholder="Auto-filled" />
+              </div>
+            </div>
+
+            <div>
+              <label style={{ display: 'block', fontSize: '13px', fontWeight: '800', color: '#374151', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>House / Door No. <span style={{color: '#EF4444'}}>*</span></label>
+              <input id="input-houseNumber" type="text" value={locationForm.houseNumber} onChange={(e) => setLocationForm({...locationForm, houseNumber: e.target.value})} style={{ width: '100%', padding: '16px', borderRadius: '12px', border: (attemptedSubmit && !locationForm.houseNumber) ? '1px solid #EF4444' : '1px solid #D1D5DB', fontSize: '16px', color: '#111827', backgroundColor: '#FFFFFF', outline: 'none', boxShadow: '0 2px 4px rgba(0,0,0,0.02)', boxSizing: 'border-box' }} placeholder="1-23/A" />
+            </div>
+
+            <div>
+              <label style={{ display: 'block', fontSize: '13px', fontWeight: '800', color: '#374151', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Landmark <span style={{color: '#EF4444'}}>*</span></label>
+              <input id="input-landmark" type="text" value={locationForm.landmark} onChange={(e) => setLocationForm({...locationForm, landmark: e.target.value})} style={{ width: '100%', padding: '16px', borderRadius: '12px', border: (attemptedSubmit && !locationForm.landmark) ? '1px solid #EF4444' : '1px solid #D1D5DB', fontSize: '16px', color: '#111827', backgroundColor: '#FFFFFF', outline: 'none', boxShadow: '0 2px 4px rgba(0,0,0,0.02)', boxSizing: 'border-box' }} placeholder="Near Temple" />
+            </div>
+            
+            <div>
+              <label style={{ display: 'block', fontSize: '13px', fontWeight: '800', color: '#374151', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Village / City <span style={{color: '#EF4444'}}>*</span></label>
+              <input id="input-village" type="text" value={locationForm.village} onChange={(e) => setLocationForm({...locationForm, village: e.target.value})} style={{ width: '100%', padding: '16px', borderRadius: '12px', border: (attemptedSubmit && !locationForm.village) ? '1px solid #EF4444' : '1px solid #D1D5DB', fontSize: '16px', color: '#111827', backgroundColor: '#FFFFFF', outline: 'none', boxShadow: '0 2px 4px rgba(0,0,0,0.02)', boxSizing: 'border-box' }} placeholder="E.g. Palasa" />
+            </div>
+
+            <div>
+              <label style={{ display: 'block', fontSize: '13px', fontWeight: '800', color: '#374151', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Nearer City <span style={{color: '#EF4444'}}>*</span></label>
+              <input id="input-nearerCity" type="text" value={locationForm.nearerCity} onChange={(e) => setLocationForm({...locationForm, nearerCity: e.target.value})} style={{ width: '100%', padding: '16px', borderRadius: '12px', border: (attemptedSubmit && !locationForm.nearerCity) ? '1px solid #EF4444' : '1px solid #D1D5DB', fontSize: '16px', color: '#111827', backgroundColor: '#FFFFFF', outline: 'none', boxShadow: '0 2px 4px rgba(0,0,0,0.02)', boxSizing: 'border-box' }} placeholder="Srikakulam" />
+            </div>
+
+            <div>
+              <label style={{ display: 'block', fontSize: '13px', fontWeight: '800', color: '#374151', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Mandal <span style={{color: '#EF4444'}}>*</span></label>
+              <input id="input-mandal" type="text" value={locationForm.mandal} onChange={(e) => setLocationForm({...locationForm, mandal: e.target.value})} style={{ width: '100%', padding: '16px', borderRadius: '12px', border: (attemptedSubmit && !locationForm.mandal) ? '1px solid #EF4444' : '1px solid #D1D5DB', fontSize: '16px', color: '#111827', backgroundColor: '#FFFFFF', outline: 'none', boxShadow: '0 2px 4px rgba(0,0,0,0.02)', boxSizing: 'border-box' }} placeholder="Kasibugga Mandal" />
+            </div>
+
+            <div>
+              <label style={{ display: 'block', fontSize: '13px', fontWeight: '800', color: '#374151', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>District <span style={{color: '#EF4444'}}>*</span></label>
+              <input id="input-district" type="text" value={locationForm.district} onChange={(e) => setLocationForm({...locationForm, district: e.target.value})} style={{ width: '100%', padding: '16px', borderRadius: '12px', border: (attemptedSubmit && !locationForm.district) ? '1px solid #EF4444' : '1px solid #D1D5DB', fontSize: '16px', color: '#111827', backgroundColor: '#FFFFFF', outline: 'none', boxShadow: '0 2px 4px rgba(0,0,0,0.02)', boxSizing: 'border-box' }} placeholder="E.g. Srikakulam" />
+            </div>
+
+            <div>
+              <label style={{ display: 'block', fontSize: '13px', fontWeight: '800', color: '#374151', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Pincode <span style={{color: '#EF4444'}}>*</span></label>
+              <input id="input-pincode" type="text" maxLength="6" value={locationForm.pincode} onChange={(e) => setLocationForm({...locationForm, pincode: e.target.value.replace(/\D/g, '')})} style={{ width: '100%', padding: '16px', borderRadius: '12px', border: (attemptedSubmit && !locationForm.pincode) ? '1px solid #EF4444' : '1px solid #D1D5DB', fontSize: '16px', color: '#111827', backgroundColor: '#FFFFFF', outline: 'none', boxShadow: '0 2px 4px rgba(0,0,0,0.02)', letterSpacing: '2px', boxSizing: 'border-box' }} placeholder="000000" />
+            </div>
+
+            <div>
+              <label style={{ display: 'block', fontSize: '13px', fontWeight: '800', color: '#374151', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>State <span style={{color: '#EF4444'}}>*</span></label>
+              <input id="input-state" type="text" value={locationForm.state} onChange={(e) => setLocationForm({...locationForm, state: e.target.value})} style={{ width: '100%', padding: '16px', borderRadius: '12px', border: (attemptedSubmit && !locationForm.state) ? '1px solid #EF4444' : '1px solid #D1D5DB', fontSize: '16px', color: '#111827', backgroundColor: '#FFFFFF', outline: 'none', boxShadow: '0 2px 4px rgba(0,0,0,0.02)', boxSizing: 'border-box' }} placeholder="Andhra Pradesh" />
+            </div>
+
+            <div>
+              <label style={{ display: 'block', fontSize: '13px', fontWeight: '800', color: '#374151', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Service Radius (in km) <span style={{color: '#EF4444'}}>*</span></label>
+              <input id="input-serviceRadius" type="text" value={locationForm.serviceRadius} onChange={(e) => setLocationForm({...locationForm, serviceRadius: e.target.value})} style={{ width: '100%', padding: '16px', borderRadius: '12px', border: (attemptedSubmit && !locationForm.serviceRadius) ? '1px solid #EF4444' : '1px solid #D1D5DB', fontSize: '16px', color: '#111827', backgroundColor: '#FFFFFF', outline: 'none', boxShadow: '0 2px 4px rgba(0,0,0,0.02)', boxSizing: 'border-box' }} placeholder="e.g. 15km or Statewide" />
+            </div>
+
+            {/* Remove GPS Coordinates locked UI, map acts as confirmation */}
+
+            <div style={{ marginTop: '16px', backgroundColor: '#FEF2F2', border: '1px dashed #EF4444', borderRadius: '12px', padding: '16px', display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
+              <AlertCircle size={20} color="#DC2626" style={{ flexShrink: 0, marginTop: '2px' }} />
+              <p style={{ margin: 0, fontSize: '13px', color: '#991B1B', lineHeight: '1.5', fontWeight: '600' }}>
+                <strong style={{ fontWeight: '800' }}>Note:</strong> Check the details thoroughly and use the Auto GPS for an easy way. Before submitting, ensure these are your exact shop details, otherwise consumers may be misled!
+              </p>
+            </div>
+
+            <button 
+              onClick={handleSaveLocation}
+              disabled={isSavingLocation}
+              style={{ marginTop: '24px', marginBottom: '40px', width: '100%', padding: '18px', backgroundColor: '#1E3A8A', color: '#FFFFFF', border: 'none', borderRadius: '14px', fontSize: '16px', fontWeight: '800', cursor: isSavingLocation ? 'not-allowed' : 'pointer', boxShadow: '0 6px 16px rgba(30, 58, 138, 0.25)', opacity: isSavingLocation ? 0.7 : 1 }}
+            >
+              {isSavingLocation ? 'Saving Details...' : 'Save Location Details'}
+            </button>
+
+          </div>
+        </main>
+      </div>
+    );
+  }
+
   return (
     <div style={styles.container}>
       {/* Top Header */}
       <header style={styles.header}>
-        <button style={styles.iconButton} onClick={() => navigate(-1)}>
+        <button style={styles.iconButton} onClick={() => navigate('/Seller_HomePage')}>
           <ArrowLeft size={24} color="#FFFFFF" />
         </button>
         <div style={styles.headerTitleContainer}>

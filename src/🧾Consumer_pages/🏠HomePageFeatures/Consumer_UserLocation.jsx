@@ -90,7 +90,8 @@ const Skeleton = ({ width, height }) => (
 // --- MAIN COMPONENT ---
 const Consumer_UserLocation = () => {
   const navigate = useNavigate();
-  const [view, setView] = useState('list'); 
+  const dragTimeoutRef = useRef(null);
+  const [view, setView] = useState('list');  
   const [deviceLoc, setDeviceLoc] = useState(null); 
   const [gpsStatus, setGpsStatus] = useState('checking'); 
   const [currentLocName, setCurrentLocName] = useState("Detecting location...");
@@ -125,13 +126,14 @@ const Consumer_UserLocation = () => {
   const [addressType, setAddressType] = useState('Home');
   
   const [formData, setFormData] = useState({ 
-      houseNo: '', landmark: '', receiverName: '', phone: '', 
-      village: '', mandal: '', city: '', pincode: '' 
+      houseNo: '', landmark: '', village: '', nearerCity: '', mandal: '', city: '', district: '', pincode: '', state: '',
+      receiverName: '', phone: '' 
   });
   
   const [selectedImage, setSelectedImage] = useState(null);
   const fileInputRef = useRef(null);
   const [isMapShrunk, setIsMapShrunk] = useState(false);
+  const [attemptedSubmit, setAttemptedSubmit] = useState(false);
 
   // --- CORE FUNCTIONS ---
   const addToHistory = (name) => {
@@ -152,7 +154,7 @@ const Consumer_UserLocation = () => {
 
   const startAddAddress = () => {
     setEditingId(null);
-    setFormData({ houseNo: '', landmark: '', receiverName: '', phone: '', village: '', mandal: '', city: '', pincode: '' });
+    setFormData({ houseNo: '', landmark: '', village: '', nearerCity: '', mandal: '', city: '', district: '', pincode: '', state: '', receiverName: '', phone: '' });
     setSelectedImage(null);
     if (deviceLoc) {
         setCoords(deviceLoc);
@@ -195,11 +197,36 @@ const Consumer_UserLocation = () => {
                 autoVillage: addr.municipalitySubdivision || '',
                 autoMandal: addr.municipality || '',
                 autoCity: addr.city || addr.countrySubdivision || '',
+                autoNearerCity: addr.municipality || '',
+                autoDistrict: addr.countrySecondarySubdivision || addr.municipality || '',
+                autoState: addr.countrySubdivision || '',
                 autoPin: addr.postalCode || addr.postcode || ''
             };
         }
-        return { name: "Unknown", city: "", full: "Location not found" };
-    } catch (e) { return { name: "Network Error", city: "", full: "" }; }
+        throw new Error("No results from TomTom");
+    } catch (e) { 
+        console.warn("TomTom failed/limit reached. Falling back to OpenStreetMap...", e);
+        try {
+            const osmRes = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`);
+            const osmData = await osmRes.json();
+            const addr = osmData.address || {};
+            const locationLabel = addr.village || addr.suburb || addr.town || addr.city || "Unknown Area";
+            return {
+                name: locationLabel,
+                city: addr.city || addr.county || "",
+                full: osmData.display_name || "Location found",
+                autoVillage: addr.village || addr.suburb || '',
+                autoMandal: addr.county || addr.state_district || '',
+                autoCity: addr.city || addr.town || '',
+                autoNearerCity: addr.city || addr.county || '',
+                autoDistrict: addr.state_district || '',
+                autoState: addr.state || '',
+                autoPin: addr.postcode || ''
+            };
+        } catch (osmError) {
+            return { name: "Network Error", city: "", full: "" }; 
+        }
+    }
   };
 
   const searchPlaces = async (query) => {
@@ -279,26 +306,61 @@ const Consumer_UserLocation = () => {
     };
   }, []);
 
+  useEffect(() => {
+    const fetchResults = async () => {
+      if (searchQuery.trim().length > 2) {
+        const results = await searchPlaces(searchQuery);
+        setSearchResults(results);
+      } else {
+        setSearchResults([]);
+      }
+    };
+    const timer = setTimeout(fetchResults, 800);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
   const handleDirectCurrentLocation = () => {
-    requestGPS();
+    // 1. If GPS and address were already fetched in the background on page load, use them INSTANTLY.
+    if (deviceLoc && currentLocName && currentLocName !== "Detecting location...") {
+        updateConsumer_HomePageLocation(currentLocName, "Current Location", deviceLoc.lat, deviceLoc.lng);
+        navigate('/Consumer_HomePage');
+        return;
+    }
+
+    // 2. Fallback: If clicked before background load finished, fetch it now.
     if (!navigator.geolocation) return;
     navigator.geolocation.getCurrentPosition(async (pos) => {
         const { latitude, longitude } = pos.coords;
         const details = await fetchAddressFromCoords(latitude, longitude);
         updateConsumer_HomePageLocation(details.full || `${details.name}, ${details.city}`, "Current Location", latitude, longitude);
         navigate('/Consumer_HomePage');
-    });
+    }, (err) => console.error(err), { enableHighAccuracy: true });
   };
 
   const handleMapMoveStart = () => { setIsDragging(true); };
-  const handleMapMoveEnd = async (center) => {
+  const handleMapMoveEnd = (center) => {
       setIsDragging(false); 
       setCoords({ lat: center.lat, lng: center.lng });
-      setIsAddressLoading(true);
-      const details = await fetchAddressFromCoords(center.lat, center.lng);
-      setPinDetails(details);
-      setIsAddressLoading(false);
-      setFormData(prev => ({ ...prev, village: details.autoVillage || prev.village, mandal: details.autoMandal || prev.mandal, city: details.autoCity || prev.city, pincode: details.autoPin || prev.pincode }));
+      
+      // DEBOUNCE: Clear previous timer so it only fetches 1.5s AFTER they completely stop dragging
+      if (dragTimeoutRef.current) clearTimeout(dragTimeoutRef.current);
+      
+      dragTimeoutRef.current = setTimeout(async () => {
+          setIsAddressLoading(true);
+          const details = await fetchAddressFromCoords(center.lat, center.lng);
+          setPinDetails(details);
+          setIsAddressLoading(false);
+          setFormData(prev => ({ 
+              ...prev, 
+              village: details.autoVillage || prev.village, 
+              mandal: details.autoMandal || prev.mandal, 
+              city: details.autoCity || prev.city, 
+              nearerCity: details.autoNearerCity || prev.nearerCity, 
+              district: details.autoDistrict || prev.district, 
+              state: details.autoState || prev.state, 
+              pincode: details.autoPin || prev.pincode 
+          }));
+      }, 1500);
   };
 
   const handleResetToCurrentLocation = () => {
@@ -307,6 +369,19 @@ const Consumer_UserLocation = () => {
   };
 
   const saveAddress = () => {
+    setAttemptedSubmit(true);
+    const reqFields = ['houseNo', 'receiverName', 'phone'];
+    for (const field of reqFields) {
+      if (!formData[field]) {
+        const el = document.getElementById('input-' + field);
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          el.focus();
+        }
+        return;
+      }
+    }
+    
     setIsSaving(true); 
     setTimeout(() => {
         const parts = [formData.houseNo, pinDetails.name, pinDetails.city].filter(p => p && p.trim().length > 0);
@@ -349,10 +424,8 @@ const Consumer_UserLocation = () => {
     setEditingId(addressToEdit.id);
     
     // 3. Populate the form data with the saved details
-    setFormData(addressToEdit.details || { 
-      houseNo: '', landmark: '', receiverName: '', phone: '', 
-      village: '', mandal: '', city: '', pincode: '' 
-    });
+    const defaultData = { houseNo: '', landmark: '', village: '', nearerCity: '', mandal: '', city: '', district: '', pincode: '', state: '', receiverName: '', phone: '' };
+    setFormData({ ...defaultData, ...(addressToEdit.details || {}) });
     
     // 4. Set the address type (Home, Work, Other)
     setAddressType(addressToEdit.type || 'Home');
@@ -379,15 +452,15 @@ const Consumer_UserLocation = () => {
     return (
       <div style={styles.pageGray} onClick={() => setActiveMenuId(null)}>
         <div style={styles.header}>
-          <ArrowLeft onClick={() => navigate(-1)} style={{cursor:'pointer'}} color="#1C1C1C" />
+          <ArrowLeft onClick={() => navigate(-1)} style={{cursor:'pointer'}} color="#111827" />
           <span style={styles.headerTitle}>Select a location</span>
         </div>
         
         <div style={styles.searchSectionWrapper}>
             <div style={styles.searchBar}>
-                <Search color="#F84464" size={20} />
+                <Search color="#3B82F6" size={20} />
                 <input type="text" placeholder="Search area, street..." style={styles.searchInput} value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
-                {searchQuery && <X size={18} color="#999" onClick={() => setSearchQuery('')} style={{cursor:'pointer'}} />}
+                {searchQuery && <X size={18} color="#9CA3AF" onClick={() => setSearchQuery('')} style={{cursor:'pointer'}} />}
             </div>
             
             <div style={styles.historyRow}>
@@ -402,14 +475,14 @@ const Consumer_UserLocation = () => {
         <div style={styles.scrollArea}>
             <div style={styles.actionsWrapper}>
                 <div style={styles.capsuleCard} onClick={handleDirectCurrentLocation}>
-                    <div style={styles.iconCircleRed}><LocateFixed size={22} color="#F84464" strokeWidth={2.5} /></div>
+                    <div style={styles.iconCircleBlue}><LocateFixed size={22} color="#3B82F6" strokeWidth={2.5} /></div>
                     <div style={{flex:1}}><div style={styles.actionTitle}>Use current location</div><div style={styles.actionSub}>{currentLocName}</div></div>
-                    <span style={{color:'#ccc'}}>›</span>
+                    <span style={{color:'#D1D5DB'}}>›</span>
                 </div>
                 <div style={styles.capsuleCard} onClick={startAddAddress}>
-                    <div style={styles.iconCircleRed}><Plus size={22} color="#F84464" /></div>
+                    <div style={styles.iconCircleBlue}><Plus size={22} color="#3B82F6" /></div>
                     <div style={{flex:1}}><div style={styles.actionTitle}>Add Address</div></div>
-                    <span style={{color:'#ccc'}}>›</span>
+                    <span style={{color:'#D1D5DB'}}>›</span>
                 </div>
             </div>
             
@@ -417,19 +490,19 @@ const Consumer_UserLocation = () => {
             
             {savedAddresses.map(addr => (
                 <div key={addr.id} style={styles.addressCard}>
-                    <div style={styles.cardLeft}><div style={styles.iconBox}>{addr.type === 'Work' ? <Briefcase size={18} color="#555"/> : <Home size={18} color="#555"/>}</div></div>
+                    <div style={styles.cardLeft}><div style={styles.iconBox}>{addr.type === 'Work' ? <Briefcase size={18} color="#4B5563"/> : <Home size={18} color="#4B5563"/>}</div></div>
                     <div style={styles.cardRight} onClick={() => handleSelectPlace(addr.address, addr.type, addr.lat, addr.lng)}>
                         <div style={styles.cardType}>{addr.type}</div>
                         <div style={styles.cardAddress}>{addr.address}</div>
                         <div style={styles.cardPhone}>Phone: {addr.details?.phone || "N/A"}</div>
                     </div>
                     <div style={{position:'relative'}}>
-                        <div style={styles.menuIcon} onClick={(e) => { e.stopPropagation(); setActiveMenuId(activeMenuId === addr.id ? null : addr.id); }}><MoreVertical size={20} color="#333" /></div>
+                        <div style={styles.menuIcon} onClick={(e) => { e.stopPropagation(); setActiveMenuId(activeMenuId === addr.id ? null : addr.id); }}><MoreVertical size={20} color="#374151" /></div>
                         {activeMenuId === addr.id && (
                             <div style={styles.popupMenu}>
-                                <div style={styles.menuItem} onClick={() => startEditAddress(addr)}><Edit2 size={14} color="#333"/> Edit</div>
-                                <div style={styles.menuItem} onClick={() => handleShareAddress(addr)}><Share2 size={14} color="#333"/> Share</div>
-                                <div style={{...styles.menuItem, color:'#F84464'}} onClick={() => deleteAddress(addr.id)}><Trash2 size={14}/> Delete</div>
+                                <div style={styles.menuItem} onClick={() => startEditAddress(addr)}><Edit2 size={14} color="#374151"/> Edit</div>
+                                <div style={styles.menuItem} onClick={() => handleShareAddress(addr)}><Share2 size={14} color="#374151"/> Share</div>
+                                <div style={{...styles.menuItem, color:'#EF4444'}} onClick={() => deleteAddress(addr.id)}><Trash2 size={14}/> Delete</div>
                             </div>
                         )}
                     </div>
@@ -439,8 +512,8 @@ const Consumer_UserLocation = () => {
             <div style={styles.sectionTitle}>NEARBY PLACES</div>
             {nearbyLocs.map(loc => (
                 <div key={loc.id} style={styles.nearbyRow} onClick={() => handleSelectPlace(loc.address, loc.name, loc.lat, loc.lng)}>
-                    <div style={styles.pinCircle}><MapPin size={18} color="#555" /></div>
-                    <div><div style={styles.nearbyTitle}>{loc.name}</div><div style={styles.nearbySub}>{loc.address} • <span style={{color:'#F84464', fontWeight:600}}>{formatDistance(loc.meters)}</span></div></div>
+                    <div style={styles.pinCircle}><MapPin size={18} color="#4B5563" /></div>
+                    <div><div style={styles.nearbyTitle}>{loc.name}</div><div style={styles.nearbySub}>{loc.address} • <span style={{color:'#3B82F6', fontWeight:600}}>{formatDistance(loc.meters)}</span></div></div>
                 </div>
             ))}
             <div style={{height:'30px'}}></div>
@@ -451,114 +524,204 @@ const Consumer_UserLocation = () => {
 
   // --- RENDERING MAP VIEW ---
   return (
-    <div style={styles.pageWhite}>
-        <div style={{ ...styles.topSection, height: isMapShrunk ? '22vh' : '58vh' }}>
-            <div style={styles.headerGlass}>
-                <div style={styles.mapHeaderTop}>
-                    <div style={styles.mapHeaderLeft}>
-                        <div onClick={() => setView('list')} style={styles.backCircle}><ArrowLeft size={18} color="#1C1C1C" strokeWidth={3} /></div>
-                        <span style={styles.headerTitleLarge}>Set Location</span>
+    <div style={{ background: '#F9FAFB', height: '100vh', overflow:'auto', display: 'flex', flexDirection: 'column', position:'relative', fontFamily: '"Inter", sans-serif' }}>
+        <header style={{ background:'white', padding:'16px 20px', display:'flex', alignItems:'center', gap:'16px', borderBottom:'1px solid #E5E7EB', position: 'sticky', top: 0, zIndex: 100 }}>
+          <button style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: '8px', display: 'flex', alignItems: 'center' }} onClick={() => setView('list')}>
+            <ArrowLeft size={24} color="#111827" />
+          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <MapPin size={24} color="#111827" />
+            <h1 style={{ fontSize:'18px', fontWeight:'900', color:'#111827', margin: 0 }}>Location Details</h1>
+          </div>
+        </header>
+
+        <main style={{ flex: 1, padding: '20px' }}>
+          
+          <div style={{ marginBottom: '32px', backgroundColor: '#FFFFFF', borderRadius: '24px', padding: '20px', boxShadow: '0 8px 30px rgba(0,0,0,0.04)', border: '1px solid #E5E7EB' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px', flexWrap: 'wrap', gap: '16px' }}>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '800', color: '#111827' }}>Location GPS</h3>
+                  {gpsStatus === 'active' ? (
+                    <div style={{ padding: '4px 10px', backgroundColor: '#D1FAE5', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '6px', border: '1px solid #10B981' }}>
+                       <div style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#10B981', animation: 'pulse 2s infinite' }} />
+                       <span style={{ fontSize: '11px', fontWeight: '800', color: '#065F46' }}>LOCKED</span>
                     </div>
-                    <div style={{ ...styles.statusBadge, background: gpsStatus === 'active' ? '#E7F9F2' : '#FFF0F0' }} onClick={requestGPS}>
-                        <div className="blink-indicator" style={{ background: gpsStatus === 'active' ? '#10B981' : '#F84464' }}></div>
-                        <span style={{ fontSize:'10px', fontWeight:'900', color: gpsStatus === 'active' ? '#10B981' : '#F84464' }}> {gpsStatus === 'active' ? 'GPS ACTIVE' : 'NO GPS'} </span>
+                  ) : (
+                    <div style={{ padding: '4px 10px', backgroundColor: '#FEE2E2', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '6px', border: '1px solid #EF4444' }}>
+                       <div style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#EF4444' }} />
+                       <span style={{ fontSize: '11px', fontWeight: '800', color: '#991B1B' }}>NO GPS</span>
                     </div>
+                  )}
                 </div>
-                <div style={styles.searchTriggerGlass} onClick={() => setIsSearchOpen(true)}>
-                    <Search size={18} color="#F84464" />
-                    <span style={{color:'#999', fontSize:'14px', fontWeight:'500'}}>Search area, landmarks...</span>
-                </div>
+                <p style={{ margin: '4px 0 0', fontSize: '13px', color: '#6B7280' }}>Pinpoint your exact delivery location.</p>
+              </div>
+              <div style={{ display: 'flex', backgroundColor: '#F3F4F6', borderRadius: '10px', padding: '4px' }}>
+                 <button onClick={() => setMapType('basic')} style={{ padding: '8px 14px', fontSize: '13px', fontWeight: '800', border: 'none', borderRadius: '8px', backgroundColor: mapType === 'basic' ? '#FFFFFF' : 'transparent', color: mapType === 'basic' ? '#111827' : '#6B7280', cursor: 'pointer', boxShadow: mapType === 'basic' ? '0 2px 8px rgba(0,0,0,0.08)' : 'none', transition: 'all 0.2s' }}>Map</button>
+                 <button onClick={() => setMapType('hybrid')} style={{ padding: '8px 14px', fontSize: '13px', fontWeight: '800', border: 'none', borderRadius: '8px', backgroundColor: mapType === 'hybrid' ? '#FFFFFF' : 'transparent', color: mapType === 'hybrid' ? '#111827' : '#6B7280', cursor: 'pointer', boxShadow: mapType === 'hybrid' ? '0 2px 8px rgba(0,0,0,0.08)' : 'none', transition: 'all 0.2s' }}>Satellite</button>
+              </div>
             </div>
 
-            <div style={styles.mapFrameWrapper}>
-                <MapContainer center={[coords.lat, coords.lng]} zoom={18} zoomControl={false} style={{height:'100%', width:'100%'}}>
-                    <TileLayer url={getGoogleTileUrl(mapType)} />
-                    <MapController coords={coords} isFlying={isFlying} />
-                    <MapEventsHandler onMoveStart={handleMapMoveStart} onMoveEnd={handleMapMoveEnd} />
-                    {deviceLoc && <Marker position={[deviceLoc.lat, deviceLoc.lng]} icon={gpsIcon} />}
-                </MapContainer>
-                
-                <div style={{ ...styles.centerPin, opacity: isMapShrunk ? 0 : 1, transform: isDragging ? 'translate(-50%, -120%) scale(1.15)' : 'translate(-50%, -100%) scale(1)' }}>
-                    <div style={{...styles.blackTooltip, opacity: isDragging ? 0 : 1}}>Delivery location<div style={styles.blackArrow}></div></div>
-                    <div className={isDragging ? "heart-pulse" : ""}>
-                        <Heart size={48} color="#F84464" fill="#F84464" strokeWidth={1} style={styles.heartShadowFilter} />
-                    </div>
-                    <div style={{ ...styles.pinShadow, transform: isDragging ? 'scale(0.3)' : 'scale(1)', opacity: isDragging ? 0.1 : 0.4 }}></div>
-                </div>
-                
-                <div style={{...styles.controlsContainer, opacity: isMapShrunk ? 0 : 1}}>
-                    <button style={styles.glassBtnSquare} onClick={() => setMapType(prev => prev === 'basic' ? 'hybrid' : 'basic')}>
-                       <Layers size={18} color="#333" />
-                       <div style={styles.layerLabel}>{mapType === 'basic' ? 'Hybrid' : 'Map'}</div>
-                    </button>
-                    <button style={styles.glassBtnPill} onClick={handleResetToCurrentLocation}><Navigation size={16} color="#F84464" fill="#F84464"/> Use Current GPS</button>
-                </div>
+            <div style={{ borderRadius: '16px', overflow: 'hidden', height: '280px', position: 'relative', backgroundColor: '#E5E7EB', border: '1px solid #D1D5DB' }}>
+              <iframe 
+                width="100%" 
+                height="100%" 
+                frameBorder="0" 
+                scrolling="no" 
+                marginHeight="0" 
+                marginWidth="0" 
+                src={`https://maps.google.com/maps?q=${coords.lat || 12.92},${coords.lng || 80.22}&t=${mapType === 'hybrid' ? 'k' : 'm'}&z=18&ie=UTF8&iwloc=&output=embed`}
+                style={{ display: 'block' }}
+                title="Delivery Location Map"
+              />
             </div>
-        </div>
 
-        <div style={styles.sheetFlexContainer}>
-            <div style={styles.sheetHandle}></div>
-            <div style={styles.scrollableFormContent} onScroll={e => setIsMapShrunk(e.target.scrollTop > 5)} className="sheet-content">
-                <div style={styles.locCardWrapper}>
-                    <div style={styles.locCardFlex} onClick={() => setIsSearchOpen(true)}>
-                        <div style={styles.locIconBox}><Heart size={22} color="#fff" fill="#fff"/></div>
-                        <div style={{flex:1}}>
-                            {isAddressLoading ? ( <> <Skeleton width="50%" height="20px" /> <Skeleton width="80%" height="14px" /> </> ) : ( <> <div style={styles.locTitle}>{pinDetails.name || "Select Location"}</div> <div style={styles.locSub}>{pinDetails.full}</div> </> )}
-                        </div>
-                        <div style={styles.changeBtn}><ChevronRight size={18} color="#F84464" /></div>
-                    </div>
+            <button 
+              type="button" 
+              onClick={handleResetToCurrentLocation} 
+              style={{ width: '100%', marginTop: '20px', padding: '16px', background: '#EFF6FF', color: '#3B82F6', border: '1px dashed #3B82F6', borderRadius: '14px', fontWeight: '800', fontSize: '15px', cursor: 'pointer', transition: 'all 0.2s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+            >
+              <LocateFixed size={20} />
+              Auto-Detect with GPS
+            </button>
+            
+            <button 
+              type="button" 
+              onClick={() => setIsSearchOpen(true)} 
+              style={{ width: '100%', marginTop: '12px', padding: '16px', background: '#FFFFFF', color: '#6B7280', border: '1px solid #E5E7EB', borderRadius: '14px', fontWeight: '800', fontSize: '15px', cursor: 'pointer', transition: 'all 0.2s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+            >
+              <Search size={20} color="#9CA3AF" />
+              {pinDetails.name ? pinDetails.name : 'Search for a landmark...'}
+            </button>
+          </div>
+          
+          <div style={{ backgroundColor: '#FFFFFF', borderRadius: '24px', padding: '20px', boxShadow: '0 8px 30px rgba(0,0,0,0.04)', border: '1px solid #E5E7EB', marginBottom: '40px' }}>
+            <div style={{ marginBottom: '24px' }}>
+              <h3 style={{ margin: 0, fontSize: '20px', fontWeight: '800', color: '#111827' }}>Delivery Address</h3>
+              <p style={{ margin: '6px 0 0', fontSize: '13px', color: '#6B7280' }}>Please fill out the details below.</p>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+
+              <div style={{ display: 'flex', gap: '16px' }}>
+                <div style={{ flex: 1 }}>
+                  <label style={{ display: 'block', fontSize: '13px', fontWeight: '800', color: '#374151', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Latitude <span style={{color: '#EF4444'}}>*</span></label>
+                  <input type="text" readOnly value={coords.lat.toFixed(6)} style={{ width: '100%', padding: '16px', borderRadius: '12px', border: '1px solid #D1D5DB', fontSize: '16px', color: '#6B7280', backgroundColor: '#F3F4F6', outline: 'none', boxSizing: 'border-box' }} placeholder="Auto-filled" />
                 </div>
-
-                <div style={styles.inputBoxFull}><input style={styles.inputRaw} placeholder="House / Flat / Block No.*" value={formData.houseNo} onChange={e => setFormData({...formData, houseNo: e.target.value})} /></div>
-                <div style={styles.inputBoxFull}><input style={styles.inputRaw} placeholder="Landmark (Optional)" value={formData.landmark} onChange={e => setFormData({...formData, landmark: e.target.value})} /></div>
-
-                <div style={styles.label}>AUTO-FILLED</div>
-                <div style={styles.inputBoxFull}><input style={styles.inputRaw} placeholder="Village" value={formData.village} readOnly /></div>
-                <div style={styles.inputRow}>
-                    <div style={styles.inputBoxHalf}><input style={styles.inputRaw} placeholder="Mandal" value={formData.mandal} readOnly /></div>
-                    <div style={styles.inputBoxHalf}><input style={styles.inputRaw} placeholder="City" value={formData.city} readOnly /></div>
+                <div style={{ flex: 1 }}>
+                  <label style={{ display: 'block', fontSize: '13px', fontWeight: '800', color: '#374151', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Longitude <span style={{color: '#EF4444'}}>*</span></label>
+                  <input type="text" readOnly value={coords.lng.toFixed(6)} style={{ width: '100%', padding: '16px', borderRadius: '12px', border: '1px solid #D1D5DB', fontSize: '16px', color: '#6B7280', backgroundColor: '#F3F4F6', outline: 'none', boxSizing: 'border-box' }} placeholder="Auto-filled" />
                 </div>
-                <div style={styles.inputBoxFull}><input style={styles.inputRaw} placeholder="Pincode" value={formData.pincode} readOnly /></div>
+              </div>
 
-                <div style={styles.label}>CONTACT INFO</div>
-                <div style={styles.inputBoxFull}><input style={styles.inputRaw} placeholder="Receiver's Name" value={formData.receiverName} onChange={e => setFormData({...formData, receiverName: e.target.value})} /></div>
-                <div style={styles.inputBoxFull}><input style={styles.inputRaw} placeholder="Phone Number" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} /></div>
+              <div>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: '800', color: '#374151', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>House / Flat / Block No. <span style={{color: '#EF4444'}}>*</span></label>
+                <input id="input-houseNo" type="text" value={formData.houseNo} onChange={e => setFormData({...formData, houseNo: e.target.value})} style={{ width: '100%', padding: '16px', borderRadius: '12px', border: (attemptedSubmit && !formData.houseNo) ? '1px solid #EF4444' : '1px solid #D1D5DB', fontSize: '16px', color: '#111827', backgroundColor: '#FFFFFF', outline: 'none', boxShadow: '0 2px 4px rgba(0,0,0,0.02)', boxSizing: 'border-box' }} placeholder="E.g. Flat 402" />
+              </div>
 
-                <div style={styles.label}>SAVE AS</div>
-                <div style={styles.chips}>
-                    {[ {t:'Home', i:<Home size={14}/>}, {t:'Work', i:<Briefcase size={14}/>}, {t:'Other', i:<Bookmark size={14}/>} ].map(item => (
-                        <button key={item.t} style={addressType === item.t ? styles.chipActive : styles.chip} onClick={() => setAddressType(item.t)}>{item.i} {item.t}</button>
+              <div>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: '800', color: '#374151', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Landmark (Optional)</label>
+                <input id="input-landmark" type="text" value={formData.landmark} onChange={e => setFormData({...formData, landmark: e.target.value})} style={{ width: '100%', padding: '16px', borderRadius: '12px', border: '1px solid #D1D5DB', fontSize: '16px', color: '#111827', backgroundColor: '#FFFFFF', outline: 'none', boxShadow: '0 2px 4px rgba(0,0,0,0.02)', boxSizing: 'border-box' }} placeholder="Near Apollo Pharmacy" />
+              </div>
+              
+              <div style={{ marginTop: '8px', padding: '16px', backgroundColor: '#F9FAFB', borderRadius: '16px', border: '1px dashed #D1D5DB' }}>
+                  <div style={{ fontSize: '11px', fontWeight: '800', color: '#9CA3AF', marginBottom: '16px', letterSpacing: '1px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <MapPin size={14} /> AUTO-FILLED BY GPS
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '13px', fontWeight: '800', color: '#6B7280', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Village / City</label>
+                        <input id="input-village" type="text" value={formData.village || ''} readOnly style={{ width: '100%', padding: '16px', borderRadius: '12px', border: '1px solid #E5E7EB', fontSize: '16px', color: '#6B7280', backgroundColor: '#F3F4F6', outline: 'none', boxSizing: 'border-box' }} placeholder="Village / Area" />
+                      </div>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '13px', fontWeight: '800', color: '#6B7280', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Nearer City</label>
+                        <input id="input-nearerCity" type="text" value={formData.nearerCity || ''} readOnly style={{ width: '100%', padding: '16px', borderRadius: '12px', border: '1px solid #E5E7EB', fontSize: '16px', color: '#6B7280', backgroundColor: '#F3F4F6', outline: 'none', boxSizing: 'border-box' }} placeholder="Nearer City" />
+                      </div>
+                      <div style={{ display: 'flex', gap: '16px' }}>
+                          <div style={{ flex: 1 }}>
+                            <label style={{ display: 'block', fontSize: '13px', fontWeight: '800', color: '#6B7280', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Mandal</label>
+                            <input id="input-mandal" type="text" value={formData.mandal || ''} readOnly style={{ width: '100%', padding: '16px', borderRadius: '12px', border: '1px solid #E5E7EB', fontSize: '16px', color: '#6B7280', backgroundColor: '#F3F4F6', outline: 'none', boxSizing: 'border-box' }} placeholder="Mandal" />
+                          </div>
+                          <div style={{ flex: 1 }}>
+                            <label style={{ display: 'block', fontSize: '13px', fontWeight: '800', color: '#6B7280', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>District</label>
+                            <input id="input-district" type="text" value={formData.district || ''} readOnly style={{ width: '100%', padding: '16px', borderRadius: '12px', border: '1px solid #E5E7EB', fontSize: '16px', color: '#6B7280', backgroundColor: '#F3F4F6', outline: 'none', boxSizing: 'border-box' }} placeholder="District" />
+                          </div>
+                      </div>
+                      <div style={{ display: 'flex', gap: '16px' }}>
+                          <div style={{ flex: 1 }}>
+                            <label style={{ display: 'block', fontSize: '13px', fontWeight: '800', color: '#6B7280', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>State</label>
+                            <input id="input-state" type="text" value={formData.state || ''} readOnly style={{ width: '100%', padding: '16px', borderRadius: '12px', border: '1px solid #E5E7EB', fontSize: '16px', color: '#6B7280', backgroundColor: '#F3F4F6', outline: 'none', boxSizing: 'border-box' }} placeholder="State" />
+                          </div>
+                          <div style={{ flex: 1 }}>
+                            <label style={{ display: 'block', fontSize: '13px', fontWeight: '800', color: '#6B7280', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Pincode</label>
+                            <input id="input-pincode" type="text" value={formData.pincode || ''} readOnly style={{ width: '100%', padding: '16px', borderRadius: '12px', border: '1px solid #E5E7EB', fontSize: '16px', color: '#6B7280', backgroundColor: '#F3F4F6', outline: 'none', boxSizing: 'border-box' }} placeholder="Pincode" />
+                          </div>
+                      </div>
+                  </div>
+              </div>
+
+              <div style={{ marginTop: '16px' }}>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: '800', color: '#374151', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Receiver's Name <span style={{color: '#EF4444'}}>*</span></label>
+                <input id="input-receiverName" type="text" value={formData.receiverName} onChange={e => setFormData({...formData, receiverName: e.target.value})} style={{ width: '100%', padding: '16px', borderRadius: '12px', border: (attemptedSubmit && !formData.receiverName) ? '1px solid #EF4444' : '1px solid #D1D5DB', fontSize: '16px', color: '#111827', backgroundColor: '#FFFFFF', outline: 'none', boxShadow: '0 2px 4px rgba(0,0,0,0.02)', boxSizing: 'border-box' }} placeholder="John Doe" />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: '800', color: '#374151', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Phone Number <span style={{color: '#EF4444'}}>*</span></label>
+                <input id="input-phone" type="text" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} style={{ width: '100%', padding: '16px', borderRadius: '12px', border: (attemptedSubmit && !formData.phone) ? '1px solid #EF4444' : '1px solid #D1D5DB', fontSize: '16px', color: '#111827', backgroundColor: '#FFFFFF', outline: 'none', boxShadow: '0 2px 4px rgba(0,0,0,0.02)', boxSizing: 'border-box' }} placeholder="+91 00000 00000" />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: '800', color: '#374151', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Save As</label>
+                <div style={{ display: 'flex', gap: '12px' }}>
+                    {[ {t:'Home', i:<Home size={16}/>}, {t:'Work', i:<Briefcase size={16}/>}, {t:'Other', i:<Bookmark size={16}/>} ].map(item => (
+                        <button key={item.t} onClick={() => setAddressType(item.t)} style={{ flex: 1, padding: '12px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', fontWeight: '800', fontSize: '14px', border: addressType === item.t ? '2px solid #3B82F6' : '1px solid #D1D5DB', backgroundColor: addressType === item.t ? '#EFF6FF' : '#FFFFFF', color: addressType === item.t ? '#3B82F6' : '#6B7280', cursor: 'pointer', transition: 'all 0.2s' }}>
+                            {item.i} {item.t}
+                        </button>
                     ))}
                 </div>
+              </div>
 
-                <div style={styles.photoUploadBox} onClick={() => fileInputRef.current.click()}>
-                    <input type="file" ref={fileInputRef} style={{display: 'none'}} accept="image/*" onChange={handleImageUpload} />
-                    {selectedImage ? (
-                        <div style={styles.photoPreviewWrapper}>
-                            <img src={selectedImage} alt="Addr" style={styles.photoPreview}/><div style={{flex:1}}><div style={styles.photoAddedTitle}>Photo Added</div><div style={styles.photoChangeText}>Tap to change</div></div><Check size={20} color="#10B981" />
-                        </div>
-                    ) : (
-                        <>
-                            <div style={styles.photoIconCircle}><Camera size={20} color="#F84464" /></div>
-                            <div style={{flex:1}}><div style={styles.photoInstructionsTitle}>Add building photo</div><div style={styles.photoInstructionsSub}>Helps delivery worker find location</div></div>
-                        </>
-                    )}
-                </div>
+              <div style={{ marginTop: '16px', border: '1px dashed #D1D5DB', borderRadius: '16px', padding: '20px', backgroundColor: '#FFFFFF', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '16px' }} onClick={() => fileInputRef.current.click()}>
+                  <input type="file" ref={fileInputRef} style={{display: 'none'}} accept="image/*" onChange={handleImageUpload} />
+                  {selectedImage ? (
+                      <>
+                          <img src={selectedImage} alt="Addr" style={{ width: '60px', height: '60px', borderRadius: '12px', objectFit: 'cover' }}/>
+                          <div style={{flex:1}}><div style={{ fontSize: '15px', fontWeight: '800', color: '#111827' }}>Photo Added</div><div style={{ fontSize: '13px', color: '#6B7280' }}>Tap to change</div></div>
+                          <Check size={24} color="#10B981" />
+                      </>
+                  ) : (
+                      <>
+                          <div style={{ width: '48px', height: '48px', borderRadius: '12px', backgroundColor: '#EFF6FF', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Camera size={24} color="#3B82F6" /></div>
+                          <div style={{flex:1}}><div style={{ fontSize: '15px', fontWeight: '800', color: '#111827' }}>Add building photo</div><div style={{ fontSize: '13px', color: '#6B7280' }}>Helps delivery worker find you</div></div>
+                      </>
+                  )}
+              </div>
 
-                <div style={styles.saveActionWrapper}>
-                    <button style={{...styles.saveBtn, opacity: (formData.houseNo && formData.receiverName) ? 1 : 0.7, background: isSaving ? '#10B981' : '#F84464'}} onClick={saveAddress}>
-                        {isSaving ? <Check color="white" size={24} /> : 'Save Address & Proceed'}
-                    </button>
-                </div>
+              <div style={{ marginTop: '16px', backgroundColor: '#FEF2F2', border: '1px dashed #EF4444', borderRadius: '12px', padding: '16px', display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
+                <AlertCircle size={20} color="#DC2626" style={{ flexShrink: 0, marginTop: '2px' }} />
+                <p style={{ margin: 0, fontSize: '13px', color: '#991B1B', lineHeight: '1.5', fontWeight: '600' }}>
+                  <strong style={{ fontWeight: '800' }}>Note:</strong> Check the details thoroughly. Ensure your GPS pin is perfectly placed so the delivery driver can easily navigate to your exact doorstep!
+                </p>
+              </div>
+
+              <button 
+                onClick={saveAddress}
+                disabled={isSaving}
+                style={{ marginTop: '16px', marginBottom: '8px', width: '100%', padding: '18px', backgroundColor: isSaving ? '#10B981' : '#3B82F6', color: '#FFFFFF', border: 'none', borderRadius: '14px', fontSize: '16px', fontWeight: '800', cursor: isSaving ? 'not-allowed' : 'pointer', boxShadow: isSaving ? 'none' : '0 6px 16px rgba(59, 130, 246, 0.25)', transition: 'all 0.3s' }}
+              >
+                {isSaving ? 'Address Saved ✓' : 'Save Address & Proceed'}
+              </button>
+
             </div>
-        </div>
+          </div>
+        </main>
 
         {isSearchOpen && (
             <>
                 <div style={styles.backdrop} onClick={() => setIsSearchOpen(false)}></div>
                 <div style={styles.searchOverlayBottom}>
                     <div style={styles.searchHeader}>
-                        <div style={styles.searchBoxActive}><Search size={20} color="#F84464" /><input autoFocus placeholder="Search landmarks, area..." style={styles.searchInputActive} value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} /><X size={20} color="#333" onClick={() => setIsSearchOpen(false)} /></div>
+                        <div style={styles.searchBoxActive}><Search size={20} color="#3B82F6" /><input autoFocus placeholder="Search landmarks, area..." style={styles.searchInputActive} value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} /><X size={20} color="#374151" onClick={() => setIsSearchOpen(false)} /></div>
                         
                         <div style={styles.historyRowOverlay}>
                             {searchHistory.map((tag, i) => (
@@ -567,10 +730,10 @@ const Consumer_UserLocation = () => {
                         </div>
                     </div>
                     <div style={styles.searchResultsList}>
-                        <div style={styles.searchOptionRow} onClick={() => { handleResetToCurrentLocation(); setIsSearchOpen(false); }}><LocateFixed size={20} color="#F84464"/><div style={styles.gpsUseText}>Use Current GPS</div></div>
+                        <div style={styles.searchOptionRow} onClick={() => { handleResetToCurrentLocation(); setIsSearchOpen(false); }}><LocateFixed size={20} color="#3B82F6"/><div style={styles.gpsUseText}>Use Current GPS</div></div>
                         {searchResults.map(res => (
                             <div key={res.id} style={styles.searchResultRow} onClick={() => { setCoords({ lat: res.lat, lng: res.lng }); addToHistory(res.name); setIsFlying(true); setTimeout(() => setIsFlying(false), 1500); setIsSearchOpen(false); setSearchQuery(''); }}>
-                                <div style={styles.pinCircle}><MapPin size={16} color="#555"/></div><div><div style={styles.nearbyTitle}>{res.name}</div><div style={styles.nearbySub}>{res.sub}</div></div>
+                                <div style={styles.pinCircle}><MapPin size={16} color="#4B5563"/></div><div><div style={styles.nearbyTitle}>{res.name}</div><div style={styles.nearbySub}>{res.sub}</div></div>
                             </div>
                         ))}
                     </div>
@@ -583,38 +746,38 @@ const Consumer_UserLocation = () => {
 
 // --- MASSIVE STYLES OBJECT ---
 const styles = {
-  pageGray: { background: '#F8F9FB', height: '100vh', overflow:'hidden', display: 'flex', flexDirection: 'column', fontFamily:'"Inter", sans-serif' },
+  pageGray: { background: '#F9FAFB', height: '100vh', overflow:'hidden', display: 'flex', flexDirection: 'column', fontFamily:'"Inter", sans-serif' },
   pageWhite: { background: '#FFF', height: '100vh', overflow:'hidden', display: 'flex', flexDirection: 'column', position:'relative' },
-  header: { background:'white', padding:'16px 20px', display:'flex', alignItems:'center', gap:'16px', borderBottom:'1px solid #F2F2F2' },
-  headerTitle: { fontSize:'18px', fontWeight:'900', color:'#111' },
+  header: { background:'white', padding:'16px 20px', display:'flex', alignItems:'center', gap:'16px', borderBottom:'1px solid #E5E7EB' },
+  headerTitle: { fontSize:'18px', fontWeight:'900', color:'#111827' },
   searchSectionWrapper: { padding:'15px 15px 10px 15px' },
-  searchBar: { background:'#fff', border:'1px solid #EDEDED', borderRadius:'16px', padding:'12px 16px', display:'flex', alignItems:'center', gap:'12px', boxShadow:'0 2px 10px rgba(0,0,0,0.03)' },
-  searchInput: { border:'none', outline:'none', fontSize:'15px', color:'#111', width:'100%', fontWeight:'600', background:'transparent' },
+  searchBar: { background:'#fff', border:'1px solid #E5E7EB', borderRadius:'16px', padding:'12px 16px', display:'flex', alignItems:'center', gap:'12px', boxShadow:'0 8px 30px rgba(0,0,0,0.04)' },
+  searchInput: { border:'none', outline:'none', fontSize:'15px', color:'#111827', width:'100%', fontWeight:'600', background:'transparent' },
   historyRow: { display:'flex', gap:'8px', marginTop:'12px', overflowX:'auto', paddingBottom:'4px' },
   historyRowOverlay: { display:'flex', gap:'8px', marginTop:'12px', overflowX:'auto', paddingBottom:'4px' },
   scrollArea: { flex:1, overflowY:'auto' },
-  tagBtn: { background:'#fff', border:'1px solid #F0F0F0', borderRadius:'10px', padding:'6px 12px', fontSize:'11px', fontWeight:'700', color:'#666', display:'flex', alignItems:'center', gap:'6px', whiteSpace:'nowrap' },
+  tagBtn: { background:'#fff', border:'1px solid #E5E7EB', borderRadius:'10px', padding:'6px 12px', fontSize:'11px', fontWeight:'700', color:'#6B7280', display:'flex', alignItems:'center', gap:'6px', whiteSpace:'nowrap' },
   actionsWrapper: { padding: '0 15px' },
-  capsuleCard: { background: 'white', padding: '20px', display: 'flex', alignItems: 'center', gap: '16px', borderRadius: '22px', marginBottom: '14px', boxShadow: '0 4px 15px rgba(0,0,0,0.04)' },
-  iconCircleRed: { width:'24px', height:'24px', display:'flex', alignItems:'center', justifyContent:'center' },
-  actionTitle: { fontSize:'16px', fontWeight:'800', color:'#F84464' },
-  actionSub: { fontSize:'12px', color:'#777', marginTop:'3px', maxWidth:'200px', overflow:'hidden', textOverflow:'ellipsis' }, 
-  sectionTitle: { padding:'24px 20px 12px 20px', fontSize:'10px', fontWeight:'900', color:'#BBB', letterSpacing:'1.2px' },
-  addressCard: { background:'white', padding:'22px', margin:'0 16px 16px 16px', borderRadius:'22px', display:'flex', gap:'16px', boxShadow:'0 4px 15px rgba(0,0,0,0.05)', position:'relative' },
+  capsuleCard: { background: 'white', padding: '20px', display: 'flex', alignItems: 'center', gap: '16px', borderRadius: '24px', marginBottom: '14px', border: '1px solid #E5E7EB', boxShadow: '0 8px 30px rgba(0,0,0,0.04)' },
+  iconCircleBlue: { width:'36px', height:'36px', borderRadius:'12px', background:'#EFF6FF', display:'flex', alignItems:'center', justifyContent:'center' },
+  actionTitle: { fontSize:'16px', fontWeight:'800', color:'#111827' },
+  actionSub: { fontSize:'12px', color:'#6B7280', marginTop:'3px', maxWidth:'200px', overflow:'hidden', textOverflow:'ellipsis' }, 
+  sectionTitle: { padding:'24px 20px 12px 20px', fontSize:'11px', fontWeight:'900', color:'#9CA3AF', letterSpacing:'1.2px' },
+  addressCard: { background:'white', padding:'22px', margin:'0 16px 16px 16px', borderRadius:'24px', display:'flex', gap:'16px', border:'1px solid #E5E7EB', boxShadow:'0 8px 30px rgba(0,0,0,0.04)', position:'relative' },
   cardLeft: { width:'36px' },
-  iconBox: { width:'36px', height:'36px', borderRadius:'12px', background:'#F8F8F8', display:'flex', alignItems:'center', justifyContent:'center' },
+  iconBox: { width:'36px', height:'36px', borderRadius:'12px', background:'#F3F4F6', display:'flex', alignItems:'center', justifyContent:'center' },
   cardRight: { flex:1 },
-  cardType: { fontSize:'16px', fontWeight:'900', color:'#111' },
-  cardAddress: { fontSize:'13px', color:'#888', margin:'6px 0 12px 0', lineHeight:'1.5' },
-  cardPhone: { fontSize:'12px', color:'#111', fontWeight:'700' },
+  cardType: { fontSize:'16px', fontWeight:'900', color:'#111827' },
+  cardAddress: { fontSize:'13px', color:'#6B7280', margin:'6px 0 12px 0', lineHeight:'1.5' },
+  cardPhone: { fontSize:'12px', color:'#111827', fontWeight:'700' },
   menuIcon: { padding:'4px', cursor:'pointer' },
-  popupMenu: { position:'absolute', top:'45px', right:'0', background:'white', boxShadow:'0 10px 30px rgba(0,0,0,0.15)', borderRadius:'14px', zIndex:100, minWidth:'140px', border:'1px solid #F5F5F5', overflow:'hidden' },
-  menuItem: { padding:'15px 18px', fontSize:'13px', fontWeight:'800', cursor:'pointer', display:'flex', gap:'10px', alignItems:'center', color:'#333' },
-  nearbyRow: { background:'white', padding:'18px 20px', display:'flex', alignItems:'center', gap:'16px', borderBottom:'1px solid #F9F9F9' },
-  pinCircle: { width:'36px', height:'36px', borderRadius:'50%', background:'#F5F5F5', display:'flex', alignItems:'center', justifyContent:'center' },
-  nearbyTitle: { fontSize:'14px', fontWeight:'800', color:'#111' },
-  nearbySub: { fontSize:'12px', color:'#999' },
-  searchResultRow: { background:'white', padding:'18px 24px', display:'flex', alignItems:'center', gap:'16px', borderBottom:'1px solid #F5F5F5' },
+  popupMenu: { position:'absolute', top:'45px', right:'0', background:'white', boxShadow:'0 10px 30px rgba(0,0,0,0.15)', borderRadius:'14px', zIndex:100, minWidth:'140px', border:'1px solid #E5E7EB', overflow:'hidden' },
+  menuItem: { padding:'15px 18px', fontSize:'13px', fontWeight:'800', cursor:'pointer', display:'flex', gap:'10px', alignItems:'center', color:'#374151' },
+  nearbyRow: { background:'white', padding:'18px 20px', display:'flex', alignItems:'center', gap:'16px', borderBottom:'1px solid #E5E7EB' },
+  pinCircle: { width:'36px', height:'36px', borderRadius:'50%', background:'#F3F4F6', display:'flex', alignItems:'center', justifyContent:'center' },
+  nearbyTitle: { fontSize:'14px', fontWeight:'800', color:'#111827' },
+  nearbySub: { fontSize:'12px', color:'#6B7280' },
+  searchResultRow: { background:'white', padding:'18px 24px', display:'flex', alignItems:'center', gap:'16px', borderBottom:'1px solid #E5E7EB' },
   topSection: { width:'100%', display:'flex', flexDirection:'column', transition:'all 0.5s cubic-bezier(0.2, 1, 0.3, 1)', flexShrink:0, position:'relative', overflow:'hidden' },
   headerGlass: { background: '#fff', padding:'16px 20px 12px 20px', flexShrink: 0, zIndex:10, borderBottom:'1px solid #F2F2F2' },
   mapHeaderTop: { display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'14px' },
@@ -665,11 +828,11 @@ const styles = {
   backdrop: { position:'fixed', top:0, left:0, width:'100%', height:'100%', background:'rgba(0,0,0,0.6)', zIndex:1999 },
   searchOverlayBottom: { position:'fixed', bottom:0, left:0, width:'100%', height:'94%', background:'white', zIndex:2000, borderTopLeftRadius:'36px', borderTopRightRadius:'36px', display:'flex', flexDirection:'column', overflow:'hidden' },
   searchHeader: { padding:'24px', borderBottom:'1px solid #F2F2F2' },
-  searchBoxActive: { display:'flex', alignItems:'center', gap:'14px', border:'2.5px solid #F84464', borderRadius:'20px', padding:'16px 20px' }, 
+  searchBoxActive: { display:'flex', alignItems:'center', gap:'14px', border:'2.5px solid #3B82F6', borderRadius:'20px', padding:'16px 20px' }, 
   searchInputActive: { flex:1, border:'none', outline:'none', fontSize:'16px', fontWeight:'700' }, 
   searchResultsList: { flex:1, overflowY:'auto' },
-  searchOptionRow: { display:'flex', alignItems:'center', gap:'16px', padding:'20px 24px', borderBottom:'1px solid #F9F9F9' },
-  gpsUseText: { fontWeight:'800', color:'#F84464' }
+  searchOptionRow: { display:'flex', alignItems:'center', gap:'16px', padding:'20px 24px', borderBottom:'1px solid #E5E7EB' },
+  gpsUseText: { fontWeight:'800', color:'#3B82F6' }
 };
 
 export default Consumer_UserLocation;
