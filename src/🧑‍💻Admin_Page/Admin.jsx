@@ -531,7 +531,7 @@ function Admin() {
                           placeholder="Search by Seller ID or Shop/Company/Owner Name..." 
                           value={approvedSearchQuery}
                           onChange={(e) => setApprovedSearchQuery(e.target.value)}
-                          style={{ width: '100%', padding: '14px 16px 14px 44px', borderRadius: '12px', border: '1px solid #cbd5e1', fontSize: '15px', outline: 'none', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}
+                          style={{ width: '100%', padding: '14px 16px 14px 44px', borderRadius: '12px', border: '1px solid #334155', backgroundColor: '#0f172a', color: '#f8fafc', fontSize: '15px', outline: 'none', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}
                       />
                   </div>
                   
