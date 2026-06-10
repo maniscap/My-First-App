@@ -197,6 +197,7 @@ export default function FarmFresh_ListingForm() {
             const listingData = {
                 sellerId: editData?.sellerId || localStorage.getItem('seller_app_id'),
                 userId: user.uid,
+                  accountType: (editData?.sellerId || localStorage.getItem('seller_app_id'))?.startsWith('ORG') ? 'organisation' : 'individual',
                 sellerName: editData?.sellerName || user.displayName || 'Unknown Seller',
                 shopName: editData?.shopName || localStorage.getItem('locationTitle') || 'My Shop',
                 status: status,
