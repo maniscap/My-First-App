@@ -999,6 +999,7 @@ export default function Seller_StorefrontSetup() {
       await setDoc(docRef, {
         userId: auth.currentUser ? auth.currentUser.uid : '',
           sellerId: sellerId,
+          accountType: accountType,
           storefrontDetails: detailsForm,
         storefrontLocation: locationForm,
         storeOperations: operationsForm,
