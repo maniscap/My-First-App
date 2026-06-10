@@ -114,7 +114,7 @@ export default function Seller_StorefrontSetup() {
             primaryPhone: appData.phone || '',
             emergencyPhone: appData.emergencyPhone || '',
             email: appData.email || '',
-            ...(appData.accountType === 'organisation' ? { gstRegistrationId: appData.gstNumber || '' } : { aadharRegistrationId: appData.aadharNumber || '' }),
+            registrationId: appData.accountType === 'organisation' ? `GST: ${appData.gstNumber || ''}` : `AADHAR: ${appData.aadharNumber || ''}`,
             sellerId: appId || ''
           };
           setDetailsForm(newDetails);
