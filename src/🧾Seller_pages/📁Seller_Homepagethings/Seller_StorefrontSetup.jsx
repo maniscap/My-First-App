@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Store, Building2, User, AlertCircle, ShieldCheck, Info, MapPin, Truck, ChevronRight } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { db, auth } from '../../firebase';
-import { doc, getDoc, collection, query, where, getDocs, updateDoc } from 'firebase/firestore';
+import { doc, getDoc, collection, query, where, getDocs, updateDoc, setDoc } from 'firebase/firestore';
 import { onAuthStateChanged } from 'firebase/auth';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
@@ -16,10 +16,11 @@ export default function Seller_StorefrontSetup() {
   const [sellerId, setSellerId] = useState('');
   const [ownerName, setOwnerName] = useState('');
   const [fullAppData, setFullAppData] = useState(null);
+  const [detailsForm, setDetailsForm] = useState(null);
 
   // Location Form State
   const [locationForm, setLocationForm] = useState({
-    houseNumber: '', landmark: '', village: '', mandal: '', nearerCity: '', district: '', state: 'Andhra Pradesh', pincode: '', lat: '', lng: '', serviceRadius: '20km'
+    houseNumber: '', landmark: '', village: '', mandal: '', nearerCity: '', district: '', state: '', pincode: '', lat: '', lng: '', serviceRadius: ''
   });
   const [isSavingLocation, setIsSavingLocation] = useState(false);
   const [isDetecting, setIsDetecting] = useState(false);
@@ -39,6 +40,23 @@ export default function Seller_StorefrontSetup() {
     minOrderValue: ''
   });
   const [isSavingOperations, setIsSavingOperations] = useState(false);
+  const [showUnsavedModal, setShowUnsavedModal] = useState(false);
+  const [savedLocationForm, setSavedLocationForm] = useState(null);
+  const [savedOperationsForm, setSavedOperationsForm] = useState(null);
+  const [isSavedToCloud, setIsSavedToCloud] = useState(false);
+  const [isSavingToCloud, setIsSavingToCloud] = useState(false);
+
+
+  const allLocKeys = ['lat', 'lng', 'houseNumber', 'landmark', 'village', 'nearerCity', 'mandal', 'district', 'pincode', 'state', 'serviceRadius'];
+  const isLocationDirty = savedLocationForm && allLocKeys.some(key => locationForm[key] !== savedLocationForm[key]);
+
+  const allOpKeys = ['openTime', 'closeTime', 'customMessage', 'deliveryMode', 'deliveryRadius', 'deliveryFee', 'freeDeliveryThreshold', 'minOrderValue'];
+  const isOperationsDirty = savedOperationsForm && (
+    allOpKeys.some(key => operationsForm[key] !== savedOperationsForm[key]) ||
+    JSON.stringify(operationsForm.closedDays || []) !== JSON.stringify(savedOperationsForm.closedDays || [])
+  );
+
+
 
   useEffect(() => {
     // 1. Try local storage first to show data immediately
@@ -85,18 +103,58 @@ export default function Seller_StorefrontSetup() {
           setFullAppData(appData);
           setAppStatus(appData.status);
 
-          // Pre-fill location form from existing storefront data OR fallback to blank
-          if (appData.storefrontLocation) {
-            setLocationForm(appData.storefrontLocation);
-          }
-          
-          if (appData.storeOperations) {
-            setOperationsForm(appData.storeOperations);
-          }
-          
           setAccountType(appData.accountType);
           const nameToUse = appData.accountType === 'organisation' ? appData.companyName : (appData.shopName || appData.fullName);
           const ownerToUse = appData.ownerName || appData.fullName;
+          
+          const newDetails = {
+            accountType: appData.accountType || '',
+            sellerName: nameToUse || '',
+            ownerName: ownerToUse || '',
+            primaryPhone: appData.phone || '',
+            emergencyPhone: appData.emergencyPhone || '',
+            email: appData.email || '',
+            registrationId: appData.accountType === 'organisation' ? (appData.gstNumber || '') : (appData.aadharNumber || ''),
+            sellerId: appId || ''
+          };
+          setDetailsForm(newDetails);
+          localStorage.setItem('seller_details_form', JSON.stringify(newDetails));
+          
+          const collectionName = appData.accountType === 'organisation' ? 'organisation_storefront' : 'individual_storefront';
+          const sfRef = doc(db, collectionName, appId);
+          const sfSnap = await getDoc(sfRef);
+          
+          let storefrontData = null;
+          if (sfSnap.exists()) {
+             storefrontData = sfSnap.data();
+             setIsSavedToCloud(true);
+          }
+
+          if (storefrontData && storefrontData.storefrontLocation) {
+            setLocationForm(storefrontData.storefrontLocation);
+            setSavedLocationForm(storefrontData.storefrontLocation);
+          } else {
+            const localLoc = localStorage.getItem('seller_location_form');
+            if (localLoc) {
+               setLocationForm(JSON.parse(localLoc));
+               setSavedLocationForm(JSON.parse(localLoc));
+            } else {
+               setSavedLocationForm({ houseNumber: '', landmark: '', village: '', mandal: '', nearerCity: '', district: '', state: '', pincode: '', lat: '', lng: '', serviceRadius: '' });
+            }
+          }
+          
+          if (storefrontData && storefrontData.storeOperations) {
+            setOperationsForm(storefrontData.storeOperations);
+            setSavedOperationsForm(storefrontData.storeOperations);
+          } else {
+            const localOp = localStorage.getItem('seller_operations_form');
+            if (localOp) {
+              setOperationsForm(JSON.parse(localOp));
+              setSavedOperationsForm(JSON.parse(localOp));
+            } else {
+              setSavedOperationsForm({ openTime: '', closeTime: '', closedDays: [], customMessage: '', deliveryMode: 'home_delivery', deliveryRadius: '', deliveryFee: '', freeDeliveryThreshold: '', minOrderValue: '' });
+            }
+          }
           
           setSellerName(nameToUse);
           setSellerId(appId);
@@ -116,6 +174,53 @@ export default function Seller_StorefrontSetup() {
 
     return () => unsubscribe();
   }, []);
+
+  const formatTime = (timeStr) => {
+    if (!timeStr) return '';
+    let str = timeStr.toString().trim().toLowerCase();
+    let isPM = str.includes('pm') || str.includes('p') || str.includes('afternoon') || str.includes('night');
+    str = str.replace(/[^\d:]/g, '');
+    if (!str) return timeStr;
+    
+    let hours = 0, minutes = 0;
+    if (str.includes(':')) {
+      let parts = str.split(':');
+      hours = parseInt(parts[0]) || 0;
+      minutes = parseInt(parts[1]) || 0;
+    } else {
+      let val = parseInt(str) || 0;
+      if (val > 24) { 
+         hours = Math.floor(val / 100);
+         minutes = val % 100;
+      } else {
+         hours = val;
+      }
+    }
+  
+    if (hours > 12 && hours < 24) {
+      hours -= 12;
+      isPM = true;
+    } else if (hours === 12) {
+      isPM = true;
+    } else if (hours === 24 || hours === 0) {
+      hours = 12;
+      isPM = false;
+    } else if (hours < 12 && !isPM && str.includes('p')) {
+      isPM = true;
+    }
+  
+    let hStr = hours.toString().padStart(2, '0');
+    let mStr = minutes.toString().padStart(2, '0');
+    return `${hStr}:${mStr} ${isPM ? 'PM' : 'AM'}`;
+  };
+
+  const formatRadius = (val) => {
+    if (!val) return '';
+    let str = val.toString().toLowerCase().replace(/[^\d]/g, '');
+    if (!str) return val;
+    return `${str} km`;
+  };
+
 
   if (appStatus === 'loading') {
     return (
@@ -384,6 +489,14 @@ export default function Seller_StorefrontSetup() {
     };
     const handleSaveLocation = async () => {
       setAttemptedSubmit(true);
+      
+      // Auto-format before validation
+      let formattedLoc = { ...locationForm };
+      if (formattedLoc.serviceRadius) formattedLoc.serviceRadius = formatRadius(formattedLoc.serviceRadius);
+      setLocationForm(formattedLoc);
+      
+      // Strict validation blocks any empty fields
+
       const reqFields = ['lat', 'lng', 'houseNumber', 'landmark', 'village', 'nearerCity', 'mandal', 'district', 'pincode', 'state', 'serviceRadius'];
       for (const field of reqFields) {
         if (!locationForm[field]) {
@@ -398,13 +511,12 @@ export default function Seller_StorefrontSetup() {
       }
       setIsSavingLocation(true);
       try {
-        const appId = localStorage.getItem('seller_app_id');
-        await updateDoc(doc(db, 'seller_applications', appId), {
-          storefrontLocation: locationForm
-        });
+        localStorage.setItem('seller_location_form', JSON.stringify(formattedLoc));
+          setSavedLocationForm(formattedLoc);
+        setIsSavedToCloud(false);
         // Update local state so it reflects instantly
         setFullAppData(prev => ({ ...prev, storefrontLocation: locationForm }));
-        alert("Location details saved successfully!");
+        alert("Location details saved locally!");
         setExpandedCard(null); // Go back to main menu
       } catch (e) {
         console.error(e);
@@ -413,10 +525,18 @@ export default function Seller_StorefrontSetup() {
       setIsSavingLocation(false);
     };
 
+    const handleBack = () => {
+      if (isLocationDirty) {
+        setShowUnsavedModal(true);
+      } else {
+        setExpandedCard(null);
+      }
+    };
+
     return (
       <div style={styles.container}>
         <header style={styles.header}>
-          <button style={styles.iconButton} onClick={() => setExpandedCard(null)}>
+          <button style={styles.iconButton} onClick={handleBack}>
             <ArrowLeft size={24} color="#FFFFFF" />
           </button>
           <div style={styles.headerTitleContainer}>
@@ -555,6 +675,36 @@ export default function Seller_StorefrontSetup() {
 
           </div>
         </main>
+        {showUnsavedModal && (
+          <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+            <div style={{ backgroundColor: '#FFF', borderRadius: '16px', padding: '24px', width: '100%', maxWidth: '340px', boxShadow: '0 10px 25px rgba(0,0,0,0.2)' }}>
+              <h3 style={{ margin: '0 0 12px 0', fontSize: '18px', fontWeight: '800', color: '#111827' }}>Unsaved Changes</h3>
+              <p style={{ margin: '0 0 24px 0', fontSize: '14px', color: '#4B5563', lineHeight: '1.5' }}>
+                You have unsaved Location changes. What would you like to do?
+              </p>
+              <div style={{ display: 'flex', gap: '12px', flexDirection: 'column' }}>
+                <button 
+                  onClick={() => { setShowUnsavedModal(false); handleSaveLocation(); }}
+                  style={{ padding: '14px', backgroundColor: '#1E3A8A', color: '#FFF', border: 'none', borderRadius: '10px', fontSize: '15px', fontWeight: '800', cursor: 'pointer' }}
+                >
+                  Save & Exit
+                </button>
+                <button 
+                  onClick={() => { setShowUnsavedModal(false); setLocationForm(savedLocationForm); setExpandedCard(null); }}
+                  style={{ padding: '14px', backgroundColor: '#FEF2F2', color: '#DC2626', border: '1px solid #FECACA', borderRadius: '10px', fontSize: '15px', fontWeight: '800', cursor: 'pointer' }}
+                >
+                  Discard
+                </button>
+                <button 
+                  onClick={() => setShowUnsavedModal(false)}
+                  style={{ padding: '10px', backgroundColor: 'transparent', color: '#6B7280', border: 'none', fontSize: '14px', fontWeight: '600', cursor: 'pointer', marginTop: '4px' }}
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
@@ -574,6 +724,12 @@ export default function Seller_StorefrontSetup() {
     };
 
     const handleSaveOperations = async () => {
+      // Auto-format before validation
+      let formattedOp = { ...operationsForm };
+      if (operationsForm.openTime) operationsForm.openTime = formatTime(operationsForm.openTime);
+      if (operationsForm.closeTime) operationsForm.closeTime = formatTime(operationsForm.closeTime);
+      setOperationsForm(formattedOp);
+
       // --- STRICT VALIDATION ---
       if (!operationsForm.openTime || !operationsForm.closeTime) {
         alert("Please specify your Shop Opening and Closing times.");
@@ -588,13 +744,10 @@ export default function Seller_StorefrontSetup() {
 
       setIsSavingOperations(true);
       try {
-        const collectionName = accountType === 'organisation' ? 'seller_organisations' : 'seller_individuals';
-        const docRef = doc(db, collectionName, sellerId);
-        await updateDoc(docRef, {
-          storeOperations: operationsForm,
-          setupStepOperationsCompleted: true
-        });
-        alert("Operations & Logistics saved successfully!");
+        localStorage.setItem('seller_operations_form', JSON.stringify(formattedOp));
+        setSavedOperationsForm(formattedOp);
+        setIsSavedToCloud(false);
+        alert("Operations & Logistics saved locally!");
         setExpandedCard(null); // Return to main setup menu
       } catch (error) {
         console.error("Error saving operations", error);
@@ -604,10 +757,18 @@ export default function Seller_StorefrontSetup() {
       }
     };
 
+    const handleBack = () => {
+      if (isOperationsDirty) {
+        setShowUnsavedModal(true);
+      } else {
+        setExpandedCard(null);
+      }
+    };
+
     return (
       <div style={styles.container}>
         <header style={styles.header}>
-          <button style={styles.iconButton} onClick={() => setExpandedCard(null)}>
+          <button style={styles.iconButton} onClick={handleBack}>
             <ArrowLeft size={24} color="#FFFFFF" />
           </button>
           <h1 style={styles.headerTitle}>Operating Hours</h1>
@@ -739,7 +900,7 @@ export default function Seller_StorefrontSetup() {
 
                   <div style={{ display: 'flex', gap: '16px' }}>
                     <div style={{ flex: 1 }}>
-                      <label style={{ display: 'block', fontSize: '13px', fontWeight: '800', color: '#374151', marginBottom: '8px' }}>Delivery Fee (₹)</label>
+                      <label style={{ display: 'block', fontSize: '12px', fontWeight: '800', color: '#374151', marginBottom: '8px' }}>Delivery Fee per km (₹) </label>
                       <input 
                         type="text" 
                         inputMode="numeric"
@@ -794,23 +955,79 @@ export default function Seller_StorefrontSetup() {
           </button>
 
         </main>
+        {showUnsavedModal && (
+          <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+            <div style={{ backgroundColor: '#FFF', borderRadius: '16px', padding: '24px', width: '100%', maxWidth: '340px', boxShadow: '0 10px 25px rgba(0,0,0,0.2)' }}>
+              <h3 style={{ margin: '0 0 12px 0', fontSize: '18px', fontWeight: '800', color: '#111827' }}>Unsaved Changes</h3>
+              <p style={{ margin: '0 0 24px 0', fontSize: '14px', color: '#4B5563', lineHeight: '1.5' }}>
+                You have unsaved Logistics changes. What would you like to do?
+              </p>
+              <div style={{ display: 'flex', gap: '12px', flexDirection: 'column' }}>
+                <button 
+                  onClick={() => { setShowUnsavedModal(false); handleSaveOperations(); }}
+                  style={{ padding: '14px', backgroundColor: '#1E3A8A', color: '#FFF', border: 'none', borderRadius: '10px', fontSize: '15px', fontWeight: '800', cursor: 'pointer' }}
+                >
+                  Save & Exit
+                </button>
+                <button 
+                  onClick={() => { setShowUnsavedModal(false); setOperationsForm(savedOperationsForm); setExpandedCard(null); }}
+                  style={{ padding: '14px', backgroundColor: '#FEF2F2', color: '#DC2626', border: '1px solid #FECACA', borderRadius: '10px', fontSize: '15px', fontWeight: '800', cursor: 'pointer' }}
+                >
+                  Discard
+                </button>
+                <button 
+                  onClick={() => setShowUnsavedModal(false)}
+                  style={{ padding: '10px', backgroundColor: 'transparent', color: '#6B7280', border: 'none', fontSize: '14px', fontWeight: '600', cursor: 'pointer', marginTop: '4px' }}
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
 
   // --- Progress Calculation ---
+  
+  const handleSaveToCloud = async () => {
+    setIsSavingToCloud(true);
+    try {
+      const collectionName = accountType === 'organisation' ? 'organisation_storefront' : 'individual_storefront';
+      const docRef = doc(db, collectionName, sellerId);
+      await setDoc(docRef, {
+        storefrontDetails: detailsForm,
+        storefrontLocation: locationForm,
+        storeOperations: operationsForm,
+        setupStepOperationsCompleted: true
+      }, { merge: true });
+      setIsSavedToCloud(true);
+      alert("All details successfully saved to the cloud!");
+    } catch (e) {
+      console.error(e);
+      alert("Failed to save to cloud.");
+    }
+    setIsSavingToCloud(false);
+  };
+
+
   const detailsProgress = 100; // Registration already captured basic details
 
-  const locFields = ['lat', 'lng', 'houseNumber', 'landmark', 'village', 'mandal', 'district', 'pincode'];
-  const filledLoc = locFields.filter(f => locationForm[f] && locationForm[f].toString().trim() !== '').length;
-  const locationProgress = Math.round((filledLoc / locFields.length) * 100);
+  // Location Progress - Only base it on required fields (exclude lat/lng from the strict 100% requirement)
+  const requiredLocFields = ['houseNumber', 'landmark', 'village', 'nearerCity', 'mandal', 'district', 'pincode', 'state', 'serviceRadius'];
+  const filledLoc = requiredLocFields.filter(f => locationForm[f] && locationForm[f].toString().trim() !== '').length;
+  let locationProgress = Math.round((filledLoc / requiredLocFields.length) * 100);
+  if (isLocationDirty && locationProgress > 80) locationProgress = 80; // Cap at 80% if not saved locally
 
+  // Operations Progress
   const opFields = ['openTime', 'closeTime'];
   if (operationsForm.deliveryMode === 'home_delivery') {
     opFields.push('deliveryRadius', 'deliveryFee', 'minOrderValue');
   }
   const filledOp = opFields.filter(f => operationsForm[f] && operationsForm[f].toString().trim() !== '').length;
-  const operationsProgress = Math.round((filledOp / opFields.length) * 100);
+  let operationsProgress = Math.round((filledOp / opFields.length) * 100);
+  if (isOperationsDirty && operationsProgress > 80) operationsProgress = 80; // Cap at 80% if not saved locally
 
   const overallProgress = Math.round((detailsProgress + locationProgress + operationsProgress) / 3);
 
@@ -818,7 +1035,7 @@ export default function Seller_StorefrontSetup() {
     <div style={styles.container}>
       {/* Top Header */}
       <header style={styles.header}>
-        <button style={styles.iconButton} onClick={() => navigate('/Seller_HomePage')}>
+        <button style={styles.iconButton} onClick={() => navigate(-1)}>
           <ArrowLeft size={24} color="#FFFFFF" />
         </button>
         <div style={styles.headerTitleContainer}>
@@ -836,6 +1053,12 @@ export default function Seller_StorefrontSetup() {
           transition={{ duration: 0.5 }}
           style={styles.contentOutline}
         >
+          
+          {isSavedToCloud && (
+            <div style={{ backgroundColor: '#D1FAE5', color: '#065F46', padding: '14px', borderRadius: '16px', marginBottom: '24px', textAlign: 'center', fontWeight: '800', border: '1px solid #10B981', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', boxShadow: '0 4px 12px rgba(16, 185, 129, 0.15)' }}>
+              <ShieldCheck size={24} /> SAVED TO CLOUD - SYNCED
+            </div>
+          )}
           <div style={styles.stepContainer}>
             {/* The Verified Profile ID Card */}
             <div style={{ display: 'flex', justifyContent: 'center', margin: '0 0 24px 0' }}>
@@ -991,6 +1214,40 @@ export default function Seller_StorefrontSetup() {
                 <ChevronRight size={20} color="#D1D5DB" strokeWidth={3} style={{ flexShrink: 0 }} />
               </div>
 
+            </div>
+
+            
+            {/* Master Save Button */}
+            <div style={{ marginTop: '32px' }}>
+              
+              <button 
+                onClick={handleSaveToCloud}
+                disabled={overallProgress < 100 || isSavingToCloud || isSavedToCloud || isLocationDirty || isOperationsDirty}
+                style={{ 
+                  width: '100%', 
+                  padding: '20px', 
+                  backgroundColor: (overallProgress === 100 && !isSavedToCloud && !isLocationDirty && !isOperationsDirty) ? '#1E3A8A' : '#9CA3AF', 
+                  color: '#FFFFFF', 
+                  border: 'none', 
+                  borderRadius: '16px', 
+                  fontSize: '18px', 
+                  fontWeight: '800', 
+                  cursor: (overallProgress === 100 && !isSavedToCloud && !isLocationDirty && !isOperationsDirty) ? 'pointer' : 'not-allowed', 
+                  boxShadow: (overallProgress === 100 && !isSavedToCloud && !isLocationDirty && !isOperationsDirty) ? '0 8px 24px rgba(30, 58, 138, 0.3)' : 'none', 
+                  transition: 'all 0.2s ease',
+                  display: 'flex',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  gap: '10px'
+                }}
+              >
+                {isSavingToCloud ? 'Saving to Cloud...' : (isSavedToCloud ? 'Up to date in Cloud' : 'Save All to Cloud')}
+              </button>
+              {overallProgress < 100 ? (
+                <p style={{ textAlign: 'center', color: '#EF4444', fontSize: '13px', marginTop: '12px', fontWeight: '800' }}>⚠️ Please complete all 3 sections to 100%.</p>
+              ) : (isLocationDirty || isOperationsDirty) ? (
+                <p style={{ textAlign: 'center', color: '#F59E0B', fontSize: '13px', marginTop: '12px', fontWeight: '800' }}>⚠️ You have unsaved changes! Please enter the cards and Save them internally first.</p>
+              ) : null}
             </div>
 
             {/* Professional Footer for spacing and premium feel */}
