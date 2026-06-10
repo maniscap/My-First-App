@@ -114,7 +114,7 @@ export default function Seller_StorefrontSetup() {
             primaryPhone: appData.phone || '',
             emergencyPhone: appData.emergencyPhone || '',
             email: appData.email || '',
-            registrationId: appData.accountType === 'organisation' ? (appData.gstNumber || '') : (appData.aadharNumber || ''),
+            ...(appData.accountType === 'organisation' ? { gstRegistrationId: appData.gstNumber || '' } : { aadharRegistrationId: appData.aadharNumber || '' }),
             sellerId: appId || ''
           };
           setDetailsForm(newDetails);
@@ -997,7 +997,9 @@ export default function Seller_StorefrontSetup() {
       const collectionName = accountType === 'organisation' ? 'organisation_storefront' : 'individual_storefront';
       const docRef = doc(db, collectionName, sellerId);
       await setDoc(docRef, {
-        storefrontDetails: detailsForm,
+        userId: auth.currentUser ? auth.currentUser.uid : '',
+          sellerId: sellerId,
+          storefrontDetails: detailsForm,
         storefrontLocation: locationForm,
         storeOperations: operationsForm,
         setupStepOperationsCompleted: true

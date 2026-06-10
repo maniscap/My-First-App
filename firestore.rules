@@ -3,54 +3,90 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     // --- 1. PROFILES ---
-    // Anyone can read profiles, but only the owner can write to them
+    // Consumer Profiles: Only the logged-in consumer can view or edit their private data.
     match /consumer_profiles/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Seller Profiles: Publicly visible to consumers, but strictly only editable by the specific seller.
+    match /seller_profiles/{userId} {
       allow read: if true;
       allow write: if request.auth != null && request.auth.uid == userId;
     }
-    match /seller_profiles/{document=**} {
-      allow read: if true;
-      allow write: if true;
-    }
 
     // --- STOREFRONTS ---
-    match /organisation_storefront/{document=**} {
-      allow read, write: if true;
+    // Storefront document IDs are random (SIN-... or ORG-...). We verify ownership via the internal userId field.
+    match /organisation_storefront/{sellerId} {
+      allow read: if true;
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      allow update: if request.auth != null && resource.data.userId == request.auth.uid && request.resource.data.userId == request.auth.uid;
+      allow delete: if request.auth != null && resource.data.userId == request.auth.uid;
     }
-    match /individual_storefront/{document=**} {
-      allow read, write: if true;
+    match /individual_storefront/{sellerId} {
+      allow read: if true;
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      allow update: if request.auth != null && resource.data.userId == request.auth.uid && request.resource.data.userId == request.auth.uid;
+      allow delete: if request.auth != null && resource.data.userId == request.auth.uid;
     }
     
     // --- 2. SELLER APPROVALS & ADMIN ---
-    match /seller_applications/{document=**} {
-      allow read, write: if true;
+    // Application document IDs are random (SIN-... or ORG-...). We verify ownership via the internal userId field.
+    match /seller_applications/{sellerId} {
+      allow read: if request.auth != null && resource.data.userId == request.auth.uid;
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      allow update: if request.auth != null && resource.data.userId == request.auth.uid && request.resource.data.userId == request.auth.uid;
+      allow delete: if request.auth != null && resource.data.userId == request.auth.uid;
     }
+    
+    // Market Rates: Public to read. Only an Admin can update.
     match /market_rates/{document=**} {
-      allow read, write: if true;
+      allow read: if true;
+      allow write: if false; 
     }
 
     // --- 3. THE 6 SELLER LISTINGS ---
-    // Anyone can view listings, but sellers will write to them
+    // Public to view. When creating or updating a listing, the attached 'userId' MUST match the logged-in user's UID.
     match /listings_farm_fresh/{document=**} {
-      allow read, write: if true;
+      allow read: if true;
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      allow update: if request.auth != null && resource.data.userId == request.auth.uid && request.resource.data.userId == request.auth.uid;
+      allow delete: if request.auth != null && resource.data.userId == request.auth.uid;
     }
     match /listings_machinery/{document=**} {
-      allow read, write: if true;
+      allow read: if true;
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      allow update: if request.auth != null && resource.data.userId == request.auth.uid && request.resource.data.userId == request.auth.uid;
+      allow delete: if request.auth != null && resource.data.userId == request.auth.uid;
     }
     match /listings_workers/{document=**} {
-      allow read, write: if true;
+      allow read: if true;
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      allow update: if request.auth != null && resource.data.userId == request.auth.uid && request.resource.data.userId == request.auth.uid;
+      allow delete: if request.auth != null && resource.data.userId == request.auth.uid;
     }
     match /listings_business/{document=**} {
-      allow read, write: if true;
+      allow read: if true;
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      allow update: if request.auth != null && resource.data.userId == request.auth.uid && request.resource.data.userId == request.auth.uid;
+      allow delete: if request.auth != null && resource.data.userId == request.auth.uid;
     }
     match /listings_freelancing/{document=**} {
-      allow read, write: if true;
+      allow read: if true;
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      allow update: if request.auth != null && resource.data.userId == request.auth.uid && request.resource.data.userId == request.auth.uid;
+      allow delete: if request.auth != null && resource.data.userId == request.auth.uid;
     }
     match /listings_local_goods/{document=**} {
-      allow read, write: if true;
+      allow read: if true;
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      allow update: if request.auth != null && resource.data.userId == request.auth.uid && request.resource.data.userId == request.auth.uid;
+      allow delete: if request.auth != null && resource.data.userId == request.auth.uid;
     }
     match /seller_listings/{document=**} {
-      allow read, write: if true;
+      allow read: if true;
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      allow update: if request.auth != null && resource.data.userId == request.auth.uid && request.resource.data.userId == request.auth.uid;
+      allow delete: if request.auth != null && resource.data.userId == request.auth.uid;
     }
   }
 }
