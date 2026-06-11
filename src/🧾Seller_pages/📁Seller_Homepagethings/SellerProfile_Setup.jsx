@@ -106,6 +106,8 @@ function SellerProfile_Setup() {
                             localStorage.setItem('seller_app_deleted_reason', data.deletionReason || 'Violation of terms');
                             localStorage.setItem('seller_app_deleted_msg', data.deletionMessage || '');
                             localStorage.setItem('seller_app_status', 'permanently_deleted');
+                            localStorage.removeItem('seller_name');
+                            localStorage.removeItem('seller_account_type');
                             await deleteDoc(doc(db, 'seller_applications', currentIndId));
                             window.location.href = '/seller-home'; // Let the home page render the massive red screen
                             return;
@@ -114,6 +116,8 @@ function SellerProfile_Setup() {
                             setCachedIndReject(data.rejectionReason || "Does not meet requirements");
                             await deleteDoc(doc(db, 'seller_applications', currentIndId));
                             localStorage.removeItem('seller_individual_app_id');
+                            localStorage.removeItem('seller_name');
+                            localStorage.removeItem('seller_account_type');
                             if(localStorage.getItem('seller_app_id') === currentIndId) localStorage.removeItem('seller_app_id');
                         } else {
                             setIndApp(data);
@@ -139,6 +143,8 @@ function SellerProfile_Setup() {
                             localStorage.setItem('seller_app_deleted_reason', data.deletionReason || 'Violation of terms');
                             localStorage.setItem('seller_app_deleted_msg', data.deletionMessage || '');
                             localStorage.setItem('seller_app_status', 'permanently_deleted');
+                            localStorage.removeItem('seller_name');
+                            localStorage.removeItem('seller_account_type');
                             await deleteDoc(doc(db, 'seller_applications', currentOrgId));
                             window.location.href = '/seller-home'; // Let the home page render the massive red screen
                             return;
@@ -147,6 +153,8 @@ function SellerProfile_Setup() {
                             setCachedOrgReject(data.rejectionReason || "Does not meet requirements");
                             await deleteDoc(doc(db, 'seller_applications', currentOrgId));
                             localStorage.removeItem('seller_organisation_app_id');
+                            localStorage.removeItem('seller_name');
+                            localStorage.removeItem('seller_account_type');
                             if(localStorage.getItem('seller_app_id') === currentOrgId) localStorage.removeItem('seller_app_id');
                         } else {
                             setOrgApp(data);

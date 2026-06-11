@@ -54,6 +54,9 @@ function Seller_HomePage() {
                             } else {
                                 setAppStatus('none');
                             }
+                            localStorage.removeItem('seller_name');
+                            localStorage.removeItem('seller_app_id');
+                            localStorage.removeItem('seller_account_type');
                             return;
                         }
                     } catch (error) {
@@ -74,11 +77,13 @@ function Seller_HomePage() {
                                 localStorage.setItem('seller_app_deleted_reason', appData.deletionReason || 'Violation of terms');
                                 localStorage.setItem('seller_app_deleted_msg', appData.deletionMessage || '');
                                 
-                                // Actually delete the document from firebase now that we received it
                                 deleteDoc(docRef).catch(e => console.error(e));
                                 
                                 setAppStatus('permanently_deleted');
                                 localStorage.setItem('seller_app_status', 'permanently_deleted');
+                                localStorage.removeItem('seller_name');
+                                localStorage.removeItem('seller_app_id');
+                                localStorage.removeItem('seller_account_type');
                                 return; // Stop processing this snapshot
                             }
 

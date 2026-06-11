@@ -14,6 +14,7 @@ function Seller_Profile() {
     const [sellerName, setSellerName] = useState(localStorage.getItem('seller_name') || 'Loading...');
     const [accountType, setAccountType] = useState(localStorage.getItem('seller_account_type') || 'single');
     const sellerId = localStorage.getItem('seller_app_id') || 'Unknown_ID';
+    const [appStatus, setAppStatus] = useState(localStorage.getItem('seller_app_status') || 'loading');
 
     useEffect(() => {
         let unsub = () => {};
@@ -27,9 +28,13 @@ function Seller_Profile() {
                             const nameToUse = data.accountType === 'organisation' ? data.companyName : (data.shopName || data.fullName);
                             setSellerName(nameToUse || 'Shop Name');
                             setAccountType(data.accountType || 'single');
+                            setAppStatus(data.status || 'loading');
                             
                             localStorage.setItem('seller_name', nameToUse || 'Shop Name');
                             localStorage.setItem('seller_account_type', data.accountType || 'single');
+                            localStorage.setItem('seller_app_status', data.status || 'loading');
+                        } else {
+                            setAppStatus('deleted');
                         }
                     });
                 } catch (error) {
@@ -79,11 +84,28 @@ function Seller_Profile() {
                         </div>
                     </div>
                     <div style={{ flex: 1, overflow: 'hidden' }}>
-                        <h1 style={{ margin: '0 0 4px', fontSize: '24px', fontWeight: '800', letterSpacing: '-0.5px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{sellerName}</h1>
-                        <p style={{ margin: '0 0 8px', fontSize: '12px', color: '#94a3b8', display: 'flex', alignItems: 'center', gap: '5px' }}>
-                            <User size={14} /> {accountType === 'organisation' ? 'Organisation' : 'Individual'} • ID: {sellerId}
-                        </p>
-                        <span style={{ fontSize: '11px', fontWeight: '700', color: '#fff', textTransform: 'uppercase', letterSpacing: '1px', background: 'rgba(255,255,255,0.15)', padding: '4px 10px', borderRadius: '12px' }}>Verified Seller</span>
+                        {appStatus === 'approved' ? (
+                            <>
+                                <h1 style={{ margin: '0 0 4px', fontSize: '24px', fontWeight: '800', letterSpacing: '-0.5px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{sellerName}</h1>
+                                <p style={{ margin: '0 0 8px', fontSize: '12px', color: '#94a3b8', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                                    <User size={14} /> {accountType === 'organisation' ? 'Organisation' : 'Individual'} • ID: {sellerId}
+                                </p>
+                                <span style={{ fontSize: '11px', fontWeight: '700', color: '#fff', textTransform: 'uppercase', letterSpacing: '1px', background: 'rgba(255,255,255,0.15)', padding: '4px 10px', borderRadius: '12px' }}>Verified Seller</span>
+                            </>
+                        ) : appStatus === 'deleted' ? (
+                            <>
+                                <h1 style={{ margin: '0 0 4px', fontSize: '24px', fontWeight: '800', letterSpacing: '-0.5px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', color: '#ef4444' }}>Profile Deleted</h1>
+                                <span style={{ fontSize: '11px', fontWeight: '700', color: '#ef4444', textTransform: 'uppercase', letterSpacing: '1px', background: 'rgba(255,255,255,0.15)', padding: '4px 10px', borderRadius: '12px' }}>Permanently Removed</span>
+                            </>
+                        ) : (
+                            <>
+                                <h1 style={{ margin: '0 0 4px', fontSize: '24px', fontWeight: '800', letterSpacing: '-0.5px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', color: '#f59e0b' }}>Pending Verification</h1>
+                                <p style={{ margin: '0 0 8px', fontSize: '12px', color: '#94a3b8', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                                    <User size={14} /> Profile under review
+                                </p>
+                                <span style={{ fontSize: '11px', fontWeight: '700', color: '#f59e0b', textTransform: 'uppercase', letterSpacing: '1px', background: 'rgba(255,255,255,0.15)', padding: '4px 10px', borderRadius: '12px' }}>Awaiting Approval</span>
+                            </>
+                        )}
                     </div>
                 </div>
             </div>
