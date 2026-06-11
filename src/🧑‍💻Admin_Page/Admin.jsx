@@ -207,6 +207,13 @@ function Admin() {
       }
   }, [isAuthenticated]);
 
+  // Re-fetch listing counts whenever applications update (e.g. approve/reject changes counts)
+  useEffect(() => {
+      if (isAuthenticated && sellerApplications.length >= 0) {
+          fetchData();
+      }
+  }, [sellerApplications]);
+
   // Real-time listener for Seller Applications — gated on Firebase Auth
   useEffect(() => {
       let unsubSnapshot;

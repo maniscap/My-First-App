@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { db, auth } from '../../firebase';
-import { collection, query, where, getDocs, deleteDoc, doc, updateDoc } from 'firebase/firestore';
+import { collection, query, where, deleteDoc, doc, updateDoc, onSnapshot } from 'firebase/firestore';
 import { ArrowLeft, Trash2, Edit2, PackageOpen, X, Power, RefreshCw } from 'lucide-react';
 import { onAuthStateChanged } from 'firebase/auth';
 
@@ -27,68 +27,41 @@ export default function ManageListings() {
         ? listings 
         : listings.filter(item => item.collectionName === activeTab);
 
+    // Real-time sync — no refresh button needed
     useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, (user) => {
-            if (user) {
-                const sellerAppId = localStorage.getItem('seller_app_id');
-                if (sellerAppId) fetchListings(sellerAppId);
-                else setLoading(false);
-            } else {
-                setLoading(false);
-            }
-        });
-        return () => unsubscribe();
-    }, []);
+        const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
+            if (!user) { setLoading(false); return; }
+            const sellerAppId = localStorage.getItem('seller_app_id');
+            if (!sellerAppId) { setLoading(false); return; }
 
-    const fetchListings = async (sellerAppId, forceRefresh = false) => {
-        try {
-            if (!forceRefresh) {
-                const cached = sessionStorage.getItem(`seller_listings_${sellerAppId}`);
-                if (cached) {
-                    setListings(JSON.parse(cached));
-                    setLoading(false);
-                    return; // Pure cache hit, massive read savings!
-                }
-            }
-
-            const collectionsToFetch = [
-                'listings_farm_fresh',
-                'listings_machinery',
-                'listings_workers',
-                'listings_business',
-                'listings_freelancing',
-                'listings_local_goods'
+            const cols = [
+                'listings_farm_fresh', 'listings_machinery', 'listings_workers',
+                'listings_business', 'listings_freelancing', 'listings_local_goods'
             ];
 
-            const promises = collectionsToFetch.map(async (colName) => {
+            // Accumulate data from all 6 collections
+            const allData = {};
+            cols.forEach(c => allData[c] = []);
+
+            const mergeAndSet = () => {
+                const merged = Object.values(allData).flat();
+                merged.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+                setListings(merged);
+                setLoading(false);
+            };
+
+            const unsubListeners = cols.map(colName => {
                 const q = query(collection(db, colName), where('sellerId', '==', sellerAppId));
-                const snapshot = await getDocs(q);
-                return snapshot.docs.map(doc => ({
-                    id: doc.id,
-                    collectionName: colName,
-                    ...doc.data()
-                }));
+                return onSnapshot(q, (snap) => {
+                    allData[colName] = snap.docs.map(d => ({ id: d.id, collectionName: colName, ...d.data() }));
+                    mergeAndSet();
+                }, err => console.error('Listing sync error:', colName, err));
             });
-            
-            const results = await Promise.all(promises);
-            const data = results.flat();
-            
-            // Sort client-side by date if createdAt exists
-            data.sort((a, b) => {
-                const timeA = a.createdAt?.seconds ? a.createdAt.seconds : 0;
-                const timeB = b.createdAt?.seconds ? b.createdAt.seconds : 0;
-                return timeB - timeA;
-            });
-            
-            setListings(data);
-            sessionStorage.setItem(`seller_listings_${sellerAppId}`, JSON.stringify(data));
-        } catch (error) {
-            console.error("Error fetching listings:", error);
-            if (!listings.length) alert("Failed to load your listings.");
-        } finally {
-            setLoading(false);
-        }
-    };
+
+            return () => unsubListeners.forEach(u => u());
+        });
+        return () => unsubscribeAuth();
+    }, []);
 
     const handleDelete = async (id, collectionName) => {
         const confirmDelete = window.confirm("Are you sure you want to delete this listing?");
