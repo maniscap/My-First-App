@@ -30,16 +30,16 @@ function BusinessZone_ListingForm() {
                 <p style={{ color: '#7f8c8d' }}>Form to add B2B bulk contracts to Firebase will go here.</p>
             </div>
 
-            <div style={{ marginTop: '20px', textAlign: 'center' }}>
+            <div style={{ marginTop: '24px', textAlign: 'center' }}>
                 {storefrontSynced ? (
-                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', opacity: 0.8 }}>
-                        <ShieldCheck size={18} color="#10B981" />
-                        <span style={{ fontSize: '13px', color: '#065F46', fontWeight: '700' }}>Store front setup completed 100% and synced to cloud</span>
+                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', opacity: 0.5 }}>
+                        <ShieldCheck size={14} color="#0f172a" />
+                        <span style={{ fontSize: '12px', color: '#0f172a', fontWeight: '600', letterSpacing: '0.3px', textTransform: 'uppercase' }}>Storefront Setup 100% Complete</span>
                     </div>
                 ) : (
-                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', opacity: 0.9, backgroundColor: '#FEF2F2', padding: '10px 16px', borderRadius: '12px', border: '1px solid #FECACA' }}>
-                        <ShieldAlert size={18} color="#DC2626" />
-                        <span style={{ fontSize: '13px', color: '#991B1B', fontWeight: '700' }}>Store front details not synced to cloud. Please finish the store front details.</span>
+                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', opacity: 0.8, backgroundColor: '#FEF2F2', padding: '8px 14px', borderRadius: '8px', border: '1px solid #FECACA' }}>
+                        <ShieldAlert size={14} color="#DC2626" />
+                        <span style={{ fontSize: '12px', color: '#991B1B', fontWeight: '600', letterSpacing: '0.3px', textTransform: 'uppercase' }}>Storefront Setup Incomplete</span>
                     </div>
                 )}
             </div>
