@@ -30,19 +30,25 @@ service cloud.firestore {
     }
     
     // --- 2. SELLER APPROVALS & ADMIN ---
-    // Applications are readable by everyone so the Admin page (no Firebase Auth) can load them.
-    // Only authenticated sellers can create or update their own application.
-    // Deletes are allowed for both the seller and the admin (admin has no Firebase Auth).
+    // Readable by all (sellers check their own status, admin reads all).
+    // Only the admin Firebase account OR the application owner can update/delete.
     match /seller_applications/{sellerId} {
       allow read: if true;
       allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
-      allow update: if true; // Admin (no Firebase Auth) must be able to approve/reject/mark-deleted
-      allow delete: if true; // Admin and seller must be able to delete
+      allow update: if request.auth != null && (
+        request.auth.token.email == 'icecap@689694.com' ||
+        resource.data.userId == request.auth.uid
+      );
+      allow delete: if request.auth != null && (
+        request.auth.token.email == 'icecap@689694.com' ||
+        resource.data.userId == request.auth.uid
+      );
     }
     
-    // System config: admin can write (admin has no Firebase auth so we allow all for now)
+    // System config: only admin can write
     match /system_config/{document=**} {
-      allow read, write: if true;
+      allow read: if true;
+      allow write: if request.auth != null && request.auth.token.email == 'icecap@689694.com';
     }
     
     // Market Rates: Public to read. Only an Admin can update.

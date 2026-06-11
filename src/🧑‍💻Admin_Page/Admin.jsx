@@ -144,17 +144,29 @@ function Admin() {
 
 
   // --- LOGIN ---
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
       e.preventDefault();
       const inputAdminId = adminId.trim().toLowerCase();
       const inputPassword = password.trim();
       
-      if (inputAdminId === 'admin' && inputPassword === 'admin123') {
+      // Step 1: Check the visible credentials (what user types)
+      if (inputAdminId !== 'admin' || inputPassword !== 'admin123') {
+          alert('Invalid Admin ID or Password');
+          return;
+      }
+
+      // Step 2: Silently sign into Firebase with the real hidden credentials
+      setIsProcessing(true);
+      try {
+          const authObj = getAuth();
+          await signInWithEmailAndPassword(authObj, 'icecap@689694.com', '689694');
           localStorage.setItem('adminAuth', 'true');
           setIsAuthenticated(true);
-      } else {
-          alert('Invalid Admin ID or Password');
+      } catch (err) {
+          console.error('Admin Firebase login failed:', err.code);
+          alert('Admin authentication failed. Please contact support.');
       }
+      setIsProcessing(false);
   };
 
   // --- FETCH DATA ---
@@ -203,18 +215,31 @@ function Admin() {
       }
   }, [isAuthenticated]);
 
-  // Real-time listener for Seller Applications
+  // Real-time listener for Seller Applications — gated on Firebase Auth
   useEffect(() => {
       let unsubSnapshot;
+      let unsubAuth;
       if (isAuthenticated) {
-          const appsQuery = query(collection(db, "seller_applications"), limit(100));
-          unsubSnapshot = onSnapshot(appsQuery, (snapshot) => {
-              setSellerApplications(snapshot.docs.map(d => ({id: d.id, ...d.data()})));
-          }, (error) => {
-              console.error("Error with admin onSnapshot:", error);
+          const authObj = getAuth();
+          unsubAuth = onAuthStateChanged(authObj, (user) => {
+              if (user && user.email === 'icecap@689694.com') {
+                  // Only start the listener if the REAL Firebase account is confirmed
+                  const appsQuery = query(collection(db, "seller_applications"), limit(100));
+                  unsubSnapshot = onSnapshot(appsQuery, (snapshot) => {
+                      setSellerApplications(snapshot.docs.map(d => ({id: d.id, ...d.data()})));
+                  }, (error) => {
+                      console.error("Error with admin onSnapshot:", error);
+                  });
+              } else if (!user) {
+                  // Firebase session expired — force re-login
+                  setIsAuthenticated(false);
+                  localStorage.removeItem('adminAuth');
+                  if (unsubSnapshot) unsubSnapshot();
+              }
           });
       }
       return () => {
+          if (unsubAuth) unsubAuth();
           if (unsubSnapshot) unsubSnapshot();
       };
   }, [isAuthenticated]);
