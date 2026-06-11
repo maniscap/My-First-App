@@ -116,10 +116,16 @@ function Seller_HomePage() {
                             localStorage.setItem('seller_app_pending_edit', appData.hasPendingEdit ? 'true' : 'false');
                             // ----------------------------------------------------
                         } else {
+                            localStorage.removeItem('seller_name');
+                            localStorage.removeItem('seller_account_type');
+                            setSellerName('');
+
                             if (localStorage.getItem('seller_app_status') === 'permanently_deleted') {
                                 setAppStatus('permanently_deleted');
                             } else {
                                 setAppStatus('none');
+                                localStorage.removeItem('seller_app_id');
+                                localStorage.removeItem('seller_app_status');
                             }
                         }
                     }, (error) => {
