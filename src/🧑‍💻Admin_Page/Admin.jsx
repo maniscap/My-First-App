@@ -144,47 +144,17 @@ function Admin() {
 
 
   // --- LOGIN ---
-  const handleLogin = async (e) => {
+  const handleLogin = (e) => {
       e.preventDefault();
-      setIsProcessing(true);
-      try {
-          const authObj = getAuth();
-          const adminEmail = "admin@farmcap.com";
-          const inputAdminId = adminId.trim().toLowerCase();
-          const inputPassword = password.trim();
-          let isValid = false;
-
-          if (inputAdminId !== 'admin') {
-              alert('Invalid Admin ID');
-              setIsProcessing(false);
-              return;
-          }
-
-          try {
-              await signInWithEmailAndPassword(authObj, adminEmail, inputPassword);
-              isValid = true;
-          } catch(err) {
-              if (inputPassword === 'admin123') {
-                  try {
-                      await createUserWithEmailAndPassword(authObj, adminEmail, inputPassword);
-                      isValid = true;
-                  } catch(createErr) {
-                      alert("Firebase Creation Error: " + createErr.code + " / " + createErr.message);
-                  }
-              } else {
-                  alert("Login Failed: " + err.code + " / " + err.message);
-              }
-          }
-
-          if (isValid) {
-              localStorage.setItem('adminAuth', 'true');
-              setIsAuthenticated(true);
-          }
-      } catch (err) {
-          console.error("Login verification failed", err);
-          alert("Unexpected error verifying admin credentials: " + err.message);
+      const inputAdminId = adminId.trim().toLowerCase();
+      const inputPassword = password.trim();
+      
+      if (inputAdminId === 'admin' && inputPassword === 'admin123') {
+          localStorage.setItem('adminAuth', 'true');
+          setIsAuthenticated(true);
+      } else {
+          alert('Invalid Admin ID or Password');
       }
-      setIsProcessing(false);
   };
 
   // --- FETCH DATA ---
@@ -228,42 +198,23 @@ function Admin() {
   };
 
   useEffect(() => { 
-      let unsubAuth;
       if (isAuthenticated) { 
-          const auth = getAuth();
-          unsubAuth = onAuthStateChanged(auth, (user) => {
-              if (user && user.email === "admin@farmcap.com") {
-                  fetchData();
-              } else {
-                  // Firebase session lost, force re-login
-                  setIsAuthenticated(false);
-                  localStorage.removeItem('adminAuth');
-              }
-          });
+          fetchData();
       }
-      return () => { if (unsubAuth) unsubAuth(); };
   }, [isAuthenticated]);
 
   // Real-time listener for Seller Applications
   useEffect(() => {
       let unsubSnapshot;
-      let unsubAuth;
       if (isAuthenticated) {
-          const auth = getAuth();
-          unsubAuth = onAuthStateChanged(auth, (user) => {
-              if (user && user.email === "admin@farmcap.com") {
-                  if (unsubSnapshot) unsubSnapshot();
-                  const appsQuery = query(collection(db, "seller_applications"), limit(100));
-                  unsubSnapshot = onSnapshot(appsQuery, (snapshot) => {
-                      setSellerApplications(snapshot.docs.map(d => ({id: d.id, ...d.data()})));
-                  }, (error) => {
-                      console.error("Error with admin onSnapshot:", error);
-                  });
-              }
+          const appsQuery = query(collection(db, "seller_applications"), limit(100));
+          unsubSnapshot = onSnapshot(appsQuery, (snapshot) => {
+              setSellerApplications(snapshot.docs.map(d => ({id: d.id, ...d.data()})));
+          }, (error) => {
+              console.error("Error with admin onSnapshot:", error);
           });
       }
       return () => {
-          if (unsubAuth) unsubAuth();
           if (unsubSnapshot) unsubSnapshot();
       };
   }, [isAuthenticated]);
