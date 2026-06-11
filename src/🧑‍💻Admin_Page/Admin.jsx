@@ -876,17 +876,24 @@ function Admin() {
                   </div>
                   
                   {/* Search by ID Bar */}
-                  <div style={{ display: 'flex', gap: '10px', marginBottom: '30px' }}>
-                      <input 
-                          type="text" 
-                          placeholder="Search Seller ID..." 
-                          value={sellerIdSearch}
-                          onChange={(e) => setSellerIdSearch(e.target.value)}
-                          onKeyDown={(e) => e.key === 'Enter' && handleSearchBySellerId()}
-                          style={{ flex: 1, padding: '12px 16px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '15px', outline: 'none' }}
-                      />
-                      <button onClick={handleSearchBySellerId} disabled={isSearching} style={{ padding: '0 24px', background: '#0f172a', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: isSearching ? 'wait' : 'pointer' }}>
-                          Find
+                  <div style={{ display: 'flex', gap: '12px', marginBottom: '30px', alignItems: 'center' }}>
+                      <div style={{ position: 'relative', flex: 1 }}>
+                          <Search size={20} color="#94a3b8" style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)' }} />
+                          <input 
+                              type="text" 
+                              placeholder="Search Seller ID..." 
+                              value={sellerIdSearch}
+                              onChange={(e) => setSellerIdSearch(e.target.value)}
+                              onKeyDown={(e) => e.key === 'Enter' && handleSearchBySellerId()}
+                              style={{ width: '100%', padding: '14px 16px 14px 44px', borderRadius: '12px', border: '1px solid #334155', backgroundColor: '#0f172a', color: '#f8fafc', fontSize: '15px', outline: 'none', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}
+                          />
+                      </div>
+                      <button 
+                          onClick={handleSearchBySellerId} 
+                          disabled={isSearching} 
+                          style={{ padding: '14px 28px', background: '#3b82f6', color: 'white', border: 'none', borderRadius: '12px', fontWeight: '800', fontSize: '15px', cursor: isSearching ? 'wait' : 'pointer', boxShadow: '0 4px 6px rgba(59,130,246,0.3)', transition: 'background 0.2s' }}
+                      >
+                          {isSearching ? '...' : 'Find'}
                       </button>
                   </div>
 
