@@ -261,67 +261,67 @@ export default function FarmFresh_ListingForm() {
                     <div style={{ backgroundColor: '#ffffff', borderRadius: '24px', width: '100%', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)', overflow: 'hidden', display: 'flex', flexDirection: 'column', boxSizing: 'border-box' }}>
                         
                         {/* Hero Header of Receipt */}
-                        <div style={{ background: 'linear-gradient(180deg, #f0fdf4 0%, #ffffff 100%)', padding: '32px 24px 24px 24px', display: 'flex', flexDirection: 'column', alignItems: 'center', borderBottom: '2px dashed #e2e8f0', position: 'relative' }}>
-                            <div style={{ width: '64px', height: '64px', borderRadius: '50%', backgroundColor: '#16a34a', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '16px', boxShadow: '0 8px 20px rgba(22,163,74,0.3)', animation: 'scaleUpBounce 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards' }}>
-                                <CheckCircle2 size={32} color="white" />
+                        <div style={{ background: 'linear-gradient(180deg, #f0fdf4 0%, #ffffff 100%)', padding: '24px 20px 16px 20px', display: 'flex', flexDirection: 'column', alignItems: 'center', borderBottom: '2px dashed #e2e8f0', position: 'relative' }}>
+                            <div style={{ width: '48px', height: '48px', borderRadius: '50%', backgroundColor: '#16a34a', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '12px', boxShadow: '0 8px 20px rgba(22,163,74,0.3)', animation: 'scaleUpBounce 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards' }}>
+                                <CheckCircle2 size={24} color="white" />
                             </div>
-                            <h2 style={{ margin: '0 0 4px 0', fontSize: '22px', fontWeight: '800', color: '#0f172a', textAlign: 'center' }}>{editData ? 'Listing Updated!' : 'Listing Created!'}</h2>
-                            <p style={{ margin: '0 0 12px 0', fontSize: '14px', color: '#64748b', textAlign: 'center', fontWeight: '500' }}>{submittedData.itemName} is now live in the market.</p>
-                            <span style={{ fontSize: '12px', color: '#16a34a', fontWeight: '700', backgroundColor: '#dcfce7', padding: '4px 12px', borderRadius: '20px', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '20px' }}>{submittedData.category}</span>
+                            <h2 style={{ margin: '0 0 4px 0', fontSize: '20px', fontWeight: '800', color: '#0f172a', textAlign: 'center' }}>{editData ? 'Listing Updated!' : 'Listing Created!'}</h2>
+                            <p style={{ margin: '0 0 10px 0', fontSize: '13px', color: '#64748b', textAlign: 'center', fontWeight: '500' }}>{submittedData.itemName} is now live in the market.</p>
+                            <span style={{ fontSize: '11px', color: '#16a34a', fontWeight: '700', backgroundColor: '#dcfce7', padding: '4px 10px', borderRadius: '20px', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '12px' }}>{submittedData.category}</span>
                             
                             {/* Gratitude Message */}
-                            <div style={{ backgroundColor: 'rgba(22, 163, 74, 0.05)', border: '1px solid rgba(22, 163, 74, 0.15)', borderRadius: '12px', padding: '14px 16px', width: '100%', boxSizing: 'border-box', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
-                                <Leaf size={16} color="#15803d" />
-                                <p style={{ margin: 0, fontSize: '13px', color: '#15803d', fontWeight: '600', fontStyle: 'italic', lineHeight: '1.4', textAlign: 'center' }}>
+                            <div style={{ backgroundColor: 'rgba(22, 163, 74, 0.05)', border: '1px solid rgba(22, 163, 74, 0.15)', borderRadius: '12px', padding: '10px 14px', width: '100%', boxSizing: 'border-box', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+                                <Leaf size={14} color="#15803d" />
+                                <p style={{ margin: 0, fontSize: '12px', color: '#15803d', fontWeight: '600', fontStyle: 'italic', lineHeight: '1.3', textAlign: 'center' }}>
                                     "Your harvest is now live. Thank you for your hard work and dedication to the earth."
                                 </p>
                             </div>
                         </div>
 
                         {/* Image & Price Section */}
-                        <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                        <div style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                                 {submittedData.imageUrl ? (
-                                    <div style={{ width: '70px', height: '70px', borderRadius: '16px', overflow: 'hidden', flexShrink: 0, boxShadow: '0 4px 10px rgba(0,0,0,0.05)' }}>
+                                    <div style={{ width: '60px', height: '60px', borderRadius: '14px', overflow: 'hidden', flexShrink: 0, boxShadow: '0 4px 10px rgba(0,0,0,0.05)' }}>
                                         <img src={submittedData.imageUrl} alt={submittedData.itemName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                                     </div>
                                 ) : (
-                                    <div style={{ width: '70px', height: '70px', borderRadius: '16px', backgroundColor: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                    <div style={{ width: '60px', height: '60px', borderRadius: '14px', backgroundColor: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                                         <span style={{ fontSize: '20px' }}>🌱</span>
                                     </div>
                                 )}
                                 <div style={{ display: 'flex', flexDirection: 'column' }}>
-                                    <span style={{ fontSize: '13px', color: '#64748b', fontWeight: '600', marginBottom: '2px' }}>Selling Price</span>
+                                    <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '600', marginBottom: '2px' }}>Selling Price</span>
                                     <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px' }}>
-                                        <span style={{ fontSize: '24px', fontWeight: '800', color: '#0f172a' }}>₹{submittedData.price}</span>
-                                        <span style={{ fontSize: '14px', fontWeight: '600', color: '#64748b' }}>/ {submittedData.unit}</span>
+                                        <span style={{ fontSize: '20px', fontWeight: '800', color: '#0f172a' }}>₹{submittedData.price}</span>
+                                        <span style={{ fontSize: '13px', fontWeight: '600', color: '#64748b' }}>/ {submittedData.unit}</span>
                                     </div>
                                 </div>
                             </div>
 
                             {/* Details Grid */}
-                            <div style={{ backgroundColor: '#f8fafc', borderRadius: '16px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px', border: '1px solid #f1f5f9' }}>
+                            <div style={{ backgroundColor: '#f8fafc', borderRadius: '14px', padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: '8px', border: '1px solid #f1f5f9' }}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                    <span style={{ fontSize: '13px', color: '#64748b', fontWeight: '600' }}>Listed On</span>
-                                    <span style={{ fontSize: '14px', fontWeight: '700', color: '#0f172a' }}>{submittedData.listingDate}</span>
+                                    <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '600' }}>Listed On</span>
+                                    <span style={{ fontSize: '13px', fontWeight: '700', color: '#0f172a' }}>{submittedData.listingDate}</span>
                                 </div>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                    <span style={{ fontSize: '13px', color: '#64748b', fontWeight: '600' }}>Shelf Life</span>
-                                    <span style={{ fontSize: '14px', fontWeight: '700', color: '#0f172a' }}>{submittedData.shelfLife}</span>
+                                    <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '600' }}>Shelf Life</span>
+                                    <span style={{ fontSize: '13px', fontWeight: '700', color: '#0f172a' }}>{submittedData.shelfLife}</span>
                                 </div>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                    <span style={{ fontSize: '13px', color: '#64748b', fontWeight: '600' }}>Farming</span>
-                                    <span style={{ fontSize: '13px', fontWeight: '700', color: submittedData.isOrganic ? '#16a34a' : '#0f172a' }}>{submittedData.isOrganic ? '100% Organic' : 'Standard'}</span>
+                                    <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '600' }}>Farming</span>
+                                    <span style={{ fontSize: '12px', fontWeight: '700', color: submittedData.isOrganic ? '#16a34a' : '#0f172a' }}>{submittedData.isOrganic ? '100% Organic' : 'Standard'}</span>
                                 </div>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                    <span style={{ fontSize: '13px', color: '#64748b', fontWeight: '600' }}>Quality Check</span>
-                                    <span style={{ fontSize: '13px', fontWeight: '700', color: submittedData.qualityGuarantee ? '#16a34a' : '#ef4444' }}>{submittedData.qualityGuarantee ? 'Guaranteed ✓' : 'Unverified'}</span>
+                                    <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '600' }}>Quality Check</span>
+                                    <span style={{ fontSize: '12px', fontWeight: '700', color: submittedData.qualityGuarantee ? '#16a34a' : '#ef4444' }}>{submittedData.qualityGuarantee ? 'Guaranteed ✓' : 'Unverified'}</span>
                                 </div>
                             </div>
                         </div>
 
                         {/* Bottom Action Area */}
-                        <div style={{ padding: '0 24px 24px 24px' }}>
+                        <div style={{ padding: '0 20px 20px 20px' }}>
                             <button 
                                 onClick={() => navigate('/Seller_HomePage')} 
                                 style={{ width: '100%', padding: '16px', borderRadius: '16px', backgroundColor: '#0f172a', color: 'white', border: 'none', fontSize: '15px', fontWeight: '700', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', boxShadow: '0 10px 25px rgba(15,23,42,0.2)', transition: 'transform 0.2s ease, background 0.2s ease' }}
