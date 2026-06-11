@@ -17,6 +17,7 @@ function Admin() {
   const [verificationTab, setVerificationTab] = useState('individual'); // individual or organisation
   const [approvedTab, setApprovedTab] = useState('individual'); // individual or organisation
   const [approvedSearchQuery, setApprovedSearchQuery] = useState('');
+  const [approvedSearchInput, setApprovedSearchInput] = useState('');
   const [sellerApplications, setSellerApplications] = useState([]);
   const [listingCounts, setListingCounts] = useState({ farmFresh: 0, machinery: 0, workers: 0, business: 0, freelance: 0, rejected: 0 });
   const [loading, setLoading] = useState(true);
@@ -73,6 +74,10 @@ function Admin() {
       // Clear frozen search bar when navigating across tabs
       setSellerIdSearch('');
       setSearchedSeller(null);
+      
+      // Clear approved search bar
+      setApprovedSearchInput('');
+      setApprovedSearchQuery('');
   }, [activeTab]);
 
   const handlePublishAnnouncement = async (e) => {
@@ -792,15 +797,27 @@ function Admin() {
                       <p>Lightweight text-only directory of verified sellers.</p>
                   </div>
                   
-                  <div style={{ marginBottom: '20px', position: 'relative' }}>
-                      <Search size={20} color="#94a3b8" style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)' }} />
-                      <input 
-                          type="text" 
-                          placeholder="Search by Seller ID or Shop/Company/Owner Name..." 
-                          value={approvedSearchQuery}
-                          onChange={(e) => setApprovedSearchQuery(e.target.value)}
-                          style={{ width: '100%', padding: '14px 16px 14px 44px', borderRadius: '12px', border: '1px solid #334155', backgroundColor: '#0f172a', color: '#f8fafc', fontSize: '15px', outline: 'none', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}
-                      />
+                  <div style={{ display: 'flex', gap: '12px', marginBottom: '30px', alignItems: 'center' }}>
+                      <div style={{ position: 'relative', flex: 1 }}>
+                          <Search size={20} color="#94a3b8" style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)' }} />
+                          <input 
+                              type="text" 
+                              placeholder="Search approved sellers by ID, Name, or Phone..." 
+                              value={approvedSearchInput}
+                              onChange={(e) => {
+                                  setApprovedSearchInput(e.target.value);
+                                  if (e.target.value === '') setApprovedSearchQuery(''); // Auto-reset when cleared
+                              }}
+                              onKeyDown={(e) => e.key === 'Enter' && setApprovedSearchQuery(approvedSearchInput)}
+                              style={{ width: '100%', padding: '14px 16px 14px 44px', borderRadius: '12px', border: '1px solid #334155', backgroundColor: '#0f172a', color: '#f8fafc', fontSize: '15px', outline: 'none', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}
+                          />
+                      </div>
+                      <button 
+                          onClick={() => setApprovedSearchQuery(approvedSearchInput)}
+                          style={{ padding: '14px 28px', background: '#3b82f6', color: 'white', border: 'none', borderRadius: '12px', fontWeight: '800', fontSize: '15px', cursor: 'pointer', boxShadow: '0 4px 6px rgba(59,130,246,0.3)', transition: 'background 0.2s' }}
+                      >
+                          Find
+                      </button>
                   </div>
                   
                   <div className="approved-directory">
