@@ -6,7 +6,7 @@ import { storage } from '../firebase';
 import { ref, deleteObject } from 'firebase/storage';
 import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged } from 'firebase/auth';
 import { IoMdArrowBack } from 'react-icons/io';
-import { CheckCircle, XCircle, User, Building, LayoutDashboard, ClipboardList, Users, List, LogOut, Lock, RefreshCw, Edit3, CheckCircle2, Check, X, Search } from 'lucide-react';
+import { CheckCircle, XCircle, User, Building, LayoutDashboard, ClipboardList, Users, List, LogOut, Lock, RefreshCw, Edit3, CheckCircle2, Check, X, Search, Snowflake } from 'lucide-react';
 
 function Admin() {
   const [isAuthenticated, setIsAuthenticated] = useState(false); // Always check Firebase on load
@@ -529,33 +529,46 @@ function Admin() {
         <div style={{position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(4px)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
           <div style={{backgroundColor: '#ffffff', padding: '32px', borderRadius: '24px', width: '420px', maxWidth: '90%', boxSizing: 'border-box', boxShadow: '0 20px 40px rgba(0,0,0,0.1)', border: '1px solid #E5E7EB'}}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
-              <div style={{ backgroundColor: '#FFF7ED', padding: '10px', borderRadius: '12px', color: '#F97316' }}>❄️</div>
+              <div style={{ backgroundColor: '#FFF7ED', padding: '10px', borderRadius: '12px', color: '#F97316' }}>
+                <Snowflake size={24} strokeWidth={2} />
+              </div>
               <h3 style={{ margin: 0, color: '#111827', fontSize: '20px', fontWeight: '800' }}>Freeze Account</h3>
             </div>
-            <p style={{ fontSize: '14px', color: '#6B7280', marginBottom: '20px' }}>
+            <p style={{ fontSize: '14px', color: '#6B7280', marginBottom: '24px', lineHeight: '1.5' }}>
               Freezing <strong>{sellerToFreeze?.fullName || sellerToFreeze?.companyName}</strong> will block them from adding listings and managing their store.
             </p>
-            <label style={{display: 'block', fontSize: '13px', fontWeight: '800', marginBottom: '6px', color: '#374151', textTransform: 'uppercase'}}>Reason</label>
-            <select value={freezeReason} onChange={e => setFreezeReason(e.target.value)} style={{width: '100%', padding: '12px', borderRadius: '12px', border: '1px solid #D1D5DB', backgroundColor: '#F9FAFB', fontSize: '14px', marginBottom: '16px', outline: 'none', boxSizing: 'border-box'}}>
-              <option>Irregular activity detected</option>
-              <option>Fake listings or fraud</option>
-              <option>Customer complaints</option>
-              <option>Pricing violations</option>
-              <option>Platform policy violation</option>
-              <option>Under investigation</option>
-            </select>
-            <label style={{display: 'block', fontSize: '13px', fontWeight: '800', marginBottom: '6px', color: '#374151', textTransform: 'uppercase'}}>Freeze Duration</label>
-            <select value={freezeDays} onChange={e => setFreezeDays(Number(e.target.value))} style={{width: '100%', padding: '12px', borderRadius: '12px', border: '1px solid #D1D5DB', backgroundColor: '#F9FAFB', fontSize: '14px', marginBottom: '24px', outline: 'none', boxSizing: 'border-box'}}>
-              <option value={1}>1 Day</option>
-              <option value={3}>3 Days</option>
-              <option value={7}>7 Days</option>
-              <option value={14}>14 Days</option>
-              <option value={30}>30 Days</option>
-              <option value={0}>Indefinite (until manually unfrozen)</option>
-            </select>
+            
+            <label style={{display: 'block', fontSize: '13px', fontWeight: '800', marginBottom: '8px', color: '#374151', textTransform: 'uppercase', letterSpacing: '0.5px'}}>Reason</label>
+            <div style={{ position: 'relative', marginBottom: '20px' }}>
+              <select value={freezeReason} onChange={e => setFreezeReason(e.target.value)} style={{width: '100%', padding: '16px', borderRadius: '14px', border: '1px solid #D1D5DB', backgroundColor: '#F9FAFB', fontSize: '15px', color: '#111827', outline: 'none', appearance: 'none', boxSizing: 'border-box', cursor: 'pointer', fontWeight: '500'}}>
+                <option>Irregular activity detected</option>
+                <option>Fake listings or fraud</option>
+                <option>Customer complaints</option>
+                <option>Pricing violations</option>
+                <option>Platform policy violation</option>
+                <option>Under investigation</option>
+              </select>
+              <div style={{ position: 'absolute', right: '16px', top: '16px', pointerEvents: 'none', color: '#9CA3AF' }}>▼</div>
+            </div>
+
+            <label style={{display: 'block', fontSize: '13px', fontWeight: '800', marginBottom: '8px', color: '#374151', textTransform: 'uppercase', letterSpacing: '0.5px'}}>Freeze Duration</label>
+            <div style={{ position: 'relative', marginBottom: '32px' }}>
+              <select value={freezeDays} onChange={e => setFreezeDays(Number(e.target.value))} style={{width: '100%', padding: '16px', borderRadius: '14px', border: '1px solid #D1D5DB', backgroundColor: '#F9FAFB', fontSize: '15px', color: '#111827', outline: 'none', appearance: 'none', boxSizing: 'border-box', cursor: 'pointer', fontWeight: '500'}}>
+                <option value={1}>1 Day</option>
+                <option value={3}>3 Days</option>
+                <option value={7}>7 Days</option>
+                <option value={14}>14 Days</option>
+                <option value={30}>30 Days</option>
+                <option value={0}>Indefinite (until manually unfrozen)</option>
+              </select>
+              <div style={{ position: 'absolute', right: '16px', top: '16px', pointerEvents: 'none', color: '#9CA3AF' }}>▼</div>
+            </div>
+
             <div style={{ display: 'flex', gap: '12px' }}>
-              <button onClick={() => { setFreezeModalOpen(false); setSellerToFreeze(null); }} style={{flex: 1, padding: '14px', borderRadius: '14px', border: '1px solid #E5E7EB', background: '#F9FAFB', fontWeight: '700', cursor: 'pointer', fontSize: '15px'}}>Cancel</button>
-              <button onClick={handleFreezeAccount} disabled={isFreezingAccount} style={{flex: 1, padding: '14px', borderRadius: '14px', border: 'none', background: '#F97316', color: 'white', fontWeight: '700', cursor: isFreezingAccount ? 'wait' : 'pointer', fontSize: '15px'}}>{isFreezingAccount ? 'Freezing...' : '❄️ Freeze'}</button>
+              <button onClick={() => { setFreezeModalOpen(false); setSellerToFreeze(null); }} style={{flex: 1, padding: '16px', backgroundColor: '#F3F4F6', color: '#4B5563', border: 'none', borderRadius: '14px', cursor: 'pointer', fontWeight: '800', fontSize: '15px', transition: 'background-color 0.2s'}}>Cancel</button>
+              <button onClick={handleFreezeAccount} disabled={isFreezingAccount} style={{flex: 1, padding: '16px', backgroundColor: '#F97316', color: '#FFFFFF', border: 'none', borderRadius: '14px', cursor: isFreezingAccount ? 'wait' : 'pointer', fontWeight: '800', fontSize: '15px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', transition: 'opacity 0.2s', opacity: isFreezingAccount ? 0.7 : 1}}>
+                <Snowflake size={18} strokeWidth={2.5} /> {isFreezingAccount ? 'Freezing...' : 'Freeze'}
+              </button>
             </div>
           </div>
         </div>
@@ -621,7 +634,7 @@ function Admin() {
                   <Users size={20} /> Approved Sellers
               </button>
               <button className={`nav-item ${activeTab === 'frozen' ? 'active' : ''}`} onClick={() => setActiveTab('frozen')} style={frozenApps.length > 0 ? {color: '#F97316'} : {}}>
-                  ❄️ Frozen Accounts {frozenApps.length > 0 && <span className="badge" style={{background: '#F97316'}}>{frozenApps.length}</span>}
+                  <Snowflake size={20} /> Frozen Accounts {frozenApps.length > 0 && <span className="badge" style={{background: '#F97316'}}>{frozenApps.length}</span>}
               </button>
               <button className={`nav-item ${activeTab === 'listings' ? 'active' : ''}`} onClick={() => setActiveTab('listings')}>
                   <List size={20} /> Active Listings
@@ -815,13 +828,13 @@ function Admin() {
                                               {app.phone} &mdash; {app.village}, {app.district}
                                               <br/>
                                               <span style={{ fontSize: '13px', color: '#64748b', fontWeight: '600' }}>Approved At: {app.approvedAt ? new Date(app.approvedAt).toLocaleString() : 'N/A'}</span>
-                                              {app.frozen && <span style={{marginLeft: '8px', fontSize: '12px', background: '#FFF7ED', color: '#F97316', padding: '2px 8px', borderRadius: '8px', fontWeight: '700'}}>❄️ FROZEN</span>}
+                                              {app.frozen && <span style={{marginLeft: '8px', fontSize: '12px', background: '#FFF7ED', color: '#F97316', padding: '2px 8px', borderRadius: '8px', fontWeight: '700', display: 'inline-flex', alignItems: 'center', gap: '4px'}}><Snowflake size={12} /> FROZEN</span>}
                                           </div>
                                           <div style={{display: 'flex', gap: '8px'}}>
                                               {app.frozen ? (
                                                 <button onClick={() => handleUnfreezeAccount(app)} style={{ padding: '10px 16px', background: '#10b981', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>✅ Unfreeze</button>
                                               ) : (
-                                                <button onClick={() => { setSellerToFreeze(app); setFreezeModalOpen(true); }} style={{ padding: '10px 16px', background: '#F97316', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>❄️ Freeze</button>
+                                                <button onClick={() => { setSellerToFreeze(app); setFreezeModalOpen(true); }} style={{ padding: '10px 16px', background: '#F97316', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px' }}><Snowflake size={16} strokeWidth={2.5} /> Freeze</button>
                                               )}
                                               <button onClick={() => handleDeleteApproved(app.id)} style={{ padding: '10px 16px', background: '#ef4444', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>Delete</button>
                                           </div>
@@ -842,13 +855,13 @@ function Admin() {
                                               {app.phone} &mdash; {app.village}, {app.district}
                                               <br/>
                                               <span style={{ fontSize: '13px', color: '#64748b', fontWeight: '600' }}>Approved At: {app.approvedAt ? new Date(app.approvedAt).toLocaleString() : 'N/A'}</span>
-                                              {app.frozen && <span style={{marginLeft: '8px', fontSize: '12px', background: '#FFF7ED', color: '#F97316', padding: '2px 8px', borderRadius: '8px', fontWeight: '700'}}>❄️ FROZEN</span>}
+                                              {app.frozen && <span style={{marginLeft: '8px', fontSize: '12px', background: '#FFF7ED', color: '#F97316', padding: '2px 8px', borderRadius: '8px', fontWeight: '700', display: 'inline-flex', alignItems: 'center', gap: '4px'}}><Snowflake size={12} /> FROZEN</span>}
                                           </div>
                                           <div style={{display: 'flex', gap: '8px'}}>
                                               {app.frozen ? (
                                                 <button onClick={() => handleUnfreezeAccount(app)} style={{ padding: '10px 16px', background: '#10b981', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>✅ Unfreeze</button>
                                               ) : (
-                                                <button onClick={() => { setSellerToFreeze(app); setFreezeModalOpen(true); }} style={{ padding: '10px 16px', background: '#F97316', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>❄️ Freeze</button>
+                                                <button onClick={() => { setSellerToFreeze(app); setFreezeModalOpen(true); }} style={{ padding: '10px 16px', background: '#F97316', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px' }}><Snowflake size={16} strokeWidth={2.5} /> Freeze</button>
                                               )}
                                               <button onClick={() => handleDeleteApproved(app.id)} style={{ padding: '10px 16px', background: '#ef4444', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>Delete</button>
                                           </div>
@@ -865,7 +878,7 @@ function Admin() {
           {activeTab === 'frozen' && (
               <div className="tab-content">
                   <div className="header-titles">
-                      <h1 style={{color: '#F97316'}}>❄️ Frozen Accounts</h1>
+                      <h1 style={{color: '#F97316', display: 'flex', alignItems: 'center', gap: '12px'}}><Snowflake size={36} strokeWidth={2.5} /> Frozen Accounts</h1>
                       <p>Manage temporarily suspended seller accounts. Searching by Seller ID costs 1 read regardless of total sellers.</p>
                   </div>
                   
@@ -888,7 +901,7 @@ function Admin() {
                   {searchedSeller && (
                       <div style={{ marginBottom: '40px', padding: '20px', background: searchedSeller.frozen ? '#FFF7ED' : '#F0FDF4', border: `1px solid ${searchedSeller.frozen ? '#FED7AA' : '#BBF7D0'}`, borderRadius: '16px' }}>
                           <h3 style={{ margin: '0 0 16px 0', display: 'flex', alignItems: 'center', gap: '8px', color: searchedSeller.frozen ? '#C2410C' : '#15803D' }}>
-                              {searchedSeller.frozen ? '❄️ Found Frozen Seller' : '✅ Found Active Seller'}
+                              {searchedSeller.frozen ? <><Snowflake size={20} /> Found Frozen Seller</> : '✅ Found Active Seller'}
                           </h3>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                               <div>
@@ -906,7 +919,7 @@ function Admin() {
                                   {searchedSeller.frozen ? (
                                       <button onClick={() => { handleUnfreezeAccount(searchedSeller); setSearchedSeller(null); }} style={{ padding: '12px 20px', background: '#10b981', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>✅ Unfreeze Now</button>
                                   ) : (
-                                      <button onClick={() => setSellerToFreeze(searchedSeller)} style={{ padding: '12px 20px', background: '#F97316', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>❄️ Freeze Account</button>
+                                      <button onClick={() => setSellerToFreeze(searchedSeller)} style={{ padding: '12px 20px', background: '#F97316', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '8px' }}><Snowflake size={18} strokeWidth={2.5} /> Freeze Account</button>
                                   )}
                               </div>
                           </div>

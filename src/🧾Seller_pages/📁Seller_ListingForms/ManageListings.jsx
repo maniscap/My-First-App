@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { db, auth } from '../../firebase';
 import { collection, query, where, deleteDoc, doc, updateDoc, onSnapshot } from 'firebase/firestore';
-import { ArrowLeft, Trash2, Edit2, PackageOpen, X, Power, RefreshCw } from 'lucide-react';
+import { ArrowLeft, Trash2, Edit2, PackageOpen, X, Power, RefreshCw, Snowflake } from 'lucide-react';
 import { onAuthStateChanged } from 'firebase/auth';
 
 export default function ManageListings() {
@@ -76,7 +76,7 @@ export default function ManageListings() {
     if (isFrozen) {
         return (
             <div style={{ backgroundColor: '#FFF7ED', minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '20px', textAlign: 'center' }}>
-                <div style={{ fontSize: '80px', marginBottom: '20px' }}>❄️</div>
+                <div style={{ color: '#F97316', marginBottom: '20px' }}><Snowflake size={80} strokeWidth={2} /></div>
                 <h1 style={{ color: '#C2410C', margin: '0 0 10px 0' }}>Account Frozen</h1>
                 <p style={{ color: '#9A3412', maxWidth: '400px', lineHeight: '1.6', marginBottom: '24px' }}>
                     You cannot manage listings while your account is frozen.

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { CircleUserRound, ShieldAlert, ShieldCheck, ShieldX, Clock, Building2 } from 'lucide-react';
+import { CircleUserRound, ShieldAlert, ShieldCheck, ShieldX, Clock, Building2, Snowflake } from 'lucide-react';
 import Seller_BannerPromo from './Seller_BannerPromo';
 import { db, auth } from '../../firebase';
 import { doc, getDoc, collection, query, where, getDocs, onSnapshot, deleteDoc } from 'firebase/firestore';
@@ -176,7 +176,7 @@ function Seller_HomePage() {
     if (appFrozen) {
         return (
             <div style={{ backgroundColor: '#FFF7ED', minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '20px', textAlign: 'center' }}>
-                <div style={{ fontSize: '80px', marginBottom: '20px' }}>❄️</div>
+                <div style={{ color: '#F97316', marginBottom: '20px' }}><Snowflake size={80} strokeWidth={2} /></div>
                 <h1 style={{ color: '#C2410C', margin: '0 0 10px 0' }}>Account Frozen</h1>
                 <p style={{ color: '#9A3412', maxWidth: '400px', lineHeight: '1.6', marginBottom: '24px' }}>
                     Your seller account has been temporarily frozen by the admin team.
