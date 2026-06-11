@@ -230,6 +230,10 @@ function Admin() {
           unsubAuth = onAuthStateChanged(auth, (user) => {
               if (user && user.email === "admin@farmcap.com") {
                   fetchData();
+              } else {
+                  // Firebase session lost, force re-login
+                  setIsAuthenticated(false);
+                  localStorage.removeItem('adminAuth');
               }
           });
       }
@@ -244,6 +248,7 @@ function Admin() {
           const auth = getAuth();
           unsubAuth = onAuthStateChanged(auth, (user) => {
               if (user && user.email === "admin@farmcap.com") {
+                  if (unsubSnapshot) unsubSnapshot();
                   const appsQuery = query(collection(db, "seller_applications"), limit(100));
                   unsubSnapshot = onSnapshot(appsQuery, (snapshot) => {
                       setSellerApplications(snapshot.docs.map(d => ({id: d.id, ...d.data()})));
