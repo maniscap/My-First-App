@@ -9,9 +9,9 @@ import { IoMdArrowBack } from 'react-icons/io';
 import { CheckCircle, XCircle, User, Building, LayoutDashboard, ClipboardList, Users, List, LogOut, Lock, RefreshCw, Edit3, CheckCircle2, Check, X, Search } from 'lucide-react';
 
 function Admin() {
-  const [isAuthenticated, setIsAuthenticated] = useState(localStorage.getItem('adminAuth') === 'true');
-  const [adminId, setAdminId] = useState('');
-  const [password, setPassword] = useState('');
+  const [isAuthenticated, setIsAuthenticated] = useState(false); // Always check Firebase on load
+  const [loginEmail, setLoginEmail] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
   
   const [activeTab, setActiveTab] = useState('dashboard'); // dashboard, verifications, approved, listings, reports, announcements
   const [verificationTab, setVerificationTab] = useState('individual'); // individual or organisation
@@ -143,28 +143,20 @@ function Admin() {
 
 
 
-  // --- LOGIN ---
+  // --- LOGIN --- No hardcoded credentials. Firebase Auth is the only gate.
   const handleLogin = async (e) => {
       e.preventDefault();
-      const inputAdminId = adminId.trim().toLowerCase();
-      const inputPassword = password.trim();
-      
-      // Step 1: Check the visible credentials (what user types)
-      if (inputAdminId !== 'admin' || inputPassword !== 'admin123') {
-          alert('Invalid Admin ID or Password');
-          return;
-      }
-
-      // Step 2: Silently sign into Firebase with the real hidden credentials
       setIsProcessing(true);
       try {
           const authObj = getAuth();
-          await signInWithEmailAndPassword(authObj, 'icecap@689694.com', '689694');
-          localStorage.setItem('adminAuth', 'true');
+          await signInWithEmailAndPassword(authObj, loginEmail.trim(), loginPassword.trim());
+          // Firebase verified the credentials — grant access
           setIsAuthenticated(true);
       } catch (err) {
-          console.error('Admin Firebase login failed:', err.code);
-          alert('Admin authentication failed. Please contact support.');
+          const msg = err.code === 'auth/invalid-credential' || err.code === 'auth/wrong-password' || err.code === 'auth/user-not-found'
+              ? 'Invalid email or password.'
+              : 'Login failed: ' + err.code;
+          alert(msg);
       }
       setIsProcessing(false);
   };
@@ -218,31 +210,29 @@ function Admin() {
   // Real-time listener for Seller Applications — gated on Firebase Auth
   useEffect(() => {
       let unsubSnapshot;
-      let unsubAuth;
-      if (isAuthenticated) {
-          const authObj = getAuth();
-          unsubAuth = onAuthStateChanged(authObj, (user) => {
-              if (user && user.email === 'icecap@689694.com') {
-                  // Only start the listener if the REAL Firebase account is confirmed
-                  const appsQuery = query(collection(db, "seller_applications"), limit(100));
-                  unsubSnapshot = onSnapshot(appsQuery, (snapshot) => {
-                      setSellerApplications(snapshot.docs.map(d => ({id: d.id, ...d.data()})));
-                  }, (error) => {
-                      console.error("Error with admin onSnapshot:", error);
-                  });
-              } else if (!user) {
-                  // Firebase session expired — force re-login
-                  setIsAuthenticated(false);
-                  localStorage.removeItem('adminAuth');
-                  if (unsubSnapshot) unsubSnapshot();
-              }
-          });
-      }
+      const authObj = getAuth();
+      // Check if Firebase already has a session (page refresh)
+      const unsubAuth = onAuthStateChanged(authObj, (user) => {
+          if (user) {
+              setIsAuthenticated(true);
+              // Start real-time listener
+              const appsQuery = query(collection(db, "seller_applications"), limit(100));
+              unsubSnapshot = onSnapshot(appsQuery, (snapshot) => {
+                  setSellerApplications(snapshot.docs.map(d => ({id: d.id, ...d.data()})));
+              }, (error) => {
+                  console.error("Error with admin onSnapshot:", error);
+              });
+          } else {
+              // No Firebase session — force login screen
+              setIsAuthenticated(false);
+              if (unsubSnapshot) unsubSnapshot();
+          }
+      });
       return () => {
-          if (unsubAuth) unsubAuth();
+          unsubAuth();
           if (unsubSnapshot) unsubSnapshot();
       };
-  }, [isAuthenticated]);
+  }, []);
 
   const cleanupStorageMedia = async (appData) => {
       const urls = [];
@@ -409,14 +399,14 @@ function Admin() {
                   <form onSubmit={handleLogin} className="login-form">
                       <div className="input-wrapper">
                           <User className="input-icon" size={20} />
-                          <input type="text" placeholder="Admin ID" value={adminId} onChange={(e) => setAdminId(e.target.value)} required className="auth-input" />
+                          <input type="email" placeholder="Admin Email" value={loginEmail} onChange={(e) => setLoginEmail(e.target.value)} required className="auth-input" autoComplete="email" />
                       </div>
                       <div className="input-wrapper">
                           <Lock className="input-icon" size={20} />
-                          <input type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} required className="auth-input" />
+                          <input type="password" placeholder="Password" value={loginPassword} onChange={(e) => setLoginPassword(e.target.value)} required className="auth-input" autoComplete="current-password" />
                       </div>
-                      <button type="submit" className="btn-login">
-                          <span>Secure Login</span>
+                      <button type="submit" disabled={isProcessing} className="btn-login">
+                          <span>{isProcessing ? 'Verifying...' : 'Secure Login'}</span>
                           <Lock size={18} />
                       </button>
                   </form>
@@ -528,7 +518,7 @@ function Admin() {
 
           <div className="sidebar-footer">
               <Link to="/" className="nav-item"><IoMdArrowBack size={20} /> Exit to App</Link>
-              <button className="nav-item btn-logout" onClick={() => { localStorage.removeItem('adminAuth'); setIsAuthenticated(false); }}><LogOut size={20} /> Logout</button>
+              <button className="nav-item btn-logout" onClick={async () => { const { getAuth, signOut } = await import('firebase/auth'); await signOut(getAuth()); setIsAuthenticated(false); }}><LogOut size={20} /> Logout</button>
           </div>
       </aside>
 
