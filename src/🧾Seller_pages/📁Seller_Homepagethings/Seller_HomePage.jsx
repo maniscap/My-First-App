@@ -172,25 +172,7 @@ function Seller_HomePage() {
         );
     }
 
-    // RENDER: Account Frozen
-    if (appFrozen) {
-        return (
-            <div style={{ backgroundColor: '#FFF7ED', minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '20px', textAlign: 'center' }}>
-                <div style={{ color: '#F97316', marginBottom: '20px' }}><Snowflake size={80} strokeWidth={2} /></div>
-                <h1 style={{ color: '#C2410C', margin: '0 0 10px 0' }}>Account Frozen</h1>
-                <p style={{ color: '#9A3412', maxWidth: '400px', lineHeight: '1.6', marginBottom: '24px' }}>
-                    Your seller account has been temporarily frozen by the admin team.
-                </p>
-                <div style={{ background: 'white', padding: '20px', borderRadius: '16px', border: '1px solid #FED7AA', boxShadow: '0 10px 25px rgba(249, 115, 22, 0.1)', maxWidth: '400px', width: '100%', textAlign: 'left' }}>
-                    <p style={{ margin: '0 0 12px 0', fontSize: '15px', color: '#475569' }}><strong>Reason:</strong> {appFrozenReason}</p>
-                    <p style={{ margin: 0, fontSize: '15px', color: '#475569' }}><strong>Frozen Until:</strong> {appFrozenUntil ? new Date(appFrozenUntil).toLocaleDateString() : 'Indefinitely (Awaiting Admin Review)'}</p>
-                </div>
-                <p style={{ color: '#78350F', maxWidth: '400px', lineHeight: '1.6', marginTop: '24px', fontSize: '14px' }}>
-                    During this time, your listings are hidden from the marketplace, and you cannot add new listings or modify your store.
-                </p>
-            </div>
-        );
-    }
+
 
 
 
@@ -256,7 +238,23 @@ function Seller_HomePage() {
                 </div>
             )}
 
-            {appStatus === 'approved' && (
+            {appFrozen && (
+                <div style={{ background: 'linear-gradient(135deg, #FFF7ED, #FFEDD5)', border: '1px solid #FED7AA', padding: '24px', borderRadius: '24px', marginBottom: '24px', color: '#9A3412', display: 'flex', alignItems: 'flex-start', gap: '16px', boxShadow: '0 8px 25px rgba(249, 115, 22, 0.15)' }}>
+                    <div style={{ background: '#F97316', borderRadius: '12px', padding: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                        <Snowflake size={24} color="#fff" strokeWidth={2.5} />
+                    </div>
+                    <div>
+                        <h3 style={{ margin: '0 0 6px 0', fontSize: '18px', fontWeight: '800' }}>Account Frozen</h3>
+                        <p style={{ margin: '0 0 8px 0', fontSize: '14px', lineHeight: '1.5', color: '#78350F' }}>Your account has been temporarily paused by admins. Your public listings are hidden.</p>
+                        <div style={{ background: 'rgba(255,255,255,0.6)', padding: '12px', borderRadius: '12px', fontSize: '13px', color: '#431407' }}>
+                            <strong>Reason:</strong> {appFrozenReason}<br/>
+                            <strong>Until:</strong> {appFrozenUntil ? new Date(appFrozenUntil).toLocaleDateString() : 'Pending Review'}
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {appStatus === 'approved' && !appFrozen && (
                 <div style={{ background: 'linear-gradient(135deg, #ecfdf5, #d1fae5)', border: '1px solid #a7f3d0', padding: '20px', borderRadius: '20px', marginBottom: '24px', color: '#065f46', display: 'flex', alignItems: 'center', gap: '16px', boxShadow: '0 8px 25px rgba(16, 185, 129, 0.1)' }}>
                     <div style={{ background: '#10b981', borderRadius: '12px', padding: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                         <ShieldCheck size={24} color="#fff" />
@@ -277,8 +275,8 @@ function Seller_HomePage() {
                 <span style={{ fontSize: '13px', color: '#64748b', fontWeight: '600' }}>6 Categories</span>
             </div>
 
-            {/* BLOCK CLICKS IF NOT APPROVED */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+            {/* BLOCK CLICKS IF NOT APPROVED OR FROZEN */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', opacity: (appStatus !== 'approved' || appFrozen) ? 0.4 : 1, pointerEvents: (appStatus !== 'approved' || appFrozen) ? 'none' : 'auto', filter: (appStatus !== 'approved' || appFrozen) ? 'grayscale(0.5)' : 'none' }}>
                 
                 <Link to="/add-business" style={{ textDecoration: 'none' }}>
                     <div style={{ borderRadius: '24px', overflow: 'hidden', boxShadow: '0 10px 30px rgba(0,0,0,0.04)', display: 'flex', flexDirection: 'column', backgroundColor: '#fff', height: '100%', border: '1px solid #e2e8f0', position: 'relative' }}>

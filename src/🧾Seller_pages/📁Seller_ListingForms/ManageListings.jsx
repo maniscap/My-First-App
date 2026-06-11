@@ -13,6 +13,7 @@ export default function ManageListings() {
     const [editModalOpen, setEditModalOpen] = useState(false);
     const [selectedItemForEdit, setSelectedItemForEdit] = useState(null);
     const [isFrozen, setIsFrozen] = useState(false);
+    const [frozenDetails, setFrozenDetails] = useState({ reason: '', until: '' });
 
     const tabs = [
         { id: 'all', label: 'All Listings' },
@@ -64,6 +65,10 @@ export default function ManageListings() {
             const unsubApp = onSnapshot(appDocRef, (docSnap) => {
                 if (docSnap.exists()) {
                     setIsFrozen(docSnap.data().frozen === true);
+                    setFrozenDetails({
+                        reason: docSnap.data().frozenReason || 'No reason provided',
+                        until: docSnap.data().frozenUntil
+                    });
                 }
             });
             unsubListeners.push(unsubApp);
@@ -73,18 +78,7 @@ export default function ManageListings() {
         return () => unsubscribeAuth();
     }, []);
 
-    if (isFrozen) {
-        return (
-            <div style={{ backgroundColor: '#FFF7ED', minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '20px', textAlign: 'center' }}>
-                <div style={{ color: '#F97316', marginBottom: '20px' }}><Snowflake size={80} strokeWidth={2} /></div>
-                <h1 style={{ color: '#C2410C', margin: '0 0 10px 0' }}>Account Frozen</h1>
-                <p style={{ color: '#9A3412', maxWidth: '400px', lineHeight: '1.6', marginBottom: '24px' }}>
-                    You cannot manage listings while your account is frozen.
-                </p>
-                <button onClick={() => navigate('/Seller_HomePage')} style={{ padding: '12px 24px', background: '#F97316', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}>Go Back</button>
-            </div>
-        );
-    }
+
 
     const handleDelete = async (id, collectionName) => {
         const confirmDelete = window.confirm("Are you sure you want to delete this listing?");
@@ -196,6 +190,22 @@ export default function ManageListings() {
                 </button>
             </div>
 
+            {isFrozen && (
+                <div style={{ margin: '20px 20px 0 20px', background: 'linear-gradient(135deg, #FFF7ED, #FFEDD5)', border: '1px solid #FED7AA', padding: '16px', borderRadius: '16px', color: '#9A3412', display: 'flex', alignItems: 'flex-start', gap: '12px', boxShadow: '0 4px 15px rgba(249, 115, 22, 0.1)' }}>
+                    <div style={{ background: '#F97316', borderRadius: '10px', padding: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                        <Snowflake size={20} color="#fff" strokeWidth={2.5} />
+                    </div>
+                    <div>
+                        <h3 style={{ margin: '0 0 4px 0', fontSize: '16px', fontWeight: '700' }}>Account Frozen</h3>
+                        <p style={{ margin: '0 0 8px 0', fontSize: '13px', lineHeight: '1.4', color: '#78350F' }}>Your public listings are hidden. You cannot edit or add new listings.</p>
+                        <div style={{ background: 'rgba(255,255,255,0.6)', padding: '8px 12px', borderRadius: '8px', fontSize: '12px', color: '#431407' }}>
+                            <strong>Reason:</strong> {frozenDetails.reason}<br/>
+                            <strong>Until:</strong> {frozenDetails.until ? new Date(frozenDetails.until).toLocaleDateString() : 'Pending Review'}
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* Clean Tabs */}
             <div style={{ padding: '20px 20px 10px 20px' }}>
                 <div style={{ display: 'flex', overflowX: 'auto', gap: '8px', scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch', paddingBottom: '10px' }}>
@@ -237,9 +247,11 @@ export default function ManageListings() {
                         </div>
                         <h3 style={{ margin: '0 0 8px 0', color: '#111827', fontSize: '18px', fontWeight: '600' }}>No Listings Found</h3>
                         <p style={{ margin: 0, color: '#6B7280', fontSize: '15px', lineHeight: '1.4' }}>You haven't added any {activeTab !== 'all' ? tabs.find(t=>t.id === activeTab).label : ''} items yet.</p>
-                        <button onClick={() => navigate('/Seller_HomePage')} className="btn-press" style={{ marginTop: '24px', padding: '14px 28px', background: '#0066CC', color: '#fff', border: 'none', borderRadius: '12px', fontWeight: '600', fontSize: '15px', cursor: 'pointer', boxShadow: '0 4px 12px rgba(0, 102, 204, 0.2)' }}>
-                            Create Listing
-                        </button>
+                        {!isFrozen && (
+                            <button onClick={() => navigate('/Seller_HomePage')} className="btn-press" style={{ marginTop: '24px', padding: '14px 28px', background: '#0066CC', color: '#fff', border: 'none', borderRadius: '12px', fontWeight: '600', fontSize: '15px', cursor: 'pointer', boxShadow: '0 4px 12px rgba(0, 102, 204, 0.2)' }}>
+                                Create Listing
+                            </button>
+                        )}
                     </div>
                 ) : (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
@@ -279,20 +291,24 @@ export default function ManageListings() {
                                 </div>
                                 
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', flexShrink: 0 }}>
-                                    <button 
-                                        onClick={() => handleOpenEdit(item)}
-                                        className="btn-press"
-                                        style={{ width: '38px', height: '38px', borderRadius: '10px', border: 'none', backgroundColor: '#EFF6FF', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#0066CC' }}
-                                    >
-                                        <Edit2 size={18} strokeWidth={2.5} />
-                                    </button>
-                                    <button 
-                                        onClick={() => handleDelete(item.id, item.collectionName)}
-                                        className="btn-press"
-                                        style={{ width: '38px', height: '38px', borderRadius: '10px', border: 'none', backgroundColor: '#FEE2E2', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#DC2626' }}
-                                    >
-                                        <Trash2 size={18} strokeWidth={2.5} />
-                                    </button>
+                                    {!isFrozen && (
+                                        <>
+                                            <button 
+                                                onClick={() => handleOpenEdit(item)}
+                                                className="btn-press"
+                                                style={{ width: '38px', height: '38px', borderRadius: '10px', border: 'none', backgroundColor: '#EFF6FF', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#0066CC' }}
+                                            >
+                                                <Edit2 size={18} strokeWidth={2.5} />
+                                            </button>
+                                            <button 
+                                                onClick={() => handleDelete(item.id, item.collectionName)}
+                                                className="btn-press"
+                                                style={{ width: '38px', height: '38px', borderRadius: '10px', border: 'none', backgroundColor: '#FEE2E2', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#DC2626' }}
+                                            >
+                                                <Trash2 size={18} strokeWidth={2.5} />
+                                            </button>
+                                        </>
+                                    )}
                                 </div>
                                 
                             </div>

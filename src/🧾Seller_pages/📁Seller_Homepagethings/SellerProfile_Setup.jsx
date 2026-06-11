@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Building2, User, ShieldCheck, Clock, ChevronLeft, UploadCloud, MapPin, Briefcase, CheckCircle2, Trash2, AlertTriangle, Edit3, RefreshCw } from 'lucide-react';
+import { Building2, User, ShieldCheck, Clock, ChevronLeft, UploadCloud, MapPin, Briefcase, CheckCircle2, Trash2, AlertTriangle, Edit3, RefreshCw, Snowflake } from 'lucide-react';
 import { db } from '../../firebase';
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
 import { collection, addDoc, getDoc, doc, setDoc, deleteDoc, query, where, getDocs, onSnapshot } from 'firebase/firestore';
@@ -507,44 +507,63 @@ function SellerProfile_Setup() {
                                     <>
                                         {/* INDIVIDUAL CARD */}
                             {indApp?.status === 'approved' ? (
-                                <div style={{ backgroundColor: '#ecfdf5', padding: '20px', borderRadius: '16px', border: '1px solid #10b981', display: 'flex', gap: '16px', alignItems: 'flex-start', position: 'relative' }}>
-                                    <div style={{ width: '48px', height: '48px', backgroundColor: '#10b981', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                                        <ShieldCheck size={24} color="#fff" />
-                                    </div>
-                                    <div style={{ flex: 1 }}>
-                                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', marginBottom: '4px', justifyContent: 'space-between' }}>
-                                            <div>
-                                                <h4 style={{ margin: 0, fontSize: '16px', fontWeight: '800', color: '#065f46' }}>{indApp.shopName || indApp.fullName || "Single Person"}</h4>
-                                                <span style={{ fontSize: '11px', color: '#059669', fontWeight: 'bold', display: 'block', marginTop: '2px' }}>Single Person Account</span>
-                                            </div>
-                                            <span style={{ fontSize: '10px', background: '#34d399', color: '#fff', padding: '2px 6px', borderRadius: '4px', fontWeight: 'bold' }}>Approved</span>
+                                indApp.frozen ? (
+                                    <div style={{ backgroundColor: '#FFF7ED', padding: '20px', borderRadius: '16px', border: '1px solid #FED7AA', display: 'flex', gap: '16px', alignItems: 'flex-start', position: 'relative' }}>
+                                        <div style={{ width: '48px', height: '48px', backgroundColor: '#F97316', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                            <Snowflake size={24} color="#fff" />
                                         </div>
-                                        <p style={{ margin: 0, fontSize: '13px', color: '#047857', fontWeight: '700' }}>ID: {indApp.sellerId}</p>
-                                        {indApp.district && <p style={{ margin: '4px 0 0 0', fontSize: '12px', color: '#065f46' }}>📍 {indApp.district}, {indApp.state}</p>}
-                                        
-                                        {indApp.hasPendingEdit ? (
-                                            <div style={{ marginTop: '12px', padding: '8px 12px', background: '#fef3c7', borderRadius: '8px', border: '1px solid #fcd34d' }}>
-                                                <p style={{ margin: 0, fontSize: '12px', color: '#d97706', fontWeight: '700' }}>⏳ Edit Request Under Review</p>
-                                                <p style={{ margin: '2px 0 0', fontSize: '11px', color: '#b45309' }}>Your changes are being verified.</p>
+                                        <div style={{ flex: 1 }}>
+                                            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', marginBottom: '4px', justifyContent: 'space-between' }}>
+                                                <div>
+                                                    <h4 style={{ margin: 0, fontSize: '16px', fontWeight: '800', color: '#9A3412' }}>{indApp.shopName || indApp.fullName || "Single Person"}</h4>
+                                                    <span style={{ fontSize: '11px', color: '#C2410C', fontWeight: 'bold', display: 'block', marginTop: '2px' }}>Single Person Account</span>
+                                                </div>
+                                                <span style={{ fontSize: '10px', background: '#F97316', color: '#fff', padding: '2px 6px', borderRadius: '4px', fontWeight: 'bold' }}>Frozen</span>
                                             </div>
-                                        ) : (
-                                            <button 
-                                                onClick={() => {
-                                                    setFormData({
-                                                        ...indApp,
-                                                        phone: indApp.phone ? indApp.phone.replace('+91 ', '') : '',
-                                                        emergencyPhone: indApp.emergencyPhone ? indApp.emergencyPhone.replace('+91 ', '') : ''
-                                                    });
-                                                    setIsEditingMode(true);
-                                                    setAccountType('individual');
-                                                }}
-                                                style={{ marginTop: '12px', padding: '6px 12px', background: '#10b981', color: '#fff', border: 'none', borderRadius: '6px', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
-                                            >
-                                                <Edit3 size={14} /> Edit Profile Info
-                                            </button>
-                                        )}
+                                            <p style={{ margin: 0, fontSize: '13px', color: '#78350F', fontWeight: '700' }}>ID: {indApp.sellerId}</p>
+                                            <p style={{ margin: '8px 0 0 0', fontSize: '12px', color: '#9A3412', lineHeight: '1.4' }}>This account is currently paused. You cannot edit profile info or manage listings until the admin unfreezes it.</p>
+                                        </div>
                                     </div>
-                                </div>
+                                ) : (
+                                    <div style={{ backgroundColor: '#ecfdf5', padding: '20px', borderRadius: '16px', border: '1px solid #10b981', display: 'flex', gap: '16px', alignItems: 'flex-start', position: 'relative' }}>
+                                        <div style={{ width: '48px', height: '48px', backgroundColor: '#10b981', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                            <ShieldCheck size={24} color="#fff" />
+                                        </div>
+                                        <div style={{ flex: 1 }}>
+                                            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', marginBottom: '4px', justifyContent: 'space-between' }}>
+                                                <div>
+                                                    <h4 style={{ margin: 0, fontSize: '16px', fontWeight: '800', color: '#065f46' }}>{indApp.shopName || indApp.fullName || "Single Person"}</h4>
+                                                    <span style={{ fontSize: '11px', color: '#059669', fontWeight: 'bold', display: 'block', marginTop: '2px' }}>Single Person Account</span>
+                                                </div>
+                                                <span style={{ fontSize: '10px', background: '#34d399', color: '#fff', padding: '2px 6px', borderRadius: '4px', fontWeight: 'bold' }}>Approved</span>
+                                            </div>
+                                            <p style={{ margin: 0, fontSize: '13px', color: '#047857', fontWeight: '700' }}>ID: {indApp.sellerId}</p>
+                                            {indApp.district && <p style={{ margin: '4px 0 0 0', fontSize: '12px', color: '#065f46' }}>📍 {indApp.district}, {indApp.state}</p>}
+                                            
+                                            {indApp.hasPendingEdit ? (
+                                                <div style={{ marginTop: '12px', padding: '8px 12px', background: '#fef3c7', borderRadius: '8px', border: '1px solid #fcd34d' }}>
+                                                    <p style={{ margin: 0, fontSize: '12px', color: '#d97706', fontWeight: '700' }}>⏳ Edit Request Under Review</p>
+                                                    <p style={{ margin: '2px 0 0', fontSize: '11px', color: '#b45309' }}>Your changes are being verified.</p>
+                                                </div>
+                                            ) : (
+                                                <button 
+                                                    onClick={() => {
+                                                        setFormData({
+                                                            ...indApp,
+                                                            phone: indApp.phone ? indApp.phone.replace('+91 ', '') : '',
+                                                            emergencyPhone: indApp.emergencyPhone ? indApp.emergencyPhone.replace('+91 ', '') : ''
+                                                        });
+                                                        setIsEditingMode(true);
+                                                        setAccountType('individual');
+                                                    }}
+                                                    style={{ marginTop: '12px', padding: '6px 12px', background: '#10b981', color: '#fff', border: 'none', borderRadius: '6px', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
+                                                >
+                                                    <Edit3 size={14} /> Edit Profile Info
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
+                                )
                             ) : (
                                 <div 
                                     onClick={() => {
@@ -580,44 +599,63 @@ function SellerProfile_Setup() {
 
                             {/* ORGANISATION CARD */}
                             {orgApp?.status === 'approved' ? (
-                                <div style={{ backgroundColor: '#ecfdf5', padding: '20px', borderRadius: '16px', border: '1px solid #10b981', display: 'flex', gap: '16px', alignItems: 'flex-start', position: 'relative' }}>
-                                    <div style={{ width: '48px', height: '48px', backgroundColor: '#10b981', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                                        <ShieldCheck size={24} color="#fff" />
-                                    </div>
-                                    <div style={{ flex: 1 }}>
-                                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', marginBottom: '4px', justifyContent: 'space-between' }}>
-                                            <div>
-                                                <h4 style={{ margin: 0, fontSize: '16px', fontWeight: '800', color: '#065f46' }}>{orgApp.companyName || "Organisation"}</h4>
-                                                <span style={{ fontSize: '11px', color: '#059669', fontWeight: 'bold', display: 'block', marginTop: '2px' }}>Organisation Account</span>
-                                            </div>
-                                            <span style={{ fontSize: '10px', background: '#34d399', color: '#fff', padding: '2px 6px', borderRadius: '4px', fontWeight: 'bold' }}>Approved</span>
+                                orgApp.frozen ? (
+                                    <div style={{ backgroundColor: '#FFF7ED', padding: '20px', borderRadius: '16px', border: '1px solid #FED7AA', display: 'flex', gap: '16px', alignItems: 'flex-start', position: 'relative' }}>
+                                        <div style={{ width: '48px', height: '48px', backgroundColor: '#F97316', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                            <Snowflake size={24} color="#fff" />
                                         </div>
-                                        <p style={{ margin: 0, fontSize: '13px', color: '#047857', fontWeight: '700' }}>ID: {orgApp.sellerId}</p>
-                                        {orgApp.district && <p style={{ margin: '4px 0 0 0', fontSize: '12px', color: '#065f46' }}>📍 {orgApp.district}, {orgApp.state}</p>}
-                                        
-                                        {orgApp.hasPendingEdit ? (
-                                            <div style={{ marginTop: '12px', padding: '8px 12px', background: '#fef3c7', borderRadius: '8px', border: '1px solid #fcd34d' }}>
-                                                <p style={{ margin: 0, fontSize: '12px', color: '#d97706', fontWeight: '700' }}>⏳ Edit Request Under Review</p>
-                                                <p style={{ margin: '2px 0 0', fontSize: '11px', color: '#b45309' }}>Your changes are being verified.</p>
+                                        <div style={{ flex: 1 }}>
+                                            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', marginBottom: '4px', justifyContent: 'space-between' }}>
+                                                <div>
+                                                    <h4 style={{ margin: 0, fontSize: '16px', fontWeight: '800', color: '#9A3412' }}>{orgApp.companyName || "Organisation"}</h4>
+                                                    <span style={{ fontSize: '11px', color: '#C2410C', fontWeight: 'bold', display: 'block', marginTop: '2px' }}>Organisation Account</span>
+                                                </div>
+                                                <span style={{ fontSize: '10px', background: '#F97316', color: '#fff', padding: '2px 6px', borderRadius: '4px', fontWeight: 'bold' }}>Frozen</span>
                                             </div>
-                                        ) : (
-                                            <button 
-                                                onClick={() => {
-                                                    setFormData({
-                                                        ...orgApp,
-                                                        phone: orgApp.phone ? orgApp.phone.replace('+91 ', '') : '',
-                                                        emergencyPhone: orgApp.emergencyPhone ? orgApp.emergencyPhone.replace('+91 ', '') : ''
-                                                    });
-                                                    setIsEditingMode(true);
-                                                    setAccountType('organisation');
-                                                }}
-                                                style={{ marginTop: '12px', padding: '6px 12px', background: '#10b981', color: '#fff', border: 'none', borderRadius: '6px', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
-                                            >
-                                                <Edit3 size={14} /> Edit Profile Info
-                                            </button>
-                                        )}
+                                            <p style={{ margin: 0, fontSize: '13px', color: '#78350F', fontWeight: '700' }}>ID: {orgApp.sellerId}</p>
+                                            <p style={{ margin: '8px 0 0 0', fontSize: '12px', color: '#9A3412', lineHeight: '1.4' }}>This account is currently paused. You cannot edit profile info or manage listings until the admin unfreezes it.</p>
+                                        </div>
                                     </div>
-                                </div>
+                                ) : (
+                                    <div style={{ backgroundColor: '#ecfdf5', padding: '20px', borderRadius: '16px', border: '1px solid #10b981', display: 'flex', gap: '16px', alignItems: 'flex-start', position: 'relative' }}>
+                                        <div style={{ width: '48px', height: '48px', backgroundColor: '#10b981', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                            <ShieldCheck size={24} color="#fff" />
+                                        </div>
+                                        <div style={{ flex: 1 }}>
+                                            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', marginBottom: '4px', justifyContent: 'space-between' }}>
+                                                <div>
+                                                    <h4 style={{ margin: 0, fontSize: '16px', fontWeight: '800', color: '#065f46' }}>{orgApp.companyName || "Organisation"}</h4>
+                                                    <span style={{ fontSize: '11px', color: '#059669', fontWeight: 'bold', display: 'block', marginTop: '2px' }}>Organisation Account</span>
+                                                </div>
+                                                <span style={{ fontSize: '10px', background: '#34d399', color: '#fff', padding: '2px 6px', borderRadius: '4px', fontWeight: 'bold' }}>Approved</span>
+                                            </div>
+                                            <p style={{ margin: 0, fontSize: '13px', color: '#047857', fontWeight: '700' }}>ID: {orgApp.sellerId}</p>
+                                            {orgApp.district && <p style={{ margin: '4px 0 0 0', fontSize: '12px', color: '#065f46' }}>📍 {orgApp.district}, {orgApp.state}</p>}
+                                            
+                                            {orgApp.hasPendingEdit ? (
+                                                <div style={{ marginTop: '12px', padding: '8px 12px', background: '#fef3c7', borderRadius: '8px', border: '1px solid #fcd34d' }}>
+                                                    <p style={{ margin: 0, fontSize: '12px', color: '#d97706', fontWeight: '700' }}>⏳ Edit Request Under Review</p>
+                                                    <p style={{ margin: '2px 0 0', fontSize: '11px', color: '#b45309' }}>Your changes are being verified.</p>
+                                                </div>
+                                            ) : (
+                                                <button 
+                                                    onClick={() => {
+                                                        setFormData({
+                                                            ...orgApp,
+                                                            phone: orgApp.phone ? orgApp.phone.replace('+91 ', '') : '',
+                                                            emergencyPhone: orgApp.emergencyPhone ? orgApp.emergencyPhone.replace('+91 ', '') : ''
+                                                        });
+                                                        setIsEditingMode(true);
+                                                        setAccountType('organisation');
+                                                    }}
+                                                    style={{ marginTop: '12px', padding: '6px 12px', background: '#10b981', color: '#fff', border: 'none', borderRadius: '6px', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
+                                                >
+                                                    <Edit3 size={14} /> Edit Profile Info
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
+                                )
                             ) : (
                                 <div 
                                     onClick={() => {
