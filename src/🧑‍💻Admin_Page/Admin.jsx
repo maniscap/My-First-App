@@ -4,6 +4,7 @@ import { db } from '../firebase';
 import { collection, getDocs, getDoc, doc, updateDoc, deleteField, deleteDoc, getCountFromServer, query, limit, onSnapshot, where, startAfter, writeBatch, setDoc } from 'firebase/firestore';
 import { storage } from '../firebase';
 import { ref, deleteObject } from 'firebase/storage';
+import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
 import { IoMdArrowBack } from 'react-icons/io';
 import { CheckCircle, XCircle, User, Building, LayoutDashboard, ClipboardList, Users, List, LogOut, Lock, RefreshCw, Edit3, CheckCircle2, Check, X, Search } from 'lucide-react';
 
@@ -147,23 +148,31 @@ function Admin() {
       e.preventDefault();
       setIsProcessing(true);
       try {
-          const authDoc = await getDoc(doc(db, "system_config", "admin_auth"));
+          const authObj = getAuth();
+          const adminEmail = "admin@farmcap.com"; // Fixed admin email for the rules
           let isValid = false;
 
-          if (authDoc.exists()) {
-              const data = authDoc.data();
-              if (adminId === data.adminId && password === data.password) isValid = true;
-          } else {
-              // Fallback creation for first-time use, removes hardcoded strings from future client bundles
-              if (adminId === 'admin' && password === 'admin123') {
-                  isValid = true;
-                  await setDoc(doc(db, "system_config", "admin_auth"), { adminId: 'admin', password: 'admin123' });
+          // First, use Firebase Auth so the Security Rules allow reads
+          try {
+              await signInWithEmailAndPassword(authObj, adminEmail, password);
+              isValid = true;
+          } catch(err) {
+              if (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential') {
+                  if (adminId === 'admin' && password === 'admin123') {
+                      await createUserWithEmailAndPassword(authObj, adminEmail, password);
+                      isValid = true;
+                  }
               }
           }
 
           if (isValid) {
-              localStorage.setItem('adminAuth', 'true');
-              setIsAuthenticated(true);
+              // Only grant access if the internal adminId matches
+              if (adminId === 'admin') {
+                  localStorage.setItem('adminAuth', 'true');
+                  setIsAuthenticated(true);
+              } else {
+                  alert('Invalid Admin ID or Password');
+              }
           } else {
               alert('Invalid Admin ID or Password');
           }
