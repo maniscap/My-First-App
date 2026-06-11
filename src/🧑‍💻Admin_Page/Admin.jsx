@@ -69,6 +69,10 @@ function Admin() {
 
   useEffect(() => {
       if (activeTab === 'reports') fetchReports();
+      
+      // Clear frozen search bar when navigating across tabs
+      setSellerIdSearch('');
+      setSearchedSeller(null);
   }, [activeTab]);
 
   const handlePublishAnnouncement = async (e) => {
