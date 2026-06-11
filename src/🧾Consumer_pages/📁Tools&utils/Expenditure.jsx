@@ -102,7 +102,7 @@ function Expenditure() {
       setFormData({ ...formData, name: name, emoji: getAutoEmoji(name) });
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!formData.name) return;
     
     // Calculate Lease (Annual)
