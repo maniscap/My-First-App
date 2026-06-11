@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { ArrowLeft, Leaf, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, Leaf, CheckCircle2, ShieldCheck, ShieldAlert } from 'lucide-react';
 import { farmFreshCategories, farmFreshUnits } from '../../utils/ProductLibrary';
 import TermsAgreementCheckbox from '../../🛠️Shared_Components/TermsAgreementCheckbox';
 import UniversalImagePicker from '../../utils/UniversalImagePicker';
@@ -57,6 +57,7 @@ export default function FarmFresh_ListingForm() {
     const [isCategoryOpen, setIsCategoryOpen] = useState(false);
     const [isItemOpen, setIsItemOpen] = useState(false);
     const [errorToast, setErrorToast] = useState('');
+    const storefrontSynced = localStorage.getItem('seller_storefront_synced') === 'true';
     
     // Check Seller Approval Status
     const appStatus = localStorage.getItem('seller_app_status') || 'none';
@@ -683,7 +684,7 @@ export default function FarmFresh_ListingForm() {
                     {/* Submit Button */}
                     <button 
                         type="submit" 
-                        disabled={isSubmitting}
+                        disabled={isSubmitting || !storefrontSynced}
                         style={{ width: '100%', padding: '18px', borderRadius: '16px', backgroundColor: isSubmitting ? '#94a3b8' : '#0f172a', color: '#fff', border: 'none', fontSize: '16px', fontWeight: '700', cursor: isSubmitting ? 'not-allowed' : 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', boxShadow: '0 10px 25px rgba(15,23,42,0.2)' }}
                     >
                         {isSubmitting ? (
@@ -698,6 +699,21 @@ export default function FarmFresh_ListingForm() {
                             </>
                         )}
                     </button>
+
+                    {/* Storefront Synced Watermark */}
+                    <div style={{ marginTop: '20px', textAlign: 'center' }}>
+                        {storefrontSynced ? (
+                            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', opacity: 0.8 }}>
+                                <ShieldCheck size={18} color="#10B981" />
+                                <span style={{ fontSize: '13px', color: '#065F46', fontWeight: '700' }}>Store front setup completed 100% and synced to cloud</span>
+                            </div>
+                        ) : (
+                            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', opacity: 0.9, backgroundColor: '#FEF2F2', padding: '10px 16px', borderRadius: '12px', border: '1px solid #FECACA' }}>
+                                <ShieldAlert size={18} color="#DC2626" />
+                                <span style={{ fontSize: '13px', color: '#991B1B', fontWeight: '700' }}>Store front details not synced to cloud. Please finish the store front details.</span>
+                            </div>
+                        )}
+                    </div>
                 </form>
             </div>
 

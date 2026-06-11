@@ -128,13 +128,16 @@ export default function Seller_StorefrontSetup() {
           if (sfSnap.exists()) {
              storefrontData = sfSnap.data();
              setIsSavedToCloud(true);
+             localStorage.setItem('seller_storefront_synced', 'true');
+          } else {
+             localStorage.setItem('seller_storefront_synced', 'false');
           }
 
           if (storefrontData && storefrontData.storefrontLocation) {
             setLocationForm(storefrontData.storefrontLocation);
             setSavedLocationForm(storefrontData.storefrontLocation);
           } else {
-            const localLoc = localStorage.getItem('seller_location_form');
+            const localLoc = localStorage.getItem('seller_location_form_' + appId);
             if (localLoc) {
                setLocationForm(JSON.parse(localLoc));
                setSavedLocationForm(JSON.parse(localLoc));
@@ -147,7 +150,7 @@ export default function Seller_StorefrontSetup() {
             setOperationsForm(storefrontData.storeOperations);
             setSavedOperationsForm(storefrontData.storeOperations);
           } else {
-            const localOp = localStorage.getItem('seller_operations_form');
+            const localOp = localStorage.getItem('seller_operations_form_' + appId);
             if (localOp) {
               setOperationsForm(JSON.parse(localOp));
               setSavedOperationsForm(JSON.parse(localOp));
@@ -511,7 +514,7 @@ export default function Seller_StorefrontSetup() {
       }
       setIsSavingLocation(true);
       try {
-        localStorage.setItem('seller_location_form', JSON.stringify(formattedLoc));
+        localStorage.setItem('seller_location_form_' + sellerId, JSON.stringify(formattedLoc));
           setSavedLocationForm(formattedLoc);
         setIsSavedToCloud(false);
         // Update local state so it reflects instantly
@@ -744,7 +747,7 @@ export default function Seller_StorefrontSetup() {
 
       setIsSavingOperations(true);
       try {
-        localStorage.setItem('seller_operations_form', JSON.stringify(formattedOp));
+        localStorage.setItem('seller_operations_form_' + sellerId, JSON.stringify(formattedOp));
         setSavedOperationsForm(formattedOp);
         setIsSavedToCloud(false);
         alert("Operations & Logistics saved locally!");
@@ -1005,6 +1008,7 @@ export default function Seller_StorefrontSetup() {
         storeOperations: operationsForm,
         setupStepOperationsCompleted: true
       }, { merge: true });
+      localStorage.setItem('seller_storefront_synced', 'true');
       setIsSavedToCloud(true);
       alert("All details successfully saved to the cloud!");
     } catch (e) {
