@@ -2,53 +2,47 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
+    // Helper: is the requester the admin?
+    function isAdmin() {
+      return request.auth != null && request.auth.token.email == 'icecap@689694.com';
+    }
+
     // --- 1. PROFILES ---
-    // Consumer Profiles: Only the logged-in consumer can view or edit their private data.
     match /consumer_profiles/{userId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
     
-    // Seller Profiles: Publicly visible to consumers, but strictly only editable by the specific seller.
     match /seller_profiles/{userId} {
       allow read: if true;
       allow write: if request.auth != null && request.auth.uid == userId;
     }
 
     // --- STOREFRONTS ---
-    // Storefront document IDs are random (SIN-... or ORG-...). We verify ownership via the internal userId field.
     match /organisation_storefront/{sellerId} {
       allow read: if true;
       allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
-      allow update: if request.auth != null && resource.data.userId == request.auth.uid && request.resource.data.userId == request.auth.uid;
-      allow delete: if request.auth != null && resource.data.userId == request.auth.uid;
+      allow update: if isAdmin() || (request.auth != null && resource.data.userId == request.auth.uid && request.resource.data.userId == request.auth.uid);
+      allow delete: if isAdmin() || (request.auth != null && resource.data.userId == request.auth.uid);
     }
     match /individual_storefront/{sellerId} {
       allow read: if true;
       allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
-      allow update: if request.auth != null && resource.data.userId == request.auth.uid && request.resource.data.userId == request.auth.uid;
-      allow delete: if request.auth != null && resource.data.userId == request.auth.uid;
+      allow update: if isAdmin() || (request.auth != null && resource.data.userId == request.auth.uid && request.resource.data.userId == request.auth.uid);
+      allow delete: if isAdmin() || (request.auth != null && resource.data.userId == request.auth.uid);
     }
     
     // --- 2. SELLER APPROVALS & ADMIN ---
-    // Readable by all (sellers check their own status, admin reads all).
-    // Only the admin Firebase account OR the application owner can update/delete.
     match /seller_applications/{sellerId} {
       allow read: if true;
       allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
-      allow update: if request.auth != null && (
-        request.auth.token.email == 'icecap@689694.com' ||
-        resource.data.userId == request.auth.uid
-      );
-      allow delete: if request.auth != null && (
-        request.auth.token.email == 'icecap@689694.com' ||
-        resource.data.userId == request.auth.uid
-      );
+      allow update: if isAdmin() || (request.auth != null && resource.data.userId == request.auth.uid);
+      allow delete: if isAdmin() || (request.auth != null && resource.data.userId == request.auth.uid);
     }
     
     // System config: only admin can write
     match /system_config/{document=**} {
       allow read: if true;
-      allow write: if request.auth != null && request.auth.token.email == 'icecap@689694.com';
+      allow write: if isAdmin();
     }
     
     // Market Rates: Public to read. Only an Admin can update.
@@ -58,48 +52,55 @@ service cloud.firestore {
     }
 
     // --- 3. THE 6 SELLER LISTINGS ---
-    // Public to view. When creating or updating a listing, the attached 'userId' MUST match the logged-in user's UID.
+    // Admin can delete any listing. Sellers can only manage their own.
     match /listings_farm_fresh/{document=**} {
       allow read: if true;
       allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
-      allow update: if request.auth != null && resource.data.userId == request.auth.uid && request.resource.data.userId == request.auth.uid;
-      allow delete: if request.auth != null && resource.data.userId == request.auth.uid;
+      allow update: if isAdmin() || (request.auth != null && resource.data.userId == request.auth.uid && request.resource.data.userId == request.auth.uid);
+      allow delete: if isAdmin() || (request.auth != null && resource.data.userId == request.auth.uid);
     }
     match /listings_machinery/{document=**} {
       allow read: if true;
       allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
-      allow update: if request.auth != null && resource.data.userId == request.auth.uid && request.resource.data.userId == request.auth.uid;
-      allow delete: if request.auth != null && resource.data.userId == request.auth.uid;
+      allow update: if isAdmin() || (request.auth != null && resource.data.userId == request.auth.uid && request.resource.data.userId == request.auth.uid);
+      allow delete: if isAdmin() || (request.auth != null && resource.data.userId == request.auth.uid);
     }
     match /listings_workers/{document=**} {
       allow read: if true;
       allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
-      allow update: if request.auth != null && resource.data.userId == request.auth.uid && request.resource.data.userId == request.auth.uid;
-      allow delete: if request.auth != null && resource.data.userId == request.auth.uid;
+      allow update: if isAdmin() || (request.auth != null && resource.data.userId == request.auth.uid && request.resource.data.userId == request.auth.uid);
+      allow delete: if isAdmin() || (request.auth != null && resource.data.userId == request.auth.uid);
     }
     match /listings_business/{document=**} {
       allow read: if true;
       allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
-      allow update: if request.auth != null && resource.data.userId == request.auth.uid && request.resource.data.userId == request.auth.uid;
-      allow delete: if request.auth != null && resource.data.userId == request.auth.uid;
+      allow update: if isAdmin() || (request.auth != null && resource.data.userId == request.auth.uid && request.resource.data.userId == request.auth.uid);
+      allow delete: if isAdmin() || (request.auth != null && resource.data.userId == request.auth.uid);
     }
     match /listings_freelancing/{document=**} {
       allow read: if true;
       allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
-      allow update: if request.auth != null && resource.data.userId == request.auth.uid && request.resource.data.userId == request.auth.uid;
-      allow delete: if request.auth != null && resource.data.userId == request.auth.uid;
+      allow update: if isAdmin() || (request.auth != null && resource.data.userId == request.auth.uid && request.resource.data.userId == request.auth.uid);
+      allow delete: if isAdmin() || (request.auth != null && resource.data.userId == request.auth.uid);
     }
     match /listings_local_goods/{document=**} {
       allow read: if true;
       allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
-      allow update: if request.auth != null && resource.data.userId == request.auth.uid && request.resource.data.userId == request.auth.uid;
-      allow delete: if request.auth != null && resource.data.userId == request.auth.uid;
+      allow update: if isAdmin() || (request.auth != null && resource.data.userId == request.auth.uid && request.resource.data.userId == request.auth.uid);
+      allow delete: if isAdmin() || (request.auth != null && resource.data.userId == request.auth.uid);
     }
     match /seller_listings/{document=**} {
       allow read: if true;
       allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
-      allow update: if request.auth != null && resource.data.userId == request.auth.uid && request.resource.data.userId == request.auth.uid;
-      allow delete: if request.auth != null && resource.data.userId == request.auth.uid;
+      allow update: if isAdmin() || (request.auth != null && resource.data.userId == request.auth.uid && request.resource.data.userId == request.auth.uid);
+      allow delete: if isAdmin() || (request.auth != null && resource.data.userId == request.auth.uid);
+    }
+
+    // Reports
+    match /reported_listings/{document=**} {
+      allow read: if isAdmin() || request.auth != null;
+      allow create: if request.auth != null;
+      allow delete: if isAdmin();
     }
   }
 }
