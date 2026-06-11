@@ -128,6 +128,7 @@ function App() {
           {!user ? (
             <Routes>
               <Route path="/login" element={<Login />} />
+              <Route path="/admin" element={<Admin />} />
               <Route path="*" element={<Navigate to="/login" replace />} />
             </Routes>
           ) : isSellerMode ? (
@@ -159,6 +160,8 @@ function App() {
               {/* --- LOCATION --- */}
               <Route path="/storefront-setup" element={<Seller_StorefrontSetup />} />
               
+              {/* Admin always accessible */}
+              <Route path="/admin" element={<Admin />} />
 
               <Route path="*" element={
                 <div style={{ textAlign: 'center', marginTop: '100px', color: theme.colors.text }}>
