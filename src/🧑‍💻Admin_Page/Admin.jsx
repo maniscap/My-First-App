@@ -168,6 +168,7 @@ function Admin() {
           });
           setFreezeModalOpen(false);
           setSellerToFreeze(null);
+          setSearchedSeller(null);
           alert(`Account frozen successfully${freezeDays === 0 ? ' indefinitely' : ` for ${freezeDays} days`}.`);
       } catch (e) {
           console.error(e);
