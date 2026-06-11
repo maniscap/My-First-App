@@ -4,7 +4,7 @@ import { db } from '../firebase';
 import { collection, getDocs, getDoc, doc, updateDoc, deleteField, deleteDoc, getCountFromServer, query, limit, onSnapshot, where, startAfter, writeBatch, setDoc } from 'firebase/firestore';
 import { storage } from '../firebase';
 import { ref, deleteObject } from 'firebase/storage';
-import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
+import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged } from 'firebase/auth';
 import { IoMdArrowBack } from 'react-icons/io';
 import { CheckCircle, XCircle, User, Building, LayoutDashboard, ClipboardList, Users, List, LogOut, Lock, RefreshCw, Edit3, CheckCircle2, Check, X, Search } from 'lucide-react';
 
@@ -224,21 +224,39 @@ function Admin() {
   };
 
   useEffect(() => { 
-      if (isAuthenticated) fetchData(); 
+      let unsubAuth;
+      if (isAuthenticated) { 
+          const auth = getAuth();
+          unsubAuth = onAuthStateChanged(auth, (user) => {
+              if (user && user.email === "admin@farmcap.com") {
+                  fetchData();
+              }
+          });
+      }
+      return () => { if (unsubAuth) unsubAuth(); };
   }, [isAuthenticated]);
 
   // Real-time listener for Seller Applications
   useEffect(() => {
-      let unsub = () => {};
+      let unsubSnapshot;
+      let unsubAuth;
       if (isAuthenticated) {
-          const appsQuery = query(collection(db, "seller_applications"), limit(100));
-          unsub = onSnapshot(appsQuery, (snapshot) => {
-              setSellerApplications(snapshot.docs.map(d => ({id: d.id, ...d.data()})));
-          }, (error) => {
-              console.error("Error with admin onSnapshot:", error);
+          const auth = getAuth();
+          unsubAuth = onAuthStateChanged(auth, (user) => {
+              if (user && user.email === "admin@farmcap.com") {
+                  const appsQuery = query(collection(db, "seller_applications"), limit(100));
+                  unsubSnapshot = onSnapshot(appsQuery, (snapshot) => {
+                      setSellerApplications(snapshot.docs.map(d => ({id: d.id, ...d.data()})));
+                  }, (error) => {
+                      console.error("Error with admin onSnapshot:", error);
+                  });
+              }
           });
       }
-      return () => unsub();
+      return () => {
+          if (unsubAuth) unsubAuth();
+          if (unsubSnapshot) unsubSnapshot();
+      };
   }, [isAuthenticated]);
 
   const cleanupStorageMedia = async (appData) => {
