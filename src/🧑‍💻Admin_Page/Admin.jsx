@@ -634,8 +634,8 @@ function Admin() {
               <button className={`nav-item ${activeTab === 'approved' ? 'active' : ''}`} onClick={() => setActiveTab('approved')}>
                   <Users size={20} /> Approved Sellers
               </button>
-              <button className={`nav-item ${activeTab === 'frozen' ? 'active' : ''}`} onClick={() => setActiveTab('frozen')} style={frozenApps.length > 0 ? {color: '#F97316'} : {}}>
-                  <Snowflake size={20} /> Frozen Accounts {frozenApps.length > 0 && <span className="badge" style={{background: '#F97316'}}>{frozenApps.length}</span>}
+              <button className={`nav-item ${activeTab === 'frozen' ? 'active' : ''}`} onClick={() => setActiveTab('frozen')}>
+                  <Snowflake size={20} /> Freezed Accounts {frozenApps.length > 0 && <span className="badge" style={{background: '#F97316'}}>{frozenApps.length}</span>}
               </button>
               <button className={`nav-item ${activeTab === 'listings' ? 'active' : ''}`} onClick={() => setActiveTab('listings')}>
                   <List size={20} /> Active Listings
@@ -867,7 +867,7 @@ function Admin() {
           {activeTab === 'frozen' && (
               <div className="tab-content">
                   <div className="header-titles">
-                      <h1 style={{color: '#F97316', display: 'flex', alignItems: 'center', gap: '12px'}}><Snowflake size={36} strokeWidth={2.5} /> Frozen Accounts</h1>
+                      <h1 style={{color: '#F97316', display: 'flex', alignItems: 'center', gap: '12px'}}><Snowflake size={36} strokeWidth={2.5} /> Freezed Accounts</h1>
                       <p>Manage temporarily suspended seller accounts. Searching by Seller ID costs 1 read regardless of total sellers.</p>
                   </div>
                   
@@ -890,7 +890,7 @@ function Admin() {
                   {searchedSeller && (
                       <div style={{ marginBottom: '40px', padding: '20px', background: searchedSeller.frozen ? '#FFF7ED' : '#F0FDF4', border: `1px solid ${searchedSeller.frozen ? '#FED7AA' : '#BBF7D0'}`, borderRadius: '16px' }}>
                           <h3 style={{ margin: '0 0 16px 0', display: 'flex', alignItems: 'center', gap: '8px', color: searchedSeller.frozen ? '#C2410C' : '#15803D' }}>
-                              {searchedSeller.frozen ? <><Snowflake size={20} /> Found Frozen Seller</> : '✅ Found Active Seller'}
+                              {searchedSeller.frozen ? <><Snowflake size={20} /> Found Freezed Seller</> : '✅ Found Active Seller'}
                           </h3>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                               <div>
@@ -900,7 +900,7 @@ function Admin() {
                                   {searchedSeller.frozen && (
                                       <div style={{ marginTop: '12px', color: '#9A3412', fontSize: '14px', background: 'rgba(255,255,255,0.5)', padding: '8px 12px', borderRadius: '8px' }}>
                                           <strong>Reason:</strong> {searchedSeller.frozenReason || 'No reason provided'}<br/>
-                                          <strong>Frozen Until:</strong> {searchedSeller.frozenUntil ? new Date(searchedSeller.frozenUntil).toLocaleString() : 'Indefinitely'}
+                                          <strong>Freezed Until:</strong> {searchedSeller.frozenUntil ? new Date(searchedSeller.frozenUntil).toLocaleString() : 'Indefinitely'}
                                       </div>
                                   )}
                               </div>
@@ -915,9 +915,9 @@ function Admin() {
                       </div>
                   )}
 
-                  <h3 style={{ margin: '0 0 16px 0', color: '#334155' }}>All Frozen Accounts ({frozenApps.length})</h3>
+                  <h3 style={{ margin: '0 0 16px 0', color: '#334155' }}>All Freezed Accounts ({frozenApps.length})</h3>
                   {frozenApps.length === 0 ? (
-                      <p style={{ color: '#64748b' }}>No frozen accounts right now.</p>
+                      <p style={{ color: '#64748b' }}>No freezed accounts right now.</p>
                   ) : (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                           {frozenApps.map(app => (

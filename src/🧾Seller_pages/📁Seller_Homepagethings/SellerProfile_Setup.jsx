@@ -518,7 +518,7 @@ function SellerProfile_Setup() {
                                                     <h4 style={{ margin: 0, fontSize: '16px', fontWeight: '800', color: '#9A3412' }}>{indApp.shopName || indApp.fullName || "Single Person"}</h4>
                                                     <span style={{ fontSize: '11px', color: '#C2410C', fontWeight: 'bold', display: 'block', marginTop: '2px' }}>Single Person Account</span>
                                                 </div>
-                                                <span style={{ fontSize: '10px', background: '#F97316', color: '#fff', padding: '2px 6px', borderRadius: '4px', fontWeight: 'bold' }}>Frozen</span>
+                                                <span style={{ fontSize: '10px', background: '#F97316', color: '#fff', padding: '2px 6px', borderRadius: '4px', fontWeight: 'bold' }}>Freezed</span>
                                             </div>
                                             <p style={{ margin: 0, fontSize: '13px', color: '#78350F', fontWeight: '700' }}>ID: {indApp.sellerId}</p>
                                             <p style={{ margin: '8px 0 0 0', fontSize: '12px', color: '#9A3412', lineHeight: '1.4' }}>This account is currently paused. You cannot edit profile info or manage listings until the admin unfreezes it.</p>
@@ -610,7 +610,7 @@ function SellerProfile_Setup() {
                                                     <h4 style={{ margin: 0, fontSize: '16px', fontWeight: '800', color: '#9A3412' }}>{orgApp.companyName || "Organisation"}</h4>
                                                     <span style={{ fontSize: '11px', color: '#C2410C', fontWeight: 'bold', display: 'block', marginTop: '2px' }}>Organisation Account</span>
                                                 </div>
-                                                <span style={{ fontSize: '10px', background: '#F97316', color: '#fff', padding: '2px 6px', borderRadius: '4px', fontWeight: 'bold' }}>Frozen</span>
+                                                <span style={{ fontSize: '10px', background: '#F97316', color: '#fff', padding: '2px 6px', borderRadius: '4px', fontWeight: 'bold' }}>Freezed</span>
                                             </div>
                                             <p style={{ margin: 0, fontSize: '13px', color: '#78350F', fontWeight: '700' }}>ID: {orgApp.sellerId}</p>
                                             <p style={{ margin: '8px 0 0 0', fontSize: '12px', color: '#9A3412', lineHeight: '1.4' }}>This account is currently paused. You cannot edit profile info or manage listings until the admin unfreezes it.</p>

@@ -196,7 +196,7 @@ export default function ManageListings() {
                         <Snowflake size={20} color="#fff" strokeWidth={2.5} />
                     </div>
                     <div>
-                        <h3 style={{ margin: '0 0 4px 0', fontSize: '16px', fontWeight: '700' }}>Account Frozen</h3>
+                        <h3 style={{ margin: '0 0 4px 0', fontSize: '16px', fontWeight: '700' }}>Account Freezed</h3>
                         <p style={{ margin: '0 0 8px 0', fontSize: '13px', lineHeight: '1.4', color: '#78350F' }}>Your public listings are hidden. You cannot edit or add new listings.</p>
                         <div style={{ background: 'rgba(255,255,255,0.6)', padding: '8px 12px', borderRadius: '8px', fontSize: '12px', color: '#431407' }}>
                             <strong>Reason:</strong> {frozenDetails.reason}<br/>

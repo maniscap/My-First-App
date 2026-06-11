@@ -244,7 +244,7 @@ function Seller_HomePage() {
                         <Snowflake size={24} color="#fff" strokeWidth={2.5} />
                     </div>
                     <div>
-                        <h3 style={{ margin: '0 0 6px 0', fontSize: '18px', fontWeight: '800' }}>Account Frozen</h3>
+                        <h3 style={{ margin: '0 0 6px 0', fontSize: '18px', fontWeight: '800' }}>Account Freezed</h3>
                         <p style={{ margin: '0 0 8px 0', fontSize: '14px', lineHeight: '1.5', color: '#78350F' }}>Your account has been temporarily paused by admins. Your public listings are hidden.</p>
                         <div style={{ background: 'rgba(255,255,255,0.6)', padding: '12px', borderRadius: '12px', fontSize: '13px', color: '#431407' }}>
                             <strong>Reason:</strong> {appFrozenReason}<br/>
