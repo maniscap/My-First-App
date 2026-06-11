@@ -329,8 +329,8 @@ function Admin() {
       const unsubAuth = onAuthStateChanged(authObj, (user) => {
           if (user) {
               setIsAuthenticated(true);
-              // Start real-time listener
-              const appsQuery = query(collection(db, "seller_applications"), limit(100));
+              // Start real-time listener (fetching latest 200 to cover holiday spikes)
+              const appsQuery = query(collection(db, "seller_applications"), orderBy("createdAt", "desc"), limit(200));
               unsubSnapshot = onSnapshot(appsQuery, (snapshot) => {
                   setSellerApplications(snapshot.docs.map(d => ({id: d.id, ...d.data()})));
               }, (error) => {
@@ -544,7 +544,7 @@ function Admin() {
       const idMatch = a.sellerId?.toLowerCase().includes(approvedSearchLower);
       const nameMatch = a.fullName?.toLowerCase().includes(approvedSearchLower) || a.shopName?.toLowerCase().includes(approvedSearchLower);
       return idMatch || nameMatch;
-  });
+  }).slice(0, 20);
 
   const approvedOrg = sellerApplications.filter(a => {
       if (a.status !== 'approved' || a.accountType !== 'organisation') return false;
@@ -552,7 +552,7 @@ function Admin() {
       const idMatch = a.sellerId?.toLowerCase().includes(approvedSearchLower);
       const nameMatch = a.companyName?.toLowerCase().includes(approvedSearchLower) || a.shopName?.toLowerCase().includes(approvedSearchLower);
       return idMatch || nameMatch;
-  });
+  }).slice(0, 20);
 
   const pendingEdits = sellerApplications.filter(a => a.hasPendingEdit);
   const frozenApps = sellerApplications.filter(a => a.frozen === true);
@@ -882,13 +882,13 @@ function Admin() {
                                   onClick={() => setApprovedTab('individual')}
                                   style={{ flex: 1, padding: '12px', borderRadius: '12px', border: 'none', fontWeight: 'bold', cursor: 'pointer', background: approvedTab === 'individual' ? '#8b5cf6' : '#e2e8f0', color: approvedTab === 'individual' ? 'white' : '#64748b', transition: 'all 0.2s' }}
                               >
-                                  👤 Individual Shops ({approvedInd.length})
+                                  👤 Recent Individuals ({approvedInd.length})
                               </button>
                               <button 
                                   onClick={() => setApprovedTab('organisation')}
                                   style={{ flex: 1, padding: '12px', borderRadius: '12px', border: 'none', fontWeight: 'bold', cursor: 'pointer', background: approvedTab === 'organisation' ? '#3b82f6' : '#e2e8f0', color: approvedTab === 'organisation' ? 'white' : '#64748b', transition: 'all 0.2s' }}
                               >
-                                  🏢 Organisations ({approvedOrg.length})
+                                  🏢 Recent Organisations ({approvedOrg.length})
                               </button>
                           </div>
 
