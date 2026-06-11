@@ -871,17 +871,17 @@ function Admin() {
                   </div>
                   
                   {/* Search by ID Bar */}
-                  <div style={{ display: 'flex', gap: '10px', marginBottom: '30px', background: 'white', padding: '16px', borderRadius: '16px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px rgba(0,0,0,0.02)' }}>
+                  <div style={{ display: 'flex', gap: '10px', marginBottom: '30px' }}>
                       <input 
                           type="text" 
-                          placeholder="Search exact Seller ID (e.g. SIN-12345)..." 
+                          placeholder="Search Seller ID..." 
                           value={sellerIdSearch}
                           onChange={(e) => setSellerIdSearch(e.target.value)}
                           onKeyDown={(e) => e.key === 'Enter' && handleSearchBySellerId()}
                           style={{ flex: 1, padding: '12px 16px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '15px', outline: 'none' }}
                       />
                       <button onClick={handleSearchBySellerId} disabled={isSearching} style={{ padding: '0 24px', background: '#0f172a', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: isSearching ? 'wait' : 'pointer' }}>
-                          {isSearching ? 'Searching...' : '🔍 Find Seller'}
+                          Find
                       </button>
                   </div>
 
@@ -907,7 +907,7 @@ function Admin() {
                                   {searchedSeller.frozen ? (
                                       <button onClick={() => { handleUnfreezeAccount(searchedSeller); setSearchedSeller(null); }} style={{ padding: '12px 20px', background: '#10b981', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>✅ Unfreeze Now</button>
                                   ) : (
-                                      <button onClick={() => setSellerToFreeze(searchedSeller)} style={{ padding: '12px 20px', background: '#F97316', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '8px' }}><Snowflake size={18} strokeWidth={2.5} /> Freeze Account</button>
+                                      <button onClick={() => { setSellerToFreeze(searchedSeller); setFreezeModalOpen(true); }} style={{ padding: '12px 20px', background: '#F97316', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '8px' }}><Snowflake size={18} strokeWidth={2.5} /> Freeze Account</button>
                                   )}
                               </div>
                           </div>
@@ -916,10 +916,7 @@ function Admin() {
 
                   <h3 style={{ margin: '0 0 16px 0', color: '#334155' }}>All Frozen Accounts ({frozenApps.length})</h3>
                   {frozenApps.length === 0 ? (
-                      <div className="empty-state" style={{ background: 'white', borderRadius: '16px', border: '1px dashed #cbd5e1' }}>
-                          <div style={{ fontSize: '48px', marginBottom: '16px' }}>☀️</div>
-                          <p>No frozen accounts right now. Everything is running smoothly!</p>
-                      </div>
+                      <p style={{ color: '#64748b' }}>No frozen accounts right now.</p>
                   ) : (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                           {frozenApps.map(app => (
