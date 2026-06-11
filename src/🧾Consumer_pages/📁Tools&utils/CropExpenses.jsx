@@ -278,7 +278,7 @@ function CropExpenses() {
       }
   };
 
-  const handleHarvestSubmit = () => {
+  const handleHarvestSubmit = async () => {
       const bags = parseFloat(harvestData.bags) || 0;
       const quintals = parseFloat(harvestData.quintals) || 0;
       const price = parseFloat(harvestData.pricePerQuintal) || 0;
