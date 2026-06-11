@@ -267,7 +267,15 @@ export default function FarmFresh_ListingForm() {
                             </div>
                             <h2 style={{ margin: '0 0 4px 0', fontSize: '22px', fontWeight: '800', color: '#0f172a', textAlign: 'center' }}>{editData ? 'Listing Updated!' : 'Listing Created!'}</h2>
                             <p style={{ margin: '0 0 12px 0', fontSize: '14px', color: '#64748b', textAlign: 'center', fontWeight: '500' }}>{submittedData.itemName} is now live in the market.</p>
-                            <span style={{ fontSize: '12px', color: '#16a34a', fontWeight: '700', backgroundColor: '#dcfce7', padding: '4px 12px', borderRadius: '20px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{submittedData.category}</span>
+                            <span style={{ fontSize: '12px', color: '#16a34a', fontWeight: '700', backgroundColor: '#dcfce7', padding: '4px 12px', borderRadius: '20px', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '20px' }}>{submittedData.category}</span>
+                            
+                            {/* Gratitude Message */}
+                            <div style={{ backgroundColor: 'rgba(22, 163, 74, 0.05)', border: '1px solid rgba(22, 163, 74, 0.15)', borderRadius: '12px', padding: '14px 16px', width: '100%', boxSizing: 'border-box', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+                                <Leaf size={16} color="#15803d" />
+                                <p style={{ margin: 0, fontSize: '13px', color: '#15803d', fontWeight: '600', fontStyle: 'italic', lineHeight: '1.4', textAlign: 'center' }}>
+                                    "Your harvest is now live. Thank you for your hard work and dedication to the earth."
+                                </p>
+                            </div>
                         </div>
 
                         {/* Image & Price Section */}
