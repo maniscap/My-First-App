@@ -12,6 +12,7 @@ export default function ManageListings() {
     const [activeTab, setActiveTab] = useState('all');
     const [editModalOpen, setEditModalOpen] = useState(false);
     const [selectedItemForEdit, setSelectedItemForEdit] = useState(null);
+    const [isFrozen, setIsFrozen] = useState(false);
 
     const tabs = [
         { id: 'all', label: 'All Listings' },
@@ -58,10 +59,32 @@ export default function ManageListings() {
                 }, err => console.error('Listing sync error:', colName, err));
             });
 
+            // Listen to freeze status
+            const appDocRef = doc(db, 'seller_applications', sellerAppId);
+            const unsubApp = onSnapshot(appDocRef, (docSnap) => {
+                if (docSnap.exists()) {
+                    setIsFrozen(docSnap.data().frozen === true);
+                }
+            });
+            unsubListeners.push(unsubApp);
+
             return () => unsubListeners.forEach(u => u());
         });
         return () => unsubscribeAuth();
     }, []);
+
+    if (isFrozen) {
+        return (
+            <div style={{ backgroundColor: '#FFF7ED', minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '20px', textAlign: 'center' }}>
+                <div style={{ fontSize: '80px', marginBottom: '20px' }}>❄️</div>
+                <h1 style={{ color: '#C2410C', margin: '0 0 10px 0' }}>Account Frozen</h1>
+                <p style={{ color: '#9A3412', maxWidth: '400px', lineHeight: '1.6', marginBottom: '24px' }}>
+                    You cannot manage listings while your account is frozen.
+                </p>
+                <button onClick={() => navigate('/Seller_HomePage')} style={{ padding: '12px 24px', background: '#F97316', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}>Go Back</button>
+            </div>
+        );
+    }
 
     const handleDelete = async (id, collectionName) => {
         const confirmDelete = window.confirm("Are you sure you want to delete this listing?");

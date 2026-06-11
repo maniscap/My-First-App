@@ -13,6 +13,9 @@ function Seller_HomePage() {
     // Live Application Status state
     const [appStatus, setAppStatus] = useState('loading'); // loading, none, pending_approval, approved, rejected
     const [sellerName, setSellerName] = useState('');
+    const [appFrozen, setAppFrozen] = useState(false);
+    const [appFrozenReason, setAppFrozenReason] = useState('');
+    const [appFrozenUntil, setAppFrozenUntil] = useState(null);
 
     const images = {
         farmFresh: "https://images.unsplash.com/photo-1610832958506-aa56368176cf?w=500&q=80",
@@ -88,6 +91,10 @@ function Seller_HomePage() {
                             }
 
                             setAppStatus(appData.status);
+                            setAppFrozen(appData.frozen === true);
+                            setAppFrozenReason(appData.frozenReason || 'Irregular activity detected');
+                            setAppFrozenUntil(appData.frozenUntil || null);
+
                             const nameToUse = appData.accountType === 'organisation' ? appData.companyName : (appData.shopName || appData.fullName);
                             setSellerName(nameToUse);
                             localStorage.setItem('seller_name', nameToUse);
@@ -161,6 +168,26 @@ function Seller_HomePage() {
                 <h1 style={{ color: '#be123c', margin: '0 0 10px 0' }}>Application Rejected</h1>
                 <p style={{ color: '#4c0519', maxWidth: '400px', lineHeight: '1.6' }}>We're sorry, but your application to become a Seller on FarmCap has been rejected by the admin team. Please contact support for more details.</p>
                 <button onClick={() => { localStorage.removeItem('seller_app_id'); setAppStatus('none'); }} style={{ marginTop: '30px', padding: '12px 24px', background: '#e11d48', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold' }}>Start New Application</button>
+            </div>
+        );
+    }
+
+    // RENDER: Account Frozen
+    if (appFrozen) {
+        return (
+            <div style={{ backgroundColor: '#FFF7ED', minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '20px', textAlign: 'center' }}>
+                <div style={{ fontSize: '80px', marginBottom: '20px' }}>❄️</div>
+                <h1 style={{ color: '#C2410C', margin: '0 0 10px 0' }}>Account Frozen</h1>
+                <p style={{ color: '#9A3412', maxWidth: '400px', lineHeight: '1.6', marginBottom: '24px' }}>
+                    Your seller account has been temporarily frozen by the admin team.
+                </p>
+                <div style={{ background: 'white', padding: '20px', borderRadius: '16px', border: '1px solid #FED7AA', boxShadow: '0 10px 25px rgba(249, 115, 22, 0.1)', maxWidth: '400px', width: '100%', textAlign: 'left' }}>
+                    <p style={{ margin: '0 0 12px 0', fontSize: '15px', color: '#475569' }}><strong>Reason:</strong> {appFrozenReason}</p>
+                    <p style={{ margin: 0, fontSize: '15px', color: '#475569' }}><strong>Frozen Until:</strong> {appFrozenUntil ? new Date(appFrozenUntil).toLocaleDateString() : 'Indefinitely (Awaiting Admin Review)'}</p>
+                </div>
+                <p style={{ color: '#78350F', maxWidth: '400px', lineHeight: '1.6', marginTop: '24px', fontSize: '14px' }}>
+                    During this time, your listings are hidden from the marketplace, and you cannot add new listings or modify your store.
+                </p>
             </div>
         );
     }

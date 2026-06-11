@@ -43,6 +43,18 @@ function Admin() {
   const [deleteMessage, setDeleteMessage] = useState('');
   const [isDeletingSeller, setIsDeletingSeller] = useState(false);
 
+  // Freeze State
+  const [freezeModalOpen, setFreezeModalOpen] = useState(false);
+  const [sellerToFreeze, setSellerToFreeze] = useState(null);
+  const [freezeReason, setFreezeReason] = useState('Irregular activity detected');
+  const [freezeDays, setFreezeDays] = useState(7);
+  const [isFreezingAccount, setIsFreezingAccount] = useState(false);
+
+  // Seller ID Search State
+  const [sellerIdSearch, setSellerIdSearch] = useState('');
+  const [searchedSeller, setSearchedSeller] = useState(null);
+  const [isSearching, setIsSearching] = useState(false);
+
   const fetchReports = async () => {
       setLoadingReports(true);
       try {
@@ -142,6 +154,64 @@ function Admin() {
   };
 
 
+  // --- FREEZE ACCOUNT ---
+  const handleFreezeAccount = async () => {
+      if (!sellerToFreeze || isFreezingAccount) return;
+      setIsFreezingAccount(true);
+      try {
+          const frozenUntil = freezeDays === 0 ? null : new Date(Date.now() + freezeDays * 24 * 60 * 60 * 1000).toISOString();
+          await updateDoc(doc(db, 'seller_applications', sellerToFreeze.id), {
+              frozen: true,
+              frozenReason: freezeReason,
+              frozenUntil: frozenUntil,
+              frozenAt: new Date().toISOString(),
+          });
+          setFreezeModalOpen(false);
+          setSellerToFreeze(null);
+          alert(`Account frozen successfully${freezeDays === 0 ? ' indefinitely' : ` for ${freezeDays} days`}.`);
+      } catch (e) {
+          console.error(e);
+          alert('Failed to freeze account.');
+      }
+      setIsFreezingAccount(false);
+  };
+
+  // --- UNFREEZE ACCOUNT ---
+  const handleUnfreezeAccount = async (app) => {
+      if (!window.confirm(`Unfreeze account for ${app.fullName || app.companyName}?`)) return;
+      try {
+          await updateDoc(doc(db, 'seller_applications', app.id), {
+              frozen: false,
+              frozenReason: null,
+              frozenUntil: null,
+              frozenAt: null,
+          });
+          alert('Account unfrozen successfully.');
+      } catch (e) {
+          console.error(e);
+          alert('Failed to unfreeze account.');
+      }
+  };
+
+  // --- SEARCH SELLER BY ID (1 Firestore read regardless of total sellers) ---
+  const handleSearchBySellerId = async () => {
+      if (!sellerIdSearch.trim()) return;
+      setIsSearching(true);
+      setSearchedSeller(null);
+      try {
+          const q = query(collection(db, 'seller_applications'), where('sellerId', '==', sellerIdSearch.trim()));
+          const snap = await getDocs(q);
+          if (snap.empty) {
+              alert('No seller found with that ID.');
+          } else {
+              setSearchedSeller({ id: snap.docs[0].id, ...snap.docs[0].data() });
+          }
+      } catch (e) {
+          console.error(e);
+          alert('Search failed: ' + e.message);
+      }
+      setIsSearching(false);
+  };
 
   // --- LOGIN --- No hardcoded credentials. Firebase Auth is the only gate.
   const handleLogin = async (e) => {
@@ -448,11 +518,49 @@ function Admin() {
   });
 
   const pendingEdits = sellerApplications.filter(a => a.hasPendingEdit);
+  const frozenApps = sellerApplications.filter(a => a.frozen === true);
 
   return (
     <div className="admin-dashboard">
       <style>{styles}</style>
       
+      {/* Freeze Modal */}
+      {freezeModalOpen && (
+        <div style={{position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(4px)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
+          <div style={{backgroundColor: '#ffffff', padding: '32px', borderRadius: '24px', width: '420px', maxWidth: '90%', boxSizing: 'border-box', boxShadow: '0 20px 40px rgba(0,0,0,0.1)', border: '1px solid #E5E7EB'}}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
+              <div style={{ backgroundColor: '#FFF7ED', padding: '10px', borderRadius: '12px', color: '#F97316' }}>❄️</div>
+              <h3 style={{ margin: 0, color: '#111827', fontSize: '20px', fontWeight: '800' }}>Freeze Account</h3>
+            </div>
+            <p style={{ fontSize: '14px', color: '#6B7280', marginBottom: '20px' }}>
+              Freezing <strong>{sellerToFreeze?.fullName || sellerToFreeze?.companyName}</strong> will block them from adding listings and managing their store.
+            </p>
+            <label style={{display: 'block', fontSize: '13px', fontWeight: '800', marginBottom: '6px', color: '#374151', textTransform: 'uppercase'}}>Reason</label>
+            <select value={freezeReason} onChange={e => setFreezeReason(e.target.value)} style={{width: '100%', padding: '12px', borderRadius: '12px', border: '1px solid #D1D5DB', backgroundColor: '#F9FAFB', fontSize: '14px', marginBottom: '16px', outline: 'none', boxSizing: 'border-box'}}>
+              <option>Irregular activity detected</option>
+              <option>Fake listings or fraud</option>
+              <option>Customer complaints</option>
+              <option>Pricing violations</option>
+              <option>Platform policy violation</option>
+              <option>Under investigation</option>
+            </select>
+            <label style={{display: 'block', fontSize: '13px', fontWeight: '800', marginBottom: '6px', color: '#374151', textTransform: 'uppercase'}}>Freeze Duration</label>
+            <select value={freezeDays} onChange={e => setFreezeDays(Number(e.target.value))} style={{width: '100%', padding: '12px', borderRadius: '12px', border: '1px solid #D1D5DB', backgroundColor: '#F9FAFB', fontSize: '14px', marginBottom: '24px', outline: 'none', boxSizing: 'border-box'}}>
+              <option value={1}>1 Day</option>
+              <option value={3}>3 Days</option>
+              <option value={7}>7 Days</option>
+              <option value={14}>14 Days</option>
+              <option value={30}>30 Days</option>
+              <option value={0}>Indefinite (until manually unfrozen)</option>
+            </select>
+            <div style={{ display: 'flex', gap: '12px' }}>
+              <button onClick={() => { setFreezeModalOpen(false); setSellerToFreeze(null); }} style={{flex: 1, padding: '14px', borderRadius: '14px', border: '1px solid #E5E7EB', background: '#F9FAFB', fontWeight: '700', cursor: 'pointer', fontSize: '15px'}}>Cancel</button>
+              <button onClick={handleFreezeAccount} disabled={isFreezingAccount} style={{flex: 1, padding: '14px', borderRadius: '14px', border: 'none', background: '#F97316', color: 'white', fontWeight: '700', cursor: isFreezingAccount ? 'wait' : 'pointer', fontSize: '15px'}}>{isFreezingAccount ? 'Freezing...' : '❄️ Freeze'}</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Deletion Modal - Apple Premium Style */}
       {deleteModalOpen && (
         <div style={{position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(4px)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
@@ -511,6 +619,9 @@ function Admin() {
               </button>
               <button className={`nav-item ${activeTab === 'approved' ? 'active' : ''}`} onClick={() => setActiveTab('approved')}>
                   <Users size={20} /> Approved Sellers
+              </button>
+              <button className={`nav-item ${activeTab === 'frozen' ? 'active' : ''}`} onClick={() => setActiveTab('frozen')} style={frozenApps.length > 0 ? {color: '#F97316'} : {}}>
+                  ❄️ Frozen Accounts {frozenApps.length > 0 && <span className="badge" style={{background: '#F97316'}}>{frozenApps.length}</span>}
               </button>
               <button className={`nav-item ${activeTab === 'listings' ? 'active' : ''}`} onClick={() => setActiveTab('listings')}>
                   <List size={20} /> Active Listings
@@ -704,8 +815,16 @@ function Admin() {
                                               {app.phone} &mdash; {app.village}, {app.district}
                                               <br/>
                                               <span style={{ fontSize: '13px', color: '#64748b', fontWeight: '600' }}>Approved At: {app.approvedAt ? new Date(app.approvedAt).toLocaleString() : 'N/A'}</span>
+                                              {app.frozen && <span style={{marginLeft: '8px', fontSize: '12px', background: '#FFF7ED', color: '#F97316', padding: '2px 8px', borderRadius: '8px', fontWeight: '700'}}>❄️ FROZEN</span>}
                                           </div>
-                                          <button onClick={() => handleDeleteApproved(app.id)} style={{ padding: '10px 16px', background: '#ef4444', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>Delete Seller</button>
+                                          <div style={{display: 'flex', gap: '8px'}}>
+                                              {app.frozen ? (
+                                                <button onClick={() => handleUnfreezeAccount(app)} style={{ padding: '10px 16px', background: '#10b981', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>✅ Unfreeze</button>
+                                              ) : (
+                                                <button onClick={() => { setSellerToFreeze(app); setFreezeModalOpen(true); }} style={{ padding: '10px 16px', background: '#F97316', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>❄️ Freeze</button>
+                                              )}
+                                              <button onClick={() => handleDeleteApproved(app.id)} style={{ padding: '10px 16px', background: '#ef4444', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>Delete</button>
+                                          </div>
                                       </div>
                                   ))}
                               </div>
@@ -723,14 +842,103 @@ function Admin() {
                                               {app.phone} &mdash; {app.village}, {app.district}
                                               <br/>
                                               <span style={{ fontSize: '13px', color: '#64748b', fontWeight: '600' }}>Approved At: {app.approvedAt ? new Date(app.approvedAt).toLocaleString() : 'N/A'}</span>
+                                              {app.frozen && <span style={{marginLeft: '8px', fontSize: '12px', background: '#FFF7ED', color: '#F97316', padding: '2px 8px', borderRadius: '8px', fontWeight: '700'}}>❄️ FROZEN</span>}
                                           </div>
-                                          <button onClick={() => handleDeleteApproved(app.id)} style={{ padding: '10px 16px', background: '#ef4444', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>Delete Seller</button>
+                                          <div style={{display: 'flex', gap: '8px'}}>
+                                              {app.frozen ? (
+                                                <button onClick={() => handleUnfreezeAccount(app)} style={{ padding: '10px 16px', background: '#10b981', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>✅ Unfreeze</button>
+                                              ) : (
+                                                <button onClick={() => { setSellerToFreeze(app); setFreezeModalOpen(true); }} style={{ padding: '10px 16px', background: '#F97316', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>❄️ Freeze</button>
+                                              )}
+                                              <button onClick={() => handleDeleteApproved(app.id)} style={{ padding: '10px 16px', background: '#ef4444', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>Delete</button>
+                                          </div>
                                       </div>
                                   ))}
                               </div>
                           )}
                       </div>
                   </div>
+              </div>
+          )}
+
+          {/* FROZEN ACCOUNTS TAB */}
+          {activeTab === 'frozen' && (
+              <div className="tab-content">
+                  <div className="header-titles">
+                      <h1 style={{color: '#F97316'}}>❄️ Frozen Accounts</h1>
+                      <p>Manage temporarily suspended seller accounts. Searching by Seller ID costs 1 read regardless of total sellers.</p>
+                  </div>
+                  
+                  {/* Search by ID Bar */}
+                  <div style={{ display: 'flex', gap: '10px', marginBottom: '30px', background: 'white', padding: '16px', borderRadius: '16px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px rgba(0,0,0,0.02)' }}>
+                      <input 
+                          type="text" 
+                          placeholder="Search exact Seller ID (e.g. SIN-12345)..." 
+                          value={sellerIdSearch}
+                          onChange={(e) => setSellerIdSearch(e.target.value)}
+                          onKeyDown={(e) => e.key === 'Enter' && handleSearchBySellerId()}
+                          style={{ flex: 1, padding: '12px 16px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '15px', outline: 'none' }}
+                      />
+                      <button onClick={handleSearchBySellerId} disabled={isSearching} style={{ padding: '0 24px', background: '#0f172a', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: isSearching ? 'wait' : 'pointer' }}>
+                          {isSearching ? 'Searching...' : '🔍 Find Seller'}
+                      </button>
+                  </div>
+
+                  {/* Search Result */}
+                  {searchedSeller && (
+                      <div style={{ marginBottom: '40px', padding: '20px', background: searchedSeller.frozen ? '#FFF7ED' : '#F0FDF4', border: `1px solid ${searchedSeller.frozen ? '#FED7AA' : '#BBF7D0'}`, borderRadius: '16px' }}>
+                          <h3 style={{ margin: '0 0 16px 0', display: 'flex', alignItems: 'center', gap: '8px', color: searchedSeller.frozen ? '#C2410C' : '#15803D' }}>
+                              {searchedSeller.frozen ? '❄️ Found Frozen Seller' : '✅ Found Active Seller'}
+                          </h3>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                              <div>
+                                  <strong style={{ fontSize: '18px' }}>{searchedSeller.sellerId}</strong> &mdash; 
+                                  <span style={{ fontSize: '18px', marginLeft: '8px' }}>{searchedSeller.fullName || searchedSeller.companyName}</span>
+                                  <div style={{ color: '#475569', marginTop: '4px' }}>Phone: {searchedSeller.phone}</div>
+                                  {searchedSeller.frozen && (
+                                      <div style={{ marginTop: '12px', color: '#9A3412', fontSize: '14px', background: 'rgba(255,255,255,0.5)', padding: '8px 12px', borderRadius: '8px' }}>
+                                          <strong>Reason:</strong> {searchedSeller.frozenReason || 'No reason provided'}<br/>
+                                          <strong>Frozen Until:</strong> {searchedSeller.frozenUntil ? new Date(searchedSeller.frozenUntil).toLocaleString() : 'Indefinitely'}
+                                      </div>
+                                  )}
+                              </div>
+                              <div style={{ display: 'flex', gap: '8px' }}>
+                                  {searchedSeller.frozen ? (
+                                      <button onClick={() => { handleUnfreezeAccount(searchedSeller); setSearchedSeller(null); }} style={{ padding: '12px 20px', background: '#10b981', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>✅ Unfreeze Now</button>
+                                  ) : (
+                                      <button onClick={() => setSellerToFreeze(searchedSeller)} style={{ padding: '12px 20px', background: '#F97316', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>❄️ Freeze Account</button>
+                                  )}
+                              </div>
+                          </div>
+                      </div>
+                  )}
+
+                  <h3 style={{ margin: '0 0 16px 0', color: '#334155' }}>All Frozen Accounts ({frozenApps.length})</h3>
+                  {frozenApps.length === 0 ? (
+                      <div className="empty-state" style={{ background: 'white', borderRadius: '16px', border: '1px dashed #cbd5e1' }}>
+                          <div style={{ fontSize: '48px', marginBottom: '16px' }}>☀️</div>
+                          <p>No frozen accounts right now. Everything is running smoothly!</p>
+                      </div>
+                  ) : (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                          {frozenApps.map(app => (
+                              <div key={app.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'white', padding: '20px', borderRadius: '12px', border: '1px solid #FED7AA', borderLeft: '4px solid #F97316' }}>
+                                  <div>
+                                      <strong style={{ fontSize: '16px' }}>{app.sellerId}</strong> &mdash; 
+                                      <span style={{ fontSize: '16px', marginLeft: '8px' }}>{app.fullName || app.companyName}</span>
+                                      <div style={{ color: '#475569', marginTop: '6px', fontSize: '14px' }}>
+                                          <strong>Reason:</strong> {app.frozenReason || 'N/A'} &bull; 
+                                          <span style={{ marginLeft: '8px' }}><strong>Until:</strong> {app.frozenUntil ? new Date(app.frozenUntil).toLocaleDateString() : 'Indefinitely'}</span>
+                                      </div>
+                                  </div>
+                                  <div style={{ display: 'flex', gap: '8px' }}>
+                                      <button onClick={() => handleUnfreezeAccount(app)} style={{ padding: '10px 16px', background: '#10b981', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>✅ Unfreeze</button>
+                                      <button onClick={() => handleDeleteApproved(app.id)} style={{ padding: '10px 16px', background: '#ef4444', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>Delete</button>
+                                  </div>
+                              </div>
+                          ))}
+                      </div>
+                  )}
               </div>
           )}
 
