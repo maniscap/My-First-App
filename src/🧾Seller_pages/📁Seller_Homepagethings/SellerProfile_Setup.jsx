@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Building2, User, ShieldCheck, Clock, ChevronLeft, UploadCloud, MapPin, Briefcase, CheckCircle2, Trash2, AlertTriangle, Edit3 } from 'lucide-react';
 import { db } from '../../firebase';
-import { getAuth } from 'firebase/auth';
+import { getAuth, onAuthStateChanged } from 'firebase/auth';
 import { collection, addDoc, getDoc, doc, setDoc, deleteDoc, query, where, getDocs, onSnapshot } from 'firebase/firestore';
 import SellerApplication_Terms from './SellerApplication_Terms';
 import imageCompression from 'browser-image-compression';
