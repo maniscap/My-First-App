@@ -57,6 +57,7 @@ export default function FarmFresh_ListingForm() {
     const [isCategoryOpen, setIsCategoryOpen] = useState(false);
     const [isItemOpen, setIsItemOpen] = useState(false);
     const [errorToast, setErrorToast] = useState('');
+    const [blinkWarning, setBlinkWarning] = useState(false);
     const storefrontSynced = localStorage.getItem('seller_storefront_synced') === 'true';
     
     // Check Seller Approval Status
@@ -136,6 +137,13 @@ export default function FarmFresh_ListingForm() {
     const handleSave = async (e) => {
         e.preventDefault();
         
+        if (!storefrontSynced) {
+            setBlinkWarning(true);
+            setTimeout(() => setBlinkWarning(false), 1500);
+            showError("Please sync your storefront details before publishing.");
+            return;
+        }
+
         // --- Strict Validations ---
         if (!selectedCategory) {
             showError("Please select a Category before submitting.");
@@ -352,7 +360,7 @@ export default function FarmFresh_ListingForm() {
                 </div>
             </div>
 
-            <div style={{ padding: '24px 20px', paddingBottom: '100px' }}>
+            <div style={{ padding: '24px 20px', paddingBottom: '24px' }}>
                 <form onSubmit={handleSave}>
                     
                     {/* 1. Category Selection - CUSTOM DROPDOWN */}
@@ -684,7 +692,7 @@ export default function FarmFresh_ListingForm() {
                     {/* Submit Button */}
                     <button 
                         type="submit" 
-                        disabled={isSubmitting || !storefrontSynced}
+                        disabled={isSubmitting}
                         style={{ width: '100%', padding: '18px', borderRadius: '16px', backgroundColor: isSubmitting ? '#94a3b8' : '#0f172a', color: '#fff', border: 'none', fontSize: '16px', fontWeight: '700', cursor: isSubmitting ? 'not-allowed' : 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', boxShadow: '0 10px 25px rgba(15,23,42,0.2)' }}
                     >
                         {isSubmitting ? (
@@ -708,8 +716,19 @@ export default function FarmFresh_ListingForm() {
                                 <span style={{ fontSize: '13px', color: '#065F46', fontWeight: '700' }}>Store front setup completed 100% and synced to cloud</span>
                             </div>
                         ) : (
-                            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', opacity: 0.9, backgroundColor: '#FEF2F2', padding: '10px 16px', borderRadius: '12px', border: '1px solid #FECACA' }}>
-                                <ShieldAlert size={18} color="#DC2626" />
+                            <div style={{ 
+                                display: 'inline-flex', 
+                                alignItems: 'center', 
+                                gap: '8px', 
+                                opacity: 0.9, 
+                                backgroundColor: blinkWarning ? '#FEE2E2' : '#FEF2F2', 
+                                padding: '10px 16px', 
+                                borderRadius: '12px', 
+                                border: blinkWarning ? '2px solid #EF4444' : '1px solid #FECACA',
+                                transition: 'all 0.2s ease',
+                                transform: blinkWarning ? 'scale(1.03)' : 'scale(1)'
+                            }}>
+                                <ShieldAlert size={18} color="#DC2626" style={{ transform: blinkWarning ? 'rotate(10deg)' : 'none', transition: 'all 0.2s' }} />
                                 <span style={{ fontSize: '13px', color: '#991B1B', fontWeight: '700' }}>Store front details not synced to cloud. Please finish the store front details.</span>
                             </div>
                         )}
