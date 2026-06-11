@@ -149,36 +149,40 @@ function Admin() {
       setIsProcessing(true);
       try {
           const authObj = getAuth();
-          const adminEmail = "admin@farmcap.com"; // Fixed admin email for the rules
+          const adminEmail = "admin@farmcap.com";
+          const inputAdminId = adminId.trim().toLowerCase();
+          const inputPassword = password.trim();
           let isValid = false;
 
-          // First, use Firebase Auth so the Security Rules allow reads
+          if (inputAdminId !== 'admin') {
+              alert('Invalid Admin ID');
+              setIsProcessing(false);
+              return;
+          }
+
           try {
-              await signInWithEmailAndPassword(authObj, adminEmail, password);
+              await signInWithEmailAndPassword(authObj, adminEmail, inputPassword);
               isValid = true;
           } catch(err) {
-              if (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential') {
-                  if (adminId === 'admin' && password === 'admin123') {
-                      await createUserWithEmailAndPassword(authObj, adminEmail, password);
+              if (inputPassword === 'admin123') {
+                  try {
+                      await createUserWithEmailAndPassword(authObj, adminEmail, inputPassword);
                       isValid = true;
+                  } catch(createErr) {
+                      alert("Firebase Creation Error: " + createErr.code + " / " + createErr.message);
                   }
+              } else {
+                  alert("Login Failed: " + err.code + " / " + err.message);
               }
           }
 
           if (isValid) {
-              // Only grant access if the internal adminId matches
-              if (adminId === 'admin') {
-                  localStorage.setItem('adminAuth', 'true');
-                  setIsAuthenticated(true);
-              } else {
-                  alert('Invalid Admin ID or Password');
-              }
-          } else {
-              alert('Invalid Admin ID or Password');
+              localStorage.setItem('adminAuth', 'true');
+              setIsAuthenticated(true);
           }
       } catch (err) {
           console.error("Login verification failed", err);
-          alert("Error verifying admin credentials.");
+          alert("Unexpected error verifying admin credentials: " + err.message);
       }
       setIsProcessing(false);
   };
