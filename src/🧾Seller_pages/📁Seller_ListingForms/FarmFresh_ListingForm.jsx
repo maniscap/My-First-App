@@ -711,9 +711,9 @@ export default function FarmFresh_ListingForm() {
                     {/* Storefront Synced Watermark */}
                     <div style={{ marginTop: '24px', textAlign: 'center' }}>
                         {storefrontSynced ? (
-                            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', opacity: 0.5 }}>
-                                <ShieldCheck size={14} color="#0f172a" />
-                                <span style={{ fontSize: '12px', color: '#0f172a', fontWeight: '600', letterSpacing: '0.3px', textTransform: 'uppercase' }}>Storefront Setup 100% Complete</span>
+                            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', opacity: 0.8 }}>
+                                <ShieldCheck size={14} color="#10B981" />
+                                <span style={{ fontSize: '12px', color: '#065F46', fontWeight: '700', letterSpacing: '0.3px', textTransform: 'uppercase' }}>Storefront Setup 100% Complete</span>
                             </div>
                         ) : (
                             <div style={{ 
