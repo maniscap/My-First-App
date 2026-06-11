@@ -9,6 +9,7 @@ import {
 } from 'react-icons/fa';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
+import { idb } from '../../utils/idb';
 
 // --- CONFIGURATION ---
 const CATEGORIES = [
@@ -118,8 +119,8 @@ function CropExpenses() {
     }
   };
 
-  const loadBills = () => {
-      const allBills = JSON.parse(localStorage.getItem('farmBuddy_bills') || '[]');
+  const loadBills = async () => {
+      const allBills = (await idb.get('farmBuddy_bills')) || [];
       const folderBills = allBills.filter(b => b.folderId.toString() === folderId);
       folderBills.sort((a, b) => new Date(b.isoDate) - new Date(a.isoDate));
       setBills(folderBills);
@@ -171,13 +172,13 @@ function CropExpenses() {
       }
   };
 
-  const handleSaveBill = () => {
+  const handleSaveBill = async () => {
       if (!newBill.amount) { alert("Please enter an amount"); return; }
       if (newBill.category === 'other' && !newBill.note.trim()) { 
           alert("Please add a description for 'Other' expense."); return; 
       }
       
-      const allBills = JSON.parse(localStorage.getItem('farmBuddy_bills') || '[]');
+      const allBills = (await idb.get('farmBuddy_bills')) || [];
       let updatedBills;
 
       if (editingBillId) {
@@ -198,19 +199,19 @@ function CropExpenses() {
           updatedBills = [...allBills, billToSave];
       }
 
-      localStorage.setItem('farmBuddy_bills', JSON.stringify(updatedBills));
-      recalculateFolderTotal(updatedBills);
-      loadBills();
+      await idb.set('farmBuddy_bills', updatedBills);
+      await recalculateFolderTotal(updatedBills);
+      await loadBills();
       closeModal();
   };
 
-  const handleDeleteBill = (billId) => {
+  const handleDeleteBill = async (billId) => {
       if(window.confirm("Delete this bill permanently?")) {
-          const allBills = JSON.parse(localStorage.getItem('farmBuddy_bills') || '[]');
+          const allBills = (await idb.get('farmBuddy_bills')) || [];
           const updatedBills = allBills.filter(b => b.id !== billId);
-          localStorage.setItem('farmBuddy_bills', JSON.stringify(updatedBills));
-          recalculateFolderTotal(updatedBills);
-          loadBills();
+          await idb.set('farmBuddy_bills', updatedBills);
+          await recalculateFolderTotal(updatedBills);
+          await loadBills();
           setShowViewBillModal(false);
       }
   };
@@ -236,42 +237,42 @@ function CropExpenses() {
       setIsCatDropdownOpen(false);
   };
 
-  const recalculateFolderTotal = (currentBills) => {
+  const recalculateFolderTotal = async (currentBills) => {
       const folderBills = currentBills.filter(b => b.folderId.toString() === folderId);
       const total = folderBills.reduce((sum, b) => sum + (parseFloat(b.amount) || 0), 0);
       
-      const allFolders = JSON.parse(localStorage.getItem('farmBuddy_expenditure_folders') || '[]');
+      const allFolders = (await idb.get('farmBuddy_expenditure_folders')) || [];
       const updatedFolders = allFolders.map(f => {
           if(f.id.toString() === folderId) {
               return { ...f, totalAmount: total, itemCount: folderBills.length };
           }
           return f;
       });
-      localStorage.setItem('farmBuddy_expenditure_folders', JSON.stringify(updatedFolders));
+      await idb.set('farmBuddy_expenditure_folders', updatedFolders);
   };
 
-  const handleUpdateFolder = () => {
-      const allFolders = JSON.parse(localStorage.getItem('farmBuddy_expenditure_folders') || '[]');
+  const handleUpdateFolder = async () => {
+      const allFolders = (await idb.get('farmBuddy_expenditure_folders')) || [];
       const updatedFolders = allFolders.map(f => {
           if(f.id.toString() === folderId) {
               return { ...f, name: folderEditData.name, acres: folderEditData.acres };
           }
           return f;
       });
-      localStorage.setItem('farmBuddy_expenditure_folders', JSON.stringify(updatedFolders));
+      await idb.set('farmBuddy_expenditure_folders', updatedFolders);
       loadFolderData();
       setShowFolderEditModal(false);
   };
 
-  const handleDeleteFolder = () => {
+  const handleDeleteFolder = async () => {
       if(window.confirm("⚠️ Delete this entire Folder?\nAll bills inside will be lost.")) {
-          const allFolders = JSON.parse(localStorage.getItem('farmBuddy_expenditure_folders') || '[]');
+          const allFolders = (await idb.get('farmBuddy_expenditure_folders')) || [];
           const updatedFolders = allFolders.filter(f => f.id.toString() !== folderId);
-          localStorage.setItem('farmBuddy_expenditure_folders', JSON.stringify(updatedFolders));
+          await idb.set('farmBuddy_expenditure_folders', updatedFolders);
 
-          const allBills = JSON.parse(localStorage.getItem('farmBuddy_bills') || '[]');
+          const allBills = (await idb.get('farmBuddy_bills')) || [];
           const updatedBills = allBills.filter(b => b.folderId.toString() !== folderId);
-          localStorage.setItem('farmBuddy_bills', JSON.stringify(updatedBills));
+          await idb.set('farmBuddy_bills', updatedBills);
 
           navigate('/expenditure');
       }
@@ -283,20 +284,20 @@ function CropExpenses() {
       const price = parseFloat(harvestData.pricePerQuintal) || 0;
       const totalRevenue = quintals * price;
 
-      const updatedHarvestDetails = { 
+      const hData = { 
           bags, quintals, pricePerQuintal: price, totalRevenue, 
           isHarvested: true, 
           harvestDate: new Date().toLocaleDateString('en-IN') 
       };
 
-      const allFolders = JSON.parse(localStorage.getItem('farmBuddy_expenditure_folders') || '[]');
+      const allFolders = await idb.get('farmBuddy_expenditure_folders') || [];
       const updatedFolders = allFolders.map(f => {
           if(f.id.toString() === folderId) {
-              return { ...f, status: 'completed', harvestDetails: updatedHarvestDetails };
+              return { ...f, harvestDetails: hData, status: 'completed' };
           }
           return f;
       });
-      localStorage.setItem('farmBuddy_expenditure_folders', JSON.stringify(updatedFolders));
+      await idb.set('farmBuddy_expenditure_folders', updatedFolders);
       
       setActiveFilter('all');
       loadFolderData();
@@ -304,16 +305,16 @@ function CropExpenses() {
       setShowMenu(false);
   };
 
-  const handleReopenCrop = () => {
+  const handleReopenCrop = async () => {
       if(window.confirm("Re-open this crop? It will be marked as 'Running' again.")) {
-        const allFolders = JSON.parse(localStorage.getItem('farmBuddy_expenditure_folders') || '[]');
+        const allFolders = await idb.get('farmBuddy_expenditure_folders') || [];
         const updatedFolders = allFolders.map(f => {
             if(f.id.toString() === folderId) {
-                return { ...f, status: 'running', harvestDetails: { ...f.harvestDetails, isHarvested: false } };
+                const copy = {...f}; delete copy.harvestDetails; copy.status = 'running'; return copy;
             }
             return f;
         });
-        localStorage.setItem('farmBuddy_expenditure_folders', JSON.stringify(updatedFolders));
+        await idb.set('farmBuddy_expenditure_folders', updatedFolders);
         loadFolderData();
       }
   };

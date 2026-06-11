@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { MapContainer, TileLayer, useMap, useMapEvents, Marker, Popup, ImageOverlay, Circle, Polyline, Polygon } from 'react-leaflet';
+import { idb } from '../../utils/idb';
 import L from 'leaflet';
 import { 
   FiMenu, FiLayers, FiPlus, FiMinus, FiX, FiDownload, FiMapPin, FiSearch, FiArrowLeft, FiMaximize, FiRotateCcw, FiClock
@@ -124,14 +125,23 @@ const GPSMeasurement = () => {
   const [activeMenu, setActiveMenu] = useState('main'); 
   const [activeMode, setActiveMode] = useState('default'); 
   const [measureMethod, setMeasureMethod] = useState('manual'); 
-  const [savedFiles, setSavedFiles] = useState(() => {
-      const saved = localStorage.getItem('savedFiles');
-      return saved ? JSON.parse(saved) : [];
-  });
+  const [savedFiles, setSavedFiles] = useState([]);
+  const [isFilesLoaded, setIsFilesLoaded] = useState(false);
   
+  useEffect(() => {
+      idb.get('savedFiles').then(data => {
+          if (data) setSavedFiles(data);
+          setIsFilesLoaded(true);
+      });
+  }, []);
+
   const [showLocationWarning, setShowLocationWarning] = useState(false);
 
-  useEffect(() => { localStorage.setItem('savedFiles', JSON.stringify(savedFiles)); }, [savedFiles]);
+  useEffect(() => { 
+      if (isFilesLoaded) {
+          idb.set('savedFiles', savedFiles); 
+      }
+  }, [savedFiles, isFilesLoaded]);
 
   const [tempMeasureData, setTempMeasureData] = useState(null); 
   const [showSaveScreen, setShowSaveScreen] = useState(false);

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { IoMdAdd, IoMdArrowBack, IoMdMore, IoMdClose, IoMdDownload } from 'react-icons/io';
+import { idb } from '../../utils/idb';
 import { motion, AnimatePresence } from 'framer-motion';
 
 // --- 🌾 EXTENDED CROP ICON LIBRARY (INDIAN CONTEXT) ---
@@ -86,9 +87,13 @@ function Expenditure() {
       season: 'kharif', waterSource: 'irrigated' 
   });
 
+  const loadData = async () => {
+      const saved = (await idb.get('farmBuddy_expenditure_folders')) || [];
+      setFolders(saved);
+  };
+
   useEffect(() => {
-    const saved = JSON.parse(localStorage.getItem('farmBuddy_expenditure_folders') || '[]');
-    setFolders(saved);
+    loadData();
   }, []);
 
   // --- ACTIONS ---
@@ -125,12 +130,12 @@ function Expenditure() {
     }
     
     setFolders(updatedFolders);
-    localStorage.setItem('farmBuddy_expenditure_folders', JSON.stringify(updatedFolders));
+    await idb.set('farmBuddy_expenditure_folders', updatedFolders);
     closeModal();
   };
 
-  const exportData = () => {
-      const allBills = JSON.parse(localStorage.getItem('farmBuddy_bills') || '[]');
+  const exportData = async () => {
+      const allBills = (await idb.get('farmBuddy_bills')) || [];
       const data = { folders, bills: allBills };
       const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(data, null, 2));
       const downloadAnchorNode = document.createElement('a');
@@ -141,16 +146,16 @@ function Expenditure() {
       downloadAnchorNode.remove();
   };
 
-  const deleteFolder = (e, id) => {
+  const deleteFolder = async (e, id) => {
       e.stopPropagation();
       if(window.confirm("Delete this crop folder completely?")) {
           const updated = folders.filter(f => f.id !== id);
           setFolders(updated);
-          localStorage.setItem('farmBuddy_expenditure_folders', JSON.stringify(updated));
+          await idb.set('farmBuddy_expenditure_folders', updated);
           
-          const allBills = JSON.parse(localStorage.getItem('farmBuddy_bills') || '[]');
+          const allBills = (await idb.get('farmBuddy_bills')) || [];
           const cleanBills = allBills.filter(b => b.folderId.toString() !== id.toString());
-          localStorage.setItem('farmBuddy_bills', JSON.stringify(cleanBills));
+          await idb.set('farmBuddy_bills', cleanBills);
       }
       setActiveMenuId(null);
   };
