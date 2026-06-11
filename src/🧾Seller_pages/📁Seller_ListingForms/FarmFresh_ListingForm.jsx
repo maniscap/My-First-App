@@ -125,6 +125,7 @@ export default function FarmFresh_ListingForm() {
     };
 
     const displayUnits = getFilteredUnits();
+    const actualDisplayUnit = unit === 'custom_other_unit' ? (customUnitName || 'units') : (farmFreshUnits.find(u => u.val === unit)?.label || unit || 'units');
 
     const showError = (msg) => {
         setErrorToast(msg);
@@ -441,15 +442,6 @@ export default function FarmFresh_ListingForm() {
                         </div>
                     )}
 
-                    {/* Universal Image Picker */}
-                    {selectedItemName && (
-                        <UniversalImagePicker 
-                            searchTerm={selectedItemName} 
-                            categoryContext={selectedCategory} 
-                            onSelectImage={setSelectedImageUrl} 
-                            currentSelection={selectedImageUrl} 
-                        />
-                    )}
 
                     {/* 3. Custom Name Input (Only shows if "Other..." is selected) */}
                     {isOtherSelected && (
@@ -464,6 +456,16 @@ export default function FarmFresh_ListingForm() {
                                 required={isOtherSelected}
                             />
                         </div>
+                    )}
+
+                    {/* Universal Image Picker */}
+                    {selectedItemName && (
+                        <UniversalImagePicker 
+                            searchTerm={selectedItemName} 
+                            categoryContext={selectedCategory} 
+                            onSelectImage={setSelectedImageUrl} 
+                            currentSelection={selectedImageUrl} 
+                        />
                     )}
 
                     {/* 4. Organic Toggle */}
@@ -600,12 +602,12 @@ export default function FarmFresh_ListingForm() {
                             📦 Total Maximum Quantity Can Supply
                         </label>
                         <p style={{ margin: '0 0 12px 0', fontSize: '12px', color: '#64748b' }}>
-                            Let wholesale buyers know your total stock or production capacity (e.g. if selling 1kg bags, but you have 1000kg total).
+                            {`Let wholesale buyers know your total stock or production capacity (e.g. if selling 1 ${actualDisplayUnit}, but you have 1000 ${actualDisplayUnit} total).`}
                         </p>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                             <input 
                                 type="text" 
-                                placeholder="e.g. 1000 kg or 1 ton" 
+                                placeholder={`e.g. 1000 ${actualDisplayUnit}`} 
                                 value={totalQuantityAvailable}
                                 onChange={(e) => setTotalQuantityAvailable(e.target.value)}
                                 style={{ width: '100%', padding: '16px 12px', borderRadius: '12px', border: '1px solid #cbd5e1', fontSize: '15px', backgroundColor: '#fff', color: '#0f172a', fontWeight: '600', outline: 'none', boxSizing: 'border-box' }}

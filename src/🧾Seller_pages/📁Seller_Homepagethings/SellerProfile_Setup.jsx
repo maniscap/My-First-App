@@ -31,10 +31,10 @@ function SellerProfile_Setup() {
     useEffect(() => {
         let unsubInd = () => {};
         let unsubOrg = () => {};
+        let isComponentMounted = true;
 
-        const fetchStatus = async () => {
-            const auth = getAuth();
-            const user = auth.currentUser;
+        const unsubscribeAuth = onAuthStateChanged(getAuth(), async (user) => {
+            if (!isComponentMounted) return;
             
             let currentIndId = localStorage.getItem('seller_individual_app_id');
             let currentOrgId = localStorage.getItem('seller_organisation_app_id');
@@ -68,10 +68,14 @@ function SellerProfile_Setup() {
                 const prevEdit = localStorage.getItem('seller_app_pending_edit') === 'true';
                 
                 const addNotif = (title, msg, type) => {
-                    const notifs = JSON.parse(localStorage.getItem('seller_notifications') || '[]');
-                    notifs.unshift({ id: Date.now().toString(), title, message: msg, type, timestamp: new Date().toISOString(), isRead: false });
-                    localStorage.setItem('seller_notifications', JSON.stringify(notifs));
-                    window.dispatchEvent(new Event('seller_notifications_updated'));
+                    try {
+                        const notifs = JSON.parse(localStorage.getItem('seller_notifications') || '[]');
+                        notifs.unshift({ id: Date.now().toString(), title, message: msg, type, timestamp: new Date().toISOString(), isRead: false });
+                        localStorage.setItem('seller_notifications', JSON.stringify(notifs));
+                        window.dispatchEvent(new Event('seller_notifications_updated'));
+                    } catch (e) {
+                        console.error("Error parsing notifications:", e);
+                    }
                 };
 
                 if (prevStatus && prevStatus !== data.status) {
@@ -117,10 +121,13 @@ function SellerProfile_Setup() {
                     } else {
                         localStorage.removeItem('seller_individual_app_id');
                     }
-                    if (!currentOrgId) setLoadingData(false);
+                    if (!currentOrgId && isComponentMounted) setLoadingData(false);
+                }, (error) => {
+                    console.error("Error fetching individual app:", error);
+                    if (!currentOrgId && isComponentMounted) setLoadingData(false);
                 });
             } else {
-                if (!currentOrgId) setLoadingData(false);
+                if (!currentOrgId && isComponentMounted) setLoadingData(false);
             }
 
             if (currentOrgId) {
@@ -147,12 +154,20 @@ function SellerProfile_Setup() {
                     } else {
                         localStorage.removeItem('seller_organisation_app_id');
                     }
-                    setLoadingData(false);
+                    if (isComponentMounted) setLoadingData(false);
+                }, (error) => {
+                    console.error("Error fetching organisation app:", error);
+                    if (isComponentMounted) setLoadingData(false);
                 });
             }
+        });
+
+        return () => { 
+            isComponentMounted = false;
+            unsubscribeAuth();
+            unsubInd(); 
+            unsubOrg(); 
         };
-        fetchStatus();
-        return () => { unsubInd(); unsubOrg(); };
     }, []);
     
     // Form Data State

@@ -40,19 +40,25 @@ function Seller_HomePage() {
                 
                 // 1. If not found via local storage, query Firestore by userId
                 if (!appId) {
-                    const q = query(collection(db, 'seller_applications'), where("userId", "==", user.uid));
-                    const querySnapshot = await getDocs(q);
-                    
-                    if (!querySnapshot.empty) {
-                        const appDoc = querySnapshot.docs[0];
-                        appId = appDoc.id;
-                        localStorage.setItem('seller_app_id', appId);
-                    } else {
-                        if (localStorage.getItem('seller_app_status') === 'permanently_deleted') {
-                            setAppStatus('permanently_deleted');
+                    try {
+                        const q = query(collection(db, 'seller_applications'), where("userId", "==", user.uid));
+                        const querySnapshot = await getDocs(q);
+                        
+                        if (!querySnapshot.empty) {
+                            const appDoc = querySnapshot.docs[0];
+                            appId = appDoc.id;
+                            localStorage.setItem('seller_app_id', appId);
                         } else {
-                            setAppStatus('none');
+                            if (localStorage.getItem('seller_app_status') === 'permanently_deleted') {
+                                setAppStatus('permanently_deleted');
+                            } else {
+                                setAppStatus('none');
+                            }
+                            return;
                         }
+                    } catch (error) {
+                        console.error("Error querying seller applications:", error);
+                        setAppStatus('none'); // Fail gracefully so user can start a new application rather than getting stuck
                         return;
                     }
                 }
