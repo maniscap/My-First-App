@@ -329,8 +329,8 @@ function Admin() {
       const unsubAuth = onAuthStateChanged(authObj, (user) => {
           if (user) {
               setIsAuthenticated(true);
-              // Start real-time listener (fetching latest 200 to cover holiday spikes)
-              const appsQuery = query(collection(db, "seller_applications"), orderBy("createdAt", "desc"), limit(200));
+              // Start real-time listener (fetching latest 1000 for a massive safety net without crashing the browser)
+              const appsQuery = query(collection(db, "seller_applications"), orderBy("createdAt", "desc"), limit(1000));
               unsubSnapshot = onSnapshot(appsQuery, (snapshot) => {
                   setSellerApplications(snapshot.docs.map(d => ({id: d.id, ...d.data()})));
               }, (error) => {
