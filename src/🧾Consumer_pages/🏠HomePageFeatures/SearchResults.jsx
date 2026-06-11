@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation, Link } from 'react-router-dom';
 import { db } from '../../firebase';
-import { collection, getDocs, query as firebaseQuery, limit } from 'firebase/firestore';
+import { collection, getDocs, query as firebaseQuery, limit, where } from 'firebase/firestore';
 
 function SearchResults() {
   const [results, setResults] = useState([]);
@@ -46,8 +46,14 @@ function SearchResults() {
           ...goodsSnap.docs.map(d => ({ ...d.data(), type: 'Local Goods', id: d.id }))
         ];
 
-        // FILTER: (Name Match) AND (Distance < 50km)
+        // Fetch frozen sellers to filter out their listings
+        const frozenSnap = await getDocs(firebaseQuery(collection(db, "seller_applications"), where("frozen", "==", true)));
+        const frozenSellerIds = new Set(frozenSnap.docs.map(d => d.data().sellerId));
+
+        // FILTER: (Name Match) AND (Distance < 50km) AND (Not Frozen)
         const filtered = allItems.filter(item => {
+          if (frozenSellerIds.has(item.sellerId)) return false;
+
           // 1. Text Match
           const nameMatch = (item.cropName || item.machineName || item.productName || item.businessName || item.role || item.crop || item.name || item.item || '').toLowerCase().includes(query);
           

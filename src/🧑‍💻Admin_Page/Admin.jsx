@@ -828,14 +828,8 @@ function Admin() {
                                               {app.phone} &mdash; {app.village}, {app.district}
                                               <br/>
                                               <span style={{ fontSize: '13px', color: '#64748b', fontWeight: '600' }}>Approved At: {app.approvedAt ? new Date(app.approvedAt).toLocaleString() : 'N/A'}</span>
-                                              {app.frozen && <span style={{marginLeft: '8px', fontSize: '12px', background: '#FFF7ED', color: '#F97316', padding: '2px 8px', borderRadius: '8px', fontWeight: '700', display: 'inline-flex', alignItems: 'center', gap: '4px'}}><Snowflake size={12} /> FROZEN</span>}
                                           </div>
                                           <div style={{display: 'flex', gap: '8px'}}>
-                                              {app.frozen ? (
-                                                <button onClick={() => handleUnfreezeAccount(app)} style={{ padding: '10px 16px', background: '#10b981', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>✅ Unfreeze</button>
-                                              ) : (
-                                                <button onClick={() => { setSellerToFreeze(app); setFreezeModalOpen(true); }} style={{ padding: '10px 16px', background: '#F97316', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px' }}><Snowflake size={16} strokeWidth={2.5} /> Freeze</button>
-                                              )}
                                               <button onClick={() => handleDeleteApproved(app.id)} style={{ padding: '10px 16px', background: '#ef4444', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>Delete</button>
                                           </div>
                                       </div>
@@ -855,14 +849,8 @@ function Admin() {
                                               {app.phone} &mdash; {app.village}, {app.district}
                                               <br/>
                                               <span style={{ fontSize: '13px', color: '#64748b', fontWeight: '600' }}>Approved At: {app.approvedAt ? new Date(app.approvedAt).toLocaleString() : 'N/A'}</span>
-                                              {app.frozen && <span style={{marginLeft: '8px', fontSize: '12px', background: '#FFF7ED', color: '#F97316', padding: '2px 8px', borderRadius: '8px', fontWeight: '700', display: 'inline-flex', alignItems: 'center', gap: '4px'}}><Snowflake size={12} /> FROZEN</span>}
                                           </div>
                                           <div style={{display: 'flex', gap: '8px'}}>
-                                              {app.frozen ? (
-                                                <button onClick={() => handleUnfreezeAccount(app)} style={{ padding: '10px 16px', background: '#10b981', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>✅ Unfreeze</button>
-                                              ) : (
-                                                <button onClick={() => { setSellerToFreeze(app); setFreezeModalOpen(true); }} style={{ padding: '10px 16px', background: '#F97316', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px' }}><Snowflake size={16} strokeWidth={2.5} /> Freeze</button>
-                                              )}
                                               <button onClick={() => handleDeleteApproved(app.id)} style={{ padding: '10px 16px', background: '#ef4444', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>Delete</button>
                                           </div>
                                       </div>
