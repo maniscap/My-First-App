@@ -330,9 +330,10 @@ function SellerProfile_Setup() {
         try {
             // Generate an absolutely unique alphanumeric Seller ID based on account type
             const timestampPart = Date.now().toString(36).toUpperCase();
-            const randomPart = Math.random().toString(36).substring(2, 6).toUpperCase();
+            const randomPart1 = Math.random().toString(36).substring(2, 6).toUpperCase();
+            const randomPart2 = Math.random().toString(36).substring(2, 6).toUpperCase();
             const prefix = accountType === 'individual' ? 'SIN' : 'ORG';
-            const sellerId = `${prefix}-${timestampPart}-${randomPart}`;
+            const sellerId = `${prefix}-${timestampPart}-${randomPart1}${randomPart2}`;
             
             const auth = getAuth();
             const user = auth.currentUser;

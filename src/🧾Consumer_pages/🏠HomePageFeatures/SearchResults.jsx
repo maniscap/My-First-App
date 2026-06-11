@@ -31,21 +31,25 @@ function SearchResults() {
     const fetchData = async () => {
       setLoading(true);
       try {
-        // Fetch from ALL collections with limits to save costs (Strategy D)
-        const cropsSnap = await getDocs(firebaseQuery(collection(db, "crops"), limit(45)));
-        const servicesSnap = await getDocs(firebaseQuery(collection(db, "services"), limit(45)));
-        const freshSnap = await getDocs(firebaseQuery(collection(db, "daily_products"), limit(45)));
+        // Fetch from ALL correct collections with limits to save costs (Strategy D)
+        const freshSnap = await getDocs(firebaseQuery(collection(db, "listings_farm_fresh"), limit(45)));
+        const machSnap = await getDocs(firebaseQuery(collection(db, "listings_machinery"), limit(45)));
+        const workSnap = await getDocs(firebaseQuery(collection(db, "listings_workers"), limit(45)));
+        const busSnap = await getDocs(firebaseQuery(collection(db, "listings_business"), limit(45)));
+        const goodsSnap = await getDocs(firebaseQuery(collection(db, "listings_local_goods"), limit(45)));
 
         const allItems = [
-          ...cropsSnap.docs.map(d => ({ ...d.data(), type: 'Crop', id: d.id })),
-          ...servicesSnap.docs.map(d => ({ ...d.data(), type: 'Service', id: d.id })),
-          ...freshSnap.docs.map(d => ({ ...d.data(), type: 'Fresh', id: d.id }))
+          ...freshSnap.docs.map(d => ({ ...d.data(), type: 'Farm Fresh', id: d.id })),
+          ...machSnap.docs.map(d => ({ ...d.data(), type: 'Machinery', id: d.id })),
+          ...workSnap.docs.map(d => ({ ...d.data(), type: 'Worker', id: d.id })),
+          ...busSnap.docs.map(d => ({ ...d.data(), type: 'Business', id: d.id })),
+          ...goodsSnap.docs.map(d => ({ ...d.data(), type: 'Local Goods', id: d.id }))
         ];
 
         // FILTER: (Name Match) AND (Distance < 50km)
         const filtered = allItems.filter(item => {
           // 1. Text Match
-          const nameMatch = (item.crop || item.name || item.item || '').toLowerCase().includes(query);
+          const nameMatch = (item.cropName || item.machineName || item.productName || item.businessName || item.role || item.crop || item.name || item.item || '').toLowerCase().includes(query);
           
           // 2. Distance Match
           let distanceMatch = true;

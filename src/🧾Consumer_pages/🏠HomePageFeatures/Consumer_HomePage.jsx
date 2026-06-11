@@ -438,6 +438,9 @@ function Consumer_HomePage() {
 
         // Load Cached Weather Data Immediately for Instant Rendering & Zero Spinner UX
         const cached = localStorage.getItem('farmBuddy_cachedHomePageWeather');
+        const cachedTime = localStorage.getItem('farmBuddy_cachedHomePageWeatherTime');
+        let useCacheOnly = false;
+
         if (cached) {
             try {
                 const parsed = JSON.parse(cached);
@@ -446,11 +449,20 @@ function Consumer_HomePage() {
                     setWeatherStatus('cached');
                     const assetUrl = getAssetLogic(parsed) || getBackgroundImage(parsed.current.condition.text);
                     setWeatherImage(assetUrl);
+
+                    if (cachedTime) {
+                        const diffMins = (new Date() - new Date(cachedTime)) / 60000;
+                        if (diffMins < 30) {
+                            useCacheOnly = true; // Data is fresh, don't spam the API
+                        }
+                    }
                 }
             } catch(e) {
                 console.error("Error loading cached home weather", e);
             }
         }
+
+        if (useCacheOnly) return; // Exit early to prevent infinite loops
 
         // 3. WEATHER FETCHING
         const lastWeatherCity = localStorage.getItem('farmBuddy_lastCity');
@@ -473,8 +485,7 @@ function Consumer_HomePage() {
     };
 
     loadData();
-    window.addEventListener('storage', loadData);
-    return () => window.removeEventListener('storage', loadData);
+    // Intentionally omitting 'storage' event listener for loadData to prevent cross-tab infinite API ping-pong loop.
 
   }, []);
 

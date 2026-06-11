@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { db } from '../firebase';
-import { collection, getDocs, doc, updateDoc, deleteField, deleteDoc, getCountFromServer, query, limit, onSnapshot, where, startAfter } from 'firebase/firestore';
+import { collection, getDocs, getDoc, doc, updateDoc, deleteField, deleteDoc, getCountFromServer, query, limit, onSnapshot, where, startAfter, writeBatch, setDoc } from 'firebase/firestore';
+import { storage } from '../firebase';
+import { ref, deleteObject } from 'firebase/storage';
 import { IoMdArrowBack } from 'react-icons/io';
 import { CheckCircle, XCircle, User, Building, LayoutDashboard, ClipboardList, Users, List, LogOut, Lock, RefreshCw, Edit3, CheckCircle2, Check, X, Search } from 'lucide-react';
 
@@ -16,7 +18,8 @@ function Admin() {
   const [approvedSearchQuery, setApprovedSearchQuery] = useState('');
   const [sellerApplications, setSellerApplications] = useState([]);
   const [listingCounts, setListingCounts] = useState({ farmFresh: 0, machinery: 0, workers: 0, business: 0, freelance: 0, rejected: 0 });
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [isProcessing, setIsProcessing] = useState(false);
 
   // --- NEW LISTINGS STATE ---
   const [adminListings, setAdminListings] = useState([]);
@@ -140,14 +143,35 @@ function Admin() {
 
 
   // --- LOGIN ---
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
       e.preventDefault();
-      if (adminId === 'admin' && password === 'admin123') {
-          localStorage.setItem('adminAuth', 'true');
-          setIsAuthenticated(true);
-      } else {
-          alert('Invalid Admin ID or Password');
+      setIsProcessing(true);
+      try {
+          const authDoc = await getDoc(doc(db, "system_config", "admin_auth"));
+          let isValid = false;
+
+          if (authDoc.exists()) {
+              const data = authDoc.data();
+              if (adminId === data.adminId && password === data.password) isValid = true;
+          } else {
+              // Fallback creation for first-time use, removes hardcoded strings from future client bundles
+              if (adminId === 'admin' && password === 'admin123') {
+                  isValid = true;
+                  await setDoc(doc(db, "system_config", "admin_auth"), { adminId: 'admin', password: 'admin123' });
+              }
+          }
+
+          if (isValid) {
+              localStorage.setItem('adminAuth', 'true');
+              setIsAuthenticated(true);
+          } else {
+              alert('Invalid Admin ID or Password');
+          }
+      } catch (err) {
+          console.error("Login verification failed", err);
+          alert("Error verifying admin credentials.");
       }
+      setIsProcessing(false);
   };
 
   // --- FETCH DATA ---
@@ -208,38 +232,70 @@ function Admin() {
       return () => unsub();
   }, [isAuthenticated]);
 
+  const cleanupStorageMedia = async (appData) => {
+      const urls = [];
+      if (appData.profilePic) urls.push(appData.profilePic);
+      if (appData.idProof) urls.push(appData.idProof);
+      if (appData.organicCertificate) urls.push(appData.organicCertificate);
+      ['machineryImages', 'orgProduceImages', 'orgMachineryImages', 'orgHarvestImages'].forEach(key => {
+          if (appData[key] && Array.isArray(appData[key])) urls.push(...appData[key]);
+      });
+
+      for (const url of urls) {
+          try {
+              if (typeof url === 'string' && url.includes('firebasestorage')) {
+                  const fileRef = ref(storage, url);
+                  await deleteObject(fileRef);
+              }
+          } catch(e) { console.error("Failed to delete", url, e); }
+      }
+  };
+
   const wipeSellerData = async (sellerId) => {
       const collectionsToClear = [
           'listings_farm_fresh', 'listings_machinery', 'listings_workers',
           'listings_business', 'listings_freelancing', 'listings_local_goods'
       ];
+      
+      const batch = writeBatch(db);
       for (const colName of collectionsToClear) {
           const q = query(collection(db, colName), where('sellerId', '==', sellerId));
           const snap = await getDocs(q);
-          const deletePromises = snap.docs.map(d => deleteDoc(doc(db, colName, d.id)));
-          await Promise.all(deletePromises);
+          snap.docs.forEach(d => batch.delete(doc(db, colName, d.id)));
       }
+      
       try {
-          await deleteDoc(doc(db, 'seller_profiles', sellerId));
-      } catch (e) { console.log(e); }
+          batch.delete(doc(db, 'seller_profiles', sellerId));
+          await batch.commit();
+      } catch (e) { console.log("Batch wipe error:", e); }
   };
 
   const handleReject = async (app) => {
-      if(window.confirm("Are you sure you want to completely reject and erase this application from Firebase? This will wipe all their listings too.")) {
+      if(isProcessing) return;
+      const reason = window.prompt("Enter rejection reason (User will see this):", "Does not meet platform requirements.");
+      if (reason === null) return;
+      
+      if(window.confirm("Are you sure you want to reject this application? This will wipe all their listings.")) {
+          setIsProcessing(true);
           try {
               await wipeSellerData(app.id);
-              await deleteDoc(doc(db, "seller_applications", app.id));
+              await cleanupStorageMedia(app);
+              await updateDoc(doc(db, "seller_applications", app.id), { status: 'rejected', rejectionReason: reason });
               fetchData();
           } catch (error) {
-              console.error("Error deleting application:", error);
-              alert("Failed to reject and delete application.");
+              console.error("Error rejecting application:", error);
+              alert("Failed to reject application.");
           }
+          setIsProcessing(false);
       }
   };
 
   const handleApproveSeller = async (app) => {
+      if(isProcessing) return;
       if(window.confirm("Approve this seller? Application will be moved to verified.")) {
+          setIsProcessing(true);
           try {
+              await cleanupStorageMedia(app);
               const sellerRef = doc(db, "seller_applications", app.id);
               await updateDoc(sellerRef, { 
                   status: 'approved',
@@ -257,6 +313,7 @@ function Admin() {
               console.error("Error approving:", error);
               alert("Failed to approve application.");
           }
+          setIsProcessing(false);
       }
   };
 
@@ -268,9 +325,13 @@ function Admin() {
   };
 
   const executeSellerDeletion = async () => {
-      if(!sellerToDelete) return;
-      setIsDeletingSeller(true);
+      if(!sellerToDelete || isProcessing) return;
+      setIsProcessing(true);
       try {
+          // get the app data to clean up its storage media
+          const app = sellerApplications.find(a => a.id === sellerToDelete);
+          if (app) await cleanupStorageMedia(app);
+          
           await wipeSellerData(sellerToDelete);
           await updateDoc(doc(db, "seller_applications", sellerToDelete), {
               status: 'deleted_by_admin',
@@ -283,7 +344,7 @@ function Admin() {
        } catch (err) { 
           alert("Failed to delete seller."); 
        }
-       setIsDeletingSeller(false);
+       setIsProcessing(false);
    };
 
    const handleApproveEdit = async (app) => {
