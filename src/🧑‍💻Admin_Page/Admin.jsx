@@ -18,6 +18,8 @@ function Admin() {
   const [approvedTab, setApprovedTab] = useState('individual'); // individual or organisation
   const [approvedSearchQuery, setApprovedSearchQuery] = useState('');
   const [approvedSearchInput, setApprovedSearchInput] = useState('');
+  const [searchedApprovedSeller, setSearchedApprovedSeller] = useState(null);
+  const [isSearchingApproved, setIsSearchingApproved] = useState(false);
   const [sellerApplications, setSellerApplications] = useState([]);
   const [listingCounts, setListingCounts] = useState({ farmFresh: 0, machinery: 0, workers: 0, business: 0, freelance: 0, rejected: 0 });
   const [loading, setLoading] = useState(true);
@@ -78,6 +80,7 @@ function Admin() {
       // Clear approved search bar
       setApprovedSearchInput('');
       setApprovedSearchQuery('');
+      setSearchedApprovedSeller(null);
   }, [activeTab]);
 
   const handlePublishAnnouncement = async (e) => {
@@ -221,6 +224,30 @@ function Admin() {
           alert('Search failed: ' + e.message);
       }
       setIsSearching(false);
+  };
+
+  const handleSearchApprovedBySellerId = async () => {
+      if (!approvedSearchInput.trim()) return;
+      setIsSearchingApproved(true);
+      setSearchedApprovedSeller(null);
+      try {
+          const q = query(collection(db, 'seller_applications'), where('sellerId', '==', approvedSearchInput.trim()));
+          const snap = await getDocs(q);
+          if (snap.empty) {
+              alert('No seller found with that ID.');
+          } else {
+              const data = snap.docs[0].data();
+              if (data.status !== 'approved') {
+                  alert(`Found seller, but status is ${data.status}. Check other tabs.`);
+              } else {
+                  setSearchedApprovedSeller({ id: snap.docs[0].id, ...data });
+              }
+          }
+      } catch (e) {
+          console.error(e);
+          alert('Search failed.');
+      }
+      setIsSearchingApproved(false);
   };
 
   // --- LOGIN --- No hardcoded credentials. Firebase Auth is the only gate.
@@ -802,23 +829,50 @@ function Admin() {
                           <Search size={20} color="#94a3b8" style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)' }} />
                           <input 
                               type="text" 
-                              placeholder="Search approved sellers by ID, Name, or Phone..." 
+                              placeholder="Search approved sellers by ID exactly (e.g. IND12345)..." 
                               value={approvedSearchInput}
                               onChange={(e) => {
                                   setApprovedSearchInput(e.target.value);
-                                  if (e.target.value === '') setApprovedSearchQuery(''); // Auto-reset when cleared
+                                  if (e.target.value === '') {
+                                      setSearchedApprovedSeller(null);
+                                      setApprovedSearchQuery(''); 
+                                  }
                               }}
-                              onKeyDown={(e) => e.key === 'Enter' && setApprovedSearchQuery(approvedSearchInput)}
+                              onKeyDown={(e) => e.key === 'Enter' && handleSearchApprovedBySellerId()}
                               style={{ width: '100%', padding: '14px 16px 14px 44px', borderRadius: '12px', border: '1px solid #334155', backgroundColor: '#0f172a', color: '#f8fafc', fontSize: '15px', outline: 'none', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}
                           />
                       </div>
                       <button 
-                          onClick={() => setApprovedSearchQuery(approvedSearchInput)}
-                          style={{ padding: '14px 28px', background: '#3b82f6', color: 'white', border: 'none', borderRadius: '12px', fontWeight: '800', fontSize: '15px', cursor: 'pointer', boxShadow: '0 4px 6px rgba(59,130,246,0.3)', transition: 'background 0.2s' }}
+                          onClick={handleSearchApprovedBySellerId}
+                          disabled={isSearchingApproved}
+                          style={{ padding: '14px 28px', background: '#3b82f6', color: 'white', border: 'none', borderRadius: '12px', fontWeight: '800', fontSize: '15px', cursor: isSearchingApproved ? 'wait' : 'pointer', boxShadow: '0 4px 6px rgba(59,130,246,0.3)', transition: 'background 0.2s' }}
                       >
-                          Find
+                          {isSearchingApproved ? '...' : 'Find'}
                       </button>
                   </div>
+
+                  {/* Search Result */}
+                  {searchedApprovedSeller && (
+                      <div style={{ marginBottom: '40px', padding: '20px', background: '#F0FDF4', border: '1px solid #BBF7D0', borderRadius: '16px' }}>
+                          <h3 style={{ margin: '0 0 16px 0', display: 'flex', alignItems: 'center', gap: '8px', color: '#15803D' }}>
+                              ✅ Found Approved Seller
+                          </h3>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                              <div>
+                                  <strong style={{ fontSize: '18px' }}>{searchedApprovedSeller.sellerId}</strong> &mdash; 
+                                  <span style={{ fontSize: '18px', marginLeft: '8px' }}>{searchedApprovedSeller.fullName || searchedApprovedSeller.companyName}</span>
+                                  <div style={{ color: '#475569', marginTop: '4px' }}>Phone: {searchedApprovedSeller.phone}</div>
+                                  <div style={{ color: '#64748b', marginTop: '4px', fontSize: '14px' }}>Approved At: {searchedApprovedSeller.approvedAt ? new Date(searchedApprovedSeller.approvedAt).toLocaleString() : 'N/A'}</div>
+                              </div>
+                              <button 
+                                  onClick={() => handleDeleteApproved(searchedApprovedSeller.id)}
+                                  style={{ padding: '12px 24px', background: '#EF4444', color: 'white', border: 'none', borderRadius: '12px', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 4px 6px rgba(239,68,68,0.3)' }}
+                              >
+                                  Delete Seller
+                              </button>
+                          </div>
+                      </div>
+                  )}
                   
                   <div className="approved-directory">
                       <div className="text-list">
