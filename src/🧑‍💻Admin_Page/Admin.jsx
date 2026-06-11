@@ -193,8 +193,8 @@ function Admin() {
         const fetchCount = async (colName) => {
             try {
                 if (colName === "rejected_applications") {
-                    const coll = collection(db, colName);
-                    const snapshot = await getCountFromServer(coll);
+                    const q = query(collection(db, "seller_applications"), where('status', '==', 'rejected'));
+                    const snapshot = await getCountFromServer(q);
                     return snapshot.data().count;
                 }
                 
