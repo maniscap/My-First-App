@@ -1,5 +1,5 @@
-﻿import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Store, Building2, User, AlertCircle, ShieldCheck, Info, MapPin, Truck, ChevronRight } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { ArrowLeft, Store, Building2, User, AlertCircle, ShieldCheck, Info, MapPin, Truck, ChevronRight, RefreshCw } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { db, auth } from '../../firebase';
 import { doc, getDoc, collection, query, where, getDocs, updateDoc, setDoc } from 'firebase/firestore';
@@ -1045,7 +1045,9 @@ export default function Seller_StorefrontSetup() {
           <Store size={26} color="#FFFFFF" />
           <h1 style={styles.headerTitle}>Storefront Setup</h1>
         </div>
-        <div style={{ width: '42px' }}></div> {/* Spacer to perfectly center the title */}
+        <button onClick={() => window.location.reload()} style={styles.iconButton} onMouseDown={(e) => e.currentTarget.style.transform = 'rotate(180deg)'} onMouseUp={(e) => e.currentTarget.style.transform = 'rotate(0deg)'}>
+          <RefreshCw size={24} color="#FFFFFF" />
+        </button>
       </header>
 
       {/* Main Content Area */}

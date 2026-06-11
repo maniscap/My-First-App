@@ -4,7 +4,7 @@ import { doc, getDoc, collection, query, where, getDocs, deleteDoc, onSnapshot }
 import { Link, useNavigate } from 'react-router-dom';
 import { useUserMode } from '../../UserModeContext';
 import BrandedTransition3D from '../../🛠️Shared_Components/BrandedTransition3D';
-import { ChevronLeft, Edit3, Settings, HelpCircle, Package, Wallet, ShieldCheck, MapPin, Building2, User, Trash2, AlertTriangle } from 'lucide-react';
+import { ChevronLeft, Edit3, Settings, HelpCircle, Package, Wallet, ShieldCheck, MapPin, Building2, User, Trash2, AlertTriangle, RefreshCw } from 'lucide-react';
 
 function Seller_Profile() {
     const navigate = useNavigate();
@@ -62,6 +62,9 @@ function Seller_Profile() {
                         <ChevronLeft size={24} color="#fff" />
                     </div>
                     <div style={{ display: 'flex', gap: '15px' }}>
+                        <div onClick={() => window.location.reload()} style={{ padding: '8px', borderRadius: '50%', background: 'rgba(255,255,255,0.1)', display: 'flex', cursor: 'pointer', transition: 'transform 0.2s' }} onMouseDown={(e) => e.currentTarget.style.transform = 'rotate(180deg)'} onMouseUp={(e) => e.currentTarget.style.transform = 'rotate(0deg)'}>
+                            <RefreshCw size={20} color="#fff" />
+                        </div>
                         <div style={{ padding: '8px', borderRadius: '50%', background: 'rgba(255,255,255,0.1)', display: 'flex', cursor: 'pointer' }}>
                             <Settings size={20} color="#fff" />
                         </div>

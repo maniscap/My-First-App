@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Building2, User, ShieldCheck, Clock, ChevronLeft, UploadCloud, MapPin, Briefcase, CheckCircle2, Trash2, AlertTriangle, Edit3 } from 'lucide-react';
+import { Building2, User, ShieldCheck, Clock, ChevronLeft, UploadCloud, MapPin, Briefcase, CheckCircle2, Trash2, AlertTriangle, Edit3, RefreshCw } from 'lucide-react';
 import { db } from '../../firebase';
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
 import { collection, addDoc, getDoc, doc, setDoc, deleteDoc, query, where, getDocs, onSnapshot } from 'firebase/firestore';
@@ -460,11 +460,16 @@ function SellerProfile_Setup() {
             
             {/* Header */}
             <div style={{ backgroundColor: '#0f172a', color: '#fff', padding: '16px 20px', borderBottomLeftRadius: '20px', borderBottomRightRadius: '20px', boxShadow: accountType ? 'none' : '0 4px 15px rgba(0,0,0,0.1)', transition: 'all 0.3s ease' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '12px' }}>
-                    <div onClick={() => navigate(-1)} style={{ cursor: 'pointer', padding: '5px' }}>
-                        <ChevronLeft size={24} />
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                        <div onClick={() => navigate(-1)} style={{ cursor: 'pointer', padding: '5px' }}>
+                            <ChevronLeft size={24} />
+                        </div>
+                        <h1 style={{ margin: 0, fontSize: '18px', fontWeight: '800' }}>Seller Registration</h1>
                     </div>
-                    <h1 style={{ margin: 0, fontSize: '18px', fontWeight: '800' }}>Seller Registration</h1>
+                    <div onClick={() => window.location.reload()} style={{ cursor: 'pointer', padding: '5px', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'transform 0.2s' }} onMouseDown={(e) => e.currentTarget.style.transform = 'rotate(180deg)'} onMouseUp={(e) => e.currentTarget.style.transform = 'rotate(0deg)'}>
+                        <RefreshCw size={20} color="#fff" />
+                    </div>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '0 10px' }}>
                     <ShieldCheck size={40} color="#4CAF50" style={{ flexShrink: 0 }} />

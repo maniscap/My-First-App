@@ -154,14 +154,7 @@ function Admin() {
   const fetchData = async () => {
     setLoading(true);
     try {
-        // Fetch Seller Applications in REAL-TIME (Using a strict limit to prevent downloading the whole DB and crashing/billing)
-        const appsQuery = query(collection(db, "seller_applications"), limit(100));
-        // We use onSnapshot here but we manage it carefully. 
-        // In a real production app, we would return the unsubscribe function from a separate useEffect.
-        // For simplicity here in fetchData, we will just attach it.
-        onSnapshot(appsQuery, (snapshot) => {
-            setSellerApplications(snapshot.docs.map(d => ({id:d.id, ...d.data()})));
-        });
+        // Applications are fetched in real-time via a dedicated useEffect below.
 
         // Fetch Listing Counts (Using getCountFromServer to avoid massive read costs)
         const fetchCount = async (colName) => {
@@ -199,6 +192,20 @@ function Admin() {
 
   useEffect(() => { 
       if (isAuthenticated) fetchData(); 
+  }, [isAuthenticated]);
+
+  // Real-time listener for Seller Applications
+  useEffect(() => {
+      let unsub = () => {};
+      if (isAuthenticated) {
+          const appsQuery = query(collection(db, "seller_applications"), limit(100));
+          unsub = onSnapshot(appsQuery, (snapshot) => {
+              setSellerApplications(snapshot.docs.map(d => ({id: d.id, ...d.data()})));
+          }, (error) => {
+              console.error("Error with admin onSnapshot:", error);
+          });
+      }
+      return () => unsub();
   }, [isAuthenticated]);
 
   const wipeSellerData = async (sellerId) => {

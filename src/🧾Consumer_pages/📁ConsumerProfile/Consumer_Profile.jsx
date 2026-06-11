@@ -5,6 +5,7 @@ import { signOut, onAuthStateChanged } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore'; 
 import { useUserMode } from '../../UserModeContext';
 import BrandedTransition3D from '../../🛠️Shared_Components/BrandedTransition3D';
+import { RefreshCw } from 'lucide-react';
 
 // --- STYLING HELPERS (Fixed for Mobile Overlap & One Card Flow) ---
 const pageStyle = { 
@@ -572,7 +573,9 @@ function Consumer_Profile() {
                 <div style={headerRow}>
                     <button onClick={() => navigate('/Consumer_HomePage')} style={closeBtn}>✕</button>
                     <h2 style={sectionTitle}>Control Center</h2>
-                    <div style={{width:'32px'}}></div>
+                    <div onClick={() => window.location.reload()} style={{cursor: 'pointer', padding: '5px', display: 'flex', alignItems: 'center', transition: 'transform 0.2s'}} onMouseDown={(e) => e.currentTarget.style.transform = 'rotate(180deg)'} onMouseUp={(e) => e.currentTarget.style.transform = 'rotate(0deg)'}>
+                        <RefreshCw size={24} color="#333" />
+                    </div>
                 </div>
 
                 {/* User ID Card */}
