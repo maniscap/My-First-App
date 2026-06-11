@@ -16,6 +16,17 @@ function Seller_HomePage() {
     const [appFrozen, setAppFrozen] = useState(false);
     const [appFrozenReason, setAppFrozenReason] = useState('');
     const [appFrozenUntil, setAppFrozenUntil] = useState(null);
+    const [showFrozenModal, setShowFrozenModal] = useState(false);
+
+    const handleCategoryClick = (e, path) => {
+        e.preventDefault();
+        if (appStatus !== 'approved') return;
+        if (appFrozen) {
+            setShowFrozenModal(true);
+        } else {
+            navigate(path);
+        }
+    };
 
     const images = {
         farmFresh: "https://images.unsplash.com/photo-1610832958506-aa56368176cf?w=500&q=80",
@@ -275,10 +286,10 @@ function Seller_HomePage() {
                 <span style={{ fontSize: '13px', color: '#64748b', fontWeight: '600' }}>6 Categories</span>
             </div>
 
-            {/* BLOCK CLICKS IF NOT APPROVED OR FROZEN */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', opacity: (appStatus !== 'approved' || appFrozen) ? 0.4 : 1, pointerEvents: (appStatus !== 'approved' || appFrozen) ? 'none' : 'auto', filter: (appStatus !== 'approved' || appFrozen) ? 'grayscale(0.5)' : 'none' }}>
+            {/* BLOCK CLICKS ONLY IF NOT APPROVED */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', opacity: appStatus !== 'approved' ? 0.4 : 1, pointerEvents: appStatus !== 'approved' ? 'none' : 'auto', filter: appStatus !== 'approved' ? 'grayscale(0.5)' : 'none' }}>
                 
-                <Link to="/add-business" style={{ textDecoration: 'none' }}>
+                <div onClick={(e) => handleCategoryClick(e, '/add-business')} style={{ textDecoration: 'none', cursor: 'pointer' }}>
                     <div style={{ borderRadius: '24px', overflow: 'hidden', boxShadow: '0 10px 30px rgba(0,0,0,0.04)', display: 'flex', flexDirection: 'column', backgroundColor: '#fff', height: '100%', border: '1px solid #e2e8f0', position: 'relative' }}>
                         <div style={{ height: '110px', width: '100%', position: 'relative' }}>
                             <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: 'linear-gradient(to bottom, rgba(0,0,0,0.1), rgba(0,0,0,0.5))', zIndex: 1 }}></div>
@@ -295,9 +306,9 @@ function Seller_HomePage() {
                             </div>
                         </div>
                     </div>
-                </Link>
+                </div>
 
-                <Link to="/add-farm-fresh" style={{ textDecoration: 'none' }}>
+                <div onClick={(e) => handleCategoryClick(e, '/add-farm-fresh')} style={{ textDecoration: 'none', cursor: 'pointer' }}>
                     <div style={{ borderRadius: '24px', overflow: 'hidden', boxShadow: '0 10px 30px rgba(0,0,0,0.04)', display: 'flex', flexDirection: 'column', backgroundColor: '#fff', height: '100%', border: '1px solid #e2e8f0', position: 'relative' }}>
                         <div style={{ height: '110px', width: '100%', position: 'relative' }}>
                             <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: 'linear-gradient(to bottom, rgba(0,0,0,0.1), rgba(0,0,0,0.5))', zIndex: 1 }}></div>
@@ -314,9 +325,9 @@ function Seller_HomePage() {
                             </div>
                         </div>
                     </div>
-                </Link>
+                </div>
 
-                <Link to="/add-machinery" style={{ textDecoration: 'none' }}>
+                <div onClick={(e) => handleCategoryClick(e, '/add-machinery')} style={{ textDecoration: 'none', cursor: 'pointer' }}>
                     <div style={{ borderRadius: '24px', overflow: 'hidden', boxShadow: '0 10px 30px rgba(0,0,0,0.04)', display: 'flex', flexDirection: 'column', backgroundColor: '#fff', height: '100%', border: '1px solid #e2e8f0', position: 'relative' }}>
                         <div style={{ height: '110px', width: '100%', position: 'relative' }}>
                             <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: 'linear-gradient(to bottom, rgba(0,0,0,0.1), rgba(0,0,0,0.5))', zIndex: 1 }}></div>
@@ -333,9 +344,9 @@ function Seller_HomePage() {
                             </div>
                         </div>
                     </div>
-                </Link>
+                </div>
 
-                <Link to="/add-workers" style={{ textDecoration: 'none' }}>
+                <div onClick={(e) => handleCategoryClick(e, '/add-workers')} style={{ textDecoration: 'none', cursor: 'pointer' }}>
                     <div style={{ borderRadius: '24px', overflow: 'hidden', boxShadow: '0 10px 30px rgba(0,0,0,0.04)', display: 'flex', flexDirection: 'column', backgroundColor: '#fff', height: '100%', border: '1px solid #e2e8f0', position: 'relative' }}>
                         <div style={{ height: '110px', width: '100%', position: 'relative' }}>
                             <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: 'linear-gradient(to bottom, rgba(0,0,0,0.1), rgba(0,0,0,0.5))', zIndex: 1 }}></div>
@@ -352,9 +363,9 @@ function Seller_HomePage() {
                             </div>
                         </div>
                     </div>
-                </Link>
+                </div>
 
-                <Link to="/add-freelancing" style={{ textDecoration: 'none' }}>
+                <div onClick={(e) => handleCategoryClick(e, '/add-freelancing')} style={{ textDecoration: 'none', cursor: 'pointer' }}>
                     <div style={{ borderRadius: '24px', overflow: 'hidden', boxShadow: '0 10px 30px rgba(0,0,0,0.04)', display: 'flex', flexDirection: 'column', backgroundColor: '#fff', height: '100%', border: '1px solid #e2e8f0', position: 'relative' }}>
                         <div style={{ height: '110px', width: '100%', position: 'relative' }}>
                             <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: 'linear-gradient(to bottom, rgba(0,0,0,0.1), rgba(0,0,0,0.5))', zIndex: 1 }}></div>
@@ -371,9 +382,9 @@ function Seller_HomePage() {
                             </div>
                         </div>
                     </div>
-                </Link>
+                </div>
 
-                <Link to="/add-local-goods" style={{ textDecoration: 'none' }}>
+                <div onClick={(e) => handleCategoryClick(e, '/add-local-goods')} style={{ textDecoration: 'none', cursor: 'pointer' }}>
                     <div style={{ borderRadius: '24px', overflow: 'hidden', boxShadow: '0 10px 30px rgba(0,0,0,0.04)', display: 'flex', flexDirection: 'column', backgroundColor: '#fff', height: '100%', border: '1px solid #e2e8f0', position: 'relative' }}>
                         <div style={{ height: '110px', width: '100%', position: 'relative' }}>
                             <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: 'linear-gradient(to bottom, rgba(0,0,0,0.1), rgba(0,0,0,0.5))', zIndex: 1 }}></div>
@@ -390,8 +401,59 @@ function Seller_HomePage() {
                             </div>
                         </div>
                     </div>
-                </Link>
+                </div>
             </div>
+
+            {/* 3D FROZEN MODAL */}
+            {showFrozenModal && (
+                <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(8px)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }} onClick={() => setShowFrozenModal(false)}>
+                    <div style={{ 
+                        background: 'linear-gradient(145deg, #ffffff, #f3f4f6)', 
+                        padding: '32px', 
+                        borderRadius: '32px', 
+                        maxWidth: '400px', 
+                        width: '100%', 
+                        boxShadow: '0 30px 60px rgba(0,0,0,0.15), inset 0 2px 0 rgba(255,255,255,0.8)', 
+                        position: 'relative', 
+                        transform: 'translateY(0)', 
+                        animation: 'popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)'
+                    }} onClick={(e) => e.stopPropagation()}>
+                        
+                        <div style={{ position: 'absolute', top: '-30px', left: '50%', transform: 'translateX(-50%)', background: 'linear-gradient(135deg, #F97316, #EA580C)', width: '70px', height: '70px', borderRadius: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 15px 30px rgba(234, 88, 12, 0.3), inset 0 2px 0 rgba(255,255,255,0.3)', transformStyle: 'preserve-3d' }}>
+                            <Snowflake size={32} color="#fff" strokeWidth={2.5} style={{ transform: 'translateZ(10px)' }} />
+                        </div>
+
+                        <div style={{ textAlign: 'center', marginTop: '30px' }}>
+                            <h2 style={{ fontSize: '24px', fontWeight: '800', color: '#1f2937', margin: '0 0 12px 0', letterSpacing: '-0.5px' }}>Account Freezed</h2>
+                            <p style={{ fontSize: '15px', color: '#4b5563', margin: '0 0 24px 0', lineHeight: '1.5' }}>
+                                Your seller account has been temporarily paused. You cannot manage or add new listings.
+                            </p>
+                            
+                            <div style={{ background: '#FFF7ED', border: '1px solid #FED7AA', borderRadius: '20px', padding: '20px', textAlign: 'left', marginBottom: '24px', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.02)' }}>
+                                <div style={{ marginBottom: '12px' }}>
+                                    <span style={{ fontSize: '12px', fontWeight: '700', color: '#EA580C', textTransform: 'uppercase', letterSpacing: '1px' }}>Reason</span>
+                                    <p style={{ margin: '4px 0 0 0', fontSize: '14px', color: '#78350F', fontWeight: '600' }}>{appFrozenReason}</p>
+                                </div>
+                                <div>
+                                    <span style={{ fontSize: '12px', fontWeight: '700', color: '#EA580C', textTransform: 'uppercase', letterSpacing: '1px' }}>Freezed Until</span>
+                                    <p style={{ margin: '4px 0 0 0', fontSize: '14px', color: '#78350F', fontWeight: '600' }}>{appFrozenUntil ? new Date(appFrozenUntil).toLocaleDateString() : 'Pending Review'}</p>
+                                </div>
+                            </div>
+
+                            <button onClick={() => setShowFrozenModal(false)} style={{ width: '100%', padding: '16px', background: '#f3f4f6', color: '#374151', border: 'none', borderRadius: '16px', fontSize: '15px', fontWeight: '800', cursor: 'pointer', transition: 'all 0.2s' }}>
+                                Got it
+                            </button>
+                        </div>
+                        
+                        <style>{`
+                            @keyframes popIn {
+                                0% { opacity: 0; transform: scale(0.9) translateY(20px); }
+                                100% { opacity: 1; transform: scale(1) translateY(0); }
+                            }
+                        `}</style>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
