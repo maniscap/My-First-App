@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { db } from '../firebase';
-import { collection, getDocs, getDoc, doc, updateDoc, deleteField, deleteDoc, getCountFromServer, query, limit, onSnapshot, where, startAfter, writeBatch, setDoc } from 'firebase/firestore';
+import { collection, getDocs, getDoc, doc, updateDoc, deleteField, deleteDoc, getCountFromServer, query, limit, onSnapshot, where, startAfter, writeBatch, setDoc, orderBy } from 'firebase/firestore';
 import { storage } from '../firebase';
 import { ref, deleteObject } from 'firebase/storage';
 import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged } from 'firebase/auth';
@@ -172,12 +172,19 @@ function Admin() {
       setIsFreezingAccount(true);
       try {
           const frozenUntil = freezeDays === 0 ? null : new Date(Date.now() + freezeDays * 24 * 60 * 60 * 1000).toISOString();
+          const frozenAt = new Date().toISOString();
           await updateDoc(doc(db, 'seller_applications', sellerToFreeze.id), {
               frozen: true,
               frozenReason: freezeReason,
               frozenUntil: frozenUntil,
-              frozenAt: new Date().toISOString(),
+              frozenAt: frozenAt,
           });
+          // Optimistically update local state so the frozen list refreshes instantly
+          setSellerApplications(prev => prev.map(a =>
+              a.id === sellerToFreeze.id
+                  ? { ...a, frozen: true, frozenReason: freezeReason, frozenUntil: frozenUntil, frozenAt: frozenAt }
+                  : a
+          ));
           setFreezeModalOpen(false);
           setSellerToFreeze(null);
           setSearchedSeller(null);
@@ -199,6 +206,12 @@ function Admin() {
               frozenUntil: null,
               frozenAt: null,
           });
+          // Optimistically update local state so account disappears from frozen list immediately
+          setSellerApplications(prev => prev.map(a =>
+              a.id === app.id
+                  ? { ...a, frozen: false, frozenReason: null, frozenUntil: null, frozenAt: null }
+                  : a
+          ));
           alert('Account unfrozen successfully.');
       } catch (e) {
           console.error(e);
