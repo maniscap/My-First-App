@@ -11,6 +11,7 @@ export default function SellerMarketing_Form() {
     const [user, setUser] = useState(null);
     // Read status instantly from localStorage — same pattern as all other listing forms
     const [appStatus, setAppStatus] = useState(localStorage.getItem('seller_app_status') || 'none');
+    const [appFrozen, setAppFrozen] = useState(localStorage.getItem('seller_app_frozen') === 'true');
     const [sellerId, setSellerId] = useState(localStorage.getItem('seller_app_id') || '');
 
     // Section 1: Basic Identity
@@ -97,7 +98,7 @@ export default function SellerMarketing_Form() {
         setPartners(newPartners);
     };
 
-    if (appStatus !== 'approved') {
+    if (appStatus !== 'approved' || appFrozen) {
         return (
             <LockedListingScreen
                 categoryName="Marketing & Promotions"

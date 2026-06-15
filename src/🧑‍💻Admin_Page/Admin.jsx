@@ -26,8 +26,8 @@ function Admin() {
   const [editRequestApps, setEditRequestApps] = useState([]);
   const [frozenApps, setFrozenApps] = useState([]);
   const [loadingApps, setLoadingApps] = useState(false);
-  const [globalCounts, setGlobalCounts] = useState({ pending: 0, editRequests: 0 });
-  const [listingCounts, setListingCounts] = useState({ farmFresh: 0, machinery: 0, workers: 0, business: 0, freelance: 0, rejected: 0 });
+  const [globalCounts, setGlobalCounts] = useState({ pending: 0, editRequests: 0, approved: 0, approvedInd: 0, approvedOrg: 0 });
+  const [listingCounts, setListingCounts] = useState({ farmFresh: 0, machinery: 0, workers: 0, business: 0, freelance: 0, localGoods: 0, rejected: 0 });
   const [loading, setLoading] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
 
@@ -187,7 +187,6 @@ function Admin() {
           });
           // Optimistically update local state
           setApprovedApps(prev => prev.filter(a => a.id !== sellerToFreeze.id));
-          fetchFrozenApps();
           setFreezeModalOpen(false);
           setSellerToFreeze(null);
           setSearchedSeller(null);
@@ -211,7 +210,6 @@ function Admin() {
           });
           // Optimistically update local state
           setFrozenApps(prev => prev.filter(a => a.id !== app.id));
-          fetchApprovedApps();
           alert('Account unfrozen successfully.');
       } catch (e) {
           console.error(e);
@@ -286,12 +284,45 @@ function Admin() {
       try {
           const qPending = query(collection(db, "seller_applications"), where('status', '==', 'pending_approval'));
           const qEdits = query(collection(db, "seller_applications"), where('hasPendingEdit', '==', true));
-          const [snapPending, snapEdits] = await Promise.all([
+          const qApproved = query(collection(db, "seller_applications"), where('status', '==', 'approved'));
+          const qApprovedInd = query(collection(db, "seller_applications"), where('status', '==', 'approved'), where('accountType', '==', 'individual'));
+          const qApprovedOrg = query(collection(db, "seller_applications"), where('status', '==', 'approved'), where('accountType', '==', 'organisation'));
+
+          const [
+              snapPending, snapEdits, snapApproved, snapInd, snapOrg,
+              snapFarm, snapMach, snapWork, snapBus, snapFree, snapLocal
+          ] = await Promise.all([
               getCountFromServer(qPending),
-              getCountFromServer(qEdits)
+              getCountFromServer(qEdits),
+              getCountFromServer(qApproved),
+              getCountFromServer(qApprovedInd),
+              getCountFromServer(qApprovedOrg),
+              getCountFromServer(collection(db, "listings_farm_fresh")),
+              getCountFromServer(collection(db, "listings_machinery")),
+              getCountFromServer(collection(db, "listings_workers")),
+              getCountFromServer(collection(db, "listings_business")),
+              getCountFromServer(collection(db, "listings_freelancing")),
+              getCountFromServer(collection(db, "listings_local_goods"))
           ]);
-          setGlobalCounts({ pending: snapPending.data().count, editRequests: snapEdits.data().count });
-      } catch (e) { console.error(e); }
+
+          setGlobalCounts({ 
+              pending: snapPending.data().count, 
+              editRequests: snapEdits.data().count,
+              approved: snapApproved.data().count,
+              approvedInd: snapInd.data().count,
+              approvedOrg: snapOrg.data().count
+          });
+
+          setListingCounts(prev => ({
+              ...prev,
+              farmFresh: snapFarm.data().count,
+              machinery: snapMach.data().count,
+              workers: snapWork.data().count,
+              business: snapBus.data().count,
+              freelance: snapFree.data().count,
+              localGoods: snapLocal.data().count
+          }));
+      } catch (e) { console.error("Error fetching global counts:", e); }
   };
 
   // REAL-TIME DATABASE LISTENERS FOR ADMIN TABS
@@ -564,7 +595,7 @@ function Admin() {
   }
 
   const pendingAppsCount = globalCounts.pending;
-  const approvedAppsCount = 0;
+  const approvedAppsCount = globalCounts.approved;
 
   const pendingInd = pendingApps.filter(a => a.accountType === 'individual');
   const pendingOrg = pendingApps.filter(a => a.accountType === 'organisation');
@@ -757,8 +788,8 @@ function Admin() {
 
                   <h3 className="section-subtitle" style={{marginTop: '40px'}}>Seller Demographics</h3>
                   <div className="stats-cards">
-                      <div className="stat-card neutral"><div className="icon">👤</div><h3>{approvedInd.length}</h3><p>Verified Individuals</p></div>
-                      <div className="stat-card neutral"><div className="icon">🏢</div><h3>{approvedOrg.length}</h3><p>Verified Organisations</p></div>
+                      <div className="stat-card neutral"><div className="icon">👤</div><h3>{globalCounts.approvedInd}</h3><p>Verified Individuals</p></div>
+                      <div className="stat-card neutral"><div className="icon">🏢</div><h3>{globalCounts.approvedOrg}</h3><p>Verified Organisations</p></div>
                   </div>
 
                   <h3 className="section-subtitle" style={{marginTop: '40px'}}>Live Listing Counts</h3>
@@ -768,6 +799,7 @@ function Admin() {
                       <div className="stat-card neutral"><div className="icon">🧑‍🔧</div><h3>{listingCounts.workers}</h3><p>Workers</p></div>
                       <div className="stat-card neutral"><div className="icon">🌾</div><h3>{listingCounts.business}</h3><p>Business Zone</p></div>
                       <div className="stat-card neutral"><div className="icon">👨</div><h3>{listingCounts.freelance}</h3><p>Freelancing</p></div>
+                      <div className="stat-card neutral"><div className="icon">📦</div><h3>{listingCounts.localGoods}</h3><p>Local Goods</p></div>
                   </div>
               </div>
           )}
@@ -1613,15 +1645,15 @@ const styles = `
   /* STAT CARDS */
   .stats-cards {
       display: flex;
-      gap: 20px;
+      gap: 15px;
       flex-wrap: wrap;
   }
   .stat-card {
       background: white;
-      padding: 20px 24px;
+      padding: 16px 20px;
       border-radius: 16px;
       border: 1px solid var(--border);
-      min-width: 160px;
+      min-width: 130px;
       flex: 1;
       box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
   }

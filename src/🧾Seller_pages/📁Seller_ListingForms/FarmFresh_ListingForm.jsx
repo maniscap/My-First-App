@@ -61,8 +61,10 @@ export default function FarmFresh_ListingForm() {
     const storefrontSynced = localStorage.getItem('seller_storefront_synced') === 'true';
     
     // Check Seller Approval Status
-    const appStatus = localStorage.getItem('seller_app_status') || 'none';
-    if (appStatus !== 'approved' && appStatus !== 'loading') {
+    const [appStatus, setAppStatus] = useState(localStorage.getItem('seller_app_status') || 'none');
+    const [appFrozen, setAppFrozen] = useState(localStorage.getItem('seller_app_frozen') === 'true');
+    const [sellerId, setSellerId] = useState(localStorage.getItem('seller_app_id') || '');
+    if (appStatus !== 'approved' && appStatus !== 'loading' || appFrozen) {
         return (
             <LockedListingScreen 
                 categoryName="Farm Fresh"

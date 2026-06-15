@@ -4,8 +4,9 @@ import { Building2, ShieldCheck, ShieldAlert } from 'lucide-react';
 
 function BusinessZone_ListingForm() {
     const appStatus = localStorage.getItem('seller_app_status') || 'none';
+    const appFrozen = localStorage.getItem('seller_app_frozen') === 'true';
     const storefrontSynced = localStorage.getItem('seller_storefront_synced') === 'true';
-    if (appStatus !== 'approved' && appStatus !== 'loading') {
+    if ((appStatus !== 'approved' && appStatus !== 'loading') || appFrozen) {
         return (
             <LockedListingScreen 
                 categoryName="Business Zone"
