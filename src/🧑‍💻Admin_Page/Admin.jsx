@@ -20,7 +20,13 @@ function Admin() {
   const [approvedSearchInput, setApprovedSearchInput] = useState('');
   const [searchedApprovedSeller, setSearchedApprovedSeller] = useState(null);
   const [isSearchingApproved, setIsSearchingApproved] = useState(false);
-  const [sellerApplications, setSellerApplications] = useState([]);
+// NEW PULL-BASED SELLER APPS STATE
+  const [pendingApps, setPendingApps] = useState([]);
+  const [approvedApps, setApprovedApps] = useState([]);
+  const [editRequestApps, setEditRequestApps] = useState([]);
+  const [frozenApps, setFrozenApps] = useState([]);
+  const [loadingApps, setLoadingApps] = useState(false);
+  const [globalCounts, setGlobalCounts] = useState({ pending: 0, editRequests: 0 });
   const [listingCounts, setListingCounts] = useState({ farmFresh: 0, machinery: 0, workers: 0, business: 0, freelance: 0, rejected: 0 });
   const [loading, setLoading] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -158,7 +164,7 @@ function Admin() {
           try {
               await deleteDoc(doc(db, listingCategory, id));
               setAdminListings(adminListings.filter(item => item.id !== id));
-              fetchData(); // Update counts
+              fetchGlobalCounts(); // Update counts
           } catch(e) {
               alert("Failed to delete listing.");
           }
@@ -179,12 +185,9 @@ function Admin() {
               frozenUntil: frozenUntil,
               frozenAt: frozenAt,
           });
-          // Optimistically update local state so the frozen list refreshes instantly
-          setSellerApplications(prev => prev.map(a =>
-              a.id === sellerToFreeze.id
-                  ? { ...a, frozen: true, frozenReason: freezeReason, frozenUntil: frozenUntil, frozenAt: frozenAt }
-                  : a
-          ));
+          // Optimistically update local state
+          setApprovedApps(prev => prev.filter(a => a.id !== sellerToFreeze.id));
+          fetchFrozenApps();
           setFreezeModalOpen(false);
           setSellerToFreeze(null);
           setSearchedSeller(null);
@@ -206,12 +209,9 @@ function Admin() {
               frozenUntil: null,
               frozenAt: null,
           });
-          // Optimistically update local state so account disappears from frozen list immediately
-          setSellerApplications(prev => prev.map(a =>
-              a.id === app.id
-                  ? { ...a, frozen: false, frozenReason: null, frozenUntil: null, frozenAt: null }
-                  : a
-          ));
+          // Optimistically update local state
+          setFrozenApps(prev => prev.filter(a => a.id !== app.id));
+          fetchApprovedApps();
           alert('Account unfrozen successfully.');
       } catch (e) {
           console.error(e);
@@ -281,85 +281,89 @@ function Admin() {
       setIsProcessing(false);
   };
 
-  // --- FETCH DATA ---
-  const fetchData = async () => {
-    setLoading(true);
-    try {
-        // Applications are fetched in real-time via a dedicated useEffect below.
-
-        // Fetch Listing Counts (Using getCountFromServer to avoid massive read costs)
-        const fetchCount = async (colName) => {
-            try {
-                if (colName === "rejected_applications") {
-                    const q = query(collection(db, "seller_applications"), where('status', '==', 'rejected'));
-                    const snapshot = await getCountFromServer(q);
-                    return snapshot.data().count;
-                }
-                
-                // Only count listings that are active
-                const q = query(collection(db, colName), where('status', '==', 'active'));
-                const snapshot = await getCountFromServer(q);
-                return snapshot.data().count;
-            } catch(e) { return 0; }
-        };
-        
-        const [c1, c2, c3, c4, c5, rejCount] = await Promise.all([
-            fetchCount("listings_farm_fresh"),
-            fetchCount("listings_machinery"),
-            fetchCount("listings_workers"),
-            fetchCount("listings_business"),
-            fetchCount("listings_freelancing"),
-            fetchCount("rejected_applications")
-        ]);
-
-        setListingCounts({ farmFresh: c1, machinery: c2, workers: c3, business: c4, freelance: c5, rejected: rejCount });
-
-    } catch (error) {
-        console.error("Error fetching data:", error);
-    } finally {
-        setLoading(false);
-    }
+  // --- NEW FETCHERS ---
+  const fetchGlobalCounts = async () => {
+      try {
+          const qPending = query(collection(db, "seller_applications"), where('status', '==', 'pending_approval'));
+          const qEdits = query(collection(db, "seller_applications"), where('hasPendingEdit', '==', true));
+          const [snapPending, snapEdits] = await Promise.all([
+              getCountFromServer(qPending),
+              getCountFromServer(qEdits)
+          ]);
+          setGlobalCounts({ pending: snapPending.data().count, editRequests: snapEdits.data().count });
+      } catch (e) { console.error(e); }
   };
 
-  useEffect(() => { 
-      if (isAuthenticated) { 
-          fetchData();
-      }
-  }, [isAuthenticated]);
+  const fetchPendingApps = async () => {
+      setLoadingApps(true);
+      try {
+          const q = query(collection(db, "seller_applications"), where('status', '==', 'pending_approval'), orderBy("submittedAt", "desc"), limit(100));
+          const snap = await getDocs(q);
+          setPendingApps(snap.docs.map(d => ({id: d.id, ...d.data()})));
+      } catch (e) { console.error(e); }
+      setLoadingApps(false);
+  };
 
-  // Re-fetch listing counts whenever applications update (e.g. approve/reject changes counts)
-  useEffect(() => {
-      if (isAuthenticated && sellerApplications.length >= 0) {
-          fetchData();
-      }
-  }, [sellerApplications]);
+  const fetchApprovedApps = async () => {
+      setLoadingApps(true);
+      try {
+          const q = query(collection(db, "seller_applications"), where('status', '==', 'approved'), orderBy("approvedAt", "desc"), limit(50));
+          const snap = await getDocs(q);
+          setApprovedApps(snap.docs.map(d => ({id: d.id, ...d.data()})));
+      } catch (e) { console.error(e); }
+      setLoadingApps(false);
+  };
 
-  // Real-time listener for Seller Applications — gated on Firebase Auth
+  const fetchEditRequests = async () => {
+      setLoadingApps(true);
+      try {
+          const q = query(collection(db, "seller_applications"), where('hasPendingEdit', '==', true), limit(50));
+          const snap = await getDocs(q);
+          setEditRequestApps(snap.docs.map(d => ({id: d.id, ...d.data()})));
+      } catch (e) { console.error(e); }
+      setLoadingApps(false);
+  };
+
+  const fetchFrozenApps = async () => {
+      setLoadingApps(true);
+      try {
+          const q = query(collection(db, "seller_applications"), where('frozen', '==', true), limit(50));
+          const snap = await getDocs(q);
+          setFrozenApps(snap.docs.map(d => ({id: d.id, ...d.data()})));
+      } catch (e) { console.error(e); }
+      setLoadingApps(false);
+  };
+
+  const fetchData = () => {
+      if (activeTab === 'verifications') fetchPendingApps();
+      if (activeTab === 'approved') fetchApprovedApps();
+      if (activeTab === 'frozen') fetchFrozenApps();
+      if (activeTab === 'dashboard') { fetchEditRequests(); fetchGlobalCounts(); }
+      if (activeTab === 'reports') fetchReports();
+  };
+
+  // Authentication listener
   useEffect(() => {
-      let unsubSnapshot;
       const authObj = getAuth();
-      // Check if Firebase already has a session (page refresh)
       const unsubAuth = onAuthStateChanged(authObj, (user) => {
-          if (user) {
-              setIsAuthenticated(true);
-              // Start real-time listener (fetching latest 1000 for a massive safety net without crashing the browser)
-              const appsQuery = query(collection(db, "seller_applications"), orderBy("createdAt", "desc"), limit(1000));
-              unsubSnapshot = onSnapshot(appsQuery, (snapshot) => {
-                  setSellerApplications(snapshot.docs.map(d => ({id: d.id, ...d.data()})));
-              }, (error) => {
-                  console.error("Error with admin onSnapshot:", error);
-              });
-          } else {
-              // No Firebase session — force login screen
-              setIsAuthenticated(false);
-              if (unsubSnapshot) unsubSnapshot();
-          }
+          if (user) { setIsAuthenticated(true); fetchData(); fetchGlobalCounts(); } else { setIsAuthenticated(false); }
       });
-      return () => {
-          unsubAuth();
-          if (unsubSnapshot) unsubSnapshot();
-      };
+      return () => unsubAuth();
   }, []);
+
+  // Tab-specific fetchers
+  useEffect(() => {
+      if (!isAuthenticated) return;
+      if (activeTab === 'verifications') fetchPendingApps();
+      if (activeTab === 'approved') fetchApprovedApps();
+      if (activeTab === 'frozen') fetchFrozenApps();
+      if (activeTab === 'dashboard') { fetchEditRequests(); fetchGlobalCounts(); }
+      if (activeTab === 'reports') fetchReports();
+      
+      setSellerIdSearch(''); setSearchedSeller(null);
+      setApprovedSearchInput(''); setApprovedSearchQuery(''); setSearchedApprovedSeller(null);
+  }, [activeTab, isAuthenticated]);
+
 
   const cleanupStorageMedia = async (appData) => {
       const urls = [];
@@ -458,7 +462,7 @@ function Admin() {
       setIsProcessing(true);
       try {
           // get the app data to clean up its storage media
-          const app = sellerApplications.find(a => a.id === sellerToDelete);
+          const app = approvedApps.find(a => a.id === sellerToDelete);
           if (app) await cleanupStorageMedia(app);
           
           await wipeSellerData(sellerToDelete);
@@ -543,15 +547,15 @@ function Admin() {
       );
   }
 
-  const pendingAppsCount = sellerApplications.filter(a => a.status === 'pending_approval').length;
-  const approvedAppsCount = sellerApplications.filter(a => a.status === 'approved').length;
+  const pendingAppsCount = globalCounts.pending;
+  const approvedAppsCount = 0;
 
-  const pendingInd = sellerApplications.filter(a => a.status === 'pending_approval' && a.accountType === 'individual');
-  const pendingOrg = sellerApplications.filter(a => a.status === 'pending_approval' && a.accountType === 'organisation');
+  const pendingInd = pendingApps.filter(a => a.accountType === 'individual');
+  const pendingOrg = pendingApps.filter(a => a.accountType === 'organisation');
 
   const approvedSearchLower = approvedSearchQuery.toLowerCase();
   
-  const approvedInd = sellerApplications.filter(a => {
+  const approvedInd = approvedApps.filter(a => {
       if (a.status !== 'approved' || a.accountType !== 'individual') return false;
       if (!approvedSearchQuery) return true;
       const idMatch = a.sellerId?.toLowerCase().includes(approvedSearchLower);
@@ -559,7 +563,7 @@ function Admin() {
       return idMatch || nameMatch;
   }).slice(0, 20);
 
-  const approvedOrg = sellerApplications.filter(a => {
+  const approvedOrg = approvedApps.filter(a => {
       if (a.status !== 'approved' || a.accountType !== 'organisation') return false;
       if (!approvedSearchQuery) return true;
       const idMatch = a.sellerId?.toLowerCase().includes(approvedSearchLower);
@@ -567,8 +571,8 @@ function Admin() {
       return idMatch || nameMatch;
   }).slice(0, 20);
 
-  const pendingEdits = sellerApplications.filter(a => a.hasPendingEdit);
-  const frozenApps = sellerApplications.filter(a => a.frozen === true);
+  const pendingEdits = editRequestApps;
+  const frozenAppsRender = frozenApps;
 
   return (
     <div className="admin-dashboard">
@@ -678,7 +682,7 @@ function Admin() {
                   <ClipboardList size={20} /> Verifications <span className="badge">{pendingAppsCount}</span>
               </button>
               <button className={`nav-item ${activeTab === 'edit_approvals' ? 'active' : ''}`} onClick={() => setActiveTab('edit_approvals')}>
-                  <Edit3 size={20} /> Edit Approvals {pendingEdits.length > 0 && <span className="badge" style={{background: '#f59e0b'}}>{pendingEdits.length}</span>}
+                  <Edit3 size={20} /> Edit Approvals {globalCounts.editRequests > 0 && <span className="badge" style={{background: '#f59e0b'}}>{globalCounts.editRequests}</span>}
               </button>
               <button className={`nav-item ${activeTab === 'approved' ? 'active' : ''}`} onClick={() => setActiveTab('approved')}>
                   <Users size={20} /> Approved Sellers

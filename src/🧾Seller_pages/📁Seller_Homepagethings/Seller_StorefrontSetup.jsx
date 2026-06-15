@@ -538,6 +538,13 @@ export default function Seller_StorefrontSetup() {
 
     return (
       <div style={styles.container}>
+        <style>{`
+          input::placeholder {
+            color: #9ca3af !important;
+            font-style: italic !important;
+            font-weight: 400 !important;
+          }
+        `}</style>
         <header style={styles.header}>
           <button style={styles.iconButton} onClick={handleBack}>
             <ArrowLeft size={24} color="#FFFFFF" />

@@ -1,31 +1,30 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { CircleUserRound, ShieldAlert, ShieldCheck, ShieldX, Clock, Building2, Snowflake } from 'lucide-react';
+import { CircleUserRound, ShieldCheck, Building2, Snowflake, X } from 'lucide-react';
 import Seller_BannerPromo from './Seller_BannerPromo';
 import { db, auth } from '../../firebase';
-import { doc, getDoc, collection, query, where, getDocs, onSnapshot, deleteDoc } from 'firebase/firestore';
+import { collection, query, where, getDocs, onSnapshot, deleteDoc, doc } from 'firebase/firestore';
 import { onAuthStateChanged } from 'firebase/auth';
 
 function Seller_HomePage() {
     const navigate = useNavigate();
 
-    
-    // Live Application Status state
-    const [appStatus, setAppStatus] = useState('loading'); // loading, none, pending_approval, approved, rejected
+    const [appStatus, setAppStatus] = useState('loading');
     const [sellerName, setSellerName] = useState('');
     const [appFrozen, setAppFrozen] = useState(false);
     const [appFrozenReason, setAppFrozenReason] = useState('');
     const [appFrozenUntil, setAppFrozenUntil] = useState(null);
-    const [showFrozenModal, setShowFrozenModal] = useState(false);
 
-    const handleCategoryClick = (e, path) => {
-        e.preventDefault();
-        if (appStatus !== 'approved') return;
+    const handleCategoryClick = (path) => {
         if (appFrozen) {
-            setShowFrozenModal(true);
-        } else {
-            navigate(path);
+            alert('Your account is currently frozen. You cannot add new listings.');
+            return;
         }
+        if (appStatus !== 'approved') {
+            alert('Your seller application must be approved before you can add listings.');
+            return;
+        }
+        navigate(path);
     };
 
     const images = {
@@ -34,33 +33,22 @@ function Seller_HomePage() {
         workers: "https://images.unsplash.com/photo-1599839619722-39751411ea63?w=500&q=80",
         business: "https://images.unsplash.com/photo-1574943320219-553eb213f72d?w=500&q=80",
         freelance: "https://images.unsplash.com/photo-1601584115197-04ecc0da31d7?w=500&q=80",
-        localGoods: "https://images.unsplash.com/photo-1590004953392-5aba2e72269a?w=500&q=80" // Baskets/handmade goods
+        localGoods: "https://images.unsplash.com/photo-1590004953392-5aba2e72269a?w=500&q=80"
     };
 
     useEffect(() => {
-
-    }, []);
-
-    // Fetch the live status from Firebase
-    useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, async (user) => {
-            if (!user) {
-                setAppStatus('none');
-                return;
-            }
+            if (!user) { setAppStatus('none'); return; }
 
             try {
                 let appId = localStorage.getItem('seller_app_id');
-                
-                // 1. If not found via local storage, query Firestore by userId
+
                 if (!appId) {
                     try {
                         const q = query(collection(db, 'seller_applications'), where("userId", "==", user.uid));
                         const querySnapshot = await getDocs(q);
-                        
                         if (!querySnapshot.empty) {
-                            const appDoc = querySnapshot.docs[0];
-                            appId = appDoc.id;
+                            appId = querySnapshot.docs[0].id;
                             localStorage.setItem('seller_app_id', appId);
                         } else {
                             if (localStorage.getItem('seller_app_status') === 'permanently_deleted') {
@@ -68,42 +56,37 @@ function Seller_HomePage() {
                             } else {
                                 setAppStatus('none');
                             }
-                            localStorage.removeItem('seller_name');
-                            localStorage.removeItem('seller_app_id');
-                            localStorage.removeItem('seller_account_type');
                             return;
                         }
                     } catch (error) {
                         console.error("Error querying seller applications:", error);
-                        setAppStatus('none'); // Fail gracefully so user can start a new application rather than getting stuck
+                        setAppStatus('none');
                         return;
                     }
                 }
 
-                // 2. Set up realtime listener
                 if (appId) {
                     const docRef = doc(db, 'seller_applications', appId);
                     const unsubscribeSnapshot = onSnapshot(docRef, (docSnap) => {
                         if (docSnap.exists()) {
                             const appData = docSnap.data();
                             if (appData.status === 'deleted_by_admin') {
-                                // Store the reason locally so user can see it
                                 localStorage.setItem('seller_app_deleted_reason', appData.deletionReason || 'Violation of terms');
                                 localStorage.setItem('seller_app_deleted_msg', appData.deletionMessage || '');
-                                
                                 deleteDoc(docRef).catch(e => console.error(e));
-                                
                                 setAppStatus('permanently_deleted');
                                 localStorage.setItem('seller_app_status', 'permanently_deleted');
                                 localStorage.removeItem('seller_name');
                                 localStorage.removeItem('seller_app_id');
                                 localStorage.removeItem('seller_account_type');
-                                return; // Stop processing this snapshot
+                                return;
                             }
 
                             setAppStatus(appData.status);
                             setAppFrozen(appData.frozen === true);
+                            localStorage.setItem('seller_app_frozen', appData.frozen === true ? 'true' : 'false');
                             setAppFrozenReason(appData.frozenReason || 'Irregular activity detected');
+                            localStorage.setItem('seller_app_frozen_reason', appData.frozenReason || 'Irregular activity detected');
                             setAppFrozenUntil(appData.frozenUntil || null);
 
                             const nameToUse = appData.accountType === 'organisation' ? appData.companyName : (appData.shopName || appData.fullName);
@@ -111,10 +94,9 @@ function Seller_HomePage() {
                             localStorage.setItem('seller_name', nameToUse);
                             localStorage.setItem('seller_account_type', appData.accountType);
 
-                            // --- LOCAL NOTIFICATION LOGIC (ZERO EXTRA READS) ---
                             const prevStatus = localStorage.getItem('seller_app_status');
                             const prevEdit = localStorage.getItem('seller_app_pending_edit') === 'true';
-                            
+
                             const addNotif = (title, msg, type) => {
                                 const notifs = JSON.parse(localStorage.getItem('seller_notifications') || '[]');
                                 notifs.unshift({ id: Date.now().toString(), title, message: msg, type, timestamp: new Date().toISOString(), isRead: false });
@@ -127,6 +109,10 @@ function Seller_HomePage() {
                                 if (appData.status === 'rejected') addNotif('Application Rejected', appData.rejectionReason || 'Please check your application details.', 'error');
                             }
 
+                            if (appData.status === 'rejected') {
+                                localStorage.setItem('seller_app_rejected_reason', appData.rejectionReason || 'Does not meet platform requirements.');
+                            }
+
                             if (prevEdit && !appData.hasPendingEdit) {
                                 if (appData.lastEditAction === 'rejected') {
                                     addNotif('Edit Request Rejected', 'Your profile edit request was rejected by the admin. Your live profile remains unchanged.', 'error');
@@ -137,7 +123,6 @@ function Seller_HomePage() {
 
                             localStorage.setItem('seller_app_status', appData.status);
                             localStorage.setItem('seller_app_pending_edit', appData.hasPendingEdit ? 'true' : 'false');
-                            // ----------------------------------------------------
                         } else {
                             if (localStorage.getItem('seller_app_status') === 'permanently_deleted') {
                                 setAppStatus('permanently_deleted');
@@ -149,13 +134,8 @@ function Seller_HomePage() {
                         console.error("Error with application snapshot:", error);
                         setAppStatus('error');
                     });
-                    
-                    // We need to return this so the auth listener can unsubscribe it when user changes
-                    // but onAuthStateChanged only allows returning its own unsubscribe.
-                    // We will store it globally or clear it when unmounting
                     window.sellerHomeSnapshotUnsub = unsubscribeSnapshot;
                 }
-
             } catch (error) {
                 console.error("Error fetching application status:", error);
                 setAppStatus('error');
@@ -171,25 +151,29 @@ function Seller_HomePage() {
         };
     }, []);
 
-    // RENDER: Application Rejected
-    if (appStatus === 'rejected') {
-        return (
-            <div style={{ backgroundColor: '#fff1f2', minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '20px', textAlign: 'center' }}>
-                <ShieldX size={80} color="#e11d48" style={{ marginBottom: '20px' }} />
-                <h1 style={{ color: '#be123c', margin: '0 0 10px 0' }}>Application Rejected</h1>
-                <p style={{ color: '#4c0519', maxWidth: '400px', lineHeight: '1.6' }}>We're sorry, but your application to become a Seller on FarmCap has been rejected by the admin team. Please contact support for more details.</p>
-                <button onClick={() => { localStorage.removeItem('seller_app_id'); setAppStatus('none'); }} style={{ marginTop: '30px', padding: '12px 24px', background: '#e11d48', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold' }}>Start New Application</button>
-            </div>
-        );
-    }
-
-
-
 
 
     return (
         <div style={{ backgroundColor: '#f8fafc', position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, width: '100vw', height: '100dvh', overflowY: 'auto', overflowX: 'hidden', touchAction: 'pan-y', WebkitOverflowScrolling: 'touch', padding: '20px', paddingBottom: '120px', boxSizing: 'border-box' }}>
-            
+
+            <style>{`
+                @keyframes popIn {
+                    0% { opacity: 0; transform: scale(0.88) translateY(30px); }
+                    100% { opacity: 1; transform: scale(1) translateY(0); }
+                }
+                @keyframes slideUp {
+                    0% { opacity: 0; transform: translateY(40px); }
+                    100% { opacity: 1; transform: translateY(0); }
+                }
+                .listing-card {
+                    transition: transform 0.2s ease, box-shadow 0.2s ease;
+                    cursor: pointer;
+                }
+                .listing-card:active {
+                    transform: scale(0.97);
+                }
+            `}</style>
+
             {/* TOP HEADER */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#fff', padding: '16px 20px', borderRadius: '20px', boxShadow: '0 4px 20px rgba(0,0,0,0.03)', border: '1px solid rgba(226, 232, 240, 0.8)', marginBottom: '24px' }}>
                 <div style={{ display: 'flex', flexDirection: 'column' }}>
@@ -199,9 +183,8 @@ function Seller_HomePage() {
                         </div>
                         <h1 style={{ margin: 0, fontSize: '18px', color: '#0f172a', fontWeight: '800', letterSpacing: '-0.3px' }}>Seller Dashboard</h1>
                     </div>
-                    <p style={{ margin: '4px 0 0 36px', fontSize: '12px', color: '#64748b', fontWeight: '500' }}>Manage your storefront & listings</p>
+                    <p style={{ margin: '4px 0 0 36px', fontSize: '12px', color: '#64748b', fontWeight: '500' }}>Manage your storefront &amp; listings</p>
                 </div>
-                
                 <Link to="/profile" style={{ textDecoration: 'none' }}>
                     <div style={{ width: '44px', height: '44px', background: 'linear-gradient(135deg, #e0f2fe, #bae6fd)', color: '#0284c7', borderRadius: '14px', display: 'flex', justifyContent: 'center', alignItems: 'center', boxShadow: 'inset 0 2px 4px rgba(255,255,255,0.5), 0 4px 10px rgba(2,132,199,0.1)' }}>
                         <CircleUserRound size={24} strokeWidth={2.5} />
@@ -209,59 +192,10 @@ function Seller_HomePage() {
                 </Link>
             </div>
 
-            {/* STATUS BANNERS */}
+            {/* STATUS BANNER (top area) */}
             {appStatus === 'loading' && (
                 <div style={{ background: '#f1f5f9', padding: '16px', borderRadius: '16px', marginBottom: '24px', textAlign: 'center', color: '#475569', fontWeight: '600', border: '1px solid #e2e8f0' }}>
                     Checking your Seller Status...
-                </div>
-            )}
-
-            {appStatus === 'none' && (
-                <div style={{ background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)', padding: '24px', borderRadius: '24px', marginBottom: '24px', color: 'white', display: 'flex', alignItems: 'flex-start', gap: '16px', boxShadow: '0 10px 30px rgba(37, 99, 235, 0.25)' }}>
-                    <ShieldAlert size={32} color="white" style={{ flexShrink: 0, marginTop: '2px' }} />
-                    <div>
-                        <h3 style={{ margin: '0 0 6px 0', fontSize: '18px', fontWeight: '800' }}>Add your first listings and start your business</h3>
-                        <p style={{ margin: 0, fontSize: '14px', opacity: 0.9, lineHeight: '1.5' }}>Go to the seller registration and send your application. After that, you will be able to add the listings.</p>
-                        <button onClick={() => navigate('/seller-setup')} style={{ marginTop: '16px', background: 'white', color: '#2563eb', border: 'none', padding: '10px 20px', borderRadius: '10px', fontWeight: '800', fontSize: '14px', cursor: 'pointer', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>Go to Seller Registration</button>
-                    </div>
-                </div>
-            )}
-
-            {appStatus === 'permanently_deleted' && (
-                <div style={{ background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)', padding: '24px', borderRadius: '24px', marginBottom: '24px', color: 'white', display: 'flex', alignItems: 'flex-start', gap: '16px', boxShadow: '0 10px 30px rgba(220, 38, 38, 0.25)' }}>
-                    <ShieldAlert size={32} color="white" style={{ flexShrink: 0, marginTop: '2px' }} />
-                    <div>
-                        <h3 style={{ margin: '0 0 6px 0', fontSize: '18px', fontWeight: '800' }}>Account Deleted</h3>
-                        <p style={{ margin: '0 0 12px 0', fontSize: '14px', opacity: 0.9, lineHeight: '1.5' }}>Your previous account was deleted. <b>Reason:</b> {localStorage.getItem('seller_app_deleted_reason') || 'Violation of terms'}. {localStorage.getItem('seller_app_deleted_msg') ? `"${localStorage.getItem('seller_app_deleted_msg')}"` : ''}</p>
-                        <p style={{ margin: 0, fontSize: '14px', opacity: 0.9, lineHeight: '1.5' }}>You have been granted a second chance. Submit a new application to reactivate your store.</p>
-                        <button onClick={() => navigate('/seller-setup')} style={{ marginTop: '16px', background: 'white', color: '#dc2626', border: 'none', padding: '10px 20px', borderRadius: '10px', fontWeight: '800', fontSize: '14px', cursor: 'pointer', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>Go to Seller Registration</button>
-                    </div>
-                </div>
-            )}
-
-            {appStatus === 'pending_approval' && (
-                <div style={{ background: 'linear-gradient(135deg, #fffbeb, #fef3c7)', border: '1px solid #fde68a', padding: '24px', borderRadius: '24px', marginBottom: '24px', color: '#92400e', display: 'flex', alignItems: 'flex-start', gap: '16px', boxShadow: '0 8px 25px rgba(245, 158, 11, 0.1)' }}>
-                    <Clock size={32} color="#d97706" style={{ flexShrink: 0, marginTop: '2px' }} />
-                    <div>
-                        <h3 style={{ margin: '0 0 6px 0', fontSize: '18px', fontWeight: '800' }}>Application Under Review</h3>
-                        <p style={{ margin: 0, fontSize: '14px', lineHeight: '1.5', color: '#b45309' }}>Hang tight, {sellerName}! Our admin team is currently reviewing your profile application. You will be able to post listings once approved.</p>
-                    </div>
-                </div>
-            )}
-
-            {appFrozen && (
-                <div style={{ background: 'linear-gradient(135deg, #FFF7ED, #FFEDD5)', border: '1px solid #FED7AA', padding: '24px', borderRadius: '24px', marginBottom: '24px', color: '#9A3412', display: 'flex', alignItems: 'flex-start', gap: '16px', boxShadow: '0 8px 25px rgba(249, 115, 22, 0.15)' }}>
-                    <div style={{ background: '#F97316', borderRadius: '12px', padding: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                        <Snowflake size={24} color="#fff" strokeWidth={2.5} />
-                    </div>
-                    <div>
-                        <h3 style={{ margin: '0 0 6px 0', fontSize: '18px', fontWeight: '800' }}>Account Freezed</h3>
-                        <p style={{ margin: '0 0 8px 0', fontSize: '14px', lineHeight: '1.5', color: '#78350F' }}>Your account has been temporarily paused by admins. Your public listings are hidden.</p>
-                        <div style={{ background: 'rgba(255,255,255,0.6)', padding: '12px', borderRadius: '12px', fontSize: '13px', color: '#431407' }}>
-                            <strong>Reason:</strong> {appFrozenReason}<br/>
-                            <strong>Until:</strong> {appFrozenUntil ? new Date(appFrozenUntil).toLocaleDateString() : 'Pending Review'}
-                        </div>
-                    </div>
                 </div>
             )}
 
@@ -277,7 +211,23 @@ function Seller_HomePage() {
                 </div>
             )}
 
-
+            {(appStatus !== 'approved' || appFrozen) && appStatus !== 'loading' && (
+                <div
+                    onClick={() => navigate('/seller-setup')}
+                    style={{ cursor: 'pointer', background: appStatus === 'permanently_deleted' || appStatus === 'rejected' ? 'linear-gradient(135deg,#fef2f2,#fee2e2)' : appFrozen ? 'linear-gradient(135deg,#fff7ed,#ffedd5)' : appStatus === 'pending_approval' ? 'linear-gradient(135deg,#fffbeb,#fef3c7)' : 'linear-gradient(135deg,#eff6ff,#dbeafe)', border: `1px solid ${appStatus === 'permanently_deleted' || appStatus === 'rejected' ? '#fecdd3' : appFrozen ? '#fed7aa' : appStatus === 'pending_approval' ? '#fde68a' : '#bfdbfe'}`, padding: '18px', borderRadius: '20px', marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '14px', boxShadow: '0 6px 20px rgba(0,0,0,0.06)', transition: 'transform 0.15s ease' }}
+                >
+                    <div style={{ fontSize: '26px', flexShrink: 0 }}>
+                        {appStatus === 'permanently_deleted' ? '🚫' : appStatus === 'rejected' ? '❌' : appFrozen ? '❄️' : appStatus === 'pending_approval' ? '⏳' : '🏪'}
+                    </div>
+                    <div style={{ flex: 1 }}>
+                        <p style={{ margin: '0 0 2px 0', fontWeight: '800', fontSize: '14px', color: appStatus === 'permanently_deleted' || appStatus === 'rejected' ? '#9f1239' : appFrozen ? '#7c2d12' : appStatus === 'pending_approval' ? '#78350f' : '#1e3a8a' }}>
+                            {appStatus === 'permanently_deleted' ? 'Account Deleted by Admin' : appStatus === 'rejected' ? 'Application Rejected' : appFrozen ? 'Account Temporarily Frozen' : appStatus === 'pending_approval' ? 'Application Under Review' : 'Seller Account Required'}
+                        </p>
+                        <p style={{ margin: 0, fontSize: '12px', color: '#64748b', fontWeight: '500' }}>Tap to see full details</p>
+                    </div>
+                    <span style={{ fontSize: '18px', color: '#94a3b8' }}>›</span>
+                </div>
+            )}
 
             <Seller_BannerPromo />
 
@@ -286,174 +236,132 @@ function Seller_HomePage() {
                 <span style={{ fontSize: '13px', color: '#64748b', fontWeight: '600' }}>6 Categories</span>
             </div>
 
-            {/* BLOCK CLICKS ONLY IF NOT APPROVED */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', opacity: appStatus !== 'approved' ? 0.4 : 1, pointerEvents: appStatus !== 'approved' ? 'none' : 'auto', filter: appStatus !== 'approved' ? 'grayscale(0.5)' : 'none' }}>
-                
-                <div onClick={(e) => handleCategoryClick(e, '/add-business')} style={{ textDecoration: 'none', cursor: 'pointer' }}>
-                    <div style={{ borderRadius: '24px', overflow: 'hidden', boxShadow: '0 10px 30px rgba(0,0,0,0.04)', display: 'flex', flexDirection: 'column', backgroundColor: '#fff', height: '100%', border: '1px solid #e2e8f0', position: 'relative' }}>
-                        <div style={{ height: '110px', width: '100%', position: 'relative' }}>
-                            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: 'linear-gradient(to bottom, rgba(0,0,0,0.1), rgba(0,0,0,0.5))', zIndex: 1 }}></div>
-                            <img src={images.business} alt="Business Zone" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                            <div style={{ position: 'absolute', top: '12px', right: '12px', fontSize: '18px', backgroundColor: '#fff', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '10px', zIndex: 2, boxShadow: '0 4px 10px rgba(0,0,0,0.1)' }}>🌾</div>
+            {/* LISTINGS GRID — always fully visible and clickable, 6-color 3D cards */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+
+                {/* MARKETING & PROMOTIONS — full width, purple */}
+                <div className="listing-card" onClick={() => handleCategoryClick('/add-marketing')}>
+                    <div style={{ borderRadius: '20px', background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', boxShadow: '0 10px 30px rgba(102,126,234,0.35)', border: '1px solid rgba(255,255,255,0.15)', padding: '20px', display: 'flex', alignItems: 'center', gap: '18px', position: 'relative', overflow: 'hidden' }}>
+                        <div style={{ position: 'absolute', top: '-20px', right: '-20px', width: '100px', height: '100px', borderRadius: '50%', background: 'rgba(255,255,255,0.08)' }}></div>
+                        <div style={{ position: 'absolute', bottom: '-30px', right: '60px', width: '70px', height: '70px', borderRadius: '50%', background: 'rgba(255,255,255,0.05)' }}></div>
+                        <div style={{ width: '56px', height: '56px', borderRadius: '16px', background: 'rgba(255,255,255,0.2)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '28px', flexShrink: 0, boxShadow: 'inset 0 2px 4px rgba(255,255,255,0.3)' }}>✨</div>
+                        <div style={{ flex: 1, zIndex: 1 }}>
+                            <h3 style={{ margin: '0 0 4px 0', fontSize: '16px', fontWeight: '800', color: '#fff', letterSpacing: '-0.3px' }}>Marketing &amp; Promotions</h3>
+                            <p style={{ margin: 0, fontSize: '12px', color: 'rgba(255,255,255,0.8)', fontWeight: '500' }}>Showcase your shop, business &amp; services</p>
                         </div>
-                        <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
-                            <div style={{ padding: '12px 12px 8px 12px' }}>
-                                <h3 style={{ margin: '0 0 2px 0', fontSize: '15px', color: '#0f172a', fontWeight: '800' }}>Business Zone</h3>
-                                <p style={{ margin: 0, fontSize: '11px', color: '#64748b', fontWeight: '500' }}>Sell bulk harvest.</p>
-                            </div>
-                            <div style={{ padding: '8px 12px', borderTop: '1px solid #f1f5f9', backgroundColor: '#fcfdfd', marginTop: 'auto' }}>
-                                <p style={{ margin: 0, fontSize: '11px', color: '#16a34a', fontWeight: '700' }}>Click to add your listings</p>
-                            </div>
+                        <div style={{ background: 'rgba(255,255,255,0.2)', padding: '8px 14px', borderRadius: '10px', backdropFilter: 'blur(8px)', flexShrink: 0, zIndex: 1 }}>
+                            <span style={{ fontSize: '12px', color: '#fff', fontWeight: '800' }}>🚀 Add</span>
                         </div>
                     </div>
                 </div>
 
-                <div onClick={(e) => handleCategoryClick(e, '/add-farm-fresh')} style={{ textDecoration: 'none', cursor: 'pointer' }}>
-                    <div style={{ borderRadius: '24px', overflow: 'hidden', boxShadow: '0 10px 30px rgba(0,0,0,0.04)', display: 'flex', flexDirection: 'column', backgroundColor: '#fff', height: '100%', border: '1px solid #e2e8f0', position: 'relative' }}>
-                        <div style={{ height: '110px', width: '100%', position: 'relative' }}>
-                            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: 'linear-gradient(to bottom, rgba(0,0,0,0.1), rgba(0,0,0,0.5))', zIndex: 1 }}></div>
-                            <img src={images.farmFresh} alt="Farm Fresh" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                            <div style={{ position: 'absolute', top: '12px', right: '12px', fontSize: '18px', backgroundColor: '#fff', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '10px', zIndex: 2, boxShadow: '0 4px 10px rgba(0,0,0,0.1)' }}>🥬</div>
-                        </div>
-                        <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
-                            <div style={{ padding: '12px 12px 8px 12px' }}>
-                                <h3 style={{ margin: '0 0 2px 0', fontSize: '15px', color: '#0f172a', fontWeight: '800' }}>Farm Fresh</h3>
-                                <p style={{ margin: 0, fontSize: '11px', color: '#64748b', fontWeight: '500' }}>Sell fresh produce.</p>
-                            </div>
-                            <div style={{ padding: '8px 12px', borderTop: '1px solid #f1f5f9', backgroundColor: '#fcfdfd', marginTop: 'auto' }}>
-                                <p style={{ margin: 0, fontSize: '11px', color: '#16a34a', fontWeight: '700' }}>Click to add your listings</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                {/* 2-column grid for remaining 6 */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
 
-                <div onClick={(e) => handleCategoryClick(e, '/add-machinery')} style={{ textDecoration: 'none', cursor: 'pointer' }}>
-                    <div style={{ borderRadius: '24px', overflow: 'hidden', boxShadow: '0 10px 30px rgba(0,0,0,0.04)', display: 'flex', flexDirection: 'column', backgroundColor: '#fff', height: '100%', border: '1px solid #e2e8f0', position: 'relative' }}>
-                        <div style={{ height: '110px', width: '100%', position: 'relative' }}>
-                            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: 'linear-gradient(to bottom, rgba(0,0,0,0.1), rgba(0,0,0,0.5))', zIndex: 1 }}></div>
-                            <img src={images.machinery} alt="Hire Machinery" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                            <div style={{ position: 'absolute', top: '12px', right: '12px', fontSize: '18px', backgroundColor: '#fff', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '10px', zIndex: 2, boxShadow: '0 4px 10px rgba(0,0,0,0.1)' }}>🚜</div>
-                        </div>
-                        <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
-                            <div style={{ padding: '12px 12px 8px 12px' }}>
-                                <h3 style={{ margin: '0 0 2px 0', fontSize: '15px', color: '#0f172a', fontWeight: '800' }}>Machinery</h3>
-                                <p style={{ margin: 0, fontSize: '11px', color: '#64748b', fontWeight: '500' }}>Rent out equipment.</p>
+                    {/* FARM FRESH — green */}
+                    <div className="listing-card" onClick={() => handleCategoryClick('/add-farm-fresh')}>
+                        <div style={{ borderRadius: '20px', background: '#ffffff', border: '1px solid #dcfce7', boxShadow: '0 6px 20px rgba(16,185,129,0.12)', overflow: 'hidden' }}>
+                            <div style={{ height: '72px', background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+                                <div style={{ position: 'absolute', top: '-10px', right: '-10px', width: '60px', height: '60px', borderRadius: '50%', background: 'rgba(255,255,255,0.1)' }}></div>
+                                <span style={{ fontSize: '32px', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.15))' }}>🥬</span>
                             </div>
-                            <div style={{ padding: '8px 12px', borderTop: '1px solid #f1f5f9', backgroundColor: '#fcfdfd', marginTop: 'auto' }}>
-                                <p style={{ margin: 0, fontSize: '11px', color: '#16a34a', fontWeight: '700' }}>Click to add your listings</p>
+                            <div style={{ padding: '12px' }}>
+                                <h3 style={{ margin: '0 0 3px 0', fontSize: '14px', fontWeight: '800', color: '#064e3b' }}>Farm Fresh</h3>
+                                <p style={{ margin: '0 0 10px 0', fontSize: '11px', color: '#6b7280', fontWeight: '500' }}>Sell fresh produce</p>
+                                <div style={{ background: '#d1fae5', padding: '6px 10px', borderRadius: '8px', textAlign: 'center' }}>
+                                    <span style={{ fontSize: '11px', color: '#065f46', fontWeight: '800' }}>+ Add Listing</span>
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
 
-                <div onClick={(e) => handleCategoryClick(e, '/add-workers')} style={{ textDecoration: 'none', cursor: 'pointer' }}>
-                    <div style={{ borderRadius: '24px', overflow: 'hidden', boxShadow: '0 10px 30px rgba(0,0,0,0.04)', display: 'flex', flexDirection: 'column', backgroundColor: '#fff', height: '100%', border: '1px solid #e2e8f0', position: 'relative' }}>
-                        <div style={{ height: '110px', width: '100%', position: 'relative' }}>
-                            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: 'linear-gradient(to bottom, rgba(0,0,0,0.1), rgba(0,0,0,0.5))', zIndex: 1 }}></div>
-                            <img src={images.workers} alt="Hire Workers" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                            <div style={{ position: 'absolute', top: '12px', right: '12px', fontSize: '18px', backgroundColor: '#fff', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '10px', zIndex: 2, boxShadow: '0 4px 10px rgba(0,0,0,0.1)' }}>🧑‍🔧</div>
-                        </div>
-                        <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
-                            <div style={{ padding: '12px 12px 8px 12px' }}>
-                                <h3 style={{ margin: '0 0 2px 0', fontSize: '15px', color: '#0f172a', fontWeight: '800' }}>Workers</h3>
-                                <p style={{ margin: 0, fontSize: '11px', color: '#64748b', fontWeight: '500' }}>Provide labor services.</p>
+                    {/* BUSINESS ZONE — amber */}
+                    <div className="listing-card" onClick={() => handleCategoryClick('/add-business')}>
+                        <div style={{ borderRadius: '20px', background: '#ffffff', border: '1px solid #fef3c7', boxShadow: '0 6px 20px rgba(245,158,11,0.12)', overflow: 'hidden' }}>
+                            <div style={{ height: '72px', background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+                                <div style={{ position: 'absolute', top: '-10px', right: '-10px', width: '60px', height: '60px', borderRadius: '50%', background: 'rgba(255,255,255,0.1)' }}></div>
+                                <span style={{ fontSize: '32px', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.15))' }}>🌾</span>
                             </div>
-                            <div style={{ padding: '8px 12px', borderTop: '1px solid #f1f5f9', backgroundColor: '#fcfdfd', marginTop: 'auto' }}>
-                                <p style={{ margin: 0, fontSize: '11px', color: '#16a34a', fontWeight: '700' }}>Click to add your listings</p>
+                            <div style={{ padding: '12px' }}>
+                                <h3 style={{ margin: '0 0 3px 0', fontSize: '14px', fontWeight: '800', color: '#451a03' }}>Business Zone</h3>
+                                <p style={{ margin: '0 0 10px 0', fontSize: '11px', color: '#6b7280', fontWeight: '500' }}>Sell bulk harvest</p>
+                                <div style={{ background: '#fef3c7', padding: '6px 10px', borderRadius: '8px', textAlign: 'center' }}>
+                                    <span style={{ fontSize: '11px', color: '#78350f', fontWeight: '800' }}>+ Add Listing</span>
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
 
-                <div onClick={(e) => handleCategoryClick(e, '/add-freelancing')} style={{ textDecoration: 'none', cursor: 'pointer' }}>
-                    <div style={{ borderRadius: '24px', overflow: 'hidden', boxShadow: '0 10px 30px rgba(0,0,0,0.04)', display: 'flex', flexDirection: 'column', backgroundColor: '#fff', height: '100%', border: '1px solid #e2e8f0', position: 'relative' }}>
-                        <div style={{ height: '110px', width: '100%', position: 'relative' }}>
-                            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: 'linear-gradient(to bottom, rgba(0,0,0,0.1), rgba(0,0,0,0.5))', zIndex: 1 }}></div>
-                            <img src={images.freelance} alt="Freelancing" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                            <div style={{ position: 'absolute', top: '12px', right: '12px', fontSize: '18px', backgroundColor: '#fff', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '10px', zIndex: 2, boxShadow: '0 4px 10px rgba(0,0,0,0.1)' }}>👨‍💻</div>
-                        </div>
-                        <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
-                            <div style={{ padding: '12px 12px 8px 12px' }}>
-                                <h3 style={{ margin: '0 0 2px 0', fontSize: '15px', color: '#0f172a', fontWeight: '800' }}>Freelancing</h3>
-                                <p style={{ margin: 0, fontSize: '11px', color: '#64748b', fontWeight: '500' }}>Offer specialized skills.</p>
+                    {/* MACHINERY — blue */}
+                    <div className="listing-card" onClick={() => handleCategoryClick('/add-machinery')}>
+                        <div style={{ borderRadius: '20px', background: '#ffffff', border: '1px solid #dbeafe', boxShadow: '0 6px 20px rgba(59,130,246,0.12)', overflow: 'hidden' }}>
+                            <div style={{ height: '72px', background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+                                <div style={{ position: 'absolute', top: '-10px', right: '-10px', width: '60px', height: '60px', borderRadius: '50%', background: 'rgba(255,255,255,0.1)' }}></div>
+                                <span style={{ fontSize: '32px', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.15))' }}>🚜</span>
                             </div>
-                            <div style={{ padding: '8px 12px', borderTop: '1px solid #f1f5f9', backgroundColor: '#fcfdfd', marginTop: 'auto' }}>
-                                <p style={{ margin: 0, fontSize: '11px', color: '#16a34a', fontWeight: '700' }}>Click to add your listings</p>
+                            <div style={{ padding: '12px' }}>
+                                <h3 style={{ margin: '0 0 3px 0', fontSize: '14px', fontWeight: '800', color: '#1e3a8a' }}>Machinery</h3>
+                                <p style={{ margin: '0 0 10px 0', fontSize: '11px', color: '#6b7280', fontWeight: '500' }}>Rent out equipment</p>
+                                <div style={{ background: '#dbeafe', padding: '6px 10px', borderRadius: '8px', textAlign: 'center' }}>
+                                    <span style={{ fontSize: '11px', color: '#1e40af', fontWeight: '800' }}>+ Add Listing</span>
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
 
-                <div onClick={(e) => handleCategoryClick(e, '/add-local-goods')} style={{ textDecoration: 'none', cursor: 'pointer' }}>
-                    <div style={{ borderRadius: '24px', overflow: 'hidden', boxShadow: '0 10px 30px rgba(0,0,0,0.04)', display: 'flex', flexDirection: 'column', backgroundColor: '#fff', height: '100%', border: '1px solid #e2e8f0', position: 'relative' }}>
-                        <div style={{ height: '110px', width: '100%', position: 'relative' }}>
-                            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: 'linear-gradient(to bottom, rgba(0,0,0,0.1), rgba(0,0,0,0.5))', zIndex: 1 }}></div>
-                            <img src={images.localGoods} alt="Local Agri Goods" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                            <div style={{ position: 'absolute', top: '12px', right: '12px', fontSize: '18px', backgroundColor: '#fff', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '10px', zIndex: 2, boxShadow: '0 4px 10px rgba(0,0,0,0.1)' }}>🧺</div>
-                        </div>
-                        <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
-                            <div style={{ padding: '12px 12px 8px 12px' }}>
-                                <h3 style={{ margin: '0 0 2px 0', fontSize: '15px', color: '#0f172a', fontWeight: '800' }}>Local Goods</h3>
-                                <p style={{ margin: 0, fontSize: '11px', color: '#64748b', fontWeight: '500' }}>Sell handmade & tools.</p>
+                    {/* WORKERS — rose */}
+                    <div className="listing-card" onClick={() => handleCategoryClick('/add-workers')}>
+                        <div style={{ borderRadius: '20px', background: '#ffffff', border: '1px solid #fce7f3', boxShadow: '0 6px 20px rgba(236,72,153,0.12)', overflow: 'hidden' }}>
+                            <div style={{ height: '72px', background: 'linear-gradient(135deg, #ec4899 0%, #be185d 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+                                <div style={{ position: 'absolute', top: '-10px', right: '-10px', width: '60px', height: '60px', borderRadius: '50%', background: 'rgba(255,255,255,0.1)' }}></div>
+                                <span style={{ fontSize: '32px', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.15))' }}>🧑‍🔧</span>
                             </div>
-                            <div style={{ padding: '8px 12px', borderTop: '1px solid #f1f5f9', backgroundColor: '#fcfdfd', marginTop: 'auto' }}>
-                                <p style={{ margin: 0, fontSize: '10.5px', color: '#16a34a', fontWeight: '700', lineHeight: '1.3' }}>Click here to add your listings to live to the users</p>
+                            <div style={{ padding: '12px' }}>
+                                <h3 style={{ margin: '0 0 3px 0', fontSize: '14px', fontWeight: '800', color: '#500724' }}>Workers</h3>
+                                <p style={{ margin: '0 0 10px 0', fontSize: '11px', color: '#6b7280', fontWeight: '500' }}>Provide labour services</p>
+                                <div style={{ background: '#fce7f3', padding: '6px 10px', borderRadius: '8px', textAlign: 'center' }}>
+                                    <span style={{ fontSize: '11px', color: '#9d174d', fontWeight: '800' }}>+ Add Listing</span>
+                                </div>
                             </div>
                         </div>
                     </div>
+
+                    {/* FREELANCING — indigo */}
+                    <div className="listing-card" onClick={() => handleCategoryClick('/add-freelancing')}>
+                        <div style={{ borderRadius: '20px', background: '#ffffff', border: '1px solid #e0e7ff', boxShadow: '0 6px 20px rgba(99,102,241,0.12)', overflow: 'hidden' }}>
+                            <div style={{ height: '72px', background: 'linear-gradient(135deg, #6366f1 0%, #4338ca 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+                                <div style={{ position: 'absolute', top: '-10px', right: '-10px', width: '60px', height: '60px', borderRadius: '50%', background: 'rgba(255,255,255,0.1)' }}></div>
+                                <span style={{ fontSize: '32px', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.15))' }}>👨‍💻</span>
+                            </div>
+                            <div style={{ padding: '12px' }}>
+                                <h3 style={{ margin: '0 0 3px 0', fontSize: '14px', fontWeight: '800', color: '#1e1b4b' }}>Freelancing</h3>
+                                <p style={{ margin: '0 0 10px 0', fontSize: '11px', color: '#6b7280', fontWeight: '500' }}>Offer specialized skills</p>
+                                <div style={{ background: '#e0e7ff', padding: '6px 10px', borderRadius: '8px', textAlign: 'center' }}>
+                                    <span style={{ fontSize: '11px', color: '#3730a3', fontWeight: '800' }}>+ Add Listing</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* LOCAL GOODS — orange */}
+                    <div className="listing-card" onClick={() => handleCategoryClick('/add-local-goods')}>
+                        <div style={{ borderRadius: '20px', background: '#ffffff', border: '1px solid #ffedd5', boxShadow: '0 6px 20px rgba(249,115,22,0.12)', overflow: 'hidden' }}>
+                            <div style={{ height: '72px', background: 'linear-gradient(135deg, #f97316 0%, #ea580c 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+                                <div style={{ position: 'absolute', top: '-10px', right: '-10px', width: '60px', height: '60px', borderRadius: '50%', background: 'rgba(255,255,255,0.1)' }}></div>
+                                <span style={{ fontSize: '32px', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.15))' }}>🧺</span>
+                            </div>
+                            <div style={{ padding: '12px' }}>
+                                <h3 style={{ margin: '0 0 3px 0', fontSize: '14px', fontWeight: '800', color: '#431407' }}>Local Goods</h3>
+                                <p style={{ margin: '0 0 10px 0', fontSize: '11px', color: '#6b7280', fontWeight: '500' }}>Sell handmade &amp; tools</p>
+                                <div style={{ background: '#ffedd5', padding: '6px 10px', borderRadius: '8px', textAlign: 'center' }}>
+                                    <span style={{ fontSize: '11px', color: '#7c2d12', fontWeight: '800' }}>+ Add Listing</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                 </div>
             </div>
-
-            {/* 3D FROZEN MODAL */}
-            {showFrozenModal && (
-                <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(8px)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }} onClick={() => setShowFrozenModal(false)}>
-                    <div style={{ 
-                        background: 'linear-gradient(145deg, #ffffff, #f3f4f6)', 
-                        padding: '32px', 
-                        borderRadius: '32px', 
-                        maxWidth: '400px', 
-                        width: '100%', 
-                        boxShadow: '0 30px 60px rgba(0,0,0,0.15), inset 0 2px 0 rgba(255,255,255,0.8)', 
-                        position: 'relative', 
-                        transform: 'translateY(0)', 
-                        animation: 'popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)'
-                    }} onClick={(e) => e.stopPropagation()}>
-                        
-                        <div style={{ position: 'absolute', top: '-30px', left: '50%', transform: 'translateX(-50%)', background: 'linear-gradient(135deg, #F97316, #EA580C)', width: '70px', height: '70px', borderRadius: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 15px 30px rgba(234, 88, 12, 0.3), inset 0 2px 0 rgba(255,255,255,0.3)', transformStyle: 'preserve-3d' }}>
-                            <Snowflake size={32} color="#fff" strokeWidth={2.5} style={{ transform: 'translateZ(10px)' }} />
-                        </div>
-
-                        <div style={{ textAlign: 'center', marginTop: '30px' }}>
-                            <h2 style={{ fontSize: '24px', fontWeight: '800', color: '#1f2937', margin: '0 0 12px 0', letterSpacing: '-0.5px' }}>Account Freezed</h2>
-                            <p style={{ fontSize: '15px', color: '#4b5563', margin: '0 0 24px 0', lineHeight: '1.5' }}>
-                                Your seller account has been temporarily paused. You cannot manage or add new listings.
-                            </p>
-                            
-                            <div style={{ background: '#FFF7ED', border: '1px solid #FED7AA', borderRadius: '20px', padding: '20px', textAlign: 'left', marginBottom: '24px', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.02)' }}>
-                                <div style={{ marginBottom: '12px' }}>
-                                    <span style={{ fontSize: '12px', fontWeight: '700', color: '#EA580C', textTransform: 'uppercase', letterSpacing: '1px' }}>Reason</span>
-                                    <p style={{ margin: '4px 0 0 0', fontSize: '14px', color: '#78350F', fontWeight: '600' }}>{appFrozenReason}</p>
-                                </div>
-                                <div>
-                                    <span style={{ fontSize: '12px', fontWeight: '700', color: '#EA580C', textTransform: 'uppercase', letterSpacing: '1px' }}>Freezed Until</span>
-                                    <p style={{ margin: '4px 0 0 0', fontSize: '14px', color: '#78350F', fontWeight: '600' }}>{appFrozenUntil ? new Date(appFrozenUntil).toLocaleDateString() : 'Pending Review'}</p>
-                                </div>
-                            </div>
-
-                            <button onClick={() => setShowFrozenModal(false)} style={{ width: '100%', padding: '16px', background: '#f3f4f6', color: '#374151', border: 'none', borderRadius: '16px', fontSize: '15px', fontWeight: '800', cursor: 'pointer', transition: 'all 0.2s' }}>
-                                Got it
-                            </button>
-                        </div>
-                        
-                        <style>{`
-                            @keyframes popIn {
-                                0% { opacity: 0; transform: scale(0.9) translateY(20px); }
-                                100% { opacity: 1; transform: scale(1) translateY(0); }
-                            }
-                        `}</style>
-                    </div>
-                </div>
-            )}
         </div>
     );
 }

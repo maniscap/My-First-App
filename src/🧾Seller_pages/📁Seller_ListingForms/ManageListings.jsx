@@ -22,7 +22,8 @@ export default function ManageListings() {
         { id: 'listings_workers', label: 'Workers' },
         { id: 'listings_business', label: 'Business' },
         { id: 'listings_freelancing', label: 'Freelancing' },
-        { id: 'listings_local_goods', label: 'Local Goods' }
+        { id: 'listings_local_goods', label: 'Local Goods' },
+        { id: 'listings_services', label: 'Marketing & Promotions' }
     ];
 
     const displayListings = activeTab === 'all' 
@@ -235,6 +236,13 @@ export default function ManageListings() {
             </div>
 
             <div style={{ padding: '10px 20px 40px 20px' }}>
+                {activeTab === 'listings_services' && (
+                    <div style={{ textAlign: 'center', padding: '60px 20px', background: 'linear-gradient(135deg, rgba(102, 126, 234, 0.08), rgba(118, 75, 162, 0.08))', borderRadius: '20px', border: '2px dashed #667eea' }}>
+                        <div style={{ fontSize: '64px', marginBottom: '16px' }}>✨</div>
+                        <h2 style={{ color: '#0f172a', margin: '0 0 8px 0', fontWeight: '800', fontSize: '24px' }}>Marketing & Promotions</h2>
+                        <p style={{ color: '#64748b', margin: 0, fontSize: '15px', fontWeight: '500', maxWidth: '400px', marginLeft: 'auto', marginRight: 'auto' }}>This feature is coming soon! You'll be able to create marketing listings for your shop, business, services, and more.</p>
+                    </div>
+                )}
                 {loading ? (
                     <div style={{ textAlign: 'center', padding: '60px 0', color: '#6B7280', fontWeight: '500', fontSize: '15px' }}>
                         <RefreshCw size={28} className="spin-anim" style={{ color: '#0066CC', marginBottom: '16px' }} />

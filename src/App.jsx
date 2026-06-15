@@ -56,6 +56,7 @@ import BusinessZone_ListingForm from './🧾Seller_pages/📁Seller_ListingForms
 import HireMachinary_ListingForm from './🧾Seller_pages/📁Seller_ListingForms/HireMachinary_ListingForm';
 import HireWorkers_ListingForm from './🧾Seller_pages/📁Seller_ListingForms/HireWorkers_ListingForm';
 import Freelancing_ListingForm from './🧾Seller_pages/📁Seller_ListingForms/Freelancing_ListingForm';
+import SellerMarketing_Form from './🧾Seller_pages/📁Seller_ListingForms/SellerMarketing_Form';
 import ManageListings from './🧾Seller_pages/📁Seller_ListingForms/ManageListings';
 
 // --- IMPORT COMPONENTS ---
@@ -154,6 +155,7 @@ function App() {
               <Route path="/add-machinery" element={<HireMachinary_ListingForm />} />
               <Route path="/add-workers" element={<HireWorkers_ListingForm />} />
               <Route path="/add-freelancing" element={<Freelancing_ListingForm />} />
+              <Route path="/add-marketing" element={<SellerMarketing_Form />} />
               <Route path="/manage-listings" element={<ManageListings />} />
 
               
