@@ -54,8 +54,10 @@ function Seller_DeleteAccount() {
             // 1. Wipe listings automatically
             await wipeSellerData(activeSellerId);
             
-            // 2. Delete the profile and application
+            // 2. Delete the profile, storefronts, and application
             await deleteDoc(doc(db, 'seller_profiles', activeSellerId));
+            await deleteDoc(doc(db, 'organisation_storefront', activeSellerId));
+            await deleteDoc(doc(db, 'individual_storefront', activeSellerId));
             await deleteDoc(doc(db, 'seller_applications', activeSellerId));
             
             // 3. Clear Local Storage

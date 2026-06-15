@@ -432,6 +432,8 @@ function Admin() {
       
       try {
           batch.delete(doc(db, 'seller_profiles', sellerId));
+          batch.delete(doc(db, 'organisation_storefront', sellerId));
+          batch.delete(doc(db, 'individual_storefront', sellerId));
           await batch.commit();
       } catch (e) { console.log("Batch wipe error:", e); }
   };
@@ -497,26 +499,33 @@ function Admin() {
   };
 
   const executeSellerDeletion = async () => {
-      if(!sellerToDelete || isProcessing) return;
-      setIsProcessing(true);
+      if(!sellerToDelete || isDeletingSeller) return;
+      setIsDeletingSeller(true);
       try {
-          // get the app data to clean up its storage media
-          const app = approvedApps.find(a => a.id === sellerToDelete);
+          // Find the app whether it's in the main list or the search result
+          const app = approvedApps.find(a => a.id === sellerToDelete) || 
+                      (searchedApprovedSeller?.id === sellerToDelete ? searchedApprovedSeller : null);
+                      
           if (app) await cleanupStorageMedia(app);
           
           await wipeSellerData(sellerToDelete);
-          await updateDoc(doc(db, "seller_applications", sellerToDelete), {
+          await setDoc(doc(db, "seller_applications", sellerToDelete), {
               status: 'deleted_by_admin',
               deletionReason: deleteReason,
               deletionMessage: deleteMessage
-          });
+          }, { merge: true });
+          
           setDeleteModalOpen(false);
           setSellerToDelete(null);
+          setSearchedApprovedSeller(null);
           fetchGlobalCounts();
+          
+          alert("Account successfully deleted! All their associated listings and media have been wiped from Firebase.");
        } catch (err) { 
-          alert("Failed to delete seller."); 
+          console.error("Deletion Error:", err);
+          alert("Failed to delete seller. Check console for details."); 
        }
-       setIsProcessing(false);
+       setIsDeletingSeller(false);
    };
 
    const handleApproveEdit = async (app) => {
