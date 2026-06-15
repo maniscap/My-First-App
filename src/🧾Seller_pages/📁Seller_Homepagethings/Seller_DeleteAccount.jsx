@@ -55,10 +55,19 @@ function Seller_DeleteAccount() {
             await wipeSellerData(activeSellerId);
             
             // 2. Delete the profile, storefronts, and application
-            await deleteDoc(doc(db, 'seller_profiles', activeSellerId));
-            await deleteDoc(doc(db, 'organisation_storefront', activeSellerId));
-            await deleteDoc(doc(db, 'individual_storefront', activeSellerId));
-            await deleteDoc(doc(db, 'seller_applications', activeSellerId));
+            await deleteDoc(doc(db, 'seller_profiles', activeSellerId)).catch(e => console.log('Profile wipe skipped:', e));
+            
+            const accType = localStorage.getItem('seller_account_type');
+            if (accType === 'organisation') {
+                await deleteDoc(doc(db, 'organisation_storefront', activeSellerId)).catch(e => console.log('Storefront wipe skipped:', e));
+            } else if (accType === 'individual') {
+                await deleteDoc(doc(db, 'individual_storefront', activeSellerId)).catch(e => console.log('Storefront wipe skipped:', e));
+            } else {
+                await deleteDoc(doc(db, 'organisation_storefront', activeSellerId)).catch(() => {});
+                await deleteDoc(doc(db, 'individual_storefront', activeSellerId)).catch(() => {});
+            }
+            
+            await deleteDoc(doc(db, 'seller_applications', activeSellerId)).catch(e => console.log('Application wipe skipped:', e));
             
             // 3. Clear Local Storage
             localStorage.removeItem('seller_app_id');
@@ -66,6 +75,14 @@ function Seller_DeleteAccount() {
             localStorage.removeItem('seller_account_type');
             localStorage.removeItem('seller_individual_app_id');
             localStorage.removeItem('seller_organisation_app_id');
+            localStorage.removeItem('seller_app_status');
+            localStorage.removeItem('seller_app_frozen');
+            localStorage.removeItem('seller_app_frozen_reason');
+            localStorage.removeItem('cached_reject_ind');
+            localStorage.removeItem('cached_reject_org');
+            localStorage.removeItem('seller_app_rejected_reason');
+            localStorage.removeItem('seller_app_deleted_reason');
+            localStorage.removeItem('seller_app_deleted_msg');
             
             alert("Your seller account has been permanently deleted.");
             navigate('/Consumer_HomePage');
