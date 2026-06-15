@@ -294,75 +294,77 @@ function Admin() {
       } catch (e) { console.error(e); }
   };
 
-  const fetchPendingApps = async () => {
+  // REAL-TIME DATABASE LISTENERS FOR ADMIN TABS
+  useEffect(() => {
+      if (!isAuthenticated) return;
+      let unsubscribe = null;
       setLoadingApps(true);
-      try {
-          const q = query(collection(db, "seller_applications"), where('status', '==', 'pending_approval'), orderBy("submittedAt", "desc"), limit(100));
-          const snap = await getDocs(q);
-          setPendingApps(snap.docs.map(d => ({id: d.id, ...d.data()})));
-      } catch (e) { console.error(e); }
-      setLoadingApps(false);
-  };
 
-  const fetchApprovedApps = async () => {
-      setLoadingApps(true);
-      try {
-          const q = query(collection(db, "seller_applications"), where('status', '==', 'approved'), orderBy("approvedAt", "desc"), limit(50));
-          const snap = await getDocs(q);
-          setApprovedApps(snap.docs.map(d => ({id: d.id, ...d.data()})));
-      } catch (e) { console.error(e); }
-      setLoadingApps(false);
-  };
-
-  const fetchEditRequests = async () => {
-      setLoadingApps(true);
-      try {
-          const q = query(collection(db, "seller_applications"), where('hasPendingEdit', '==', true), limit(50));
-          const snap = await getDocs(q);
-          setEditRequestApps(snap.docs.map(d => ({id: d.id, ...d.data()})));
-      } catch (e) { console.error(e); }
-      setLoadingApps(false);
-  };
-
-  const fetchFrozenApps = async () => {
-      setLoadingApps(true);
-      try {
+      if (activeTab === 'verifications') {
+          const q = query(collection(db, "seller_applications"), where('status', '==', 'pending_approval'), limit(100));
+          unsubscribe = onSnapshot(q, (snap) => {
+              let apps = snap.docs.map(d => ({id: d.id, ...d.data()}));
+              apps.sort((a, b) => {
+                  const timeA = a.submittedAt?.toMillis ? a.submittedAt.toMillis() : new Date(a.submittedAt || 0).getTime();
+                  const timeB = b.submittedAt?.toMillis ? b.submittedAt.toMillis() : new Date(b.submittedAt || 0).getTime();
+                  return timeB - timeA;
+              });
+              setPendingApps(apps);
+              setLoadingApps(false);
+              fetchGlobalCounts();
+          }, (e) => { console.error(e); setLoadingApps(false); });
+      }
+      else if (activeTab === 'approved') {
+          const q = query(collection(db, "seller_applications"), where('status', '==', 'approved'), limit(100));
+          unsubscribe = onSnapshot(q, (snap) => {
+              let apps = snap.docs.map(d => ({id: d.id, ...d.data()}));
+              apps.sort((a, b) => {
+                  const timeA = a.approvedAt?.toMillis ? a.approvedAt.toMillis() : new Date(a.approvedAt || 0).getTime();
+                  const timeB = b.approvedAt?.toMillis ? b.approvedAt.toMillis() : new Date(b.approvedAt || 0).getTime();
+                  return timeB - timeA;
+              });
+              setApprovedApps(apps);
+              setLoadingApps(false);
+              fetchGlobalCounts();
+          }, (e) => { console.error(e); setLoadingApps(false); });
+      }
+      else if (activeTab === 'frozen') {
           const q = query(collection(db, "seller_applications"), where('frozen', '==', true), limit(50));
-          const snap = await getDocs(q);
-          setFrozenApps(snap.docs.map(d => ({id: d.id, ...d.data()})));
-      } catch (e) { console.error(e); }
-      setLoadingApps(false);
-  };
+          unsubscribe = onSnapshot(q, (snap) => {
+              setFrozenApps(snap.docs.map(d => ({id: d.id, ...d.data()})));
+              setLoadingApps(false);
+              fetchGlobalCounts();
+          }, (e) => { console.error(e); setLoadingApps(false); });
+      }
+      else if (activeTab === 'dashboard') {
+          const q = query(collection(db, "seller_applications"), where('hasPendingEdit', '==', true), limit(50));
+          unsubscribe = onSnapshot(q, (snap) => {
+              setEditRequestApps(snap.docs.map(d => ({id: d.id, ...d.data()})));
+              setLoadingApps(false);
+              fetchGlobalCounts();
+          }, (e) => { console.error(e); setLoadingApps(false); });
+      }
+      else if (activeTab === 'reports') {
+          fetchReports();
+          setLoadingApps(false);
+      }
 
-  const fetchData = () => {
-      if (activeTab === 'verifications') fetchPendingApps();
-      if (activeTab === 'approved') fetchApprovedApps();
-      if (activeTab === 'frozen') fetchFrozenApps();
-      if (activeTab === 'dashboard') { fetchEditRequests(); fetchGlobalCounts(); }
-      if (activeTab === 'reports') fetchReports();
-  };
+      setSellerIdSearch(''); setSearchedSeller(null);
+      setApprovedSearchInput(''); setApprovedSearchQuery(''); setSearchedApprovedSeller(null);
+
+      return () => {
+          if (unsubscribe) unsubscribe();
+      };
+  }, [activeTab, isAuthenticated]);
 
   // Authentication listener
   useEffect(() => {
       const authObj = getAuth();
       const unsubAuth = onAuthStateChanged(authObj, (user) => {
-          if (user) { setIsAuthenticated(true); fetchData(); fetchGlobalCounts(); } else { setIsAuthenticated(false); }
+          if (user) { setIsAuthenticated(true); fetchGlobalCounts(); } else { setIsAuthenticated(false); }
       });
       return () => unsubAuth();
   }, []);
-
-  // Tab-specific fetchers
-  useEffect(() => {
-      if (!isAuthenticated) return;
-      if (activeTab === 'verifications') fetchPendingApps();
-      if (activeTab === 'approved') fetchApprovedApps();
-      if (activeTab === 'frozen') fetchFrozenApps();
-      if (activeTab === 'dashboard') { fetchEditRequests(); fetchGlobalCounts(); }
-      if (activeTab === 'reports') fetchReports();
-      
-      setSellerIdSearch(''); setSearchedSeller(null);
-      setApprovedSearchInput(''); setApprovedSearchQuery(''); setSearchedApprovedSeller(null);
-  }, [activeTab, isAuthenticated]);
 
 
   const cleanupStorageMedia = async (appData) => {
@@ -410,14 +412,17 @@ function Admin() {
       
       if(window.confirm("Are you sure you want to reject this application? This will wipe all their listings.")) {
           setIsProcessing(true);
+          // Instant UI Update: Make it vanish immediately from the screen
+          setPendingApps(prev => prev.filter(p => p.id !== app.id));
           try {
               await wipeSellerData(app.id);
               await cleanupStorageMedia(app);
               await updateDoc(doc(db, "seller_applications", app.id), { status: 'rejected', rejectionReason: reason });
-              fetchData();
+              fetchGlobalCounts(); // Counts update, list updates automatically via onSnapshot!
           } catch (error) {
               console.error("Error rejecting application:", error);
               alert("Failed to reject application.");
+              fetchGlobalCounts();
           }
           setIsProcessing(false);
       }
@@ -427,6 +432,8 @@ function Admin() {
       if(isProcessing) return;
       if(window.confirm("Approve this seller? Application will be moved to verified.")) {
           setIsProcessing(true);
+          // Instant UI Update: Make it vanish immediately from the screen
+          setPendingApps(prev => prev.filter(p => p.id !== app.id));
           try {
               await cleanupStorageMedia(app);
               const sellerRef = doc(db, "seller_applications", app.id);
@@ -441,10 +448,11 @@ function Admin() {
                   orgMachineryImages: deleteField(),
                   orgHarvestImages: deleteField()
               });
-              fetchData();
+              fetchGlobalCounts(); // Counts update, list updates automatically via onSnapshot!
           } catch (error) {
               console.error("Error approving:", error);
               alert("Failed to approve application.");
+              fetchGlobalCounts();
           }
           setIsProcessing(false);
       }
@@ -473,7 +481,7 @@ function Admin() {
           });
           setDeleteModalOpen(false);
           setSellerToDelete(null);
-          fetchData();
+          fetchGlobalCounts();
        } catch (err) { 
           alert("Failed to delete seller."); 
        }
@@ -482,6 +490,8 @@ function Admin() {
 
    const handleApproveEdit = async (app) => {
        if(window.confirm("Approve this edit? This will update their live profile with the new details.")) {
+           setIsProcessing(true);
+           setEditRequestApps(prev => prev.filter(p => p.id !== app.id));
            try {
                const sellerRef = doc(db, "seller_applications", app.id);
                await updateDoc(sellerRef, { 
@@ -490,17 +500,21 @@ function Admin() {
                    lastEditAction: 'approved',
                    editData: deleteField()
                });
-               fetchData();
+               fetchGlobalCounts();
                alert("Edit approved successfully.");
            } catch (error) {
                console.error("Error approving edit:", error);
                alert("Failed to approve edit request.");
+               fetchGlobalCounts();
            }
+           setIsProcessing(false);
        }
    };
 
    const handleRejectEdit = async (app) => {
        if(window.confirm("Reject this edit? The seller's live profile will remain unchanged.")) {
+           setIsProcessing(true);
+           setEditRequestApps(prev => prev.filter(p => p.id !== app.id));
            try {
                const sellerRef = doc(db, "seller_applications", app.id);
                await updateDoc(sellerRef, { 
@@ -508,12 +522,14 @@ function Admin() {
                    lastEditAction: 'rejected',
                    editData: deleteField()
                });
-               fetchData();
+               fetchGlobalCounts();
                alert("Edit rejected successfully.");
            } catch (error) {
                console.error("Error rejecting edit:", error);
                alert("Failed to reject edit request.");
+               fetchGlobalCounts();
            }
+           setIsProcessing(false);
        }
    };
 
@@ -719,7 +735,7 @@ function Admin() {
                           <p>High-level statistics and system health.</p>
                       </div>
                       <button 
-                          onClick={fetchData} 
+                          onClick={fetchGlobalCounts} 
                           disabled={loading}
                           style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', padding: '10px 16px', display: 'flex', alignItems: 'center', gap: '8px', borderRadius: '12px', cursor: loading ? 'wait' : 'pointer', color: '#16a34a', fontWeight: '700', fontSize: '14px', transition: 'all 0.2s', opacity: loading ? 0.7 : 1 }}
                       >
@@ -764,7 +780,7 @@ function Admin() {
                       <p>Review full details and documents before approving.</p>
                   </div>
                   
-                  {loading ? (
+                  {loadingApps ? (
                       <div className="loading-state">Loading applications...</div>
                   ) : pendingAppsCount === 0 ? (
                       <div className="empty-state">

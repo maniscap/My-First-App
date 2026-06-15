@@ -1,16 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { db, auth } from '../../firebase';
-import { doc, onSnapshot } from 'firebase/firestore';
+import { doc, collection, addDoc, updateDoc, serverTimestamp, onSnapshot } from 'firebase/firestore';
 import { onAuthStateChanged } from 'firebase/auth';
-import { ArrowLeft, MapPin, Plus, Trash2, Camera, Video, AlertCircle, CheckCircle, ShieldCheck } from 'lucide-react';
+import { ArrowLeft, MapPin, Plus, Trash2, Camera, Video, AlertCircle, CheckCircle, ShieldCheck, Sparkles } from 'lucide-react';
 import LockedListingScreen from '../../🛠️Shared_Components/LockedListingScreen';
 
 export default function SellerMarketing_Form() {
     const navigate = useNavigate();
     const [user, setUser] = useState(null);
-    const [appStatus, setAppStatus] = useState('loading');
-    const [sellerId, setSellerId] = useState('');
+    // Read status instantly from localStorage — same pattern as all other listing forms
+    const [appStatus, setAppStatus] = useState(localStorage.getItem('seller_app_status') || 'none');
+    const [sellerId, setSellerId] = useState(localStorage.getItem('seller_app_id') || '');
 
     // Section 1: Basic Identity
     const [shopName, setShopName] = useState('');
@@ -43,27 +44,14 @@ export default function SellerMarketing_Form() {
     // Predefined Categories
     const categories = ['Pesticides & Fertilizers', 'Hardware & Tools', 'Hospital / Clinic', 'Function Hall', 'Restaurant / Cafe', 'Retail Shop', 'Other'];
 
-    // Auth Check
+    // Auth Check — syncs user object; status already read from localStorage above
     useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+        const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
             if (!currentUser) {
                 setAppStatus('none');
                 return;
             }
             setUser(currentUser);
-            try {
-                let appId = localStorage.getItem('seller_app_id');
-                if (appId) {
-                    setSellerId(appId);
-                    const docRef = doc(db, 'seller_applications', appId);
-                    const unsubSnapshot = onSnapshot(docRef, (docSnap) => {
-                        if (docSnap.exists()) setAppStatus(docSnap.data().status);
-                    });
-                    return () => unsubSnapshot();
-                }
-            } catch (error) {
-                setAppStatus('error');
-            }
         });
         return () => unsubscribe();
     }, []);
@@ -109,12 +97,21 @@ export default function SellerMarketing_Form() {
         setPartners(newPartners);
     };
 
-    if (appStatus === 'loading') {
-        return <div className="loading-screen">Loading...</div>;
-    }
-
     if (appStatus !== 'approved') {
-        return <LockedListingScreen />;
+        return (
+            <LockedListingScreen
+                categoryName="Marketing & Promotions"
+                icon={Sparkles}
+                title="Marketing is Locked"
+                description="Showcase your shop, business & services to thousands of customers. Complete your seller registration to unlock powerful marketing tools."
+                colorTheme={{
+                    main: '#7C3AED',   // Purple
+                    bg: '#F5F3FF',
+                    border: '#DDD6FE',
+                    shadow: '#C4B5FD'
+                }}
+            />
+        );
     }
 
     return (

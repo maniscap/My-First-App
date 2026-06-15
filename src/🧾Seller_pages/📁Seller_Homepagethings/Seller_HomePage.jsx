@@ -16,14 +16,8 @@ function Seller_HomePage() {
     const [appFrozenUntil, setAppFrozenUntil] = useState(null);
 
     const handleCategoryClick = (path) => {
-        if (appFrozen) {
-            alert('Your account is currently frozen. You cannot add new listings.');
-            return;
-        }
-        if (appStatus !== 'approved') {
-            alert('Your seller application must be approved before you can add listings.');
-            return;
-        }
+        // Always navigate — the listing form itself shows LockedListingScreen
+        // with a beautiful status card for pending/frozen/rejected accounts.
         navigate(path);
     };
 
@@ -38,7 +32,13 @@ function Seller_HomePage() {
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, async (user) => {
-            if (!user) { setAppStatus('none'); return; }
+            if (!user) {
+                localStorage.setItem('seller_app_status', 'none');
+                localStorage.removeItem('seller_app_id');
+                localStorage.setItem('seller_app_frozen', 'false');
+                setAppStatus('none');
+                return;
+            }
 
             try {
                 let appId = localStorage.getItem('seller_app_id');
@@ -53,13 +53,19 @@ function Seller_HomePage() {
                         } else {
                             if (localStorage.getItem('seller_app_status') === 'permanently_deleted') {
                                 setAppStatus('permanently_deleted');
+                                // already stored, no change needed
                             } else {
+                                // No application exists — clear any stale status so listing forms show correct card
+                                localStorage.setItem('seller_app_status', 'none');
+                                localStorage.removeItem('seller_app_id');
+                                localStorage.setItem('seller_app_frozen', 'false');
                                 setAppStatus('none');
                             }
                             return;
                         }
                     } catch (error) {
                         console.error("Error querying seller applications:", error);
+                        localStorage.setItem('seller_app_status', 'none');
                         setAppStatus('none');
                         return;
                     }
@@ -111,6 +117,12 @@ function Seller_HomePage() {
 
                             if (appData.status === 'rejected') {
                                 localStorage.setItem('seller_app_rejected_reason', appData.rejectionReason || 'Does not meet platform requirements.');
+                                localStorage.setItem('seller_app_status', 'rejected');
+                                setAppStatus('rejected');
+                                
+                                // Self-destruct the document to keep Firebase clean
+                                deleteDoc(docRef).catch(e => console.error("Error auto-deleting rejected app:", e));
+                                return; // Stop processing further
                             }
 
                             if (prevEdit && !appData.hasPendingEdit) {
@@ -124,20 +136,29 @@ function Seller_HomePage() {
                             localStorage.setItem('seller_app_status', appData.status);
                             localStorage.setItem('seller_app_pending_edit', appData.hasPendingEdit ? 'true' : 'false');
                         } else {
-                            if (localStorage.getItem('seller_app_status') === 'permanently_deleted') {
+                            // Doc was deleted from Firestore (either permanently deleted or self-destructed reject)
+                            const currentStatus = localStorage.getItem('seller_app_status');
+                            if (currentStatus === 'permanently_deleted') {
                                 setAppStatus('permanently_deleted');
+                            } else if (currentStatus === 'rejected') {
+                                setAppStatus('rejected');
                             } else {
+                                localStorage.setItem('seller_app_status', 'none');
+                                localStorage.removeItem('seller_app_id');
+                                localStorage.setItem('seller_app_frozen', 'false');
                                 setAppStatus('none');
                             }
                         }
                     }, (error) => {
                         console.error("Error with application snapshot:", error);
+                        localStorage.setItem('seller_app_status', 'error');
                         setAppStatus('error');
                     });
                     window.sellerHomeSnapshotUnsub = unsubscribeSnapshot;
                 }
             } catch (error) {
                 console.error("Error fetching application status:", error);
+                localStorage.setItem('seller_app_status', 'error');
                 setAppStatus('error');
             }
         });
