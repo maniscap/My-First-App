@@ -1,6 +1,6 @@
 ﻿<div align="center">
 
-<img src="./public/myfirstapp_snowfall.gif" width="100%" alt="FarmCap SuperApp Banner" />
+<img src="./public/winter_atmosphere_snowfall.gif" width="100%" alt="Winter Atmosphere Snowfall" />
 
 
 # FARMCAP SUPERAPP (MY-FIRST-APP)
