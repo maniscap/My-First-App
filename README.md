@@ -1,6 +1,6 @@
 ﻿<div align="center">
 
-<img src="./public/snowcap_aesthetic_snow.gif" width="100%" alt="Aesthetic Snowcap Snowfall" />
+<img src="./public/snowfall_title_aesthetic.gif" width="100%" alt="Aesthetic Snowfall Banner" />
 
 
 # FARMCAP SUPERAPP (MY-FIRST-APP)
