@@ -1,5 +1,8 @@
 ﻿<div align="center">
 
+<img src="./public/myfirstapp_snowfall.gif" width="100%" alt="FarmCap SuperApp Banner" />
+
+
 # FARMCAP SUPERAPP (MY-FIRST-APP)
 ### *Next-Gen Dual-Mode Agri-Commerce, Machinery Rental & SmartLens AI Ecosystem*
 
@@ -24,16 +27,14 @@
 
 </div>
 
-## Executive Summary
-
+## 📋 Executive Summary
 **FarmCap SuperApp** is a comprehensive rural commerce and agritech platform built to eliminate intermediaries between farmers, equipment owners, agricultural laborers, and consumers.
 
 Featuring a seamless **Dual-Mode System Router**, users can toggle with one tap between **Consumer/Buyer Mode** (buying farm-fresh organic produce, hiring tractors/harvesters, booking field laborers) and **Farmer/Seller Storefront** (managing inventory listings, monitoring incoming orders, broadcasting bulk harvests, and advertising services).
 
 ---
 
-## System Architecture
-
+## 🏗️ System Architecture
 ```mermaid
 flowchart TD
     classDef client fill:#0f172a,stroke:#38bdf8,stroke-width:2px,color:#fff;
@@ -42,18 +43,18 @@ flowchart TD
     classDef ai fill:#1e1b4b,stroke:#a855f7,stroke-width:2px,color:#fff;
     classDef fb fill:#1e293b,stroke:#f59e0b,stroke-width:2px,color:#fff;
 
-    subgraph User["User Session & Router"]
+    subgraph User["👤 User Session & Router"]
         ModeSwitch{"Mode Switch Router (UserModeContext)"}:::client
     end
 
-    subgraph ConsumerSpace["Consumer / Buyer Mode"]
-        FarmFresh["Farm Fresh Organic Produce Marketplace"]:::buyer
-        HireMachinery["Tractor & Harvester Machinery Rental"]:::buyer
-        HireWorkers["Farm Labor & Gig Workforce Booking"]:::buyer
-        Cart["Smart Cart & Multi-Item Checkout"]:::buyer
+    subgraph ConsumerSpace["🛒 Consumer / Buyer Mode"]
+        FarmFresh["🥬 Farm Fresh Organic Produce Marketplace"]:::buyer
+        HireMachinery["🚜 Tractor & Harvester Machinery Rental"]:::buyer
+        HireWorkers["👷 Farm Labor & Gig Workforce Booking"]:::buyer
+        Cart["🛒 Smart Cart & Multi-Item Checkout"]:::buyer
     end
 
-    subgraph SellerSpace["Farmer / Merchant Storefront"]
+    subgraph SellerSpace["🏪 Farmer / Merchant Storefront"]
         Storefront["Listing & Inventory Manager"]:::seller
         OrderFlow["Live Order History & Fulfillment"]:::seller
         PromoEngine["Banner Ads & Wholesale Broadcasts"]:::seller
@@ -80,12 +81,11 @@ flowchart TD
 
 ---
 
-## Key Marketplace Pillars & Capabilities
-
+## 🧩 Key Marketplace Pillars & Capabilities
 <table>
   <tr>
     <td width="50%" valign="top">
-      <h3>Farm Machinery & Equipment Hire</h3>
+      <h3>🚜 Farm Machinery & Equipment Hire</h3>
       <ul>
         <li><b>Hourly / Daily Rentals:</b> Rent tractors, combine harvesters, seed drills, and power tillers from neighboring farms.</li>
         <li><b>Equipment Specifications:</b> Horsepower, fuel capacity, driver availability, and location radius filters.</li>
@@ -103,7 +103,7 @@ flowchart TD
   </tr>
   <tr>
     <td width="50%" valign="top">
-      <h3>Direct Farm Fresh Marketplace</h3>
+      <h3>🥬 Direct Farm Fresh Marketplace</h3>
       <ul>
         <li><b>Zero Middlemen:</b> Direct farmer-to-consumer commerce with fair pricing for growers and fresh food for buyers.</li>
         <li><b>Multi-Category Catalog:</b> Grains, pulses, organic vegetables, dairy, honey, and local artisanal goods.</li>
@@ -111,7 +111,7 @@ flowchart TD
       </ul>
     </td>
     <td width="50%" valign="top">
-      <h3>SmartLens Vision AI & Tools</h3>
+      <h3>📸 SmartLens Vision AI & Tools</h3>
       <ul>
         <li><b>Visual Disease Scanner:</b> Upload plant photos to instantly identify leaf blight, rust, and pests.</li>
         <li><b>GPS Land Surveyor:</b> Accurate perimeter measurement with satellite overlay.</li>
@@ -123,9 +123,8 @@ flowchart TD
 
 ---
 
-## Quick Start & Installation
-
-### Prerequisites
+## 🚀 Quick Start & Installation
+### ⚙️ Prerequisites
 * **Node.js** `v18+` & **npm**
 
 ```bash
@@ -144,8 +143,7 @@ Open **`http://localhost:5173`** in your browser to start using the SuperApp!
 
 ---
 
-## Repository Structure
-
+## 📂 Repository Structure
 ```
 My-First-App/
 +-- public/
