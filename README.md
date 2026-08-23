@@ -168,16 +168,8 @@ My-First-App/
 
 ---
 
-<div align="center">
-  <sub>Engineered with precision for rural digital empowerment. FarmCap SuperApp Suite &copy; 2026 Mani.</sub>
-</div>
-
 ---
 
 <div align="center">
-  <img src="./public/footer_aurora_clean.gif" width="100%" alt="Aesthetic Horizon Aurora" />
-  <br/>
-  <p align="center">
-    <sub>Engineered with precision for rural digital empowerment. FarmCap SuperApp Suite © 2026 Mani.</sub>
-  </p>
+  <sub>Rural agri-commerce, machinery hire & SmartLens AI ecosystem. MIT Licensed.</sub>
 </div>
