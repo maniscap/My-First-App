@@ -1,4 +1,4 @@
-<div align="center">
+ï»¿<div align="center">
 
 # ?? FARMCAP SUPERAPP (MY-FIRST-APP)
 ### *Next-Gen Dual-Mode Agri-Commerce, Machinery Rental & SmartLens AI Ecosystem*
@@ -13,10 +13,10 @@
 <br/>
 
 <p align="center">
-  <a href="#-dual-mode-architecture"><b>Dual-Mode Engine</b></a> •
-  <a href="#-system-architecture"><b>Architecture</b></a> •
-  <a href="#-key-marketplace-pillars"><b>Marketplace Pillars</b></a> •
-  <a href="#-smartlens-ai"><b>SmartLens AI</b></a> •
+  <a href="#-dual-mode-architecture"><b>Dual-Mode Engine</b></a> â€¢
+  <a href="#-system-architecture"><b>Architecture</b></a> â€¢
+  <a href="#-key-marketplace-pillars"><b>Marketplace Pillars</b></a> â€¢
+  <a href="#-smartlens-ai"><b>SmartLens AI</b></a> â€¢
   <a href="#-quick-start"><b>Quick Start</b></a>
 </p>
 
@@ -150,19 +150,19 @@ Open **`http://localhost:5173`** in your browser to start using the SuperApp!
 My-First-App/
 +-- public/
 +-- src/
-¦   +-- components/
-¦   ¦   +-- Consumer/           # ?? Consumer pages (FarmFresh, HireMachinery, HireWorkers, Cart)
-¦   ¦   +-- Seller/             # ?? Seller pages (ManageListings, StorefrontSetup, OrderHistory)
-¦   ¦   +-- SmartLens.jsx       # ?? AI Crop Disease Scanner
-¦   ¦   +-- GPSMeasurement.jsx  # ??? GPS Land & Acreage Surveyor
-¦   ¦   +-- MarketRates.jsx     # ?? Live Mandi Commodity Price Index
-¦   ¦   +-- CropExpenses.jsx    # ?? Expense Tracker & PDF Export
-¦   ¦   +-- ChatBot.jsx         # ?? AI Farm Advisor
-¦   +-- context/
-¦   ¦   +-- UserModeContext.jsx # ?? Consumer vs. Seller mode state provider
-¦   +-- firebase.js             # ?? Firestore & Authentication setup
-¦   +-- App.jsx                 # ?? Root application component & routes
-¦   +-- index.css               # ?? Design system tokens
+Â¦   +-- components/
+Â¦   Â¦   +-- Consumer/           # ?? Consumer pages (FarmFresh, HireMachinery, HireWorkers, Cart)
+Â¦   Â¦   +-- Seller/             # ?? Seller pages (ManageListings, StorefrontSetup, OrderHistory)
+Â¦   Â¦   +-- SmartLens.jsx       # ?? AI Crop Disease Scanner
+Â¦   Â¦   +-- GPSMeasurement.jsx  # ??? GPS Land & Acreage Surveyor
+Â¦   Â¦   +-- MarketRates.jsx     # ?? Live Mandi Commodity Price Index
+Â¦   Â¦   +-- CropExpenses.jsx    # ?? Expense Tracker & PDF Export
+Â¦   Â¦   +-- ChatBot.jsx         # ?? AI Farm Advisor
+Â¦   +-- context/
+Â¦   Â¦   +-- UserModeContext.jsx # ?? Consumer vs. Seller mode state provider
+Â¦   +-- firebase.js             # ?? Firestore & Authentication setup
+Â¦   +-- App.jsx                 # ?? Root application component & routes
+Â¦   +-- index.css               # ?? Design system tokens
 +-- index.html
 +-- package.json
 +-- vite.config.js
