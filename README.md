@@ -1,6 +1,6 @@
 ﻿<div align="center">
 
-# ?? FARMCAP SUPERAPP (MY-FIRST-APP)
+# FARMCAP SUPERAPP (MY-FIRST-APP)
 ### *Next-Gen Dual-Mode Agri-Commerce, Machinery Rental & SmartLens AI Ecosystem*
 
 [![React 19](https://img.shields.io/badge/React-19.2-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://react.dev)
@@ -24,7 +24,7 @@
 
 </div>
 
-## ?? Executive Summary
+## Executive Summary
 
 **FarmCap SuperApp** is a comprehensive rural commerce and agritech platform built to eliminate intermediaries between farmers, equipment owners, agricultural laborers, and consumers.
 
@@ -32,7 +32,7 @@ Featuring a seamless **Dual-Mode System Router**, users can toggle with one tap 
 
 ---
 
-## ??? System Architecture
+## System Architecture
 
 ```mermaid
 flowchart TD
@@ -42,31 +42,31 @@ flowchart TD
     classDef ai fill:#1e1b4b,stroke:#a855f7,stroke-width:2px,color:#fff;
     classDef fb fill:#1e293b,stroke:#f59e0b,stroke-width:2px,color:#fff;
 
-    subgraph User["?? User Session & Router"]
+    subgraph User["User Session & Router"]
         ModeSwitch{"Mode Switch Router (UserModeContext)"}:::client
     end
 
-    subgraph ConsumerSpace["?? Consumer / Buyer Mode"]
-        FarmFresh["?? Farm Fresh Organic Produce Marketplace"]:::buyer
-        HireMachinery["?? Tractor & Harvester Machinery Rental"]:::buyer
-        HireWorkers["????? Farm Labor & Gig Workforce Booking"]:::buyer
-        Cart["??? Smart Cart & Multi-Item Checkout"]:::buyer
+    subgraph ConsumerSpace["Consumer / Buyer Mode"]
+        FarmFresh["Farm Fresh Organic Produce Marketplace"]:::buyer
+        HireMachinery["Tractor & Harvester Machinery Rental"]:::buyer
+        HireWorkers["Farm Labor & Gig Workforce Booking"]:::buyer
+        Cart["Smart Cart & Multi-Item Checkout"]:::buyer
     end
 
-    subgraph SellerSpace["?? Farmer / Merchant Storefront"]
-        Storefront["?? Listing & Inventory Manager"]:::seller
-        OrderFlow["?? Live Order History & Fulfillment"]:::seller
-        PromoEngine["?? Banner Ads & Wholesale Broadcasts"]:::seller
+    subgraph SellerSpace["Farmer / Merchant Storefront"]
+        Storefront["Listing & Inventory Manager"]:::seller
+        OrderFlow["Live Order History & Fulfillment"]:::seller
+        PromoEngine["Banner Ads & Wholesale Broadcasts"]:::seller
     end
 
-    subgraph AIAndTools["? Agritech Intelligence Suite"]
-        SmartLens["?? SmartLens Crop Disease Vision AI"]:::ai
-        GPSMeasure["??? GPS Acreage & Perimeter Land Surveyor"]:::ai
-        MandiRates["?? Live Mandi Commodity Price Index"]:::ai
-        PDFGen["?? 1-Click PDF Expense Balance Sheets"]:::ai
+    subgraph AIAndTools["Agritech Intelligence Suite"]
+        SmartLens["SmartLens Crop Disease Vision AI"]:::ai
+        GPSMeasure["GPS Acreage & Perimeter Land Surveyor"]:::ai
+        MandiRates["Live Mandi Commodity Price Index"]:::ai
+        PDFGen["1-Click PDF Expense Balance Sheets"]:::ai
     end
 
-    subgraph CloudEngine["?? Firebase Cloud Ecosystem"]
+    subgraph CloudEngine["Firebase Cloud Ecosystem"]
         Firestore["Cloud Firestore (Real-Time Catalogs & Listings)"]:::fb
         Auth["Firebase Authentication (Role-Based Access)"]:::fb
         Storage["Cloud Storage (High-Res Crop Media)"]:::fb
@@ -80,12 +80,12 @@ flowchart TD
 
 ---
 
-## ?? Key Marketplace Pillars & Capabilities
+## Key Marketplace Pillars & Capabilities
 
 <table>
   <tr>
     <td width="50%" valign="top">
-      <h3>?? Farm Machinery & Equipment Hire</h3>
+      <h3>Farm Machinery & Equipment Hire</h3>
       <ul>
         <li><b>Hourly / Daily Rentals:</b> Rent tractors, combine harvesters, seed drills, and power tillers from neighboring farms.</li>
         <li><b>Equipment Specifications:</b> Horsepower, fuel capacity, driver availability, and location radius filters.</li>
@@ -93,7 +93,7 @@ flowchart TD
       </ul>
     </td>
     <td width="50%" valign="top">
-      <h3>????? Agricultural Workforce & Gigs</h3>
+      <h3>Agricultural Workforce & Gigs</h3>
       <ul>
         <li><b>Labor Booking:</b> Hire skilled field laborers for sowing, weeding, harvesting, and pest spraying.</li>
         <li><b>Wage Transparency:</b> Verified daily wage rates and transparent booking confirmation.</li>
@@ -103,7 +103,7 @@ flowchart TD
   </tr>
   <tr>
     <td width="50%" valign="top">
-      <h3>?? Direct Farm Fresh Marketplace</h3>
+      <h3>Direct Farm Fresh Marketplace</h3>
       <ul>
         <li><b>Zero Middlemen:</b> Direct farmer-to-consumer commerce with fair pricing for growers and fresh food for buyers.</li>
         <li><b>Multi-Category Catalog:</b> Grains, pulses, organic vegetables, dairy, honey, and local artisanal goods.</li>
@@ -111,7 +111,7 @@ flowchart TD
       </ul>
     </td>
     <td width="50%" valign="top">
-      <h3>?? SmartLens Vision AI & Tools</h3>
+      <h3>SmartLens Vision AI & Tools</h3>
       <ul>
         <li><b>Visual Disease Scanner:</b> Upload plant photos to instantly identify leaf blight, rust, and pests.</li>
         <li><b>GPS Land Surveyor:</b> Accurate perimeter measurement with satellite overlay.</li>
@@ -123,7 +123,7 @@ flowchart TD
 
 ---
 
-## ?? Quick Start & Installation
+## Quick Start & Installation
 
 ### Prerequisites
 * **Node.js** `v18+` & **npm**
@@ -144,25 +144,25 @@ Open **`http://localhost:5173`** in your browser to start using the SuperApp!
 
 ---
 
-## ?? Repository Structure
+## Repository Structure
 
 ```
 My-First-App/
 +-- public/
 +-- src/
 ¦   +-- components/
-¦   ¦   +-- Consumer/           # ?? Consumer pages (FarmFresh, HireMachinery, HireWorkers, Cart)
-¦   ¦   +-- Seller/             # ?? Seller pages (ManageListings, StorefrontSetup, OrderHistory)
-¦   ¦   +-- SmartLens.jsx       # ?? AI Crop Disease Scanner
-¦   ¦   +-- GPSMeasurement.jsx  # ??? GPS Land & Acreage Surveyor
-¦   ¦   +-- MarketRates.jsx     # ?? Live Mandi Commodity Price Index
-¦   ¦   +-- CropExpenses.jsx    # ?? Expense Tracker & PDF Export
-¦   ¦   +-- ChatBot.jsx         # ?? AI Farm Advisor
+¦   ¦   +-- Consumer/           # Consumer pages (FarmFresh, HireMachinery, HireWorkers, Cart)
+¦   ¦   +-- Seller/             # Seller pages (ManageListings, StorefrontSetup, OrderHistory)
+¦   ¦   +-- SmartLens.jsx       # AI Crop Disease Scanner
+¦   ¦   +-- GPSMeasurement.jsx  # GPS Land & Acreage Surveyor
+¦   ¦   +-- MarketRates.jsx     # Live Mandi Commodity Price Index
+¦   ¦   +-- CropExpenses.jsx    # Expense Tracker & PDF Export
+¦   ¦   +-- ChatBot.jsx         # AI Farm Advisor
 ¦   +-- context/
-¦   ¦   +-- UserModeContext.jsx # ?? Consumer vs. Seller mode state provider
-¦   +-- firebase.js             # ?? Firestore & Authentication setup
-¦   +-- App.jsx                 # ?? Root application component & routes
-¦   +-- index.css               # ?? Design system tokens
+¦   ¦   +-- UserModeContext.jsx # Consumer vs. Seller mode state provider
+¦   +-- firebase.js             # Firestore & Authentication setup
+¦   +-- App.jsx                 # Root application component & routes
+¦   +-- index.css               # Design system tokens
 +-- index.html
 +-- package.json
 +-- vite.config.js
