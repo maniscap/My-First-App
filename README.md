@@ -129,7 +129,7 @@ flowchart TD
 
 ```bash
 # 1. Clone the repository
-git clone https://github.com/maniscap/My-First-App.git
+git clone https://github.com/Tharun8994/My-First-App.git
 cd My-First-App
 
 # 2. Install dependencies
