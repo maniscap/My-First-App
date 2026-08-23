@@ -171,3 +171,13 @@ My-First-App/
 <div align="center">
   <sub>Engineered with precision for rural digital empowerment. FarmCap SuperApp Suite &copy; 2026 Mani.</sub>
 </div>
+
+---
+
+<div align="center">
+  <img src="./public/footer_pulse.gif" width="100%" alt="Footer Horizon Pulse" />
+  <br/>
+  <p align="center">
+    <sub>Engineered with precision for rural digital empowerment. FarmCap SuperApp Suite © 2026 Mani.</sub>
+  </p>
+</div>
